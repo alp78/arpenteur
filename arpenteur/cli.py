@@ -21,19 +21,28 @@ def _split(value: str | None) -> list[str] | None:
     return [part.strip() for part in value.split(",") if part.strip()]
 
 
+def _db_path(settings: Any, fixture: bool) -> Any:
+    """Keep recorded rows out of the database that will hold live registry data."""
+    if fixture:
+        return settings.data_dir / "arpenteur.fixture.sqlite3"
+    return settings.db_path
+
+
 def cmd_init_db(args: argparse.Namespace) -> int:
     settings = load_settings()
-    conn = db.connect(settings.db_path)
+    path = _db_path(settings, args.fixture)
+    conn = db.connect(path)
     version = db.migrate(conn)
     conn.close()
-    print(f"{settings.db_path} ready, schema version {version}")
+    print(f"{path} ready, schema version {version}")
     return 0
 
 
 def cmd_source(args: argparse.Namespace) -> int:
     settings = load_settings()
-    conn = db.open_db(settings.db_path)
-    run_id = db.start_run(conn, f"source:{args.provider}", vars(args))
+    conn = db.open_db(_db_path(settings, args.fixture))
+    stage = f"source:{args.provider}" + (":fixture" if args.fixture else "")
+    run_id = db.start_run(conn, stage, vars(args))
     try:
         stats = source.run_zefix(
             settings,
@@ -43,6 +52,7 @@ def cmd_source(args: argparse.Namespace) -> int:
             resume=not args.no_resume,
             hydrate=not args.no_hydrate,
             limit=args.limit,
+            fixture=args.fixture,
         )
     except Exception as exc:
         db.finish_run(conn, run_id, error=str(exc))
@@ -59,10 +69,10 @@ def cmd_source(args: argparse.Namespace) -> int:
 
 def cmd_hydrate(args: argparse.Namespace) -> int:
     settings = load_settings()
-    conn = db.open_db(settings.db_path)
-    run_id = db.start_run(conn, "hydrate", vars(args))
+    conn = db.open_db(_db_path(settings, args.fixture))
+    run_id = db.start_run(conn, "hydrate" + (":fixture" if args.fixture else ""), vars(args))
     try:
-        count = source.hydrate_pending(settings, conn, limit=args.limit)
+        count = source.hydrate_pending(settings, conn, limit=args.limit, fixture=args.fixture)
     except Exception as exc:
         db.finish_run(conn, run_id, error=str(exc))
         print(f"error: {exc}", file=sys.stderr)
@@ -75,8 +85,8 @@ def cmd_hydrate(args: argparse.Namespace) -> int:
 
 def cmd_profile(args: argparse.Namespace) -> int:
     settings = load_settings()
-    conn = db.open_db(settings.db_path)
-    run_id = db.start_run(conn, "profile", vars(args))
+    conn = db.open_db(_db_path(settings, args.fixture))
+    run_id = db.start_run(conn, "profile" + (":fixture" if args.fixture else ""), vars(args))
     try:
         stats = profile.run(
             settings,
@@ -100,7 +110,7 @@ def cmd_profile(args: argparse.Namespace) -> int:
 
 def cmd_stats(args: argparse.Namespace) -> int:
     settings = load_settings()
-    conn = db.open_db(settings.db_path)
+    conn = db.open_db(_db_path(settings, args.fixture))
 
     total = conn.execute("SELECT COUNT(*) FROM company").fetchone()[0]
     hydrated = conn.execute(
@@ -169,9 +179,13 @@ def build_parser() -> argparse.ArgumentParser:
     )
     sub = parser.add_subparsers(dest="command", required=True)
 
-    sub.add_parser("init-db", help="create or migrate the database").set_defaults(
-        func=cmd_init_db
+    p = sub.add_parser("init-db", help="create or migrate the database")
+    p.add_argument(
+        "--fixture",
+        action="store_true",
+        help="use the separate database reserved for recorded fixture data",
     )
+    p.set_defaults(func=cmd_init_db)
 
     p = sub.add_parser("source", help="fill the company table from a register")
     p.add_argument("provider", choices=["zefix"], nargs="?", default="zefix")
@@ -180,19 +194,40 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--no-resume", action="store_true", help="re-sweep completed prefixes")
     p.add_argument("--no-hydrate", action="store_true", help="skip the detail pass")
     p.add_argument("--limit", type=int, help="cap the detail pass")
+    p.add_argument(
+        "--fixture",
+        action="store_true",
+        help="replay bundled VD/Sàrl responses without credentials or network",
+    )
     p.set_defaults(func=cmd_source)
 
     p = sub.add_parser("hydrate", help="fetch detail for companies missing it")
     p.add_argument("--limit", type=int)
+    p.add_argument(
+        "--fixture",
+        action="store_true",
+        help="replay bundled details from the separate fixture database",
+    )
     p.set_defaults(func=cmd_hydrate)
 
     p = sub.add_parser("profile", help="sort companies into segments")
     p.add_argument("--limit", type=int)
     p.add_argument("--reclassify", action="store_true", help="include already classified")
     p.add_argument("--dry-run", action="store_true", help="print, write nothing")
+    p.add_argument(
+        "--fixture",
+        action="store_true",
+        help="read from the separate fixture database",
+    )
     p.set_defaults(func=cmd_profile)
 
-    sub.add_parser("stats", help="what the survey holds").set_defaults(func=cmd_stats)
+    p = sub.add_parser("stats", help="what the survey holds")
+    p.add_argument(
+        "--fixture",
+        action="store_true",
+        help="read from the separate fixture database",
+    )
+    p.set_defaults(func=cmd_stats)
 
     for name, helptext in (
         ("people", "decision makers from public sources (not built yet)"),

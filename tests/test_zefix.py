@@ -39,6 +39,7 @@ def test_legal_form_index_keys_on_code_and_short_name(fixture) -> None:
     index = client.legal_form_index()
 
     assert index["sàrl"]["id"] == 9
+    assert index["sarl"]["id"] == 9
     assert index["0108"]["id"] == 9
     assert index["sa"]["id"] == 4
     assert index["ri"]["id"] == 3

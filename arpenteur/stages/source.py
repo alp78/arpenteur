@@ -16,6 +16,11 @@ from .. import db
 from ..config import Settings
 from ..http import PoliteClient
 from ..sources.zefix import ZefixClient, walk_prefixes
+from ..sources.zefix_fixture import (
+    DEFAULT_CANTONS as FIXTURE_CANTONS,
+    DEFAULT_LEGAL_FORMS as FIXTURE_LEGAL_FORMS,
+    FixtureZefixClient,
+)
 
 
 def _client(settings: Settings) -> PoliteClient:
@@ -43,68 +48,103 @@ def run_zefix(
     resume: bool = True,
     hydrate: bool = True,
     limit: int | None = None,
+    fixture: bool = False,
     log: Callable[[str], None] = print,
 ) -> dict[str, Any]:
+    if fixture:
+        cantons = cantons or list(FIXTURE_CANTONS)
+        wanted_forms = legal_forms or list(FIXTURE_LEGAL_FORMS)
+        return _run_zefix(
+            settings,
+            conn,
+            zefix=FixtureZefixClient(),
+            cantons=cantons,
+            wanted_forms=wanted_forms,
+            resume=resume,
+            hydrate=hydrate,
+            limit=limit,
+            log=log,
+        )
+
     cantons = cantons or settings.cantons
     wanted_forms = legal_forms or settings.legal_forms
+    with _client(settings) as http:
+        return _run_zefix(
+            settings,
+            conn,
+            zefix=ZefixClient(http, settings.zefix.base_url),
+            cantons=cantons,
+            wanted_forms=wanted_forms,
+            resume=resume,
+            hydrate=hydrate,
+            limit=limit,
+            log=log,
+        )
+
+
+def _run_zefix(
+    settings: Settings,
+    conn: sqlite3.Connection,
+    *,
+    zefix: ZefixClient | FixtureZefixClient,
+    cantons: list[str],
+    wanted_forms: list[str],
+    resume: bool,
+    hydrate: bool,
+    limit: int | None,
+    log: Callable[[str], None],
+) -> dict[str, Any]:
     stats: dict[str, Any] = {"searched": 0, "seen": 0, "hydrated": 0, "cantons": cantons}
 
-    with _client(settings) as http:
-        zefix = ZefixClient(http, settings.zefix.base_url)
+    index = zefix.legal_form_index()
+    forms: list[dict[str, Any]] = []
+    for name in wanted_forms:
+        entry = index.get(name.strip().lower())
+        if not entry:
+            log(f"  ! unknown legal form {name!r}, skipped")
+            continue
+        forms.append(entry)
+    if not forms:
+        raise RuntimeError(
+            "No legal form resolved. Check survey.legal_forms in "
+            "arpenteur.toml against the registry catalogue."
+        )
 
-        index = zefix.legal_form_index()
-        forms: list[dict[str, Any]] = []
-        for name in wanted_forms:
-            entry = index.get(name.strip().lower())
-            if not entry:
-                log(f"  ! unknown legal form {name!r}, skipped")
-                continue
-            forms.append(entry)
-        if not forms:
-            raise RuntimeError(
-                "No legal form resolved. Check survey.legal_forms in "
-                "arpenteur.toml against the registry catalogue."
-            )
+    for canton in cantons:
+        for form in forms:
+            form_uid = str(form["uid"])
+            label = form["short"] or form["name"] or form_uid
+            done = db.completed_prefixes(conn, canton, form_uid) if resume else set()
+            if done:
+                log(f"{canton}/{label}: resuming, {len(done)} prefixes already done")
 
-        for canton in cantons:
-            for form in forms:
-                form_uid = str(form["uid"])
-                label = form["short"] or form["name"] or form_uid
-                done = db.completed_prefixes(conn, canton, form_uid) if resume else set()
-                if done:
-                    log(f"{canton}/{label}: resuming, {len(done)} prefixes already done")
+            def search(pattern: str, _form: dict[str, Any] = form) -> list[Any]:
+                stats["searched"] += 1
+                return zefix.search(
+                    name=pattern, canton=canton, legal_form_id=_form["id"]
+                )
 
-                def search(pattern: str, _form: dict[str, Any] = form) -> list[Any]:
-                    stats["searched"] += 1
-                    return zefix.search(
-                        name=pattern, canton=canton, legal_form_id=_form["id"]
-                    )
+            for prefix, companies, deepened in walk_prefixes(
+                search, page_cap=settings.zefix.page_cap, skip=done
+            ):
+                if not deepened:
+                    for company in companies:
+                        if not company.uid:
+                            continue
+                        company.canton = company.canton or canton
+                        company.legal_form_uid = company.legal_form_uid or form_uid
+                        company.legal_form_label = company.legal_form_label or label
+                        db.upsert_company(conn, company.as_row())
+                        stats["seen"] += 1
+                db.record_sweep(conn, canton, form_uid, prefix, len(companies), deepened)
+                conn.commit()
+                log(
+                    f"{canton}/{label} {prefix}*: {len(companies)}"
+                    + (" (capped, deepening)" if deepened else "")
+                )
 
-                for prefix, companies, deepened in walk_prefixes(
-                    search, page_cap=settings.zefix.page_cap, skip=done
-                ):
-                    if not deepened:
-                        for company in companies:
-                            if not company.uid:
-                                continue
-                            company.canton = company.canton or canton
-                            company.legal_form_uid = company.legal_form_uid or form_uid
-                            company.legal_form_label = company.legal_form_label or label
-                            db.upsert_company(conn, company.as_row())
-                            stats["seen"] += 1
-                    db.record_sweep(
-                        conn, canton, form_uid, prefix, len(companies), deepened
-                    )
-                    conn.commit()
-                    log(
-                        f"{canton}/{label} {prefix}*: {len(companies)}"
-                        + (" (capped, deepening)" if deepened else "")
-                    )
-
-        if hydrate:
-            stats["hydrated"] = hydrate_pending(
-                settings, conn, zefix=zefix, limit=limit, log=log
-            )
+    if hydrate:
+        stats["hydrated"] = hydrate_pending(settings, conn, zefix=zefix, limit=limit, log=log)
 
     return stats
 
@@ -113,8 +153,9 @@ def hydrate_pending(
     settings: Settings,
     conn: sqlite3.Connection,
     *,
-    zefix: ZefixClient | None = None,
+    zefix: ZefixClient | FixtureZefixClient | None = None,
     limit: int | None = None,
+    fixture: bool = False,
     log: Callable[[str], None] = print,
 ) -> int:
     """Fetch full detail for companies the sweep has not hydrated yet."""
@@ -126,9 +167,11 @@ def hydrate_pending(
     if not rows:
         return 0
 
-    owns_client = zefix is None
+    owns_client = zefix is None and not fixture
     http = _client(settings) if owns_client else None
-    client = zefix or ZefixClient(http, settings.zefix.base_url)  # type: ignore[arg-type]
+    client = zefix or (
+        FixtureZefixClient() if fixture else ZefixClient(http, settings.zefix.base_url)  # type: ignore[arg-type]
+    )
     count = 0
     try:
         for index, row in enumerate(rows, 1):

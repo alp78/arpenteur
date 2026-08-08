@@ -47,6 +47,23 @@ recorded fixtures.
 
 **Anthropic** powers the `profile` stage. Set `ANTHROPIC_API_KEY`.
 
+### Offline fixture mode
+
+While Zefix credentials are pending, exercise the complete source and hydration
+path with two bundled, recorded-style responses. It makes no network requests
+and needs no secrets:
+
+```bash
+uv run arpenteur source zefix --fixture
+uv run arpenteur stats --fixture
+```
+
+The fixture source defaults to its small VD/Sàrl sample. It writes to
+`data/arpenteur.fixture.sqlite3`, never the live survey database, and marks
+every row with a `fixture://zefix/...` provenance URL. To run its passes
+separately, use `source zefix --fixture --no-hydrate` followed by
+`hydrate --fixture`.
+
 ## Running a survey
 
 ```bash

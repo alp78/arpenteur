@@ -23,6 +23,7 @@ the API will hand over at once.
 from __future__ import annotations
 
 import string
+import unicodedata
 from dataclasses import dataclass
 from typing import Any, Iterator
 
@@ -79,6 +80,12 @@ def _text(value: Any, lang: str = "fr") -> str | None:
     return None
 
 
+def _key(value: str) -> str:
+    """Make catalogue labels safe to use from an ASCII configuration file."""
+    normalized = unicodedata.normalize("NFKD", value.strip().casefold())
+    return "".join(char for char in normalized if not unicodedata.combining(char))
+
+
 class ZefixClient:
     def __init__(self, client: PoliteClient, base_url: str) -> None:
         self.client = client
@@ -107,7 +114,9 @@ class ZefixClient:
             }
             for key in (entry["uid"], entry["short"], entry["name"]):
                 if key:
-                    index[str(key).strip().lower()] = entry
+                    label = str(key).strip().casefold()
+                    index[label] = entry
+                    index[_key(label)] = entry
         return index
 
     # --- search -------------------------------------------------------------
