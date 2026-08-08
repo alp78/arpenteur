@@ -1,0 +1,36 @@
+[
+  {
+    "name": "Atelier Bornand Sàrl",
+    "ehraid": 1234567,
+    "uid": "CHE-100.000.001",
+    "chid": "CH-550.1.000.001-3",
+    "legalSeatId": 5586,
+    "legalSeat": "Lausanne",
+    "registryOfCommerceId": 36,
+    "legalForm": {
+      "id": 9,
+      "uid": "0108",
+      "name": { "fr": "Société à responsabilité limitée", "de": "Gesellschaft mit beschränkter Haftung" },
+      "shortName": { "fr": "Sàrl", "de": "GmbH" }
+    },
+    "status": "EXISTIEREND",
+    "sogcDate": "2019-04-12"
+  },
+  {
+    "name": "Aubert Fiduciaire Sàrl",
+    "ehraid": 1234568,
+    "uid": "CHE-100.000.002",
+    "chid": "CH-550.1.000.002-1",
+    "legalSeatId": 5938,
+    "legalSeat": "Vevey",
+    "registryOfCommerceId": 36,
+    "legalForm": {
+      "id": 9,
+      "uid": "0108",
+      "name": { "fr": "Société à responsabilité limitée" },
+      "shortName": { "fr": "Sàrl" }
+    },
+    "status": "EXISTIEREND",
+    "sogcDate": "2012-09-03"
+  }
+]

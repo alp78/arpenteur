@@ -1,0 +1,30 @@
+{
+  "name": "Atelier Bornand Sàrl",
+  "ehraid": 1234567,
+  "uid": "CHE-100.000.001",
+  "chid": "CH-550.1.000.001-3",
+  "legalSeatId": 5586,
+  "legalSeat": "Lausanne",
+  "registryOfCommerceId": 36,
+  "legalForm": {
+    "id": 9,
+    "uid": "0108",
+    "name": { "fr": "Société à responsabilité limitée", "de": "Gesellschaft mit beschränkter Haftung" },
+    "shortName": { "fr": "Sàrl", "de": "GmbH" }
+  },
+  "status": "EXISTIEREND",
+  "sogcDate": "2019-04-12",
+  "purpose": "Menuiserie, agencement d'intérieur et pose sur mesure; conception assistée par ordinateur et pilotage de machines à commande numérique.",
+  "address": {
+    "organisation": "Atelier Bornand Sàrl",
+    "street": "Chemin des Vignes",
+    "houseNumber": "14",
+    "city": "Lausanne",
+    "swissZipCode": "1004"
+  },
+  "canton": "VD",
+  "capitalNominal": 20000,
+  "capitalCurrency": "CHF",
+  "cantonalExcerptWeb": "https://vd.chregister.ch/cr-portal/auszug/auszug.xhtml?uid=CHE-100.000.001",
+  "zefixDetailWeb": "https://www.zefix.ch/fr/search/entity/list/firm/1234567"
+}

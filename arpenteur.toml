@@ -1,0 +1,44 @@
+# Arpenteur configuration. Everything that varies between surveys lives here
+# rather than in code: the territory, the legal forms worth sweeping, and the
+# segments the profile stage sorts companies into.
+
+[survey]
+# The romand cantons. JU is available and off by default: it is small and
+# its economy points north to Basel rather than to the lake.
+cantons = ["GE", "VD", "FR", "NE", "VS"]
+
+# Friendly names resolved to eCH-0097 codes against the live legalForm
+# catalogue on first run, so a code change at the registry does not silently
+# empty a sweep. Sole proprietorships (ri) are included deliberately: an
+# independent fiduciaire or architect is squarely in the target market.
+legal_forms = ["sarl", "sa", "ri"]
+
+[zefix]
+base_url = "https://www.zefix.admin.ch/ZefixPublicREST"
+# Requests per second. The registry is a public service run for everyone;
+# 2/s finishes a canton in minutes and is invisible to them.
+rate_limit = 2.0
+max_retries = 4
+# Zefix caps a search response. On hitting the cap the sweep deepens the
+# prefix rather than losing the tail. Confirmed empirically on first live run.
+page_cap = 1000
+contact = "arpenteur (contact: alexis@peringer.ch)"
+
+[llm]
+provider = "anthropic"
+classify_model = "claude-haiku-4-5-20251001"
+draft_model = "claude-sonnet-5"
+# Companies per classification call. Larger batches are cheaper per company
+# and degrade accuracy once the prompt gets long.
+batch_size = 20
+
+# The six segments. Each is a filter a survey can be sliced by, and the
+# definitions below are the prompt: keep them one line, concrete, and
+# mutually distinguishable, because the classifier sees nothing else.
+[segments]
+sme-owner = "A small owner-run business, typically under 50 people, where the owner decides."
+mature-sme = "An established firm, long registered, with structured operations and likely several sites or departments."
+data-driven = "Work that produces or depends on substantial data: analytics, laboratories, logistics, finance, research."
+ai-adopter = "Purpose text mentions software, automation, digital products or AI as part of what the company does."
+compliance-sector = "Regulated activity: health, finance, insurance, legal, public mandates, personal data at the centre."
+lean-startup = "Recently registered, small capital, product or technology purpose rather than trade or services."

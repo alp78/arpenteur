@@ -1,0 +1,21 @@
+from __future__ import annotations
+
+import json
+from pathlib import Path
+
+import pytest
+
+FIXTURES = Path(__file__).parent / "fixtures"
+
+
+@pytest.fixture
+def fixture() -> callable:
+    def load(name: str):
+        return json.loads((FIXTURES / name).read_text(encoding="utf-8"))
+
+    return load
+
+
+@pytest.fixture
+def db_path(tmp_path: Path) -> Path:
+    return tmp_path / "test.sqlite3"

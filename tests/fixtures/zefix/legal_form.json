@@ -1,0 +1,26 @@
+[
+  {
+    "id": 3,
+    "uid": "0103",
+    "name": { "de": "Einzelunternehmen", "fr": "Entreprise individuelle", "it": "Impresa individuale", "en": "Sole proprietorship" },
+    "shortName": { "de": "EU", "fr": "RI", "it": "II", "en": "SP" }
+  },
+  {
+    "id": 4,
+    "uid": "0106",
+    "name": { "de": "Aktiengesellschaft", "fr": "Société anonyme", "it": "Società anonima", "en": "Limited company" },
+    "shortName": { "de": "AG", "fr": "SA", "it": "SA", "en": "Ltd" }
+  },
+  {
+    "id": 9,
+    "uid": "0108",
+    "name": { "de": "Gesellschaft mit beschränkter Haftung", "fr": "Société à responsabilité limitée", "it": "Società a garanzia limitata", "en": "Limited liability company" },
+    "shortName": { "de": "GmbH", "fr": "Sàrl", "it": "Sagl", "en": "LLC" }
+  },
+  {
+    "id": 11,
+    "uid": "0109",
+    "name": { "de": "Verein", "fr": "Association", "it": "Associazione", "en": "Association" },
+    "shortName": { "de": "Verein", "fr": "Association", "it": "Associazione", "en": "Association" }
+  }
+]

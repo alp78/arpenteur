@@ -1,0 +1,19 @@
+# Environment and secrets. .env.example is the committed template and is
+# deliberately un-ignored: without it a fresh clone cannot tell what to set.
+.env
+.env.*
+!.env.example
+
+# Python
+.venv/
+__pycache__/
+*.pyc
+
+# Local data: crawled pages, registry snapshots, resolved contacts.
+# Regenerable, sometimes large, and personal data never belongs in git.
+data/
+*.sqlite3
+*.db
+
+# uv
+uv.lock
