@@ -142,14 +142,19 @@ def hydrate_pending(
     bulk: bool = False,
     log: Callable[[str], None] = print,
 ) -> int:
-    """Fetch full detail for companies the sweep has not hydrated yet.
+    """Fetch full detail for companies never hydrated, or gone stale since.
 
     Filtered rather than first-come, because the register is swept far wider
     than it is worked. `purpose` only arrives with this call, so a territory
     cannot be classified until it is hydrated, and hydrating by id order would
     spend the whole polite budget on whichever canton happens to sort first.
+
+    Two kinds of work arrive here. A company the sweep found but never fetched
+    in detail, and a company the sync stage marked stale because a FOSC notice
+    said it changed. The second is served first: a company whose purpose was
+    amended last week is more wrong than one that has never been read at all.
     """
-    where = ["hydrated_at IS NULL"]
+    where = ["(hydrated_at IS NULL OR stale_since IS NOT NULL)"]
     params: list[Any] = []
     if cantons:
         where.append(f"canton IN ({','.join('?' * len(cantons))})")
@@ -157,7 +162,10 @@ def hydrate_pending(
     if legal_forms:
         where.append(f"legal_form_uid IN ({','.join('?' * len(legal_forms))})")
         params.extend(legal_forms)
-    sql = f"SELECT uid FROM company WHERE {' AND '.join(where)} ORDER BY id"
+    sql = (
+        f"SELECT uid, stale_since FROM company WHERE {' AND '.join(where)} "
+        "ORDER BY stale_since IS NULL, last_mutation_date DESC, id"
+    )
     if limit:
         sql += " LIMIT ?"
         params.append(limit)
@@ -179,7 +187,11 @@ def hydrate_pending(
     count = 0
     try:
         for index, row in enumerate(rows, 1):
-            full = client.company(row["uid"])
+            # A stale company must actually re-ask. Its detail is already on
+            # disk from the fetch that made it stale, and the cache would
+            # hand back exactly the copy the notice told us was out of date.
+            stale = row["stale_since"] is not None
+            full = client.company(row["uid"], max_age=0 if stale else None)
             if full:
                 company_id = db.upsert_company(conn, full.as_row())
                 # The SHAB notices arrive on the same call. Storing them here
@@ -187,6 +199,9 @@ def hydrate_pending(
                 # extra request: re-fetching 183k companies to get prose we
                 # already had would be a day of polite traffic for nothing.
                 db.save_publications(conn, company_id, full.publications)
+                # Cleared only after the row is written, so an interrupted run
+                # leaves the work still queued rather than silently dropped.
+                db.clear_stale(conn, company_id)
                 count += 1
             if index % 50 == 0:
                 conn.commit()

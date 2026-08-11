@@ -116,6 +116,51 @@ def _number(value: Any) -> float | None:
         return None
 
 
+@dataclass
+class Mutation:
+    """One FOSC notice, with the company it concerns.
+
+    The unit of change in the register. `kinds` carries the registrar's own
+    classification of what happened (`firmenaenderung`, `aenderungorgane`,
+    `loeschung` and so on), which is what lets a synchroniser decide whether a
+    notice merely renames a company, in which case the short record attached
+    to it is the whole update, or alters its purpose, which needs the detail
+    call.
+    """
+
+    company: Company
+    message: str
+    sogc_id: int | None = None
+    sogc_date: str | None = None
+    journal_id: int | None = None
+    journal_date: str | None = None
+    canton: str | None = None
+    kinds: list[str] = field(default_factory=list)
+    source_url: str | None = None
+
+    # A striking-off. The company stays in the register and in this database,
+    # its status changes; nothing is ever deleted locally, because a prospect
+    # that has been struck off is a fact worth keeping rather than a row to
+    # drop.
+    DELETION_KINDS = frozenset({"loeschung", "radiation", "cancellazione"})
+
+    @property
+    def is_deletion(self) -> bool:
+        return any(kind in self.DELETION_KINDS for kind in self.kinds)
+
+    def as_publication(self) -> dict[str, Any]:
+        return {
+            "sogc_id": self.sogc_id,
+            "sogc_date": self.sogc_date,
+            "journal_id": self.journal_id,
+            "journal_date": self.journal_date,
+            "canton": self.canton,
+            "message": self.message,
+            "source_url": self.source_url,
+            "method": "zefix-sogc-bydate",
+        }
+
+
 def _publications(raw: Any, source_url: str) -> list[dict[str, Any]]:
     """Flatten sogcPub entries to the columns the publication table stores.
 
@@ -228,12 +273,66 @@ class ZefixClient:
             source_url=source_url,
         )
 
+    # --- the change feed ----------------------------------------------------
+
+    def sogc_by_date(self, date: str, *, max_age: float | None = None) -> list[Mutation]:
+        """Every register mutation published on one day, nationwide.
+
+        This is the whole basis for keeping a local copy current. Nothing
+        changes in the commercial register without a FOSC notice, so a day of
+        this feed is a complete change log for that day: one request in place
+        of asking 183'361 companies whether anything happened to them.
+
+        Each entry carries the notice and a company short record together, so
+        an identity change (new name, new seat, struck off) is applied without
+        a second request. Only a purpose or address change needs the detail
+        call, and only for the companies actually named.
+
+        Measured on 11.08.2026: 960 notices for the whole of Switzerland on a
+        single day.
+        """
+        url = f"{self.base}/api/v1/sogc/bydate/{date}"
+        reply = self.client.get(url, max_age=max_age)
+        rows = reply.body if isinstance(reply.body, list) else []
+
+        mutations: list[Mutation] = []
+        for row in rows:
+            if not isinstance(row, dict):
+                continue
+            notice = row.get("sogcPublication") or {}
+            short = row.get("companyShort") or {}
+            if not short.get("uid") or not notice.get("message"):
+                continue
+            mutations.append(
+                Mutation(
+                    company=self._short(short, url),
+                    sogc_id=notice.get("sogcId"),
+                    sogc_date=notice.get("sogcDate"),
+                    journal_id=notice.get("registryOfCommerceJournalId"),
+                    journal_date=notice.get("registryOfCommerceJournalDate"),
+                    canton=notice.get("registryOfCommerceCanton"),
+                    message=notice["message"],
+                    kinds=[
+                        str(item.get("key"))
+                        for item in notice.get("mutationTypes") or []
+                        if isinstance(item, dict) and item.get("key")
+                    ],
+                    source_url=url,
+                )
+            )
+        return mutations
+
     # --- detail -------------------------------------------------------------
 
-    def company(self, uid: str) -> Company | None:
-        """Hydrate one company: purpose, address, capital, excerpt link."""
+    def company(self, uid: str, *, max_age: float | None = None) -> Company | None:
+        """Hydrate one company: purpose, address, capital, excerpt link.
+
+        max_age is passed through so a refresh prompted by a notice actually
+        re-asks. Left to the default the disk would answer with the copy taken
+        before the change the notice just announced.
+        """
         url = f"{self.base}/api/v1/company/uid/{uid}"
-        reply = self.client.get(url)
+        reply = self.client.get(url, max_age=max_age)
         body = reply.body
         # The endpoint returns a list for a UID that maps to several entries
         # (a company and its branches); the head is the principal record.

@@ -12,7 +12,7 @@ from typing import Any
 
 from . import db
 from .config import load_settings
-from .stages import draft, enrich, people, profile, reach, source
+from .stages import draft, enrich, people, profile, reach, source, sync
 
 
 def _split(value: str | None) -> list[str] | None:
@@ -77,6 +77,37 @@ def cmd_hydrate(args: argparse.Namespace) -> int:
         return 1
     db.finish_run(conn, run_id, {"hydrated": count})
     print(f"hydrated {count} companies")
+    conn.close()
+    return 0
+
+
+def cmd_sync(args: argparse.Namespace) -> int:
+    settings = load_settings()
+    conn = db.open_db(settings.db_path)
+    run_id = db.start_run(conn, "sync", vars(args))
+    try:
+        stats = sync.run(
+            settings,
+            conn,
+            since=args.since,
+            until=args.until,
+            resume=not args.no_resume,
+            tracked_only=not args.all_companies,
+            dry_run=args.dry_run,
+        )
+    except Exception as exc:
+        db.finish_run(conn, run_id, error=str(exc))
+        print(f"error: {exc}", file=sys.stderr)
+        return 1
+    db.finish_run(conn, run_id, stats)
+    print(
+        f"{stats['days']} days, {stats['notices']} notices, "
+        f"{stats['tracked']} ours: {stats['inserted']} new, "
+        f"{stats['updated']} changed, {stats['unchanged']} unchanged, "
+        f"{stats['deletions']} struck off"
+    )
+    if stats["stale"]:
+        print(f"{stats['stale']} companies await re-hydration (run: arpenteur hydrate)")
     conn.close()
     return 0
 
@@ -292,6 +323,23 @@ def build_parser() -> argparse.ArgumentParser:
         "(Zefix asks users to avoid regular mass querying)",
     )
     p.set_defaults(func=cmd_hydrate)
+
+    p = sub.add_parser(
+        "sync",
+        help="consume the FOSC change feed: one request per day, not per company",
+    )
+    p.add_argument("--since", help="first FOSC date, YYYY-MM-DD (default: resume)")
+    p.add_argument("--until", help="last FOSC date, YYYY-MM-DD (default: today)")
+    p.add_argument(
+        "--no-resume", action="store_true", help="re-read days already consumed"
+    )
+    p.add_argument(
+        "--all-companies",
+        action="store_true",
+        help="store notices about companies outside the swept territory too",
+    )
+    p.add_argument("--dry-run", action="store_true", help="say what would be fetched")
+    p.set_defaults(func=cmd_sync)
 
     p = sub.add_parser("profile", help="sort companies into segments")
     p.add_argument("--limit", type=int)

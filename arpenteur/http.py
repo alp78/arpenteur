@@ -11,7 +11,10 @@ module rather than per-source code:
                   finishes and one that dies at 80%.
   cache           A full sweep is tens of thousands of requests. Re-running
                   it while developing must not mean re-asking. Responses land
-                  under data/http-cache keyed by a hash of method+url+body.
+                  under data/http-cache keyed by a hash of method+url+body,
+                  and answer for as long as the caller says they may: forever
+                  for a closed day of the register's feed, not at all for a
+                  company whose notice just told us it changed.
 """
 
 from __future__ import annotations
@@ -24,6 +27,20 @@ from pathlib import Path
 from typing import Any
 
 import httpx
+
+
+def _older_than(path: Path, max_age: float | None) -> bool:
+    """Has a cached response outlived its usefulness?
+
+    None means never, which is the honest answer for an immutable resource
+    and a trap for a mutable one, so the decision sits with the caller.
+    """
+    if max_age is None:
+        return False
+    try:
+        return (time.time() - path.stat().st_mtime) > max_age
+    except OSError:
+        return True
 
 
 class RateLimiter:
@@ -113,9 +130,23 @@ class PoliteClient:
         *,
         json_body: Any = None,
         use_cache: bool = True,
+        max_age: float | None = None,
     ) -> Response:
+        """Fetch a URL, politely.
+
+        max_age is in seconds and decides how long a cached copy may answer
+        for. None, the default, means forever, which is right for a resource
+        that cannot change: a past day of the FOSC feed is closed, and the
+        sweep re-reads it endlessly while developing.
+
+        It is wrong for anything the register can amend. A company detail
+        cached forever makes a synchroniser blind: the notice says the company
+        changed, we re-fetch, and the disk hands back the same bytes that were
+        there before the change. Callers refreshing a known mutation pass
+        max_age=0, which re-asks but still stores the answer.
+        """
         path = self._cache_path(method, url, json_body) if use_cache else None
-        if path and path.is_file():
+        if path and path.is_file() and not _older_than(path, max_age):
             cached = json.loads(path.read_text(encoding="utf-8"))
             return Response(cached["status"], cached["body"], url, from_cache=True)
 

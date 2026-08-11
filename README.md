@@ -10,16 +10,18 @@ Pipeline stages, each a standalone command:
 
 1. **source** — companies from the Zefix public register, by canton and
    legal form *(built)*
-2. **profile** — sort companies into segments from their registered
+2. **sync** — keep that copy current from the FOSC change feed, one
+   request per day rather than one per company *(built)*
+3. **profile** — sort companies into segments from their registered
    purpose text *(built)*
-3. **people** — officers from the SHAB notices the register publishes
+4. **people** — officers from the SHAB notices the register publishes
    alongside each company *(built)*
-4. **enrich** — find and read a company's own website: offerings, IT
+5. **enrich** — find and read a company's own website: offerings, IT
    signals, partnerships, published email *(built)*
-5. **reach** — a point of contact: published addresses first, then the
+6. **reach** — a point of contact: published addresses first, then the
    domain's own naming pattern, then a paid lookup for the remainder
    *(planned)*
-6. **draft** — outreach proposals, always human-reviewed, never
+7. **draft** — outreach proposals, always human-reviewed, never
    auto-sent *(planned)*
 
 Storage is SQLite. Secrets live in `.env` (never committed). Outreach
@@ -134,6 +136,50 @@ segment vocabulary live in `arpenteur.toml`. The segment definitions in
 that file *are* the classifier's prompt, so editing them changes how
 companies are sorted.
 
+## Staying current
+
+A copy of the register goes stale the moment it is taken. Asking 183'361
+companies whether anything has changed is 183'361 requests, and it would have
+to be repeated for ever.
+
+It is also unnecessary. Nothing changes in the Swiss commercial register
+without a notice in the FOSC, and Zefix publishes those a day at a time for
+the whole country. So the local copy is a subscription rather than a poll, and
+staying current costs **one request per elapsed day** no matter how many
+companies are held.
+
+```bash
+# resume from the last day consumed, up to today
+uv run arpenteur sync
+
+# or a named range, and a dry run that fetches nothing
+uv run arpenteur sync --since 2026-08-04 --until 2026-08-10
+uv run arpenteur sync --dry-run
+
+# notices say which companies moved; this fetches only those
+uv run arpenteur hydrate
+```
+
+Measured on 11.08.2026: seven days of the feed is 5'001 notices nationwide, of
+which 1'050 concerned companies in this survey, for seven requests.
+
+**Running it twice does nothing twice.** Days already consumed are recorded
+and skipped, companies are keyed on UID, and notices are keyed on
+`(company, sogc_id)` so the schema refuses a duplicate rather than trusting
+the caller to check. Forced to re-read the same week with `--no-resume`, the
+second pass reports 1'050 companies seen and 0 changed, and writes no rows.
+That is what makes the sync safe to put on a timer.
+
+**Each notice carries the company with it,** so a rename, a move or a striking
+off is applied from the feed alone. Only `purpose` and `address` need the
+detail call, and only for the companies actually named: `sync` flags them,
+`hydrate` serves them first, and the flag clears only once the row is written,
+so an interrupted run leaves the work queued rather than losing it.
+
+**Nothing is ever deleted.** A striking off is a change of `status`. A
+prospect that has closed is a fact worth keeping, and dropping the row would
+take its notices, its officers and any notes on it as well.
+
 ## Terms of the Zefix API, and how this tool meets them
 
 Access is granted free on conditions, stated by the OFRC when credentials are
@@ -152,12 +198,18 @@ This is a condition of use rather than a courtesy, so it has tests.
 cap, but the reasoning given is concrete: the web application, REST API and
 mobile app share one system, the web app alone serves over 400'000 requests a
 day, and a user who disturbs it degrades service on every route. The remedy
-they reserve is blocking that user. So the sweep is wide and cheap (a few
-hundred requests for all of Romandie), and hydration, which is one request per
-company, refuses to run over `POLITE_HYDRATION_LIMIT` rows unless you pass
-`--limit` or `--bulk`. All traffic goes through `PoliteClient`: rate limited,
-backing off on 429 and 5xx, and caching on disk so a repeated question is
-asked once.
+they reserve is blocking that user.
+
+This is the constraint that shaped the design rather than a note bolted on to
+it. The sweep is wide and cheap, a few hundred requests for all of Romandie.
+Keeping the copy current uses the FOSC change feed at one request per day
+instead of one per company, which is the difference between 7 requests a week
+and 183'361. Hydration, the one pass that is genuinely per company, refuses to
+run over `POLITE_HYDRATION_LIMIT` rows unless you pass `--limit` or `--bulk`,
+and a backfill over more than `POLITE_DAY_LIMIT` days of feed has to be asked
+for by date. All traffic goes through `PoliteClient`: rate limited, backing
+off on 429 and 5xx, and caching on disk, for as long as the caller says a
+cached copy may answer.
 
 **The data carries no warranty and has no legal effect.** Only the certified
 cantonal excerpt and the FOSC publication text are binding, and the OFRC

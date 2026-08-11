@@ -7,6 +7,7 @@ user_version. That keeps the whole storage story readable in one sitting.
 
 from __future__ import annotations
 
+import hashlib
 import json
 import sqlite3
 from datetime import datetime, timezone
@@ -63,7 +64,42 @@ def migrate(conn: sqlite3.Connection) -> int:
             # executescript commits, so the version bump is its own statement.
             conn.execute(f"PRAGMA user_version = {number}")
         version = number
+    backfill_content_hashes(conn)
     return version
+
+
+def backfill_content_hashes(conn: sqlite3.Connection, batch: int = 5000) -> int:
+    """Give every company a digest, so the first sync after a migration is honest.
+
+    Without this the column arrives null on 183'361 existing rows, every one of
+    them compares unequal on first touch, and a week of the change feed reports
+    a thousand amendments where the register made none. The digest is only
+    meaningful against a previous digest, so the previous one has to exist.
+
+    Idempotent and cheap: it looks for nulls, and on a database that has none
+    it is a single indexed count.
+    """
+    if not conn.execute(
+        "SELECT 1 FROM pragma_table_info('company') WHERE name = 'content_hash'"
+    ).fetchone():
+        return 0
+    filled = 0
+    while True:
+        rows = conn.execute(
+            "SELECT * FROM company WHERE content_hash IS NULL LIMIT ?", (batch,)
+        ).fetchall()
+        if not rows:
+            break
+        conn.executemany(
+            "UPDATE company SET content_hash = ? WHERE id = ?",
+            [
+                (company_content_hash({key: row[key] for key in HASHED_FIELDS}), row["id"])
+                for row in rows
+            ],
+        )
+        conn.commit()
+        filled += len(rows)
+    return filled
 
 
 def open_db(path: Path) -> sqlite3.Connection:
@@ -73,6 +109,50 @@ def open_db(path: Path) -> sqlite3.Connection:
 
 
 # --- writes -----------------------------------------------------------------
+
+
+# The registry fields a change is measured over. Provenance and timestamps
+# are excluded on purpose: fetched_at moves on every read, so including it
+# would make every row look changed and the digest would measure nothing.
+HASHED_FIELDS = (
+    "name", "legal_form_uid", "legal_form_label", "legal_seat", "legal_seat_id",
+    "canton", "status", "purpose", "address_json", "capital", "capital_currency",
+)
+
+
+def company_content_hash(payload: dict[str, Any]) -> str:
+    """A digest of what the register says, ignoring when we asked.
+
+    Two reads of an unchanged company must produce the same digest, and any
+    real amendment must produce a different one. That is the whole test.
+    """
+    material = json.dumps(
+        [payload.get(field) for field in HASHED_FIELDS],
+        ensure_ascii=False,
+        default=str,
+    )
+    return hashlib.sha256(material.encode("utf-8")).hexdigest()
+
+
+def apply_company(conn: sqlite3.Connection, row: dict[str, Any]) -> tuple[int, str]:
+    """Upsert a company and say what actually happened to it.
+
+    Returns the id and one of "inserted", "updated", "unchanged". The
+    synchroniser needs the distinction: a day on which nothing changed and a
+    day on which the feed was misread both write no useful rows, and only the
+    verdict tells them apart.
+    """
+    existing = conn.execute(
+        "SELECT id, content_hash FROM company WHERE uid = ?", (row["uid"],)
+    ).fetchone()
+    before = existing["content_hash"] if existing else None
+    company_id = upsert_company(conn, row)
+    after = conn.execute(
+        "SELECT content_hash FROM company WHERE id = ?", (company_id,)
+    ).fetchone()[0]
+    if existing is None:
+        return company_id, "inserted"
+    return company_id, "unchanged" if before == after else "updated"
 
 
 def upsert_company(conn: sqlite3.Connection, row: dict[str, Any]) -> int:
@@ -157,10 +237,76 @@ def upsert_company(conn: sqlite3.Connection, row: dict[str, Any]) -> int:
         """,
         payload,
     )
-    row_id = conn.execute(
-        "SELECT id FROM company WHERE uid = ?", (row["uid"],)
-    ).fetchone()[0]
-    return int(row_id)
+    # Hashed from the stored row rather than the incoming payload. They are
+    # not the same thing: the COALESCE clauses above mean a cheap search
+    # result leaves an already-hydrated purpose in place, so hashing what
+    # arrived would report a change on a row that did not move.
+    stored = conn.execute("SELECT * FROM company WHERE uid = ?", (row["uid"],)).fetchone()
+    conn.execute(
+        "UPDATE company SET content_hash = ? WHERE id = ?",
+        (company_content_hash({key: stored[key] for key in HASHED_FIELDS}), stored["id"]),
+    )
+    return int(stored["id"])
+
+
+def synced_days(conn: sqlite3.Connection) -> set[str]:
+    """The FOSC days already consumed. What makes a re-run free."""
+    return {row[0] for row in conn.execute("SELECT sogc_date FROM sync_day")}
+
+
+def last_synced_day(conn: sqlite3.Connection) -> str | None:
+    row = conn.execute("SELECT MAX(sogc_date) FROM sync_day").fetchone()
+    return row[0] if row and row[0] else None
+
+
+def record_sync_day(conn: sqlite3.Connection, date: str, counts: dict[str, int]) -> None:
+    """Mark a day consumed. Rewriting an existing day is deliberate: a range
+    re-run must converge on the same numbers rather than accumulate them."""
+    conn.execute(
+        """
+        INSERT INTO sync_day (
+            sogc_date, notices, tracked, inserted, updated, deletions, fetched_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?)
+        ON CONFLICT (sogc_date) DO UPDATE SET
+            notices = excluded.notices,
+            tracked = excluded.tracked,
+            inserted = excluded.inserted,
+            updated = excluded.updated,
+            deletions = excluded.deletions,
+            fetched_at = excluded.fetched_at
+        """,
+        (
+            date,
+            counts.get("notices", 0),
+            counts.get("tracked", 0),
+            counts.get("inserted", 0),
+            counts.get("updated", 0),
+            counts.get("deletions", 0),
+            now(),
+        ),
+    )
+
+
+def mark_stale(conn: sqlite3.Connection, company_id: int, mutation_date: str | None) -> None:
+    """Flag a company for re-hydration, without resetting an older flag.
+
+    stale_since keeps the moment we first learned the local copy was behind,
+    so a company mentioned in five notices before anyone runs hydrate is one
+    piece of work, not five, and the oldest debt is visible.
+    """
+    conn.execute(
+        """
+        UPDATE company
+           SET stale_since = COALESCE(stale_since, ?),
+               last_mutation_date = MAX(COALESCE(last_mutation_date, ''), COALESCE(?, ''))
+         WHERE id = ?
+        """,
+        (now(), mutation_date, company_id),
+    )
+
+
+def clear_stale(conn: sqlite3.Connection, company_id: int) -> None:
+    conn.execute("UPDATE company SET stale_since = NULL WHERE id = ?", (company_id,))
 
 
 def record_sweep(
