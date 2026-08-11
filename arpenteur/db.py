@@ -406,6 +406,76 @@ def set_segment_manually(
     )
 
 
+def save_fit(conn: sqlite3.Connection, company_id: int, row: dict[str, Any]) -> None:
+    """Store a fit score, without overwriting one a person set.
+
+    Same guard as save_segments, for the same reason: a score corrected by
+    hand must survive the stage running again, or correcting it is wasted
+    effort and the console is a display rather than a tool.
+    """
+    def as_json(value: Any) -> str | None:
+        if value in (None, [], ""):
+            return None
+        return json.dumps(value, ensure_ascii=False)
+
+    conn.execute(
+        """
+        INSERT INTO fit (company_id, score, band, reasoning, advice, against,
+                         matched, source, model, brief_hash, scored_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, 'model', ?, ?, ?)
+        ON CONFLICT (company_id) DO UPDATE SET
+            score = excluded.score,
+            band = excluded.band,
+            reasoning = excluded.reasoning,
+            advice = excluded.advice,
+            against = excluded.against,
+            matched = excluded.matched,
+            model = excluded.model,
+            brief_hash = excluded.brief_hash,
+            scored_at = excluded.scored_at
+        WHERE fit.source <> 'manual'
+        """,
+        (
+            company_id,
+            int(row.get("score") or 0),
+            row.get("band") or "low",
+            row.get("reasoning"),
+            row.get("advice"),
+            as_json(row.get("against")),
+            as_json(row.get("matched")),
+            row.get("model"),
+            row.get("brief_hash"),
+            now(),
+        ),
+    )
+
+
+def set_fit_manually(
+    conn: sqlite3.Connection,
+    company_id: int,
+    *,
+    score: int,
+    band: str,
+    reasoning: str | None = None,
+    author: str | None = None,
+) -> None:
+    """Override a score by hand. Marked manual, so no run undoes it."""
+    conn.execute(
+        """
+        INSERT INTO fit (company_id, score, band, reasoning, source, model, scored_at)
+        VALUES (?, ?, ?, ?, 'manual', ?, ?)
+        ON CONFLICT (company_id) DO UPDATE SET
+            score = excluded.score,
+            band = excluded.band,
+            reasoning = excluded.reasoning,
+            source = 'manual',
+            model = excluded.model,
+            scored_at = excluded.scored_at
+        """,
+        (company_id, int(score), band, reasoning, author or "manual", now()),
+    )
+
+
 # --- the follow-up log ------------------------------------------------------
 
 

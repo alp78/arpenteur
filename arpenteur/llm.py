@@ -20,6 +20,11 @@ class Provider(Protocol):
 
     def complete(self, *, system: str, user: str, model: str, max_tokens: int) -> str: ...
 
+    def complete_json(
+        self, *, system: str, user: str, model: str, max_tokens: int,
+        schema: dict[str, Any],
+    ) -> dict[str, Any]: ...
+
     def research(
         self,
         *,
@@ -77,6 +82,54 @@ class AnthropicProvider:
         return "".join(
             block.text for block in message.content if getattr(block, "type", "") == "text"
         )
+
+    def complete_json(
+        self,
+        *,
+        system: str,
+        user: str,
+        model: str,
+        max_tokens: int,
+        schema: dict[str, Any],
+    ) -> dict[str, Any]:
+        """A structured answer, with no web access.
+
+        Separate from `research` because the shapes differ in ways that matter:
+        there are no server tools, so no pause_turn, no spend to account for
+        and no long-held request needing a stream. Separate from `complete`
+        because the caller wants fields rather than prose, and validating at
+        the API rather than parsing afterwards is the difference between a
+        retry and a crash.
+        """
+        message = self.client.beta.messages.create(
+            model=model,
+            max_tokens=max_tokens,
+            system=system,
+            messages=[{"role": "user", "content": user}],
+            output_config={"format": {"type": "json_schema", "schema": schema}},
+        )
+        if message.stop_reason == "refusal":
+            raise RuntimeError("the model declined this request")
+        if message.stop_reason == "max_tokens":
+            raise RuntimeError(
+                "reply hit max_tokens before returning JSON; raise the stage's "
+                "max_tokens in arpenteur.toml"
+            )
+        # Last text block, for the reason set out in research(): a reply can
+        # carry several, and joining them corrupts the JSON.
+        texts = [
+            block.text
+            for block in message.content
+            if getattr(block, "type", "") == "text"
+        ]
+        if not texts:
+            raise RuntimeError(
+                f"no text block in reply (stop_reason {message.stop_reason!r})"
+            )
+        data = extract_json(texts[-1])
+        if not isinstance(data, dict):
+            raise RuntimeError(f"expected an object, got {type(data).__name__}")
+        return data
 
     def research(
         self,
@@ -211,6 +264,12 @@ class InfomaniakProvider:
         self.product_id = product_id
 
     def complete(self, *, system: str, user: str, model: str, max_tokens: int) -> str:
+        raise NotImplementedError(
+            "The Infomaniak provider is not wired yet. Set llm.provider = "
+            '"anthropic" in arpenteur.toml.'
+        )
+
+    def complete_json(self, **_kwargs: Any) -> dict[str, Any]:
         raise NotImplementedError(
             "The Infomaniak provider is not wired yet. Set llm.provider = "
             '"anthropic" in arpenteur.toml.'

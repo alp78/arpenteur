@@ -96,6 +96,11 @@ enrich_model = "claude-sonnet-5"
 # searches is enough to find a Swiss SME's site and read its main pages.
 enrich_max_searches = 4
 enrich_max_tokens = 8000
+# The match stage reads campaign.md and one company's whole file together and
+# takes a position on it. Judgement rather than extraction, so not the cheap
+# classifier; no web access, so no server-tool requirement either.
+match_model = "claude-sonnet-5"
+match_max_tokens = 4000
 # Companies per classification call. Larger batches are cheaper per company
 # and degrade accuracy once the prompt gets long.
 batch_size = 20

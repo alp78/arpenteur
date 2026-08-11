@@ -12,7 +12,7 @@ from typing import Any
 
 from . import db
 from .config import load_settings
-from .stages import draft, enrich, people, profile, reach, source, sync
+from .stages import draft, enrich, match, people, profile, reach, source, sync
 
 
 def _split(value: str | None) -> list[str] | None:
@@ -247,6 +247,35 @@ def cmd_enrich(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_match(args: argparse.Namespace) -> int:
+    settings = load_settings()
+    conn = db.open_db(settings.db_path)
+    run_id = db.start_run(conn, "match", vars(args))
+    try:
+        stats = match.run(
+            settings,
+            conn,
+            uids=_split(args.uid),
+            segment=args.segment,
+            researched_only=not args.include_unresearched,
+            limit=args.limit,
+            rescore=args.rescore,
+            dry_run=args.dry_run,
+        )
+    except Exception as exc:
+        db.finish_run(conn, run_id, error=str(exc))
+        print(f"error: {exc}", file=sys.stderr)
+        return 1
+    db.finish_run(conn, run_id, stats)
+    print(
+        f"scored {stats['scored']} against brief {stats['brief']}: "
+        f"{stats['high']} high, {stats['medium']} medium, {stats['low']} low, "
+        f"{stats['excluded']} excluded, {stats['failed']} failed"
+    )
+    conn.close()
+    return 0
+
+
 def cmd_stats(args: argparse.Namespace) -> int:
     settings = load_settings()
     conn = db.open_db(settings.db_path)
@@ -438,6 +467,23 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--refresh", action="store_true", help="re-research companies already done")
     p.add_argument("--dry-run", action="store_true", help="list the shortlist, spend nothing")
     p.set_defaults(func=cmd_enrich)
+
+    p = sub.add_parser(
+        "match", help="score companies against campaign.md, with approach advice"
+    )
+    p.add_argument("--uid", help="comma separated UIDs")
+    p.add_argument("--segment", help="only companies carrying this segment")
+    p.add_argument(
+        "--include-unresearched",
+        action="store_true",
+        help="score on the register alone, without waiting for enrich",
+    )
+    p.add_argument("--limit", type=int)
+    p.add_argument(
+        "--rescore", action="store_true", help="re-score companies already scored"
+    )
+    p.add_argument("--dry-run", action="store_true", help="list the shortlist, spend nothing")
+    p.set_defaults(func=cmd_match)
 
     sub.add_parser("stats", help="what the survey holds").set_defaults(func=cmd_stats)
     sub.add_parser(
