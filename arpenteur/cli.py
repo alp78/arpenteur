@@ -344,7 +344,7 @@ def cmd_stub(args: argparse.Namespace) -> int:
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="arpenteur",
-        description="Survey the Swiss SME market from public sources.",
+        description="Survey a market from the Swiss public register.",
     )
     sub = parser.add_subparsers(dest="command", required=True)
 

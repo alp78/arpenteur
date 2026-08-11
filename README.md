@@ -1,10 +1,17 @@
 # ARPENTEUR
 
 The arpenteur is the surveyor who paces out a territory parcel by
-parcel. This one surveys markets for Swiss SMEs: it builds a qualified
-map of a territory (who exists, which segment, who decides, how to
-reach them) from public sources, then drafts personalised outreach for
-human review.
+parcel. This one surveys a market from the Swiss commercial register: it
+builds a qualified map of a territory (who exists, which segment, who
+decides, how to reach them) from public sources, then prepares
+personalised approaches for human review.
+
+What the survey is *for* is configuration rather than code. The territory,
+the segment vocabulary and what counts as a signal all live in
+`arpenteur.toml`, so the same pipeline serves a consultancy scouting for
+clients, a recruiter reading for hiring signals, an association looking
+for members or a distributor looking for partners. The examples shipped
+are one campaign's; they are meant to be replaced.
 
 Pipeline stages, each a standalone command:
 
@@ -168,10 +175,10 @@ uv run arpenteur enrich --canton VS --segment data-driven --limit 20
 uv run arpenteur stats
 ```
 
-Both the territory (`survey.cantons`, `survey.legal_forms`) and the
-segment vocabulary live in `arpenteur.toml`. The segment definitions in
-that file *are* the classifier's prompt, so editing them changes how
-companies are sorted.
+The segment definitions in `arpenteur.toml` *are* the classifier's
+prompt, and `enrich.signal_brief` *is* what the web research looks for.
+Both are the operator's own words: editing them changes what the survey
+sorts for and what it reports, without touching code.
 
 ## Staying current
 

@@ -169,6 +169,7 @@ class Settings:
     regions: dict[str, list[str]]
     admit_new: bool
     segments: dict[str, str]
+    signal_brief: str
     zefix: ZefixConfig
     llm: LlmConfig
     data_dir: Path = field(init=False)
@@ -226,6 +227,15 @@ class Settings:
 
 AUTH_MODES = ("auto", "api_key", "subscription")
 
+# Used when enrich.signal_brief is absent. Deliberately generic: the tool has
+# no idea what campaign it is serving, and a default that guessed would be
+# silently wrong for every survey but one.
+DEFAULT_SIGNAL_BRIEF = (
+    "Anything on the site bearing on whether this company is worth "
+    "approaching: what it is investing in, what it is hiring for, what it "
+    "says it struggles with, and how it has changed recently."
+)
+
 
 def _auth_mode(value: object) -> str:
     """Validate llm.auth_mode at load time rather than at first model call.
@@ -269,6 +279,11 @@ def load_settings(root: Path | None = None) -> Settings:
         regions=regions,
         admit_new=bool(survey.get("admit_new", True)),
         segments=dict(raw.get("segments", {})),
+        # Collapsed to one line: it goes into a JSON Schema description, where
+        # the newlines of a TOML block string are noise.
+        signal_brief=" ".join(
+            str((raw.get("enrich") or {}).get("signal_brief", DEFAULT_SIGNAL_BRIEF)).split()
+        ),
         zefix=ZefixConfig(
             base_url=zefix_raw.get("base_url", ""),
             rate_limit=float(zefix_raw.get("rate_limit", 2.0)),

@@ -36,7 +36,7 @@ def conn(db_path: Path) -> sqlite3.Connection:
             "status": "found",
             "url": "https://solo.ch",
             "summary": "Conseil en finance d'entreprise.",
-            "it_signals": ["site sans HTTPS"],
+            "signals": ["site sans HTTPS"],
             "restricted": ["poursuite de la Ville de Genève, taxe 2021-2023"],
             "method": "web-search",
         },
@@ -64,7 +64,7 @@ def test_the_draft_view_still_carries_what_drafting_needs(conn) -> None:
     view = db.site_for_draft(conn, 1)
     assert view["url"] == "https://solo.ch"
     assert "finance" in view["summary"]
-    assert json.loads(view["it_signals"]) == ["site sans HTTPS"]
+    assert json.loads(view["signals"]) == ["site sans HTTPS"]
 
 
 def test_a_company_with_no_research_yields_nothing_rather_than_raising(conn) -> None:
@@ -74,7 +74,7 @@ def test_a_company_with_no_research_yields_nothing_rather_than_raising(conn) -> 
 
 
 def test_the_model_is_given_somewhere_to_put_it() -> None:
-    """Without a field of its own the model puts it in it_signals, which is
+    """Without a field of its own the model puts it in signals, which is
     what happened live and is precisely the column drafting reads."""
     assert "restricted" in enrich.SCHEMA["properties"]
     assert "restricted" in enrich.SCHEMA["required"]

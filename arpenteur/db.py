@@ -467,11 +467,11 @@ def save_site(conn: sqlite3.Connection, company_id: int, row: dict[str, Any]) ->
         """
         INSERT INTO site (
             company_id, status, url, confidence, language, summary, offerings,
-            it_signals, partnerships, tech_stack, size_hint, restricted,
+            signals, partnerships, tech_stack, size_hint, restricted,
             source_url, method, fetched_at, model, searches, fetches
         ) VALUES (
             :company_id, :status, :url, :confidence, :language, :summary,
-            :offerings, :it_signals, :partnerships, :tech_stack, :size_hint,
+            :offerings, :signals, :partnerships, :tech_stack, :size_hint,
             :restricted, :source_url, :method, :fetched_at, :model, :searches,
             :fetches
         )
@@ -482,7 +482,7 @@ def save_site(conn: sqlite3.Connection, company_id: int, row: dict[str, Any]) ->
             language = excluded.language,
             summary = excluded.summary,
             offerings = excluded.offerings,
-            it_signals = excluded.it_signals,
+            signals = excluded.signals,
             partnerships = excluded.partnerships,
             tech_stack = excluded.tech_stack,
             size_hint = excluded.size_hint,
@@ -502,7 +502,7 @@ def save_site(conn: sqlite3.Connection, company_id: int, row: dict[str, Any]) ->
             "language": row.get("language"),
             "summary": row.get("summary"),
             "offerings": as_json(row.get("offerings")),
-            "it_signals": as_json(row.get("it_signals")),
+            "signals": as_json(row.get("signals")),
             "partnerships": as_json(row.get("partnerships")),
             "tech_stack": as_json(row.get("tech_stack")),
             "size_hint": row.get("size_hint"),

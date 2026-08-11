@@ -24,6 +24,7 @@ and the wrong site would poison the fit score and the draft that follows it.
 
 from __future__ import annotations
 
+import copy
 import json
 import sqlite3
 from typing import Any, Callable
@@ -33,7 +34,7 @@ from ..config import Settings
 from ..llm import get_provider
 
 SYSTEM = """You research a Swiss company on the open web and report what you \
-find, for a consultant deciding whether to approach it.
+find, for someone deciding whether and how to approach it.
 
 Method:
 - Search for the company's own website. The registered name, seat and purpose \
@@ -62,8 +63,8 @@ site names no partners, partnerships is empty. Anything you would have to \
 hedge belongs in notes, not in a list.
 - Anything touching solvency, debt enforcement (poursuite, commandement de \
 payer, faillite), bankruptcy, litigation, criminal matters or a named \
-individual's personal circumstances goes in restricted, and nowhere else. Not in it_signals, not in the summary, not in \
-notes. These read as ordinary business intelligence and are not: for a \
+individual's personal circumstances goes in restricted, and nowhere else. \
+Not in signals, not in the summary, not in notes. These read as ordinary business intelligence and are not: for a \
 one-person company they are an identifiable person's private affairs, and \
 they are collected to inform a judgement that is never repeated back."""
 
@@ -85,14 +86,14 @@ SCHEMA: dict[str, Any] = {
             "items": {"type": "string"},
             "description": "Concrete products or services named on the site.",
         },
-        "it_signals": {
+        # The description is filled in from enrich.signal_brief at call time.
+        # What counts as a signal is the operator's question, not the tool's:
+        # a recruiter, a distributor and a consultancy are reading the same
+        # page for entirely different things.
+        "signals": {
             "type": "array",
             "items": {"type": "string"},
-            "description": (
-                "Evidence bearing on IT need: ageing or absent website, manual "
-                "processes described, hiring for technical roles, named systems "
-                "in use, compliance or data obligations, growth or new sites."
-            ),
+            "description": "",
         },
         "partnerships": {
             "type": "array",
@@ -125,11 +126,25 @@ SCHEMA: dict[str, Any] = {
     },
     "required": [
         "status", "url", "confidence", "language", "summary", "offerings",
-        "it_signals", "partnerships", "tech_stack", "size_hint", "restricted",
+        "signals", "partnerships", "tech_stack", "size_hint", "restricted",
         "emails", "notes",
     ],
     "additionalProperties": False,
 }
+
+
+def schema_for(signal_brief: str) -> dict[str, Any]:
+    """SCHEMA with the operator's own definition of a signal written in.
+
+    Copied rather than mutated so the module constant stays the shape the
+    tests assert against, and so two surveys in one process cannot overwrite
+    each other's brief.
+    """
+    schema = copy.deepcopy(SCHEMA)
+    schema["properties"]["signals"]["description"] = (
+        signal_brief or "Anything bearing on whether this company is worth approaching."
+    )
+    return schema
 
 
 def build_prompt(company: sqlite3.Row, officers: list[sqlite3.Row]) -> str:
@@ -260,6 +275,7 @@ def run(
         return stats
 
     provider = get_provider(settings)
+    schema = schema_for(getattr(settings, "signal_brief", ""))
 
     for index, company in enumerate(companies, 1):
         officers = conn.execute(
@@ -273,7 +289,7 @@ def run(
                 user=build_prompt(company, officers),
                 model=model,
                 max_tokens=settings.llm.enrich_max_tokens,
-                schema=SCHEMA,
+                schema=schema,
                 max_searches=settings.llm.enrich_max_searches,
             )
         except Exception as exc:
@@ -299,7 +315,7 @@ def run(
                 "language": data.get("language"),
                 "summary": data.get("summary"),
                 "offerings": data.get("offerings"),
-                "it_signals": data.get("it_signals"),
+                "signals": data.get("signals"),
                 "partnerships": data.get("partnerships"),
                 "tech_stack": data.get("tech_stack"),
                 "size_hint": data.get("size_hint"),

@@ -1,0 +1,13 @@
+-- Arpenteur schema, version 6: signals are the operator's question, not ours.
+--
+-- The column was `it_signals`, and its description told the model to look for
+-- "evidence bearing on IT need: ageing or absent website, manual processes,
+-- hiring for technical roles". That is one campaign's question baked into the
+-- schema. The same pipeline serves a recruiter looking for hiring signals, a
+-- distributor looking for import volume, an association looking for members,
+-- and none of them are asking about IT.
+--
+-- So the column says what it is, a signal, and what counts as one moves to
+-- enrich.signal_brief in arpenteur.toml, next to the segment vocabulary,
+-- which is already the operator's own words rather than the tool's.
+ALTER TABLE site RENAME COLUMN it_signals TO signals;

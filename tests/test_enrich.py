@@ -32,7 +32,7 @@ REPLY: dict[str, Any] = {
     "language": "fr",
     "summary": "Fiduciaire à Genève: comptabilité, fiscalité et paie pour PME.",
     "offerings": ["comptabilité", "déclarations fiscales", "gestion de la paie"],
-    "it_signals": ["site sans HTTPS", "processus décrits comme manuels"],
+    "signals": ["site sans HTTPS", "processus décrits comme manuels"],
     "partnerships": ["Fiduciaire Suisse"],
     "tech_stack": ["WordPress"],
     "size_hint": "moins de 10 personnes",
@@ -165,7 +165,7 @@ def test_a_found_site_is_stored_with_its_lists(monkeypatch, settings, conn) -> N
     assert row["status"] == "found"
     assert row["url"] == "https://example-fiduciaire.ch"
     assert json.loads(row["offerings"])[0] == "comptabilité"
-    assert json.loads(row["it_signals"])
+    assert json.loads(row["signals"])
     # Provenance, as every outside fact in this schema carries.
     assert row["method"] == "web-search"
     assert row["fetched_at"]
@@ -266,3 +266,29 @@ def test_the_schema_is_a_shape_the_api_accepts() -> None:
     assert set(enrich.SCHEMA["required"]) == set(enrich.SCHEMA["properties"])
     for name, prop in enrich.SCHEMA["properties"].items():
         assert not {"minLength", "maxLength", "minimum", "maximum"} & set(prop), name
+
+
+# --- what counts as a signal is the operator's question ----------------------
+
+
+def test_the_signal_brief_reaches_the_model(settings) -> None:
+    """The field was `it_signals`, described as "evidence bearing on IT need".
+
+    That is one campaign's question welded into the schema. The same pipeline
+    serves a recruiter reading for hiring signals and a distributor reading
+    for import volume, and neither is asking about IT.
+    """
+    brief = "Evidence the company is hiring: open roles, growth, new sites."
+    schema = enrich.schema_for(brief)
+    assert schema["properties"]["signals"]["description"] == brief
+
+
+def test_a_survey_with_no_brief_still_gets_a_usable_field() -> None:
+    """An empty description would leave the model guessing at the field name."""
+    assert enrich.schema_for("")["properties"]["signals"]["description"]
+
+
+def test_building_a_schema_does_not_mutate_the_shared_one() -> None:
+    """Two surveys in one process must not overwrite each other's brief."""
+    enrich.schema_for("first brief")
+    assert enrich.SCHEMA["properties"]["signals"]["description"] == ""
