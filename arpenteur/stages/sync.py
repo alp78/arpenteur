@@ -37,7 +37,7 @@ from datetime import timedelta
 from typing import Any, Callable
 
 from .. import db
-from ..config import Settings
+from ..config import Settings, Territory
 from ..sources.zefix import ZefixClient
 from .source import _client
 
@@ -80,17 +80,22 @@ def run(
     until: str | None = None,
     today: Date | None = None,
     resume: bool = True,
-    tracked_only: bool = True,
+    admit_new: bool | None = None,
     dry_run: bool = False,
     log: Callable[[str], None] = print,
 ) -> dict[str, Any]:
     """Consume the FOSC change feed for a range of days.
 
-    tracked_only decides what a notice about an unknown company means. Left
-    true, the survey stays the territory the sweep defined and other cantons
-    are counted but not stored. Set false, every new registration nationwide
-    is added, which is how the survey would grow itself.
+    The feed is national and cannot be filtered server side, so every notice
+    arrives and the territory decides what to keep. A company already held is
+    always updated. One never seen before is admitted when it falls inside the
+    territory and admit_new allows it, which is how a survey keeps up with new
+    incorporations without ever re-sweeping. Everything else is counted and
+    discarded, counted rather than ignored so that a quiet day stays
+    distinguishable from a misconfigured filter.
     """
+    territory = settings.territory
+    admit = settings.admit_new if admit_new is None else admit_new
     today = today or Date.today()
     end = Date.fromisoformat(until) if until else today
     start = _start_date(conn, since, today)
@@ -123,7 +128,10 @@ def run(
         return stats
 
     if dry_run:
-        log(f"{len(wanted)} days would be fetched, {wanted[0]} to {wanted[-1]}.")
+        log(
+            f"{len(wanted)} days would be fetched, {wanted[0]} to {wanted[-1]}, "
+            f"for {territory.describe()}."
+        )
         return stats
 
     with _client(settings) as http:
@@ -132,7 +140,8 @@ def run(
             counts = _sync_day(
                 conn, zefix, day,
                 is_today=(day == today.isoformat()),
-                tracked_only=tracked_only,
+                territory=territory,
+                admit=admit,
                 stats=stats,
             )
             db.record_sync_day(conn, day, counts)
@@ -158,7 +167,8 @@ def _sync_day(
     day: str,
     *,
     is_today: bool,
-    tracked_only: bool,
+    territory: Territory,
+    admit: bool,
     stats: dict[str, Any],
 ) -> dict[str, int]:
     mutations = zefix.sogc_by_date(day, max_age=TODAY_MAX_AGE if is_today else None)
@@ -166,20 +176,40 @@ def _sync_day(
               "updated": 0, "deletions": 0}
     stats["notices"] += len(mutations)
 
+    # The verdict is per company per day, not per notice. A company can be
+    # named in several notices on one day, and their short records need not
+    # agree; applying each in turn flips the row and every flip would count as
+    # an amendment. Measured live on 11.08.2026: three such companies made a
+    # re-read of an unchanged day report six changes. The database converged
+    # either way, but a report that invents movement is the same failure as a
+    # report that hides it. So the digest is taken once, before the day is
+    # applied, and compared once after.
+    before: dict[str, tuple[int, str | None]] = {}
+
     for mutation in mutations:
         uid = mutation.company.uid
-        known = conn.execute("SELECT id FROM company WHERE uid = ?", (uid,)).fetchone()
-        if known is None and tracked_only:
-            # A notice about a canton or legal form this survey does not
-            # cover. Counted, so a quiet day is distinguishable from a
-            # filtered one, and otherwise left alone.
-            continue
+        known = conn.execute(
+            "SELECT id, content_hash FROM company WHERE uid = ?", (uid,)
+        ).fetchone()
+        if known is None:
+            # The canton comes off the notice: the short record names the
+            # registry office and the seat, but not the canton itself.
+            inside = territory.contains(
+                mutation.canton, mutation.company.legal_form_uid
+            )
+            if not (inside and admit):
+                # Outside the survey, or a survey that does not grow itself.
+                # Counted, so a quiet day stays distinguishable from a filter
+                # that is quietly excluding everything.
+                continue
 
-        counts["tracked"] += 1
-        stats["tracked"] += 1
-        company_id, verdict = db.apply_company(conn, mutation.company.as_row())
-        counts[verdict] = counts.get(verdict, 0) + 1
-        stats[verdict] += 1
+        row = mutation.company.as_row()
+        row["canton"] = row.get("canton") or mutation.canton
+        company_id = db.upsert_company(conn, row)
+        if uid not in before:
+            counts["tracked"] += 1
+            stats["tracked"] += 1
+            before[uid] = (company_id, known["content_hash"] if known else None)
 
         # The notice itself, keyed on (company, sogc_id): re-reading the same
         # day cannot duplicate it, which is most of what idempotent means here.
@@ -193,5 +223,15 @@ def _sync_day(
         # legal form and status; purpose and address it does not carry, and a
         # notice is the only evidence they may have moved.
         db.mark_stale(conn, company_id, mutation.sogc_date)
+
+    for company_id, was in before.values():
+        after = conn.execute(
+            "SELECT content_hash FROM company WHERE id = ?", (company_id,)
+        ).fetchone()[0]
+        verdict = (
+            "inserted" if was is None else "updated" if was != after else "unchanged"
+        )
+        counts[verdict] = counts.get(verdict, 0) + 1
+        stats[verdict] += 1
 
     return counts

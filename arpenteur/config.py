@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import os
 import tomllib
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from pathlib import Path
 
 
@@ -92,10 +92,82 @@ class LlmConfig:
 
 
 @dataclass(frozen=True)
+class Territory:
+    """Where the survey applies: a set of cantons and a set of legal forms.
+
+    One object rather than two loose lists because every stage asks the same
+    question of it, and they must all get the same answer. The sweep asks what
+    to fetch; the sync stage asks whether a company appearing in the national
+    feed belongs here. If those two drifted apart, a canton would be swept and
+    then never kept current, or kept current and never swept.
+    """
+
+    cantons: tuple[str, ...]
+    legal_forms: tuple[str, ...]
+    name: str = "custom"
+
+    def contains(self, canton: str | None, legal_form_uid: str | None) -> bool:
+        """Is this company inside the survey?
+
+        An empty list means no restriction on that axis, so a territory of all
+        Switzerland needs no canton list and a survey interested in every form
+        needs no form list.
+        """
+        if self.cantons and (canton or "").upper() not in self.cantons:
+            return False
+        if self.legal_forms and (legal_form_uid or "") not in self.legal_forms:
+            return False
+        return True
+
+    def describe(self) -> str:
+        where = ", ".join(self.cantons) if self.cantons else "all cantons"
+        return f"{self.name} ({where})"
+
+
+def resolve_territory(
+    *,
+    regions: dict[str, list[str]],
+    region: str | None,
+    cantons: list[str] | None,
+    legal_forms: list[str],
+) -> Territory:
+    """Turn config and command line into one territory.
+
+    An unknown region name raises rather than resolving to nothing: a typo
+    would otherwise produce an empty canton list, which `contains` reads as
+    "no restriction" and would quietly widen the survey to all of Switzerland.
+    """
+    chosen = [c.strip().upper() for c in (cantons or []) if c.strip()]
+    name = "custom"
+    if not chosen and region:
+        key = region.strip().lower()
+        if key not in regions:
+            raise RuntimeError(
+                f"Unknown region {region!r}. Defined in arpenteur.toml: "
+                f"{', '.join(sorted(regions)) or '(none)'}."
+            )
+        chosen = [c.strip().upper() for c in regions[key]]
+        name = key
+    elif chosen:
+        # Name it after a region whose canton set matches exactly, so logs
+        # read "romandie" rather than a list of five.
+        for candidate, members in regions.items():
+            if sorted(c.upper() for c in members) == sorted(chosen):
+                name = candidate
+                break
+    return Territory(
+        cantons=tuple(chosen),
+        legal_forms=tuple(str(f).strip() for f in legal_forms if str(f).strip()),
+        name=name,
+    )
+
+
+@dataclass(frozen=True)
 class Settings:
     root: Path
-    cantons: list[str]
-    legal_forms: list[str]
+    territory: Territory
+    regions: dict[str, list[str]]
+    admit_new: bool
     segments: dict[str, str]
     zefix: ZefixConfig
     llm: LlmConfig
@@ -104,6 +176,44 @@ class Settings:
     def __post_init__(self) -> None:
         # frozen dataclass: the derived path is set through object.__setattr__
         object.__setattr__(self, "data_dir", self.root / "data")
+
+    # Kept so the stages can go on asking for a plain list where that is all
+    # they need, without every call site reaching through to .territory.
+    @property
+    def cantons(self) -> list[str]:
+        return list(self.territory.cantons)
+
+    @property
+    def legal_forms(self) -> list[str]:
+        return list(self.territory.legal_forms)
+
+    def scoped(
+        self, *, region: str | None = None, cantons: list[str] | None = None,
+        legal_forms: list[str] | None = None,
+    ) -> "Settings":
+        """The same settings over a different territory.
+
+        How a --region or --canton flag takes effect: one object is narrowed
+        once, at the edge, and every stage below sees a consistent territory
+        rather than each deciding for itself what the flags meant.
+        """
+        if region is None and not cantons and not legal_forms:
+            return self
+        narrowed = resolve_territory(
+            regions=self.regions,
+            region=region,
+            cantons=cantons,
+            legal_forms=legal_forms or list(self.territory.legal_forms),
+        )
+        if region is None and not cantons:
+            # Only the forms were narrowed; keep the territory's own cantons
+            # rather than letting an empty list read as "all of Switzerland".
+            narrowed = Territory(
+                cantons=self.territory.cantons,
+                legal_forms=narrowed.legal_forms,
+                name=self.territory.name,
+            )
+        return replace(self, territory=narrowed)
 
     @property
     def db_path(self) -> Path:
@@ -143,11 +253,21 @@ def load_settings(root: Path | None = None) -> Settings:
     survey = raw.get("survey", {})
     zefix_raw = raw.get("zefix", {})
     llm_raw = raw.get("llm", {})
+    regions = {
+        str(name).strip().lower(): [str(c).strip().upper() for c in members]
+        for name, members in (raw.get("regions") or {}).items()
+    }
 
     return Settings(
         root=base,
-        cantons=list(survey.get("cantons", [])),
-        legal_forms=list(survey.get("legal_forms", [])),
+        territory=resolve_territory(
+            regions=regions,
+            region=survey.get("region"),
+            cantons=list(survey.get("cantons", [])),
+            legal_forms=list(survey.get("legal_forms", [])),
+        ),
+        regions=regions,
+        admit_new=bool(survey.get("admit_new", True)),
         segments=dict(raw.get("segments", {})),
         zefix=ZefixConfig(
             base_url=zefix_raw.get("base_url", ""),

@@ -134,27 +134,6 @@ def company_content_hash(payload: dict[str, Any]) -> str:
     return hashlib.sha256(material.encode("utf-8")).hexdigest()
 
 
-def apply_company(conn: sqlite3.Connection, row: dict[str, Any]) -> tuple[int, str]:
-    """Upsert a company and say what actually happened to it.
-
-    Returns the id and one of "inserted", "updated", "unchanged". The
-    synchroniser needs the distinction: a day on which nothing changed and a
-    day on which the feed was misread both write no useful rows, and only the
-    verdict tells them apart.
-    """
-    existing = conn.execute(
-        "SELECT id, content_hash FROM company WHERE uid = ?", (row["uid"],)
-    ).fetchone()
-    before = existing["content_hash"] if existing else None
-    company_id = upsert_company(conn, row)
-    after = conn.execute(
-        "SELECT content_hash FROM company WHERE id = ?", (company_id,)
-    ).fetchone()[0]
-    if existing is None:
-        return company_id, "inserted"
-    return company_id, "unchanged" if before == after else "updated"
-
-
 def upsert_company(conn: sqlite3.Connection, row: dict[str, Any]) -> int:
     """Insert or update one company, keyed on UID.
 

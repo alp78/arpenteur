@@ -104,6 +104,43 @@ published copy of the tool takes, and it needs no `ant` install.
 Either way, `enrich` bills per web search rather than per token, so start
 a run with `--limit 2` before pointing it at a shortlist.
 
+## The territory
+
+A survey covers a set of cantons and a set of legal forms. Name a region, or
+give cantons directly; both live in `arpenteur.toml` and both can be
+overridden per command.
+
+```bash
+uv run arpenteur regions           # what is defined, and what is active
+uv run arpenteur legal-forms       # the registry's catalogue, live
+
+uv run arpenteur source --region geneve
+uv run arpenteur sync   --region suisse
+uv run arpenteur source --canton VD,GE --legal-form 0107
+```
+
+`[regions]` in `arpenteur.toml` is an ordinary table you can extend:
+`romandie`, `arc-lemanique`, `suisse` and the single cantons ship with it
+because they are the obvious ones, not because the code knows them.
+
+The territory is not only what gets swept. It is also what `sync` will
+**admit**: a company registered inside it joins the survey when its first FOSC
+notice appears, so new incorporations arrive without re-sweeping. Set
+`admit_new = false` (or pass `--no-admit`) to freeze the population at what
+the sweep found while still keeping those companies current. A company already
+held is always maintained, whatever the territory says now, so narrowing the
+scope never leaves rows silently frozen.
+
+An unknown region name is an error rather than an empty list, because an empty
+canton list means "no restriction": `--region romandy` would otherwise sweep
+Switzerland.
+
+**On legal forms.** `0101`, the raison individuelle, is registered in a natural
+person's own name, so its entry is personal data in a way a company's is not,
+and a campaign addressing sole traders carries obligations under the nLPD that
+one addressing legal entities does not. Include it or not according to what the
+survey is for. The tool ships with it on and does not decide for you.
+
 ## Running a survey
 
 ```bash
@@ -169,6 +206,12 @@ and skipped, companies are keyed on UID, and notices are keyed on
 the caller to check. Forced to re-read the same week with `--no-resume`, the
 second pass reports 1'050 companies seen and 0 changed, and writes no rows.
 That is what makes the sync safe to put on a timer.
+
+**The verdict is per company per day, not per notice.** A company can appear
+in several notices on one day whose short records disagree; applying each in
+turn flips the row, and every flip would read as an amendment. Found live: a
+re-read of an unchanged day reported six changes that way. The digest is now
+taken once before the day and compared once after.
 
 **Each notice carries the company with it,** so a rename, a move or a striking
 off is applied from the feed alone. Only `purpose` and `address` need the

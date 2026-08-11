@@ -30,16 +30,28 @@ def cmd_init_db(args: argparse.Namespace) -> int:
     return 0
 
 
+def _scoped(args: argparse.Namespace):
+    """Settings narrowed by whatever territory flags were given.
+
+    Resolved once, at the edge, so every stage below sees the same territory
+    instead of each deciding for itself what --region meant.
+    """
+    return load_settings().scoped(
+        region=getattr(args, "region", None),
+        cantons=_split(getattr(args, "canton", None)),
+        legal_forms=_split(getattr(args, "legal_form", None)),
+    )
+
+
 def cmd_source(args: argparse.Namespace) -> int:
-    settings = load_settings()
+    settings = _scoped(args)
     conn = db.open_db(settings.db_path)
     run_id = db.start_run(conn, f"source:{args.provider}", vars(args))
+    print(f"territory: {settings.territory.describe()}")
     try:
         stats = source.run_zefix(
             settings,
             conn,
-            cantons=_split(args.canton),
-            legal_forms=_split(args.legal_form),
             resume=not args.no_resume,
             hydrate=not args.no_hydrate,
             limit=args.limit,
@@ -59,15 +71,15 @@ def cmd_source(args: argparse.Namespace) -> int:
 
 
 def cmd_hydrate(args: argparse.Namespace) -> int:
-    settings = load_settings()
+    settings = _scoped(args)
     conn = db.open_db(settings.db_path)
     run_id = db.start_run(conn, "hydrate", vars(args))
     try:
         count = source.hydrate_pending(
             settings,
             conn,
-            cantons=_split(args.canton),
-            legal_forms=_split(args.legal_form),
+            cantons=settings.cantons,
+            legal_forms=settings.legal_forms,
             limit=args.limit,
             bulk=args.bulk,
         )
@@ -82,9 +94,10 @@ def cmd_hydrate(args: argparse.Namespace) -> int:
 
 
 def cmd_sync(args: argparse.Namespace) -> int:
-    settings = load_settings()
+    settings = _scoped(args)
     conn = db.open_db(settings.db_path)
     run_id = db.start_run(conn, "sync", vars(args))
+    print(f"territory: {settings.territory.describe()}")
     try:
         stats = sync.run(
             settings,
@@ -92,7 +105,7 @@ def cmd_sync(args: argparse.Namespace) -> int:
             since=args.since,
             until=args.until,
             resume=not args.no_resume,
-            tracked_only=not args.all_companies,
+            admit_new=False if args.no_admit else None,
             dry_run=args.dry_run,
         )
     except Exception as exc:
@@ -109,6 +122,47 @@ def cmd_sync(args: argparse.Namespace) -> int:
     if stats["stale"]:
         print(f"{stats['stale']} companies await re-hydration (run: arpenteur hydrate)")
     conn.close()
+    return 0
+
+
+def cmd_legal_forms(args: argparse.Namespace) -> int:
+    """Print the registry's own legal form catalogue.
+
+    Config takes eCH-0097 uid codes, which are not memorable, and the
+    alternative to printing them is guessing at a list that a registry change
+    could quietly invalidate. Resolved live for the same reason the sweep
+    resolves them live.
+    """
+    settings = load_settings()
+    from .sources.zefix import ZefixClient
+    from .stages.source import _client
+
+    with _client(settings) as http:
+        forms = ZefixClient(http, settings.zefix.base_url).legal_forms()
+
+    chosen = set(settings.territory.legal_forms)
+    print(f"{'uid':6} {'short':8} name")
+    for form in sorted(forms, key=lambda f: str(f.get("uid"))):
+        uid = str(form.get("uid") or "")
+        name = form.get("name")
+        short = form.get("shortName")
+        label = name.get("fr") if isinstance(name, dict) else name
+        tag = short.get("fr") if isinstance(short, dict) else short
+        mark = "*" if uid in chosen else " "
+        print(f"{mark}{uid:5} {str(tag or ''):8} {label or ''}")
+    print(f"\n* in survey.legal_forms. Territory: {settings.territory.describe()}")
+    return 0
+
+
+def cmd_regions(args: argparse.Namespace) -> int:
+    settings = load_settings()
+    print(f"active: {settings.territory.describe()}")
+    print(f"forms:  {', '.join(settings.territory.legal_forms) or 'all'}")
+    print(f"admit new companies: {'yes' if settings.admit_new else 'no'}")
+    print("\ndefined in arpenteur.toml:")
+    for name in sorted(settings.regions):
+        members = settings.regions[name]
+        print(f"  {name:14} {len(members):>2} cantons  {', '.join(members)}")
     return 0
 
 
@@ -298,10 +352,26 @@ def build_parser() -> argparse.ArgumentParser:
         func=cmd_init_db
     )
 
+    def territory_flags(parser: argparse.ArgumentParser) -> None:
+        """The same three flags on every command that acts on a territory.
+
+        One vocabulary rather than three: --region on `source` and --canton on
+        `hydrate` would make the two disagree about what a run covered.
+        """
+        group = parser.add_argument_group("territory")
+        group.add_argument(
+            "--region", help="a name from [regions] in arpenteur.toml, e.g. romandie"
+        )
+        group.add_argument(
+            "--canton", help="comma separated, e.g. VD,GE (overrides --region)"
+        )
+        group.add_argument(
+            "--legal-form", help="comma separated eCH-0097 uids, e.g. 0107,0106"
+        )
+
     p = sub.add_parser("source", help="fill the company table from a register")
     p.add_argument("provider", choices=["zefix"], nargs="?", default="zefix")
-    p.add_argument("--canton", help="comma separated, e.g. VD,GE (default: config)")
-    p.add_argument("--legal-form", help="comma separated, e.g. sarl,sa (default: config)")
+    territory_flags(p)
     p.add_argument("--no-resume", action="store_true", help="re-sweep completed prefixes")
     p.add_argument("--no-hydrate", action="store_true", help="skip the detail pass")
     p.add_argument("--limit", type=int, help="cap the detail pass")
@@ -313,8 +383,7 @@ def build_parser() -> argparse.ArgumentParser:
     p.set_defaults(func=cmd_source)
 
     p = sub.add_parser("hydrate", help="fetch detail for companies missing it")
-    p.add_argument("--canton", help="comma separated, e.g. GE,VD")
-    p.add_argument("--legal-form", help="comma separated uids, e.g. 0107,0106")
+    territory_flags(p)
     p.add_argument("--limit", type=int)
     p.add_argument(
         "--bulk",
@@ -328,15 +397,16 @@ def build_parser() -> argparse.ArgumentParser:
         "sync",
         help="consume the FOSC change feed: one request per day, not per company",
     )
+    territory_flags(p)
     p.add_argument("--since", help="first FOSC date, YYYY-MM-DD (default: resume)")
     p.add_argument("--until", help="last FOSC date, YYYY-MM-DD (default: today)")
     p.add_argument(
         "--no-resume", action="store_true", help="re-read days already consumed"
     )
     p.add_argument(
-        "--all-companies",
+        "--no-admit",
         action="store_true",
-        help="store notices about companies outside the swept territory too",
+        help="do not add companies not already held, even inside the territory",
     )
     p.add_argument("--dry-run", action="store_true", help="say what would be fetched")
     p.set_defaults(func=cmd_sync)
@@ -370,6 +440,12 @@ def build_parser() -> argparse.ArgumentParser:
     p.set_defaults(func=cmd_enrich)
 
     sub.add_parser("stats", help="what the survey holds").set_defaults(func=cmd_stats)
+    sub.add_parser(
+        "regions", help="territories defined in arpenteur.toml, and the active one"
+    ).set_defaults(func=cmd_regions)
+    sub.add_parser(
+        "legal-forms", help="the registry's legal form catalogue, with uid codes"
+    ).set_defaults(func=cmd_legal_forms)
 
     for name, helptext in (
         ("reach", "resolve a point of contact (not built yet)"),
@@ -384,7 +460,19 @@ def main(argv: list[str] | None = None) -> int:
     parser = build_parser()
     args = parser.parse_args(argv)
     handler: Any = args.func
-    return int(handler(args) or 0)
+    try:
+        return int(handler(args) or 0)
+    except RuntimeError as exc:
+        # Configuration is resolved before a stage's own error handling, so a
+        # misspelled region or auth mode would otherwise reach the user as a
+        # traceback. It is a typo, not a crash, and should read like one.
+        print(f"error: {exc}", file=sys.stderr)
+        return 1
+    except KeyboardInterrupt:
+        # Every stage commits as it goes and resumes where it stopped, so an
+        # interrupted run is a normal way to end one.
+        print("\ninterrupted", file=sys.stderr)
+        return 130
 
 
 if __name__ == "__main__":

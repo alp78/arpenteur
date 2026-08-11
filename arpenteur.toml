@@ -3,18 +3,58 @@
 # segments the profile stage sorts companies into.
 
 [survey]
-# The romand cantons. JU is available and off by default: it is small and
-# its economy points north to Basel rather than to the lake.
-cantons = ["GE", "VD", "FR", "NE", "VS"]
+# The territory. Name a region from [regions] below, or set `cantons`
+# directly; `cantons` wins if both are given, and --region or --canton on the
+# command line overrides either.
+#
+# The territory is not only what gets swept. It is also what the sync stage
+# admits: a company registered inside it is added when its first FOSC notice
+# appears, so new incorporations arrive without ever re-sweeping, and one
+# registered outside it is counted and discarded.
+region = "romandie"
 
-# Friendly names resolved to eCH-0097 codes against the live legalForm
-# catalogue on first run, so a code change at the registry does not silently
-# empty a sweep. Sole proprietorships (EI) are included deliberately: an
-# independent fiduciaire or architect is squarely in the target market.
-# These are the catalogue's own uid codes rather than its short names: the
-# short name for a Sàrl carries a grave accent, and matching on it made the
-# sweep depend on the accent surviving every config edit and shell round trip.
+# Which legal forms to sweep and admit, as the catalogue's own eCH-0097 uid
+# codes rather than its short names: the short name for a Sàrl carries a
+# grave accent, and matching on it made the sweep depend on that accent
+# surviving every config edit and shell round trip.
+#
+# Run `arpenteur legal-forms` for the catalogue, resolved live and marking
+# the ones this survey uses. The common codes:
+#   0101  Entreprise individuelle      0109  Association
+#   0103  Société en nom collectif     0110  Fondation
+#   0106  Société anonyme              0111  Succursale étrangère
+#   0107  Société à responsabilité l.  0151  Succursale
+#   0108  Société coopérative          0117  Institut de droit public
+#
+# One consideration when choosing, rather than a recommendation. A 0101 is
+# registered in a natural person's own name, so its entry is personal data in
+# a way a company's is not, and a campaign addressing sole traders carries
+# obligations under the nLPD (and the GDPR, for anyone applying this outside
+# Switzerland) that a campaign addressing legal entities does not. Include
+# them or not according to what the survey is for; the tool does not decide.
 legal_forms = ["0107", "0106", "0101"]
+
+# Whether the sync stage may add companies it has never seen, when they fall
+# inside the territory above. Left on, new incorporations arrive with their
+# first FOSC notice and the map keeps itself current without a re-sweep.
+# Turned off, the survey stays exactly the set the sweep found.
+admit_new = true
+
+# Named territories, so a survey can be scoped without editing a canton list
+# by hand. Add your own freely: nothing here is special to the code.
+[regions]
+# The five French-speaking cantons. JU is left out by default: it is small
+# and its economy points north to Basel rather than to the lake.
+romandie = ["GE", "VD", "FR", "NE", "VS"]
+romandie-ju = ["GE", "VD", "FR", "NE", "VS", "JU"]
+geneve = ["GE"]
+vaud = ["VD"]
+arc-lemanique = ["GE", "VD"]
+suisse = [
+    "AG", "AI", "AR", "BE", "BL", "BS", "FR", "GE", "GL", "GR", "JU", "LU",
+    "NE", "NW", "OW", "SG", "SH", "SO", "SZ", "TG", "TI", "UR", "VD", "VS",
+    "ZG", "ZH",
+]
 
 [zefix]
 base_url = "https://www.zefix.admin.ch/ZefixPublicREST"

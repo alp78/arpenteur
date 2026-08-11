@@ -19,6 +19,7 @@ from types import SimpleNamespace
 import pytest
 
 from arpenteur import db
+from arpenteur.config import Territory
 from arpenteur.sources.zefix import Company, Mutation
 from arpenteur.stages import sync
 
@@ -26,14 +27,15 @@ TODAY = Date(2026, 8, 11)
 
 
 def mutation(uid: str, name: str, *, day: str, sogc_id: int,
-             status: str = "ACTIVE", kinds: list[str] | None = None) -> Mutation:
+             status: str = "ACTIVE", kinds: list[str] | None = None,
+             canton: str = "GE", form: str = "0107") -> Mutation:
     return Mutation(
-        company=Company(uid=uid, name=name, canton="GE", legal_seat="Genève",
-                        legal_form_uid="0107", status=status, source_url="feed"),
+        company=Company(uid=uid, name=name, canton=canton, legal_seat="Genève",
+                        legal_form_uid=form, status=status, source_url="feed"),
         message=f"Notice for {name}.",
         sogc_id=sogc_id,
         sogc_date=day,
-        canton="GE",
+        canton=canton,
         kinds=kinds or ["aenderungorgane"],
         source_url="feed",
     )
@@ -54,6 +56,8 @@ class FakeZefix:
 @pytest.fixture
 def settings(tmp_path: Path) -> SimpleNamespace:
     return SimpleNamespace(
+        territory=Territory(cantons=("GE",), legal_forms=("0107",), name="geneve"),
+        admit_new=True,
         zefix=SimpleNamespace(base_url="https://example.invalid", rate_limit=2.0,
                               max_retries=1, contact="test", user="u", password="p",
                               has_credentials=True),
@@ -144,6 +148,43 @@ def test_an_unchanged_company_reports_unchanged(monkeypatch, settings, conn) -> 
     assert (stats["unchanged"], stats["updated"]) == (1, 0)
 
 
+def test_two_notices_in_one_day_are_one_company_not_two(
+    monkeypatch, settings, conn
+) -> None:
+    """The verdict is per company per day, not per notice.
+
+    Found live: three companies named in two notices each on the same day made
+    a re-read of an unchanged day report six amendments. The database
+    converged, but a report that invents movement is as misleading as one that
+    hides it. Both notices land; the company is counted once.
+    """
+    feed = {"2026-08-05": [
+        mutation("CHE111", "Known Sàrl", day="2026-08-05", sogc_id=1),
+        mutation("CHE111", "Known Sàrl", day="2026-08-05", sogc_id=2),
+    ]}
+    stats = sync_with(monkeypatch, FakeZefix(feed), settings, conn,
+                      since="2026-08-05", until="2026-08-05")
+    assert stats["notices"] == 2
+    assert stats["tracked"] == 1
+    assert (stats["unchanged"], stats["updated"]) == (1, 0)
+    assert conn.execute("SELECT COUNT(*) FROM publication").fetchone()[0] == 2
+
+
+def test_notices_that_disagree_within_a_day_settle_once(
+    monkeypatch, settings, conn
+) -> None:
+    """The case that produced the false count: the same day renames a company
+    twice. One change, reported once, and the later notice wins."""
+    feed = {"2026-08-05": [
+        mutation("CHE111", "First Name Sàrl", day="2026-08-05", sogc_id=1),
+        mutation("CHE111", "Second Name Sàrl", day="2026-08-05", sogc_id=2),
+    ]}
+    stats = sync_with(monkeypatch, FakeZefix(feed), settings, conn,
+                      since="2026-08-05", until="2026-08-05")
+    assert (stats["updated"], stats["unchanged"]) == (1, 0)
+    assert conn.execute("SELECT name FROM company").fetchone()[0] == "Second Name Sàrl"
+
+
 # --- and that changes are actually seen ---------------------------------------
 
 
@@ -205,24 +246,76 @@ def test_several_notices_for_one_company_are_one_piece_of_work(
 # --- territory ----------------------------------------------------------------
 
 
-def test_a_notice_about_an_untracked_company_is_counted_not_stored(
+def test_a_company_outside_the_territory_is_counted_not_stored(
     monkeypatch, settings, conn
 ) -> None:
-    """The feed is national. Counting the rest keeps a quiet day
-    distinguishable from a filtered one."""
-    feed = {"2026-08-05": [mutation("CHE999", "Zurich AG", day="2026-08-05", sogc_id=7)]}
+    """The feed is national and cannot be filtered server side, so the
+    territory does it here. Counting the remainder keeps a quiet day
+    distinguishable from a filter that is excluding everything."""
+    feed = {"2026-08-05": [
+        mutation("CHE999", "Zurich AG", day="2026-08-05", sogc_id=7, canton="ZH")
+    ]}
     stats = sync_with(monkeypatch, FakeZefix(feed), settings, conn,
                       since="2026-08-05", until="2026-08-05")
     assert stats["notices"] == 1 and stats["tracked"] == 0
     assert conn.execute("SELECT COUNT(*) FROM company").fetchone()[0] == 1
 
 
-def test_the_survey_can_be_told_to_grow_itself(monkeypatch, settings, conn) -> None:
+def test_a_legal_form_outside_the_territory_is_excluded_too(
+    monkeypatch, settings, conn
+) -> None:
+    """Territory is two axes. A survey of limited companies must not silently
+    acquire associations because they happen to be in the right canton."""
+    feed = {"2026-08-05": [
+        mutation("CHE999", "Association X", day="2026-08-05", sogc_id=7, form="0109")
+    ]}
+    stats = sync_with(monkeypatch, FakeZefix(feed), settings, conn,
+                      since="2026-08-05", until="2026-08-05")
+    assert stats["tracked"] == 0
+
+
+def test_a_new_company_inside_the_territory_is_admitted(
+    monkeypatch, settings, conn
+) -> None:
+    """How the map keeps up with new incorporations without a re-sweep."""
     feed = {"2026-08-05": [mutation("CHE999", "New Sàrl", day="2026-08-05", sogc_id=7)]}
     stats = sync_with(monkeypatch, FakeZefix(feed), settings, conn,
-                      since="2026-08-05", until="2026-08-05", tracked_only=False)
+                      since="2026-08-05", until="2026-08-05")
     assert stats["inserted"] == 1
     assert conn.execute("SELECT COUNT(*) FROM company").fetchone()[0] == 2
+
+
+def test_a_survey_can_refuse_to_grow(monkeypatch, settings, conn) -> None:
+    """admit_new off freezes the population at what the sweep found, while
+    still keeping those companies current."""
+    settings.admit_new = False
+    feed = {"2026-08-05": [
+        mutation("CHE999", "New Sàrl", day="2026-08-05", sogc_id=7),
+        mutation("CHE111", "Known Sàrl", day="2026-08-05", sogc_id=8),
+    ]}
+    stats = sync_with(monkeypatch, FakeZefix(feed), settings, conn,
+                      since="2026-08-05", until="2026-08-05")
+    assert stats["inserted"] == 0
+    assert stats["tracked"] == 1, "known companies must still be updated"
+    assert conn.execute("SELECT COUNT(*) FROM company").fetchone()[0] == 1
+
+
+def test_a_known_company_is_updated_even_from_outside_the_territory(
+    monkeypatch, settings, conn
+) -> None:
+    """A company already held stays current whatever the territory says now.
+
+    Narrowing the territory must not silently stop maintaining rows that are
+    already in the database, which would leave them frozen and wrong rather
+    than absent.
+    """
+    feed = {"2026-08-05": [
+        mutation("CHE111", "Moved Sàrl", day="2026-08-05", sogc_id=9, canton="ZH")
+    ]}
+    stats = sync_with(monkeypatch, FakeZefix(feed), settings, conn,
+                      since="2026-08-05", until="2026-08-05")
+    assert stats["tracked"] == 1
+    assert conn.execute("SELECT name FROM company").fetchone()[0] == "Moved Sàrl"
 
 
 # --- caching ------------------------------------------------------------------
