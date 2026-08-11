@@ -12,12 +12,14 @@ Pipeline stages, each a standalone command:
    legal form *(built)*
 2. **profile** — sort companies into segments from their registered
    purpose text *(built)*
-3. **people** — decision makers from cantonal register excerpts and
-   published team pages *(planned)*
-4. **reach** — a point of contact: published addresses first, then the
+3. **people** — officers from the SHAB notices the register publishes
+   alongside each company *(built)*
+4. **enrich** — find and read a company's own website: offerings, IT
+   signals, partnerships, published email *(built)*
+5. **reach** — a point of contact: published addresses first, then the
    domain's own naming pattern, then a paid lookup for the remainder
    *(planned)*
-5. **draft** — outreach proposals, always human-reviewed, never
+6. **draft** — outreach proposals, always human-reviewed, never
    auto-sent *(planned)*
 
 Storage is SQLite. Secrets live in `.env` (never committed). Outreach
@@ -45,20 +47,84 @@ source of the company universe. Access is free: email
 except the `source` stage still runs, and the test suite runs entirely on
 recorded fixtures.
 
-**Anthropic** powers the `profile` stage. Set `ANTHROPIC_API_KEY`.
+**Anthropic** powers the `profile`, `enrich` and `draft` stages. There are
+two ways to pay for it, and `llm.auth_mode` in `arpenteur.toml` decides
+which is used:
+
+| `auth_mode` | Credential | For |
+|---|---|---|
+| `subscription` | a local `ant auth login` sign-in | running it yourself on a Claude plan |
+| `api_key` | `ANTHROPIC_API_KEY` in `.env` | a published copy, a server, CI |
+| `auto` *(default)* | the key if set, otherwise the sign-in | either |
+
+#### Signing in with a Claude subscription
+
+Install the `ant` CLI, then sign in once. macOS:
+
+```bash
+brew install anthropics/tap/ant
+```
+
+Linux or WSL, where there is no Homebrew. `~/.local/bin` needs to be on
+your `PATH`, which avoids needing `sudo`:
+
+```bash
+VERSION=1.22.1
+curl -fsSL "https://github.com/anthropics/anthropic-cli/releases/download/v${VERSION}/ant_${VERSION}_linux_amd64.tar.gz" \
+  | tar -xz -C "$HOME/.local/bin" ant
+ant --version
+```
+
+Newer releases are on the [releases page](https://github.com/anthropics/anthropic-cli/releases).
+Then:
+
+```bash
+ant auth login      # opens a browser
+ant auth status     # shows which credential and org won
+```
+
+That writes a profile to `~/.config/anthropic/`, which the Python SDK
+finds by itself. Nothing is copied into `.env`: the token is short lived
+(hours), the SDK refreshes it, and this codebase never reads it.
+
+Two things worth knowing. Claude Code may warn about an auth conflict
+afterwards, because its own `/login` credential lives elsewhere
+(`~/.claude/`) and is a separate sign-in for the same account; that is
+expected. And an `ANTHROPIC_API_KEY` that is set at all wins over the
+profile, so unset it before expecting the subscription to be used.
+
+#### Using an API key instead
+
+Put a key from [console.anthropic.com](https://console.anthropic.com) in
+`.env` as `ANTHROPIC_API_KEY`. Nothing else changes: this is the path a
+published copy of the tool takes, and it needs no `ant` install.
+
+Either way, `enrich` bills per web search rather than per token, so start
+a run with `--limit 2` before pointing it at a shortlist.
 
 ## Running a survey
 
 ```bash
-# sweep a canton for one legal form, then fetch the detail for each hit
-uv run arpenteur source zefix --canton VS --legal-form sarl
+# sweep a canton for one legal form, then fetch the detail for each hit.
+# 0107 is the eCH-0097 code for a Sàrl; 0106 is a SA, 0101 a raison
+# individuelle. Codes rather than names because the catalogue's short
+# name carries an accent (`Sàrl`) and is easy to mistype.
+uv run arpenteur source zefix --canton VS --legal-form 0107
 
 # a sweep is resumable: re-running skips prefixes already covered
-uv run arpenteur source zefix --canton VS --legal-form sarl
+uv run arpenteur source zefix --canton VS --legal-form 0107
 
 # sort what was found into segments (--dry-run prints without writing)
 uv run arpenteur profile --limit 100 --dry-run
 uv run arpenteur profile
+
+# officers, parsed from the SHAB notices already stored. No network, no cost.
+uv run arpenteur people
+
+# websites and offerings, for a shortlist. This one costs money per company,
+# so check the shortlist before paying for it.
+uv run arpenteur enrich --canton VS --segment data-driven --dry-run
+uv run arpenteur enrich --canton VS --segment data-driven --limit 20
 
 uv run arpenteur stats
 ```
@@ -77,13 +143,26 @@ is asked of single rows, and a join would let a row exist without an
 answer. Under the nLPD that answer is the difference between a
 defensible dataset and an indefensible one.
 
-**Sweeps are resumable and cap-aware.** Zefix answers a name-prefix
-search, not "list everything", and truncates long responses. The sweep
-walks `a*` … `9*`, and any prefix that comes back at the cap is deepened
-(`aa*`, `ab*`, …) rather than trusted. Truncated prefixes are recorded
-as `deepened` so a resumed run knows their rows are incomplete. Without
-this, companies past the cap are invisible and nothing ever raises an
-error.
+**Sweeps narrow on refusal, not on truncation.** Zefix answers a
+name-prefix search, not "list everything". Crucially it never truncates:
+a query that is too broad comes back `400 RESULTLIST_TO_LARGE` and
+returns nothing at all. So the sweep walks `a*` … `9*` and deepens
+(`aa*`, `ab*`, …) only the prefixes that were refused, to a depth of six.
+This distinction is the whole design. Assuming truncation would mean
+reading a refusal as an empty result and silently dropping every company
+under that letter; the largest response actually observed was 4874 rows,
+so the ceiling is real but never signalled by a short answer.
+
+**The stages that cost money refuse to run wide.** `enrich` bills per web
+search, so it takes an explicit UID list or a filter, and a filter that
+resolves to more than 200 companies raises rather than spends. `--limit`
+is how you say you meant it. `site.searches` and `site.fetches` record
+what each company actually cost, so a run can be priced afterwards.
+
+**A found website is a guess until it is not.** Swiss SME names collide,
+so `enrich` records `status` and `confidence` beside every result, and
+only a `found` result may contribute an email to `contact`. A namesake's
+address reaching a draft is the failure this prevents.
 
 **Two passes, not one.** The sweep is wide and cheap (one request per
 prefix, many companies per response); hydration is one request per
@@ -101,6 +180,8 @@ contact address. A public register is run for everyone.
 uv run pytest
 ```
 
-No network required: the Zefix client runs against recorded fixtures in
-`tests/fixtures/`, and the sweep, migration and classification-parsing
-logic are tested directly.
+No network and no credential required. The Zefix client runs against
+recorded fixtures in `tests/fixtures/`; the sweep, migrations, the SHAB
+officer parser and the classification parsing are tested directly; and
+`enrich` runs end to end against a fake provider, since the provider
+protocol is the seam.
