@@ -29,6 +29,15 @@ contact = "arpenteur (contact: alexis@peringer.ch)"
 
 [llm]
 provider = "anthropic"
+# How the model is paid for.
+#   auto         an ANTHROPIC_API_KEY if one is set, otherwise a local Claude
+#                sign-in (ant auth login). The sensible default when published.
+#   subscription only the local sign-in. Never touches an API key, even if one
+#                is present in the environment.
+#   api_key      only ANTHROPIC_API_KEY. Right for a server, where falling back
+#                to whatever profile the deploy user happens to have would be
+#                a surprise.
+auth_mode = "auto"
 classify_model = "claude-haiku-4-5"
 draft_model = "claude-sonnet-5"
 # Companies per classification call. Larger batches are cheaper per company

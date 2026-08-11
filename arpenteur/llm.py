@@ -23,12 +23,21 @@ class Provider(Protocol):
 class AnthropicProvider:
     name = "anthropic"
 
-    def __init__(self, api_key: str) -> None:
+    def __init__(self, api_key: str | None = None) -> None:
         # Imported here rather than at module scope so the package still
         # imports (and the test suite still runs) with no key and no SDK.
         from anthropic import Anthropic
 
-        self.client = Anthropic(api_key=api_key)
+        if api_key:
+            self.client = Anthropic(api_key=api_key)
+            self.credential = "api key"
+        else:
+            # No api_key argument: the SDK resolves the credential itself,
+            # finding the OAuth profile written by `ant auth login`. The
+            # subscription token is short-lived and refreshed by the SDK, so
+            # it must never be copied into this process or into .env.
+            self.client = Anthropic()
+            self.credential = "subscription"
 
     def complete(self, *, system: str, user: str, model: str, max_tokens: int) -> str:
         message = self.client.messages.create(
@@ -62,12 +71,54 @@ class InfomaniakProvider:
         )
 
 
+def _has_local_profile() -> bool:
+    """Is there an `ant auth login` profile on this machine?
+
+    Checked before constructing a client so a missing sign-in reads as
+    "run ant auth login" rather than as the SDK's generic auth error. The
+    location follows the SDK's own convention, ANTHROPIC_CONFIG_DIR first.
+    """
+    import os
+    from pathlib import Path
+
+    configured = os.environ.get("ANTHROPIC_CONFIG_DIR")
+    base = Path(configured) if configured else Path.home() / ".config" / "anthropic"
+    credentials = base / "credentials"
+    return credentials.is_dir() and any(credentials.glob("*.json"))
+
+
+SETUP_HELP = """No Anthropic credential found.
+
+Either set ANTHROPIC_API_KEY in .env (console.anthropic.com), or sign in
+with a Claude subscription:
+
+    ant auth login
+
+Sourcing and hydration need neither; only profile and draft call a model."""
+
+
 def get_provider(settings: Any) -> Provider:
     choice = settings.llm.provider
     if choice == "anthropic":
-        if not settings.llm.api_key:
-            raise RuntimeError("ANTHROPIC_API_KEY is not set; see .env.example")
-        return AnthropicProvider(settings.llm.api_key)
+        llm = settings.llm
+        # An api_key wins when the mode allows it, because it is the explicit
+        # one: it was put in .env on purpose. Subscription is the fallback.
+        if llm.uses_api_key and llm.api_key:
+            return AnthropicProvider(llm.api_key)
+        if llm.uses_subscription:
+            if not _has_local_profile():
+                raise RuntimeError(
+                    "llm.auth_mode is 'subscription' but no Claude sign-in was "
+                    "found. Run: ant auth login"
+                    if llm.auth_mode == "subscription"
+                    else SETUP_HELP
+                )
+            return AnthropicProvider()
+        # auth_mode = "api_key" with nothing in .env.
+        raise RuntimeError(
+            "llm.auth_mode is 'api_key' but ANTHROPIC_API_KEY is not set; "
+            "see .env.example"
+        )
     if choice == "infomaniak":
         import os
 

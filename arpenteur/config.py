@@ -67,7 +67,25 @@ class LlmConfig:
     classify_model: str
     draft_model: str
     batch_size: int
+    # How the model is paid for. Declared rather than inferred: the two modes
+    # draw on different accounts, and a deployment that meant "my Claude
+    # subscription" must not quietly fall through to billing an API key that
+    # happens to be in the environment.
+    auth_mode: str = "auto"
     api_key: str | None = None
+
+    @property
+    def uses_api_key(self) -> bool:
+        return self.auth_mode in ("api_key", "auto")
+
+    @property
+    def uses_subscription(self) -> bool:
+        """True when a local `ant auth login` profile may be used.
+
+        The SDK finds that profile itself, from ~/.config/anthropic. Nothing
+        here reads it: the credential never passes through this process.
+        """
+        return self.auth_mode in ("subscription", "auto")
 
 
 @dataclass(frozen=True)
@@ -91,6 +109,25 @@ class Settings:
     @property
     def cache_dir(self) -> Path:
         return self.data_dir / "http-cache"
+
+
+AUTH_MODES = ("auto", "api_key", "subscription")
+
+
+def _auth_mode(value: object) -> str:
+    """Validate llm.auth_mode at load time rather than at first model call.
+
+    A typo here would otherwise read as "neither mode is available" and
+    surface as a credential error hours into a run, pointing at the wrong
+    thing entirely.
+    """
+    mode = str(value).strip().lower()
+    if mode not in AUTH_MODES:
+        raise RuntimeError(
+            f"Unknown llm.auth_mode {value!r} in arpenteur.toml. "
+            f"Expected one of: {', '.join(AUTH_MODES)}."
+        )
+    return mode
 
 
 def load_settings(root: Path | None = None) -> Settings:
@@ -122,6 +159,7 @@ def load_settings(root: Path | None = None) -> Settings:
             classify_model=llm_raw.get("classify_model", ""),
             draft_model=llm_raw.get("draft_model", ""),
             batch_size=int(llm_raw.get("batch_size", 20)),
+            auth_mode=_auth_mode(llm_raw.get("auth_mode", "auto")),
             api_key=os.environ.get("ANTHROPIC_API_KEY") or None,
         ),
     )
