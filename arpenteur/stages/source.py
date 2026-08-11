@@ -18,6 +18,20 @@ from ..http import PoliteClient
 from ..sources.zefix import ZefixClient, walk_prefixes
 
 
+# Zefix grants free REST access on conditions, and one of them is a request:
+# renounce regular mass querying. The reason given is concrete. All three
+# access routes (web app, REST, mobile) share one system, the web app alone
+# serves over 400'000 requests a day, and a user who disrupts it degrades the
+# service for everyone; the stated remedy is to block that user's access.
+#
+# Hydration is one request per company, so an uncapped pass over a completed
+# sweep is a six-figure burst: exactly that shape. Past this many rows the
+# caller has to ask for it deliberately, with --limit or --bulk. The sweep
+# itself needs no such guard, being a few hundred requests for the whole of
+# Romandie.
+POLITE_HYDRATION_LIMIT = 2000
+
+
 def _client(settings: Settings) -> PoliteClient:
     zefix = settings.zefix
     if not zefix.has_credentials:
@@ -43,6 +57,7 @@ def run_zefix(
     resume: bool = True,
     hydrate: bool = True,
     limit: int | None = None,
+    bulk: bool = False,
     log: Callable[[str], None] = print,
 ) -> dict[str, Any]:
     cantons = cantons or settings.cantons
@@ -110,7 +125,7 @@ def run_zefix(
 
         if hydrate:
             stats["hydrated"] = hydrate_pending(
-                settings, conn, zefix=zefix, limit=limit, log=log
+                settings, conn, zefix=zefix, limit=limit, bulk=bulk, log=log
             )
 
     return stats
@@ -122,6 +137,7 @@ def hydrate_pending(
     *,
     zefix: ZefixClient | None = None,
     limit: int | None = None,
+    bulk: bool = False,
     log: Callable[[str], None] = print,
 ) -> int:
     """Fetch full detail for companies the sweep has not hydrated yet."""
@@ -132,6 +148,14 @@ def hydrate_pending(
     ).fetchall()
     if not rows:
         return 0
+
+    if limit is None and not bulk and len(rows) > POLITE_HYDRATION_LIMIT:
+        raise RuntimeError(
+            f"{len(rows)} companies await hydration, one request each. Zefix "
+            f"asks users to avoid regular mass querying and reserves the right "
+            f"to block accounts that disturb the service. Pass --limit to take "
+            f"a slice, or --bulk to accept a run of this size deliberately."
+        )
 
     owns_client = zefix is None
     http = _client(settings) if owns_client else None

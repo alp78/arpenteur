@@ -134,6 +134,40 @@ segment vocabulary live in `arpenteur.toml`. The segment definitions in
 that file *are* the classifier's prompt, so editing them changes how
 companies are sorted.
 
+## Terms of the Zefix API, and how this tool meets them
+
+Access is granted free on conditions, stated by the OFRC when credentials are
+issued. They are not boilerplate: two of them constrain what may be said with
+the data, and one of them can cost you the account.
+
+**Use is free.** No further obligation.
+
+**Origin must be indicated, and any modification of the data referenced.**
+`arpenteur/attribution.py` holds the notices, keyed by the `method` column
+that every row carries. Output built only from registry fields gets the source
+and no-warranty notice; output built on anything derived also declares that.
+This is a condition of use rather than a courtesy, so it has tests.
+
+**Regular mass querying should be renounced.** There is no documented rate
+cap, but the reasoning given is concrete: the web application, REST API and
+mobile app share one system, the web app alone serves over 400'000 requests a
+day, and a user who disturbs it degrades service on every route. The remedy
+they reserve is blocking that user. So the sweep is wide and cheap (a few
+hundred requests for all of Romandie), and hydration, which is one request per
+company, refuses to run over `POLITE_HYDRATION_LIMIT` rows unless you pass
+`--limit` or `--bulk`. All traffic goes through `PoliteClient`: rate limited,
+backing off on 429 and 5xx, and caching on disk so a repeated question is
+asked once.
+
+**The data carries no warranty and has no legal effect.** Only the certified
+cantonal excerpt and the FOSC publication text are binding, and the OFRC
+accepts no liability for unavailability. Nothing this tool emits may read as
+though the register vouches for it. That matters most for `person`: those rows
+are a parse of French registrar prose, not registry fields, and a parse can
+name someone who has since resigned.
+
+**No support is provided** for building against the API.
+
 ## Design notes
 
 **Provenance is per row.** Every table that holds a fact about the

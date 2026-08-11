@@ -43,6 +43,7 @@ def cmd_source(args: argparse.Namespace) -> int:
             resume=not args.no_resume,
             hydrate=not args.no_hydrate,
             limit=args.limit,
+            bulk=args.bulk,
         )
     except Exception as exc:
         db.finish_run(conn, run_id, error=str(exc))
@@ -62,7 +63,9 @@ def cmd_hydrate(args: argparse.Namespace) -> int:
     conn = db.open_db(settings.db_path)
     run_id = db.start_run(conn, "hydrate", vars(args))
     try:
-        count = source.hydrate_pending(settings, conn, limit=args.limit)
+        count = source.hydrate_pending(
+            settings, conn, limit=args.limit, bulk=args.bulk
+        )
     except Exception as exc:
         db.finish_run(conn, run_id, error=str(exc))
         print(f"error: {exc}", file=sys.stderr)
@@ -266,10 +269,21 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--no-resume", action="store_true", help="re-sweep completed prefixes")
     p.add_argument("--no-hydrate", action="store_true", help="skip the detail pass")
     p.add_argument("--limit", type=int, help="cap the detail pass")
+    p.add_argument(
+        "--bulk",
+        action="store_true",
+        help=f"accept a detail pass over {source.POLITE_HYDRATION_LIMIT}+ companies",
+    )
     p.set_defaults(func=cmd_source)
 
     p = sub.add_parser("hydrate", help="fetch detail for companies missing it")
     p.add_argument("--limit", type=int)
+    p.add_argument(
+        "--bulk",
+        action="store_true",
+        help=f"accept a run over {source.POLITE_HYDRATION_LIMIT} companies "
+        "(Zefix asks users to avoid regular mass querying)",
+    )
     p.set_defaults(func=cmd_hydrate)
 
     p = sub.add_parser("profile", help="sort companies into segments")
