@@ -342,12 +342,13 @@ def save_site(conn: sqlite3.Connection, company_id: int, row: dict[str, Any]) ->
         """
         INSERT INTO site (
             company_id, status, url, confidence, language, summary, offerings,
-            it_signals, partnerships, tech_stack, size_hint, source_url,
-            method, fetched_at, model, searches, fetches
+            it_signals, partnerships, tech_stack, size_hint, restricted,
+            source_url, method, fetched_at, model, searches, fetches
         ) VALUES (
             :company_id, :status, :url, :confidence, :language, :summary,
             :offerings, :it_signals, :partnerships, :tech_stack, :size_hint,
-            :source_url, :method, :fetched_at, :model, :searches, :fetches
+            :restricted, :source_url, :method, :fetched_at, :model, :searches,
+            :fetches
         )
         ON CONFLICT (company_id) DO UPDATE SET
             status = excluded.status,
@@ -360,6 +361,7 @@ def save_site(conn: sqlite3.Connection, company_id: int, row: dict[str, Any]) ->
             partnerships = excluded.partnerships,
             tech_stack = excluded.tech_stack,
             size_hint = excluded.size_hint,
+            restricted = excluded.restricted,
             source_url = excluded.source_url,
             method = excluded.method,
             fetched_at = excluded.fetched_at,
@@ -379,6 +381,7 @@ def save_site(conn: sqlite3.Connection, company_id: int, row: dict[str, Any]) ->
             "partnerships": as_json(row.get("partnerships")),
             "tech_stack": as_json(row.get("tech_stack")),
             "size_hint": row.get("size_hint"),
+            "restricted": as_json(row.get("restricted")),
             "source_url": row.get("source_url"),
             "method": row.get("method"),
             "fetched_at": now(),
@@ -387,6 +390,29 @@ def save_site(conn: sqlite3.Connection, company_id: int, row: dict[str, Any]) ->
             "fetches": row.get("fetches"),
         },
     )
+
+
+# Columns of `site` that may inform a judgement but must never be quoted
+# back to the company. See migrations/0004_restricted.sql for why this is a
+# column rather than a convention.
+RESTRICTED_SITE_COLUMNS = frozenset({"restricted"})
+
+
+def site_for_draft(conn: sqlite3.Connection, company_id: int) -> dict[str, Any] | None:
+    """The web research, with everything unquotable removed.
+
+    The single accessor any outward-facing path must use: drafting, exporting,
+    anything that puts words in front of the company. Reading the table
+    directly is the mistake this exists to make hard, so the filtering lives
+    here rather than in each caller's SELECT, where the next caller would
+    forget it.
+    """
+    row = conn.execute(
+        "SELECT * FROM site WHERE company_id = ?", (company_id,)
+    ).fetchone()
+    if row is None:
+        return None
+    return {k: row[k] for k in row.keys() if k not in RESTRICTED_SITE_COLUMNS}
 
 
 def save_contact(

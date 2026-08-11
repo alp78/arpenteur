@@ -59,7 +59,13 @@ much better than a plausible invention.
 pages. Never enter what a directory says about similar or competing firms, \
 and never enter the absence of something as if it were a finding: if the \
 site names no partners, partnerships is empty. Anything you would have to \
-hedge belongs in notes, not in a list."""
+hedge belongs in notes, not in a list.
+- Anything touching solvency, debt enforcement (poursuite, commandement de \
+payer, faillite), bankruptcy, litigation, criminal matters or a named \
+individual's personal circumstances goes in restricted, and nowhere else. Not in it_signals, not in the summary, not in \
+notes. These read as ordinary business intelligence and are not: for a \
+one-person company they are an identifiable person's private affairs, and \
+they are collected to inform a judgement that is never repeated back."""
 
 # JSON Schema for the reply. Kept to the subset the API enforces: no string
 # length or numeric bounds, additionalProperties false on every object.
@@ -99,6 +105,17 @@ SCHEMA: dict[str, Any] = {
             "description": "Software, platforms or vendors the site shows or names.",
         },
         "size_hint": {"type": ["string", "null"]},
+        "restricted": {
+            "type": "array",
+            "items": {"type": "string"},
+            "description": (
+                "Findings about solvency, debt enforcement (poursuites), "
+                "bankruptcy, litigation, criminal matters, or the personal "
+                "circumstances of a named individual. These are collected for "
+                "judgement only and are never repeated to the company, so "
+                "they belong here and nowhere else."
+            ),
+        },
         "emails": {
             "type": "array",
             "items": {"type": "string"},
@@ -108,7 +125,8 @@ SCHEMA: dict[str, Any] = {
     },
     "required": [
         "status", "url", "confidence", "language", "summary", "offerings",
-        "it_signals", "partnerships", "tech_stack", "size_hint", "emails", "notes",
+        "it_signals", "partnerships", "tech_stack", "size_hint", "restricted",
+        "emails", "notes",
     ],
     "additionalProperties": False,
 }
@@ -285,6 +303,7 @@ def run(
                 "partnerships": data.get("partnerships"),
                 "tech_stack": data.get("tech_stack"),
                 "size_hint": data.get("size_hint"),
+                "restricted": data.get("restricted"),
                 "source_url": data.get("url"),
                 "method": "web-search",
                 "model": model,

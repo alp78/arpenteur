@@ -64,7 +64,12 @@ def cmd_hydrate(args: argparse.Namespace) -> int:
     run_id = db.start_run(conn, "hydrate", vars(args))
     try:
         count = source.hydrate_pending(
-            settings, conn, limit=args.limit, bulk=args.bulk
+            settings,
+            conn,
+            cantons=_split(args.canton),
+            legal_forms=_split(args.legal_form),
+            limit=args.limit,
+            bulk=args.bulk,
         )
     except Exception as exc:
         db.finish_run(conn, run_id, error=str(exc))
@@ -277,6 +282,8 @@ def build_parser() -> argparse.ArgumentParser:
     p.set_defaults(func=cmd_source)
 
     p = sub.add_parser("hydrate", help="fetch detail for companies missing it")
+    p.add_argument("--canton", help="comma separated, e.g. GE,VD")
+    p.add_argument("--legal-form", help="comma separated uids, e.g. 0107,0106")
     p.add_argument("--limit", type=int)
     p.add_argument(
         "--bulk",

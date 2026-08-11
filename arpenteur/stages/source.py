@@ -136,16 +136,32 @@ def hydrate_pending(
     conn: sqlite3.Connection,
     *,
     zefix: ZefixClient | None = None,
+    cantons: list[str] | None = None,
+    legal_forms: list[str] | None = None,
     limit: int | None = None,
     bulk: bool = False,
     log: Callable[[str], None] = print,
 ) -> int:
-    """Fetch full detail for companies the sweep has not hydrated yet."""
-    rows = conn.execute(
-        "SELECT uid FROM company WHERE hydrated_at IS NULL ORDER BY id"
-        + (" LIMIT ?" if limit else ""),
-        (limit,) if limit else (),
-    ).fetchall()
+    """Fetch full detail for companies the sweep has not hydrated yet.
+
+    Filtered rather than first-come, because the register is swept far wider
+    than it is worked. `purpose` only arrives with this call, so a territory
+    cannot be classified until it is hydrated, and hydrating by id order would
+    spend the whole polite budget on whichever canton happens to sort first.
+    """
+    where = ["hydrated_at IS NULL"]
+    params: list[Any] = []
+    if cantons:
+        where.append(f"canton IN ({','.join('?' * len(cantons))})")
+        params.extend(cantons)
+    if legal_forms:
+        where.append(f"legal_form_uid IN ({','.join('?' * len(legal_forms))})")
+        params.extend(legal_forms)
+    sql = f"SELECT uid FROM company WHERE {' AND '.join(where)} ORDER BY id"
+    if limit:
+        sql += " LIMIT ?"
+        params.append(limit)
+    rows = conn.execute(sql, params).fetchall()
     if not rows:
         return 0
 
