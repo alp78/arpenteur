@@ -67,6 +67,9 @@ class LlmConfig:
     classify_model: str
     draft_model: str
     batch_size: int
+    enrich_model: str = ""
+    enrich_max_searches: int = 4
+    enrich_max_tokens: int = 8000
     # How the model is paid for. Declared rather than inferred: the two modes
     # draw on different accounts, and a deployment that meant "my Claude
     # subscription" must not quietly fall through to billing an API key that
@@ -159,6 +162,9 @@ def load_settings(root: Path | None = None) -> Settings:
             classify_model=llm_raw.get("classify_model", ""),
             draft_model=llm_raw.get("draft_model", ""),
             batch_size=int(llm_raw.get("batch_size", 20)),
+            enrich_model=llm_raw.get("enrich_model", ""),
+            enrich_max_searches=int(llm_raw.get("enrich_max_searches", 4)),
+            enrich_max_tokens=int(llm_raw.get("enrich_max_tokens", 8000)),
             auth_mode=_auth_mode(llm_raw.get("auth_mode", "auto")),
             api_key=os.environ.get("ANTHROPIC_API_KEY") or None,
         ),

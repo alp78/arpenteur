@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import json
 import re
+from dataclasses import dataclass, field
 from typing import Any, Protocol
 
 
@@ -18,6 +19,33 @@ class Provider(Protocol):
     name: str
 
     def complete(self, *, system: str, user: str, model: str, max_tokens: int) -> str: ...
+
+    def research(
+        self,
+        *,
+        system: str,
+        user: str,
+        model: str,
+        max_tokens: int,
+        schema: dict[str, Any],
+        max_searches: int,
+    ) -> "Research": ...
+
+
+@dataclass
+class Research:
+    """The result of a search-and-read call.
+
+    `data` is validated against the caller's schema by the provider, so a
+    stage can index it without parsing. `searches` and `fetches` are carried
+    because this is the first stage that costs money per company, and a run
+    that cannot be priced afterwards cannot be tuned.
+    """
+
+    data: dict[str, Any]
+    searches: int = 0
+    fetches: int = 0
+    pages: list[str] = field(default_factory=list)
 
 
 class AnthropicProvider:
@@ -50,6 +78,102 @@ class AnthropicProvider:
             block.text for block in message.content if getattr(block, "type", "") == "text"
         )
 
+    def research(
+        self,
+        *,
+        system: str,
+        user: str,
+        model: str,
+        max_tokens: int,
+        schema: dict[str, Any],
+        max_searches: int = 4,
+    ) -> Research:
+        """Search the web, read what is found, and return it against a schema.
+
+        Anthropic runs the searching and fetching, so nothing here touches the
+        open web directly and the PoliteClient rate limit does not apply. The
+        cost is per search rather than per request, which is why max_searches
+        is bounded by the caller rather than left to the model.
+
+        Citations are deliberately not enabled: they are incompatible with
+        structured outputs and would turn this into prose parsing again.
+        """
+        tools = [
+            {
+                "type": "web_search_20260209",
+                "name": "web_search",
+                "max_uses": max_searches,
+            },
+            {
+                "type": "web_fetch_20260209",
+                "name": "web_fetch",
+                "max_uses": max_searches,
+            },
+        ]
+        messages: list[dict[str, Any]] = [{"role": "user", "content": user}]
+        searches = fetches = 0
+        pages: list[str] = []
+
+        # A server-tool turn can stop with pause_turn when the model's own
+        # tool loop hits its iteration limit. Resuming is a plain re-send of
+        # the conversation; the cap stops a pathological company from looping.
+        for _ in range(4):
+            message = self.client.beta.messages.create(
+                model=model,
+                max_tokens=max_tokens,
+                system=system,
+                messages=messages,
+                tools=tools,
+                output_config={"format": {"type": "json_schema", "schema": schema}},
+            )
+
+            for block in message.content:
+                kind = getattr(block, "type", "")
+                if kind == "server_tool_use":
+                    name = getattr(block, "name", "")
+                    if name == "web_search":
+                        searches += 1
+                    elif name == "web_fetch":
+                        fetches += 1
+                        url = (getattr(block, "input", {}) or {}).get("url")
+                        if url:
+                            pages.append(url)
+
+            if message.stop_reason == "refusal":
+                raise RuntimeError(
+                    "the model declined this research request"
+                    + (
+                        f" ({message.stop_details.category})"
+                        if getattr(message, "stop_details", None)
+                        else ""
+                    )
+                )
+            if message.stop_reason == "max_tokens":
+                raise RuntimeError(
+                    "research response hit max_tokens before returning JSON; "
+                    "raise llm.enrich_max_tokens in arpenteur.toml"
+                )
+            if message.stop_reason == "pause_turn":
+                messages = [
+                    {"role": "user", "content": user},
+                    {"role": "assistant", "content": message.content},
+                ]
+                continue
+
+            text = "".join(
+                block.text
+                for block in message.content
+                if getattr(block, "type", "") == "text"
+            )
+            return Research(
+                data=extract_json(text),
+                searches=searches,
+                fetches=fetches,
+                pages=pages,
+            )
+
+        raise RuntimeError("research did not finish after 4 continuations")
+
 
 class InfomaniakProvider:
     """Placeholder for the sovereign path: open models served from Switzerland.
@@ -68,6 +192,16 @@ class InfomaniakProvider:
         raise NotImplementedError(
             "The Infomaniak provider is not wired yet. Set llm.provider = "
             '"anthropic" in arpenteur.toml.'
+        )
+
+    def research(self, **_kwargs: Any) -> Research:
+        # Distinct from the message above: even once this provider is wired,
+        # searching the web is a hosted capability rather than a model one, so
+        # the enrich stage would still need its own answer here.
+        raise NotImplementedError(
+            "The enrich stage needs server-side web search, which the "
+            "Infomaniak provider does not offer. Set llm.provider = "
+            '"anthropic" to run it.'
         )
 
 

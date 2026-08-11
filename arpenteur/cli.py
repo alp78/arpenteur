@@ -12,7 +12,7 @@ from typing import Any
 
 from . import db
 from .config import load_settings
-from .stages import draft, people, profile, reach, source
+from .stages import draft, enrich, people, profile, reach, source
 
 
 def _split(value: str | None) -> list[str] | None:
@@ -124,6 +124,36 @@ def cmd_people(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_enrich(args: argparse.Namespace) -> int:
+    settings = load_settings()
+    conn = db.open_db(settings.db_path)
+    run_id = db.start_run(conn, "enrich", vars(args))
+    try:
+        stats = enrich.run(
+            settings,
+            conn,
+            uids=_split(args.uid),
+            canton=args.canton,
+            segment=args.segment,
+            limit=args.limit,
+            refresh=args.refresh,
+            dry_run=args.dry_run,
+        )
+    except Exception as exc:
+        db.finish_run(conn, run_id, error=str(exc))
+        print(f"error: {exc}", file=sys.stderr)
+        return 1
+    db.finish_run(conn, run_id, stats)
+    print(
+        f"found {stats['found']}, ambiguous {stats['ambiguous']}, "
+        f"not found {stats['not_found']}, failed {stats['failed']}; "
+        f"{stats['emails']} new emails; "
+        f"{stats['searches']} searches, {stats['fetches']} fetches"
+    )
+    conn.close()
+    return 0
+
+
 def cmd_stats(args: argparse.Namespace) -> int:
     settings = load_settings()
     conn = db.open_db(settings.db_path)
@@ -170,6 +200,22 @@ def cmd_stats(args: argparse.Namespace) -> int:
         ).fetchall()
         for row in rows:
             print(f"  {row['role'] or '?':20} {row['n']:>7}")
+
+    sites = conn.execute("SELECT COUNT(*) FROM site").fetchone()[0]
+    if sites:
+        print("\nweb research")
+        for row in conn.execute(
+            "SELECT status, COUNT(*) AS n FROM site GROUP BY status ORDER BY n DESC"
+        ):
+            print(f"  {row['status']:20} {row['n']:>7}")
+        spend = conn.execute(
+            "SELECT COALESCE(SUM(searches), 0) s, COALESCE(SUM(fetches), 0) f FROM site"
+        ).fetchone()
+        print(f"  {'searches / fetches':20} {spend['s']:>7} / {spend['f']}")
+        emails = conn.execute(
+            "SELECT COUNT(*) FROM contact WHERE kind = 'email' AND suppressed = 0"
+        ).fetchone()[0]
+        print(f"  {'usable emails':20} {emails:>7}")
 
     rows = conn.execute(
         "SELECT segment, COUNT(*) AS n FROM segment GROUP BY segment ORDER BY n DESC"
@@ -241,6 +287,18 @@ def build_parser() -> argparse.ArgumentParser:
     )
     p.add_argument("--dry-run", action="store_true", help="print, write nothing")
     p.set_defaults(func=cmd_people)
+
+    p = sub.add_parser(
+        "enrich",
+        help="find and read company websites (costs money per company)",
+    )
+    p.add_argument("--uid", help="comma separated UIDs, e.g. CHE123...,CHE456...")
+    p.add_argument("--canton")
+    p.add_argument("--segment", help="only companies carrying this segment")
+    p.add_argument("--limit", type=int, help="required for runs over 200 companies")
+    p.add_argument("--refresh", action="store_true", help="re-research companies already done")
+    p.add_argument("--dry-run", action="store_true", help="list the shortlist, spend nothing")
+    p.set_defaults(func=cmd_enrich)
 
     sub.add_parser("stats", help="what the survey holds").set_defaults(func=cmd_stats)
 

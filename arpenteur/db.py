@@ -324,6 +324,101 @@ def save_people(
     return written
 
 
+def save_site(conn: sqlite3.Connection, company_id: int, row: dict[str, Any]) -> None:
+    """Store what the web said about a company. One row per company.
+
+    Re-enriching replaces the row wholesale rather than merging: unlike a
+    registry fact, a stale offering list is not worth preserving next to a
+    fresh one, and a company that has redesigned its site should not carry
+    both readings.
+    """
+
+    def as_json(value: Any) -> str | None:
+        if value in (None, [], ""):
+            return None
+        return json.dumps(value, ensure_ascii=False)
+
+    conn.execute(
+        """
+        INSERT INTO site (
+            company_id, status, url, confidence, language, summary, offerings,
+            it_signals, partnerships, tech_stack, size_hint, source_url,
+            method, fetched_at, model, searches, fetches
+        ) VALUES (
+            :company_id, :status, :url, :confidence, :language, :summary,
+            :offerings, :it_signals, :partnerships, :tech_stack, :size_hint,
+            :source_url, :method, :fetched_at, :model, :searches, :fetches
+        )
+        ON CONFLICT (company_id) DO UPDATE SET
+            status = excluded.status,
+            url = excluded.url,
+            confidence = excluded.confidence,
+            language = excluded.language,
+            summary = excluded.summary,
+            offerings = excluded.offerings,
+            it_signals = excluded.it_signals,
+            partnerships = excluded.partnerships,
+            tech_stack = excluded.tech_stack,
+            size_hint = excluded.size_hint,
+            source_url = excluded.source_url,
+            method = excluded.method,
+            fetched_at = excluded.fetched_at,
+            model = excluded.model,
+            searches = excluded.searches,
+            fetches = excluded.fetches
+        """,
+        {
+            "company_id": company_id,
+            "status": row["status"],
+            "url": row.get("url"),
+            "confidence": row.get("confidence"),
+            "language": row.get("language"),
+            "summary": row.get("summary"),
+            "offerings": as_json(row.get("offerings")),
+            "it_signals": as_json(row.get("it_signals")),
+            "partnerships": as_json(row.get("partnerships")),
+            "tech_stack": as_json(row.get("tech_stack")),
+            "size_hint": row.get("size_hint"),
+            "source_url": row.get("source_url"),
+            "method": row.get("method"),
+            "fetched_at": now(),
+            "model": row.get("model"),
+            "searches": row.get("searches"),
+            "fetches": row.get("fetches"),
+        },
+    )
+
+
+def save_contact(
+    conn: sqlite3.Connection,
+    *,
+    company_id: int,
+    kind: str,
+    value: str,
+    person_id: int | None = None,
+    source_url: str | None = None,
+    method: str | None = None,
+) -> int:
+    """Record a point of contact. Returns 1 if it was new, 0 if already known.
+
+    Never clears `suppressed`: an address a human has suppressed must stay
+    suppressed even when a later run finds it published again.
+    """
+    cur = conn.execute(
+        """
+        INSERT INTO contact (
+            person_id, company_id, kind, value, source_url, method, fetched_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?)
+        ON CONFLICT (company_id, kind, value) DO UPDATE SET
+            source_url = COALESCE(excluded.source_url, contact.source_url),
+            method = COALESCE(excluded.method, contact.method),
+            fetched_at = excluded.fetched_at
+        """,
+        (person_id, company_id, kind, value, source_url, method, now()),
+    )
+    return 1 if cur.rowcount and cur.lastrowid else 0
+
+
 def start_run(conn: sqlite3.Connection, stage: str, args: dict[str, Any]) -> int:
     cur = conn.execute(
         "INSERT INTO run (stage, args_json, started_at) VALUES (?, ?, ?)",

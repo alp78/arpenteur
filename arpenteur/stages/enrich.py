@@ -1,0 +1,311 @@
+"""The enrich stage: what the open web says, for companies worth the money.
+
+The registry gives identity and officers. It cannot say what a company sells,
+what it runs on, or where to write. That is on the company's own site, so this
+stage asks a model to search for it, read it, and answer a fixed set of
+questions about it.
+
+This is the first stage that costs real money per company, and the cost is per
+search rather than per token. Two consequences shape the design:
+
+  it never runs on the corpus   the caller passes uids, or a filter that
+                               resolves to a shortlist. There is deliberately
+                               no "enrich everything" path: 183k companies at
+                               four searches each is not a run anyone means
+                               to start by accident.
+  it records what it spent     `site.searches` and `site.fetches` carry the
+                               real counts so a run can be priced afterwards.
+
+Every field here is an inference from a page, not a registry fact. `status`
+and `confidence` are stored beside them because a guessed website silently
+treated as certain is worse than no website at all: Swiss SME names collide,
+and the wrong site would poison the fit score and the draft that follows it.
+"""
+
+from __future__ import annotations
+
+import json
+import sqlite3
+from typing import Any, Callable
+
+from .. import db
+from ..config import Settings
+from ..llm import get_provider
+
+SYSTEM = """You research a Swiss company on the open web and report what you \
+find, for a consultant deciding whether to approach it.
+
+Method:
+- Search for the company's own website. The registered name, seat and purpose \
+are given; use them to tell the company apart from namesakes.
+- Read the site: what it sells, who it sells to, what it runs on, who it \
+partners with, and any published contact address.
+- Prefer the company's own words over a directory listing about it.
+
+Judgement:
+- status is "found" only when the site is that company beyond reasonable \
+doubt. A same-name company in another canton or country is "not_found".
+- When two candidate sites are plausible and nothing separates them, say \
+"ambiguous" and put both in notes rather than guessing.
+- confidence is your own 0.0 to 1.0 estimate that the url belongs to this \
+exact legal entity.
+- Report only what the pages support. An empty list is a valid answer and is \
+much better than a plausible invention."""
+
+# JSON Schema for the reply. Kept to the subset the API enforces: no string
+# length or numeric bounds, additionalProperties false on every object.
+SCHEMA: dict[str, Any] = {
+    "type": "object",
+    "properties": {
+        "status": {"type": "string", "enum": ["found", "not_found", "ambiguous"]},
+        "url": {"type": ["string", "null"]},
+        "confidence": {"type": "number"},
+        "language": {"type": ["string", "null"]},
+        "summary": {
+            "type": ["string", "null"],
+            "description": "Two or three sentences on what the company does.",
+        },
+        "offerings": {
+            "type": "array",
+            "items": {"type": "string"},
+            "description": "Concrete products or services named on the site.",
+        },
+        "it_signals": {
+            "type": "array",
+            "items": {"type": "string"},
+            "description": (
+                "Evidence bearing on IT need: ageing or absent website, manual "
+                "processes described, hiring for technical roles, named systems "
+                "in use, compliance or data obligations, growth or new sites."
+            ),
+        },
+        "partnerships": {
+            "type": "array",
+            "items": {"type": "string"},
+            "description": "Named partners, resellers, certifications, memberships.",
+        },
+        "tech_stack": {
+            "type": "array",
+            "items": {"type": "string"},
+            "description": "Software, platforms or vendors the site shows or names.",
+        },
+        "size_hint": {"type": ["string", "null"]},
+        "emails": {
+            "type": "array",
+            "items": {"type": "string"},
+            "description": "Contact addresses published on the site itself.",
+        },
+        "notes": {"type": ["string", "null"]},
+    },
+    "required": [
+        "status", "url", "confidence", "language", "summary", "offerings",
+        "it_signals", "partnerships", "tech_stack", "size_hint", "emails", "notes",
+    ],
+    "additionalProperties": False,
+}
+
+
+def build_prompt(company: sqlite3.Row, officers: list[sqlite3.Row]) -> str:
+    """Everything known about a company, as the brief for the search."""
+    address = {}
+    if company["address_json"]:
+        try:
+            address = json.loads(company["address_json"])
+        except (TypeError, ValueError):
+            address = {}
+
+    lines = [
+        f"Name: {company['name']}",
+        f"UID: {company['uid']}",
+        f"Legal form: {company['legal_form_label'] or '?'}",
+        f"Seat: {company['legal_seat'] or '?'} ({company['canton'] or '?'})",
+    ]
+    where = " ".join(
+        str(part)
+        for part in (
+            address.get("street"),
+            address.get("houseNumber"),
+            address.get("swissZipCode"),
+            address.get("city"),
+        )
+        if part
+    )
+    if where:
+        lines.append(f"Address: {where}")
+    if company["status"]:
+        lines.append(f"Registry status: {company['status']}")
+    if company["purpose"]:
+        purpose = " ".join((company["purpose"] or "").split())
+        lines.append(f"Registered purpose: {purpose[:1200]}")
+    if officers:
+        named = ", ".join(
+            f"{row['full_name']} ({row['role']})" for row in officers[:6]
+        )
+        # The officers are given because a director's name is often the
+        # fastest way to confirm a site belongs to this company rather than a
+        # namesake, which is the judgement the model most often gets wrong.
+        lines.append(f"Registered officers: {named}")
+    return "\n".join(lines)
+
+
+def _select(
+    conn: sqlite3.Connection,
+    *,
+    uids: list[str] | None,
+    canton: str | None,
+    segment: str | None,
+    limit: int | None,
+    refresh: bool,
+) -> list[sqlite3.Row]:
+    where = ["c.hydrated_at IS NOT NULL"]
+    params: list[Any] = []
+    if uids:
+        where.append(f"c.uid IN ({','.join('?' * len(uids))})")
+        params.extend(uids)
+    if canton:
+        where.append("c.canton = ?")
+        params.append(canton)
+    if segment:
+        where.append("EXISTS (SELECT 1 FROM segment s WHERE s.company_id = c.id AND s.segment = ?)")
+        params.append(segment)
+    if not refresh:
+        where.append("c.id NOT IN (SELECT company_id FROM site)")
+    sql = f"SELECT c.* FROM company c WHERE {' AND '.join(where)} ORDER BY c.id"
+    if limit:
+        sql += f" LIMIT {int(limit)}"
+    return conn.execute(sql, params).fetchall()
+
+
+def run(
+    settings: Settings,
+    conn: sqlite3.Connection,
+    *,
+    uids: list[str] | None = None,
+    canton: str | None = None,
+    segment: str | None = None,
+    limit: int | None = None,
+    refresh: bool = False,
+    dry_run: bool = False,
+    log: Callable[[str], None] = print,
+) -> dict[str, Any]:
+    model = settings.llm.enrich_model or settings.llm.draft_model
+    if not model:
+        raise RuntimeError(
+            "No enrich model configured. Set llm.enrich_model in arpenteur.toml "
+            "to a model with web search (Opus 4.6+ or Sonnet 4.6+)."
+        )
+
+    companies = _select(
+        conn, uids=uids, canton=canton, segment=segment, limit=limit, refresh=refresh
+    )
+    stats: dict[str, Any] = {
+        "considered": len(companies),
+        "found": 0,
+        "not_found": 0,
+        "ambiguous": 0,
+        "failed": 0,
+        "emails": 0,
+        "searches": 0,
+        "fetches": 0,
+        "model": model,
+    }
+    if not companies:
+        log("Nothing to enrich. Hydrate first, or widen the filter.")
+        return stats
+
+    # A guard rather than a limit: this stage bills per search, and a
+    # mistyped filter that selects thousands should stop rather than spend.
+    if limit is None and not uids and len(companies) > 200:
+        raise RuntimeError(
+            f"{len(companies)} companies selected. This stage costs money per "
+            "company; pass --limit to confirm the size of the run."
+        )
+
+    # Resolved after the dry-run branch on purpose: listing the shortlist is
+    # how you check a filter before paying for it, and it must work on a
+    # machine that has no credential configured at all.
+    if dry_run:
+        log(f"{len(companies)} companies would be researched with {model}:")
+        for company in companies[:20]:
+            log(f"  {company['uid']}  {company['name']}")
+        if len(companies) > 20:
+            log(f"  ... and {len(companies) - 20} more")
+        return stats
+
+    provider = get_provider(settings)
+
+    for index, company in enumerate(companies, 1):
+        officers = conn.execute(
+            "SELECT full_name, role FROM person WHERE company_id = ? ORDER BY role",
+            (company["id"],),
+        ).fetchall()
+
+        try:
+            result = provider.research(
+                system=SYSTEM,
+                user=build_prompt(company, officers),
+                model=model,
+                max_tokens=settings.llm.enrich_max_tokens,
+                schema=SCHEMA,
+                max_searches=settings.llm.enrich_max_searches,
+            )
+        except Exception as exc:
+            # One company failing must not end the run: the shortlist was
+            # chosen deliberately and the rest of it is still worth having.
+            stats["failed"] += 1
+            log(f"  ! {company['name'][:40]}: {exc}")
+            continue
+
+        data = result.data
+        stats["searches"] += result.searches
+        stats["fetches"] += result.fetches
+        status = str(data.get("status") or "not_found")
+        stats[status if status in ("found", "not_found", "ambiguous") else "failed"] += 1
+
+        db.save_site(
+            conn,
+            company["id"],
+            {
+                "status": status,
+                "url": data.get("url"),
+                "confidence": data.get("confidence"),
+                "language": data.get("language"),
+                "summary": data.get("summary"),
+                "offerings": data.get("offerings"),
+                "it_signals": data.get("it_signals"),
+                "partnerships": data.get("partnerships"),
+                "tech_stack": data.get("tech_stack"),
+                "size_hint": data.get("size_hint"),
+                "source_url": data.get("url"),
+                "method": "web-search",
+                "model": model,
+                "searches": result.searches,
+                "fetches": result.fetches,
+            },
+        )
+
+        # Emails go to `contact`, where the reach stage already looks and
+        # where suppression is honoured. Only when the site is certain: an
+        # address from a namesake's site is worse than no address.
+        if status == "found":
+            for address in data.get("emails") or []:
+                if "@" not in str(address):
+                    continue
+                stats["emails"] += db.save_contact(
+                    conn,
+                    company_id=company["id"],
+                    kind="email",
+                    value=str(address).strip().lower(),
+                    source_url=data.get("url"),
+                    method="site",
+                )
+
+        conn.commit()
+        mark = {"found": "+", "ambiguous": "?", "not_found": "-"}.get(status, "!")
+        log(
+            f"  {mark} {company['name'][:38]:40} {str(data.get('url') or '')[:44]}"
+        )
+        if index % 10 == 0:
+            log(f"  {index}/{len(companies)}")
+
+    return stats

@@ -40,6 +40,14 @@ provider = "anthropic"
 auth_mode = "auto"
 classify_model = "claude-haiku-4-5"
 draft_model = "claude-sonnet-5"
+# The enrich stage searches and reads the open web through Anthropic's hosted
+# tools. Those need a model in the Opus 4.6+ or Sonnet 4.6+ family, so the
+# cheap classifier above cannot run this stage.
+enrich_model = "claude-sonnet-5"
+# Bounds per company. Each search is billed, so this is the cost dial: four
+# searches is enough to find a Swiss SME's site and read its main pages.
+enrich_max_searches = 4
+enrich_max_tokens = 8000
 # Companies per classification call. Larger batches are cheaper per company
 # and degrade accuracy once the prompt gets long.
 batch_size = 20
