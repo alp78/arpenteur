@@ -23,7 +23,7 @@ the API will hand over at once.
 from __future__ import annotations
 
 import string
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any, Iterator
 
 from ..http import PoliteClient
@@ -69,10 +69,17 @@ class Company:
     zefix_detail_url: str | None = None
     source_url: str | None = None
     hydrated: bool = False
+    # The SHAB notices filed on every mutation. Zefix has no officer field, so
+    # this prose is the only place the register names people; it is carried
+    # here and stored raw rather than parsed in the client, because the parser
+    # will improve and reparsing costs nothing next to re-fetching.
+    publications: list[dict[str, Any]] = field(default_factory=list)
 
     def as_row(self) -> dict[str, Any]:
         row = self.__dict__.copy()
         row["method"] = "zefix"
+        # Publications go to their own table, not to a company column.
+        row.pop("publications", None)
         return row
 
 
@@ -107,6 +114,31 @@ def _number(value: Any) -> float | None:
         return float(str(value).replace("'", "").replace(" ", ""))
     except ValueError:
         return None
+
+
+def _publications(raw: Any, source_url: str) -> list[dict[str, Any]]:
+    """Flatten sogcPub entries to the columns the publication table stores.
+
+    A notice without a message is dropped: it carries no text to parse and
+    nothing else on it is worth a row.
+    """
+    rows: list[dict[str, Any]] = []
+    for item in raw or []:
+        if not isinstance(item, dict) or not item.get("message"):
+            continue
+        rows.append(
+            {
+                "sogc_id": item.get("sogcId"),
+                "sogc_date": item.get("sogcDate"),
+                "journal_id": item.get("registryOfCommerceJournalId"),
+                "journal_date": item.get("registryOfCommerceJournalDate"),
+                "canton": item.get("registryOfCommerceCanton"),
+                "message": item["message"],
+                "source_url": source_url,
+                "method": "zefix-sogc",
+            }
+        )
+    return rows
 
 
 class ZefixClient:
@@ -233,6 +265,7 @@ class ZefixClient:
             zefix_detail_url=_text(body.get("zefixDetailWeb")),
             source_url=url,
             hydrated=True,
+            publications=_publications(body.get("sogcPub"), url),
         )
 
 

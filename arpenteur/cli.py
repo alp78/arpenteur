@@ -98,6 +98,32 @@ def cmd_profile(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_people(args: argparse.Namespace) -> int:
+    settings = load_settings()
+    conn = db.open_db(settings.db_path)
+    run_id = db.start_run(conn, "people", vars(args))
+    try:
+        stats = people.run(
+            settings,
+            conn,
+            limit=args.limit,
+            reparse=args.reparse,
+            dry_run=args.dry_run,
+        )
+    except Exception as exc:
+        db.finish_run(conn, run_id, error=str(exc))
+        print(f"error: {exc}", file=sys.stderr)
+        return 1
+    db.finish_run(conn, run_id, stats)
+    print(
+        f"{stats['people']} officers across {stats['with_people']} companies "
+        f"(of {stats['considered']} with publications)"
+        + (" (dry run, nothing written)" if args.dry_run else "")
+    )
+    conn.close()
+    return 0
+
+
 def cmd_stats(args: argparse.Namespace) -> int:
     settings = load_settings()
     conn = db.open_db(settings.db_path)
@@ -130,6 +156,20 @@ def cmd_stats(args: argparse.Namespace) -> int:
         print("\nby legal form")
         for row in rows:
             print(f"  {row['form'][:28]:30} {row['n']:>7}")
+
+    publications = conn.execute("SELECT COUNT(*) FROM publication").fetchone()[0]
+    if publications:
+        officers = conn.execute("SELECT COUNT(*) FROM person").fetchone()[0]
+        companies_with = conn.execute(
+            "SELECT COUNT(DISTINCT company_id) FROM person"
+        ).fetchone()[0]
+        print(f"\npublications: {publications}")
+        print(f"officers: {officers} across {companies_with} companies")
+        rows = conn.execute(
+            "SELECT role, COUNT(*) AS n FROM person GROUP BY role ORDER BY n DESC LIMIT 8"
+        ).fetchall()
+        for row in rows:
+            print(f"  {row['role'] or '?':20} {row['n']:>7}")
 
     rows = conn.execute(
         "SELECT segment, COUNT(*) AS n FROM segment GROUP BY segment ORDER BY n DESC"
@@ -192,10 +232,19 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--dry-run", action="store_true", help="print, write nothing")
     p.set_defaults(func=cmd_profile)
 
+    p = sub.add_parser("people", help="officers from the register's SHAB notices")
+    p.add_argument("--limit", type=int)
+    p.add_argument(
+        "--reparse",
+        action="store_true",
+        help="re-read companies that already have people (use after parser changes)",
+    )
+    p.add_argument("--dry-run", action="store_true", help="print, write nothing")
+    p.set_defaults(func=cmd_people)
+
     sub.add_parser("stats", help="what the survey holds").set_defaults(func=cmd_stats)
 
     for name, helptext in (
-        ("people", "decision makers from public sources (not built yet)"),
         ("reach", "resolve a point of contact (not built yet)"),
         ("draft", "propose messages for review (not built yet)"),
     ):

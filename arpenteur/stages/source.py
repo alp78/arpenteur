@@ -141,7 +141,12 @@ def hydrate_pending(
         for index, row in enumerate(rows, 1):
             full = client.company(row["uid"])
             if full:
-                db.upsert_company(conn, full.as_row())
+                company_id = db.upsert_company(conn, full.as_row())
+                # The SHAB notices arrive on the same call. Storing them here
+                # rather than in a later stage means the officer data costs no
+                # extra request: re-fetching 183k companies to get prose we
+                # already had would be a day of polite traffic for nothing.
+                db.save_publications(conn, company_id, full.publications)
                 count += 1
             if index % 50 == 0:
                 conn.commit()

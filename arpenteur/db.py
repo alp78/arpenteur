@@ -33,6 +33,20 @@ def connect(path: Path) -> sqlite3.Connection:
     return conn
 
 
+def migration_files() -> list[Path]:
+    return sorted(MIGRATIONS_DIR.glob("[0-9][0-9][0-9][0-9]_*.sql"))
+
+
+def latest_version() -> int:
+    """The highest migration number on disk.
+
+    Lets a caller assert "fully migrated" without naming a version that every
+    later migration would have to update.
+    """
+    files = migration_files()
+    return int(files[-1].name[:4]) if files else 0
+
+
 def migrate(conn: sqlite3.Connection) -> int:
     """Apply every migration newer than the database's user_version.
 
@@ -40,8 +54,7 @@ def migrate(conn: sqlite3.Connection) -> int:
     already at the latest version does nothing.
     """
     version = conn.execute("PRAGMA user_version").fetchone()[0]
-    files = sorted(MIGRATIONS_DIR.glob("[0-9][0-9][0-9][0-9]_*.sql"))
-    for path in files:
+    for path in migration_files():
         number = int(path.name[:4])
         if number <= version:
             continue
@@ -218,6 +231,97 @@ def save_segments(
                 stamp,
             ),
         )
+
+
+def save_publications(
+    conn: sqlite3.Connection, company_id: int, publications: list[dict[str, Any]]
+) -> int:
+    """Store a company's SHAB notices, keyed on the SHAB id.
+
+    A notice is immutable once issued, so a re-hydrate finds the same rows and
+    updates nothing. Notices without a sogc_id fall back to an insert guarded
+    by the message text, which is the only other thing that identifies them.
+    """
+    stamp = now()
+    written = 0
+    for item in publications:
+        if item.get("sogc_id") is None:
+            existing = conn.execute(
+                "SELECT 1 FROM publication WHERE company_id = ? AND message = ?",
+                (company_id, item["message"]),
+            ).fetchone()
+            if existing:
+                continue
+        conn.execute(
+            """
+            INSERT INTO publication (
+                company_id, sogc_id, sogc_date, journal_id, journal_date,
+                canton, message, source_url, method, fetched_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ON CONFLICT (company_id, sogc_id) DO NOTHING
+            """,
+            (
+                company_id,
+                item.get("sogc_id"),
+                item.get("sogc_date"),
+                item.get("journal_id"),
+                item.get("journal_date"),
+                item.get("canton"),
+                item["message"],
+                item.get("source_url"),
+                item.get("method"),
+                stamp,
+            ),
+        )
+        written += 1
+    return written
+
+
+def save_people(
+    conn: sqlite3.Connection, company_id: int, people: list[dict[str, Any]]
+) -> int:
+    """Store officers parsed from notices.
+
+    Keyed on (company_id, full_name, role) by the schema, so re-running the
+    parser refreshes attributes rather than duplicating a person. Attributes
+    are only overwritten when the incoming row carries them, so a notice that
+    names someone without repeating their origin cannot blank it.
+    """
+    stamp = now()
+    written = 0
+    for item in people:
+        conn.execute(
+            """
+            INSERT INTO person (
+                company_id, full_name, role, origin, domicile, signature,
+                last_seen_date, source_url, method, fetched_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ON CONFLICT (company_id, full_name, role) DO UPDATE SET
+                origin = COALESCE(excluded.origin, person.origin),
+                domicile = COALESCE(excluded.domicile, person.domicile),
+                signature = COALESCE(excluded.signature, person.signature),
+                last_seen_date = MAX(
+                    COALESCE(excluded.last_seen_date, ''),
+                    COALESCE(person.last_seen_date, '')
+                ),
+                source_url = COALESCE(excluded.source_url, person.source_url),
+                fetched_at = excluded.fetched_at
+            """,
+            (
+                company_id,
+                item["full_name"],
+                item.get("role"),
+                item.get("origin"),
+                item.get("domicile"),
+                item.get("signature"),
+                item.get("last_seen_date"),
+                item.get("source_url"),
+                item.get("method", "shab"),
+                stamp,
+            ),
+        )
+        written += 1
+    return written
 
 
 def start_run(conn: sqlite3.Connection, stage: str, args: dict[str, Any]) -> int:

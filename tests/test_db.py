@@ -7,16 +7,22 @@ from arpenteur import db
 
 def test_migrate_is_idempotent(db_path: Path) -> None:
     conn = db.connect(db_path)
-    assert db.migrate(conn) == 1
+    version = db.migrate(conn)
+    # Asserted as "the latest migration on disk" rather than a literal, so
+    # adding a migration does not fail a test about idempotence.
+    assert version == db.latest_version()
     # Running again must be a no-op rather than an error: every command calls it.
-    assert db.migrate(conn) == 1
+    assert db.migrate(conn) == version
     tables = {
         row[0]
         for row in conn.execute(
             "SELECT name FROM sqlite_master WHERE type = 'table'"
         ).fetchall()
     }
-    assert {"company", "segment", "sweep", "run", "person", "contact", "draft"} <= tables
+    assert {
+        "company", "segment", "sweep", "run", "person", "contact", "draft",
+        "publication",
+    } <= tables
     conn.close()
 
 
