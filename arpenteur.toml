@@ -29,7 +29,7 @@ contact = "arpenteur (contact: alexis@peringer.ch)"
 
 [llm]
 provider = "anthropic"
-classify_model = "claude-haiku-4-5-20251001"
+classify_model = "claude-haiku-4-5"
 draft_model = "claude-sonnet-5"
 # Companies per classification call. Larger batches are cheaper per company
 # and degrade accuracy once the prompt gets long.
