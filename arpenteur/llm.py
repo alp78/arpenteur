@@ -118,14 +118,21 @@ class AnthropicProvider:
         # tool loop hits its iteration limit. Resuming is a plain re-send of
         # the conversation; the cap stops a pathological company from looping.
         for _ in range(4):
-            message = self.client.beta.messages.create(
+            # Streamed rather than a plain create(). A server-tool turn holds
+            # one HTTP request open for the whole search-and-read loop, and
+            # measured on 11.08.2026 a single company took just over six
+            # minutes against the SDK's ten minute non-streaming ceiling. A
+            # company that searches harder than that one would have timed out
+            # and been recorded as a failure rather than a result.
+            with self.client.beta.messages.stream(
                 model=model,
                 max_tokens=max_tokens,
                 system=system,
                 messages=messages,
                 tools=tools,
                 output_config={"format": {"type": "json_schema", "schema": schema}},
-            )
+            ) as stream:
+                message = stream.get_final_message()
 
             for block in message.content:
                 kind = getattr(block, "type", "")
