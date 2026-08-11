@@ -38,8 +38,12 @@ find, for a consultant deciding whether to approach it.
 Method:
 - Search for the company's own website. The registered name, seat and purpose \
 are given; use them to tell the company apart from namesakes.
-- Read the site: what it sells, who it sells to, what it runs on, who it \
-partners with, and any published contact address.
+- Open the site itself. Do not report a site as found from search results \
+alone: search snippets are enough to spot a candidate and never enough to \
+confirm it or to read what the company says about itself.
+- Look for the page carrying the contact details, whatever it is called \
+(contact, nous contacter, impressum, à propos, mentions légales), and take \
+the published address from there.
 - Prefer the company's own words over a directory listing about it.
 
 Judgement:
@@ -50,7 +54,12 @@ doubt. A same-name company in another canton or country is "not_found".
 - confidence is your own 0.0 to 1.0 estimate that the url belongs to this \
 exact legal entity.
 - Report only what the pages support. An empty list is a valid answer and is \
-much better than a plausible invention."""
+much better than a plausible invention.
+- Every list entry must be a fact about this company, taken from its own \
+pages. Never enter what a directory says about similar or competing firms, \
+and never enter the absence of something as if it were a finding: if the \
+site names no partners, partnerships is empty. Anything you would have to \
+hedge belongs in notes, not in a list."""
 
 # JSON Schema for the reply. Kept to the subset the API enforces: no string
 # length or numeric bounds, additionalProperties false on every object.
@@ -301,6 +310,12 @@ def run(
                 )
 
         conn.commit()
+        # A site reported as found without ever being opened is the shape of a
+        # confident guess, and it is also why no email came back: the contact
+        # page was never read. Worth saying out loud rather than leaving to
+        # whoever notices `fetches` is zero.
+        if status == "found" and result.fetches == 0:
+            log(f"  ? {company['name'][:38]:40} found from search alone, site not read")
         mark = {"found": "+", "ambiguous": "?", "not_found": "-"}.get(status, "!")
         log(
             f"  {mark} {company['name'][:38]:40} {str(data.get('url') or '')[:44]}"

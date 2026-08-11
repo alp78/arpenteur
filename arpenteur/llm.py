@@ -134,17 +134,21 @@ class AnthropicProvider:
             ) as stream:
                 message = stream.get_final_message()
 
+            # Spend is read from usage, not counted from the content blocks.
+            # Counting blocks looked right and was not: a single turn observed
+            # on 11.08.2026 carried sixteen server_tool_use blocks, paired with
+            # code_execution_tool_result, while usage reported four searches
+            # and two fetches. The block stream is an implementation detail of
+            # how the server runs the tools; usage is the billed figure, which
+            # is the one a run has to be priced against.
+            server = getattr(getattr(message, "usage", None), "server_tool_use", None)
+            searches += getattr(server, "web_search_requests", 0) or 0
+            fetches += getattr(server, "web_fetch_requests", 0) or 0
             for block in message.content:
-                kind = getattr(block, "type", "")
-                if kind == "server_tool_use":
-                    name = getattr(block, "name", "")
-                    if name == "web_search":
-                        searches += 1
-                    elif name == "web_fetch":
-                        fetches += 1
-                        url = (getattr(block, "input", {}) or {}).get("url")
-                        if url:
-                            pages.append(url)
+                if getattr(block, "type", "") == "server_tool_use":
+                    url = (getattr(block, "input", None) or {}).get("url")
+                    if url:
+                        pages.append(url)
 
             if message.stop_reason == "refusal":
                 raise RuntimeError(
@@ -167,13 +171,24 @@ class AnthropicProvider:
                 ]
                 continue
 
-            text = "".join(
+            # The last text block, not all of them joined. A server-tool turn
+            # interleaves the model's narration with its tool calls, so a run
+            # that thinks aloud before answering yields several text blocks;
+            # concatenating them glues prose, or a discarded first attempt, on
+            # to the JSON and the parse fails on the whole string. The
+            # structured reply is always the closing block.
+            texts = [
                 block.text
                 for block in message.content
                 if getattr(block, "type", "") == "text"
-            )
+            ]
+            if not texts:
+                raise RuntimeError(
+                    f"research returned no text block (stop_reason "
+                    f"{message.stop_reason!r})"
+                )
             return Research(
-                data=extract_json(text),
+                data=extract_json(texts[-1]),
                 searches=searches,
                 fetches=fetches,
                 pages=pages,
