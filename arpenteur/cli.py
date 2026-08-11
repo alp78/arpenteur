@@ -154,6 +154,32 @@ def cmd_legal_forms(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_console(args: argparse.Namespace) -> int:
+    """Serve the console.
+
+    Bound to localhost by default. The database holds contact details for
+    thousands of companies and, where sole proprietorships are included, for
+    identifiable people; there is no authentication here because there is no
+    intent that it be reachable. Putting it on 0.0.0.0 is a deliberate act and
+    wants a reverse proxy with auth in front of it.
+    """
+    import uvicorn
+
+    from .console import create_app
+
+    settings = load_settings()
+    print(f"territory: {settings.territory.describe()}")
+    print(f"console:   http://{args.host}:{args.port}")
+    if args.host not in ("127.0.0.1", "localhost"):
+        print(
+            "warning: this binds beyond localhost and the console has no "
+            "authentication. Put a proxy in front of it.",
+            file=sys.stderr,
+        )
+    uvicorn.run(create_app(settings), host=args.host, port=args.port, log_level="warning")
+    return 0
+
+
 def cmd_regions(args: argparse.Namespace) -> int:
     settings = load_settings()
     print(f"active: {settings.territory.describe()}")
@@ -484,6 +510,11 @@ def build_parser() -> argparse.ArgumentParser:
     )
     p.add_argument("--dry-run", action="store_true", help="list the shortlist, spend nothing")
     p.set_defaults(func=cmd_match)
+
+    p = sub.add_parser("console", help="serve the browser console on localhost")
+    p.add_argument("--host", default="127.0.0.1")
+    p.add_argument("--port", type=int, default=8000)
+    p.set_defaults(func=cmd_console)
 
     sub.add_parser("stats", help="what the survey holds").set_defaults(func=cmd_stats)
     sub.add_parser(
