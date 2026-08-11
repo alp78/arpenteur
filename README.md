@@ -25,11 +25,15 @@ Pipeline stages, each a standalone command:
    alongside each company *(built)*
 5. **enrich** — find and read a company's own website: offerings, IT
    signals, partnerships, published email *(built)*
-6. **reach** — a point of contact: published addresses first, then the
+6. **match** — score each company against `campaign.md`, with the
+   reasoning and what to open with *(built)*
+7. **reach** — a point of contact: published addresses first, then the
    domain's own naming pattern, then a paid lookup for the remainder
    *(planned)*
-7. **draft** — outreach proposals, always human-reviewed, never
+8. **draft** — outreach proposals, always human-reviewed, never
    auto-sent *(planned)*
+
+And a **console** over the result: `arpenteur console`.
 
 Storage is SQLite. Secrets live in `.env` (never committed). Outreach
 volume stays low by design: Swiss law (LCD art. 3 al. 1 let. o) draws
@@ -172,13 +176,70 @@ uv run arpenteur people
 uv run arpenteur enrich --canton VS --segment data-driven --dry-run
 uv run arpenteur enrich --canton VS --segment data-driven --limit 20
 
+# score what was researched against campaign.md, with an approach for each
+uv run arpenteur match --limit 20
+
 uv run arpenteur stats
+
+# then read, correct and annotate the result in a browser
+uv run arpenteur console
 ```
 
 The segment definitions in `arpenteur.toml` *are* the classifier's
 prompt, and `enrich.signal_brief` *is* what the web research looks for.
 Both are the operator's own words: editing them changes what the survey
 sorts for and what it reports, without touching code.
+
+## The campaign brief
+
+`campaign.md` at the repo root is what `match` scores companies against: what
+this campaign offers, who it serves well, who it serves badly, what to look
+for, what warns off, and how it opens a conversation. It is read verbatim into
+the prompt.
+
+It ships filled in as an example and says so at the top. **Replace it.** A
+brief written for a different campaign produces confident scores built on
+nothing, which is worse than no scores. Write it in the language you will
+write to companies in; the approach advice comes back in the same one.
+
+It is committed and versioned because the score is only as good as this file,
+and when a run produces surprising results the first question is what changed
+here, which a diff answers and a database field would not. Every score stores
+a digest of the brief it was taken against, so rewriting the brief invalidates
+the scores rather than leaving old and new sitting together looking equally
+current: the next `match` re-scores exactly what the rewrite made stale.
+
+## The console
+
+```bash
+uv run arpenteur console          # http://127.0.0.1:8000
+```
+
+Filter the survey by canton, segment, fit band and pipeline state; open a
+company to see its register entry, officers, web research, fit reasoning and
+suggested opening; correct a label, set a state and an owner, log a call, or
+suppress an address.
+
+A correction made here goes through the same helpers the stages use, so it is
+the same row a re-run has to respect. Labels set by hand are marked and the
+classifier will not overwrite them.
+
+**It cannot send anything.** Not a disabled button: there is no route, no mail
+configuration and no `sent_at` write anywhere in the codebase. The suggested
+opening is shown for a human to rewrite and send from their own mail client,
+under their own name. Swiss law (LCD art. 3 al. 1 let. o) draws the line at
+*mass* advertising email without prior consent, and the defence against ever
+crossing it is that the software has no mechanism, which a test asserts.
+
+**It cannot start the expensive stages** either. A web form that spends four
+searches per company is too easy to submit twice, so `enrich` and `match` stay
+on the command line where the cost guards and the `--dry-run` habit are. The
+console watches what they did.
+
+It binds to localhost and has no authentication, because there is no intent
+that it be reachable. The database holds contact details for thousands of
+companies and, where sole proprietorships are included, for identifiable
+people. Exposing it wants a reverse proxy with auth in front.
 
 ## Staying current
 
