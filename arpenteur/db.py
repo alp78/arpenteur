@@ -334,18 +334,27 @@ def save_segments(
     segments: list[dict[str, Any]],
     model: str,
 ) -> None:
+    """Store the classifier's verdict, without touching a human's.
+
+    The WHERE on the conflict clause is the whole point. Without it, correcting
+    a label in the console and then re-running `profile` would silently restore
+    the model's answer, which makes the correction feel like work and be
+    worthless. A person who has looked at a company knows more than a sentence
+    of registered purpose does.
+    """
     stamp = now()
     for item in segments:
         conn.execute(
             """
             INSERT INTO segment (company_id, segment, confidence, rationale,
-                                 model, classified_at)
-            VALUES (?, ?, ?, ?, ?, ?)
+                                 model, classified_at, source)
+            VALUES (?, ?, ?, ?, ?, ?, 'model')
             ON CONFLICT (company_id, segment) DO UPDATE SET
                 confidence = excluded.confidence,
                 rationale = excluded.rationale,
                 model = excluded.model,
                 classified_at = excluded.classified_at
+            WHERE segment.source <> 'manual'
             """,
             (
                 company_id,
@@ -356,6 +365,132 @@ def save_segments(
                 stamp,
             ),
         )
+
+
+def set_segment_manually(
+    conn: sqlite3.Connection,
+    company_id: int,
+    segment: str,
+    *,
+    present: bool = True,
+    rationale: str | None = None,
+    author: str | None = None,
+) -> None:
+    """Add or remove a label by hand, and mark it as a person's doing.
+
+    Removal deletes the row rather than storing a negative, because a label
+    that is not there is the same fact however it came to be absent. The cost
+    is that re-running `profile` can re-add it; that is why `reclassify` is
+    opt-in and why the console shows what the model last said.
+    """
+    if not present:
+        conn.execute(
+            "DELETE FROM segment WHERE company_id = ? AND segment = ?",
+            (company_id, segment),
+        )
+        return
+    stamp = now()
+    conn.execute(
+        """
+        INSERT INTO segment (company_id, segment, confidence, rationale,
+                             model, classified_at, source)
+        VALUES (?, ?, 1.0, ?, ?, ?, 'manual')
+        ON CONFLICT (company_id, segment) DO UPDATE SET
+            confidence = 1.0,
+            rationale = excluded.rationale,
+            model = excluded.model,
+            classified_at = excluded.classified_at,
+            source = 'manual'
+        """,
+        (company_id, segment, rationale, author or "manual", stamp),
+    )
+
+
+# --- the follow-up log ------------------------------------------------------
+
+
+def add_note(
+    conn: sqlite3.Connection,
+    company_id: int,
+    body: str,
+    *,
+    kind: str = "note",
+    author: str | None = None,
+    occurred_at: str | None = None,
+) -> int:
+    """Record something that happened, or something worth remembering.
+
+    Never deduplicated and never updated in place. Two calls to the same
+    company on the same day are two facts, and a note that turned out to be
+    wrong is still what was believed at the time.
+    """
+    stamp = now()
+    cur = conn.execute(
+        """
+        INSERT INTO note (company_id, kind, body, author, occurred_at, created_at)
+        VALUES (?, ?, ?, ?, ?, ?)
+        """,
+        (company_id, kind, body, author, occurred_at or stamp, stamp),
+    )
+    return int(cur.lastrowid or 0)
+
+
+def notes_for(conn: sqlite3.Connection, company_id: int) -> list[sqlite3.Row]:
+    return conn.execute(
+        "SELECT * FROM note WHERE company_id = ? ORDER BY occurred_at DESC, id DESC",
+        (company_id,),
+    ).fetchall()
+
+
+# States a campaign moves a company through. Not a database constraint: a
+# recruiting pipeline and a membership drive want different words, and the
+# console offers this list rather than enforcing it.
+PROSPECT_STATES = (
+    "new", "researching", "contacted", "replied", "meeting", "won", "lost", "parked",
+)
+
+
+def set_prospect(
+    conn: sqlite3.Connection,
+    company_id: int,
+    *,
+    state: str | None = None,
+    owner: str | None = None,
+    next_action: str | None = None,
+    next_at: str | None = None,
+) -> None:
+    """Create or update where a company stands.
+
+    Only the fields given are written, so setting a next action does not
+    silently reset the state, which is the mistake a single UPDATE with
+    defaults would make on every partial edit from a form.
+    """
+    # Two statements rather than one upsert. An upsert has to supply a value
+    # for the NOT NULL state column on the insert path, and that value then
+    # arrives in `excluded` on the update path indistinguishable from one the
+    # caller asked for: COALESCE(excluded.state, ...) would read the default
+    # 'new' as a deliberate reset, so editing a next action would move a
+    # company at "meeting" back to the start of the pipeline.
+    stamp = now()
+    conn.execute(
+        """
+        INSERT OR IGNORE INTO prospect (company_id, state, created_at, updated_at)
+        VALUES (?, 'new', ?, ?)
+        """,
+        (company_id, stamp, stamp),
+    )
+    conn.execute(
+        """
+        UPDATE prospect
+           SET state       = COALESCE(?, state),
+               owner       = COALESCE(?, owner),
+               next_action = COALESCE(?, next_action),
+               next_at     = COALESCE(?, next_at),
+               updated_at  = ?
+         WHERE company_id  = ?
+        """,
+        (state, owner, next_action, next_at, stamp, company_id),
+    )
 
 
 def save_publications(
