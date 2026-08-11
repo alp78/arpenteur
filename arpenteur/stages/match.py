@@ -195,12 +195,21 @@ def _select(
     if researched_only:
         where.append("EXISTS (SELECT 1 FROM site w WHERE w.company_id = c.id)")
     if not rescore:
-        # A score taken against a different brief is stale, so it is selected
-        # again rather than skipped. This is what makes rewriting campaign.md
-        # safe: the next run re-scores what the rewrite invalidated.
+        # A score is stale when either input has moved: the brief it was taken
+        # against, or the web research it read. Both are compared, so
+        # rewriting campaign.md or re-running enrich each cause exactly the
+        # affected companies to be scored again and no others. A manual score
+        # is never stale, because a person is not an input that expired.
         where.append(
-            "c.id NOT IN (SELECT company_id FROM fit WHERE brief_hash IS ? "
-            "AND source <> 'manual')"
+            """c.id NOT IN (
+                SELECT f.company_id FROM fit f
+                 WHERE f.source = 'manual'
+                    OR (f.brief_hash IS ?
+                        AND f.site_hash IS (
+                             SELECT w.content_hash FROM site w
+                              WHERE w.company_id = f.company_id
+                        ))
+            )"""
         )
         params.append(brief_hash)
     sql = f"SELECT c.* FROM company c WHERE {' AND '.join(where)} ORDER BY c.id"
@@ -296,6 +305,7 @@ def run(
                 "matched": reply.get("matched"),
                 "model": model,
                 "brief_hash": digest,
+                "site_hash": db.site_digest(site),  # what this score read
             },
         )
         conn.commit()

@@ -1,0 +1,23 @@
+-- Arpenteur schema, version 9: a score knows what it was computed from.
+--
+-- `brief_hash` already made a score stale when campaign.md was rewritten. The
+-- other input moves too. Re-running enrich replaces a company's web research
+-- wholesale, and a fit taken against the previous reading then sits in the
+-- table looking exactly as current as a fresh one.
+--
+-- Found the honest way: re-enriching three companies to re-file some
+-- restricted material left their scores reasoning about text that no longer
+-- existed. Nothing was wrong with the numbers, and there was no way to tell.
+--
+-- A digest of the research rather than its fetched_at. Timestamps here have
+-- second resolution, so two writes in the same second are indistinguishable,
+-- and a test caught exactly that. The digest is also the better answer: a
+-- re-run of enrich that finds the same site and says the same things has
+-- invalidated nothing and should not cost a re-score.
+--
+-- It is stored on both rows. `site.content_hash` is what the research
+-- currently is; `fit.site_hash` is what it was when the score was taken.
+-- Comparing them is then one indexed lookup in SQL rather than a digest
+-- recomputed in Python for every candidate.
+ALTER TABLE site ADD COLUMN content_hash TEXT;
+ALTER TABLE fit ADD COLUMN site_hash TEXT;

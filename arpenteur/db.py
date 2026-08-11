@@ -65,7 +65,31 @@ def migrate(conn: sqlite3.Connection) -> int:
             conn.execute(f"PRAGMA user_version = {number}")
         version = number
     backfill_content_hashes(conn)
+    backfill_site_hashes(conn)
     return version
+
+
+def backfill_site_hashes(conn: sqlite3.Connection) -> int:
+    """Digest any web research that predates the column.
+
+    The same trap as company.content_hash, and it caught me twice. A null
+    digest compares equal to the null on an old fit row, so every score taken
+    before this column existed would report itself current for ever, which is
+    precisely the staleness the column was added to detect.
+    """
+    if not conn.execute(
+        "SELECT 1 FROM pragma_table_info('site') WHERE name = 'content_hash'"
+    ).fetchone():
+        return 0
+    rows = conn.execute("SELECT * FROM site WHERE content_hash IS NULL").fetchall()
+    if not rows:
+        return 0
+    conn.executemany(
+        "UPDATE site SET content_hash = ? WHERE company_id = ?",
+        [(site_digest(row), row["company_id"]) for row in rows],
+    )
+    conn.commit()
+    return len(rows)
 
 
 def backfill_content_hashes(conn: sqlite3.Connection, batch: int = 5000) -> int:
@@ -132,6 +156,33 @@ def company_content_hash(payload: dict[str, Any]) -> str:
         default=str,
     )
     return hashlib.sha256(material.encode("utf-8")).hexdigest()
+
+
+# The site fields a fit score is actually computed from. Provenance and spend
+# are excluded: re-running enrich moves fetched_at and the search counts
+# without changing a word the judge read.
+SITE_JUDGED_FIELDS = (
+    "status", "url", "confidence", "summary", "offerings", "signals",
+    "partnerships", "tech_stack", "size_hint",
+)
+
+
+def site_digest(site: dict[str, Any] | sqlite3.Row | None) -> str | None:
+    """What the judge saw, as a digest. None when there was no research.
+
+    Compared against the digest stored on a fit row to decide whether the
+    score still stands. `restricted` is not included because the judge is
+    never shown it, and including it would expire scores on a change that
+    could not have affected them.
+    """
+    if site is None:
+        return None
+    keys = set(site.keys())
+    values = [
+        site[field] if field in keys else None for field in SITE_JUDGED_FIELDS
+    ]
+    material = json.dumps(values, ensure_ascii=False, default=str)
+    return hashlib.sha256(material.encode("utf-8")).hexdigest()[:16]
 
 
 def upsert_company(conn: sqlite3.Connection, row: dict[str, Any]) -> int:
@@ -421,8 +472,8 @@ def save_fit(conn: sqlite3.Connection, company_id: int, row: dict[str, Any]) -> 
     conn.execute(
         """
         INSERT INTO fit (company_id, score, band, reasoning, advice, against,
-                         matched, source, model, brief_hash, scored_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, 'model', ?, ?, ?)
+                         matched, source, model, brief_hash, site_hash, scored_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, 'model', ?, ?, ?, ?)
         ON CONFLICT (company_id) DO UPDATE SET
             score = excluded.score,
             band = excluded.band,
@@ -432,6 +483,7 @@ def save_fit(conn: sqlite3.Connection, company_id: int, row: dict[str, Any]) -> 
             matched = excluded.matched,
             model = excluded.model,
             brief_hash = excluded.brief_hash,
+            site_hash = excluded.site_hash,
             scored_at = excluded.scored_at
         WHERE fit.source <> 'manual'
         """,
@@ -445,6 +497,7 @@ def save_fit(conn: sqlite3.Connection, company_id: int, row: dict[str, Any]) -> 
             as_json(row.get("matched")),
             row.get("model"),
             row.get("brief_hash"),
+            row.get("site_hash"),
             now(),
         ),
     )
@@ -719,6 +772,17 @@ def save_site(conn: sqlite3.Connection, company_id: int, row: dict[str, Any]) ->
             "searches": row.get("searches"),
             "fetches": row.get("fetches"),
         },
+    )
+    # Digested from the stored row, not the payload, for the same reason
+    # upsert_company does: the caller passes Python lists and the column holds
+    # JSON text, so hashing what arrived would never equal hashing what a
+    # later reader sees, and every fit score would look permanently stale.
+    stored = conn.execute(
+        "SELECT * FROM site WHERE company_id = ?", (company_id,)
+    ).fetchone()
+    conn.execute(
+        "UPDATE site SET content_hash = ? WHERE company_id = ?",
+        (site_digest(stored), company_id),
     )
 
 

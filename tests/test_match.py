@@ -234,3 +234,43 @@ def test_the_schema_is_a_shape_the_api_accepts() -> None:
     assert set(match.SCHEMA["required"]) == set(match.SCHEMA["properties"])
     for name, prop in match.SCHEMA["properties"].items():
         assert not {"minLength", "maxLength", "minimum", "maximum"} & set(prop), name
+
+
+def test_re_running_enrich_makes_a_score_stale(monkeypatch, settings, conn) -> None:
+    """The second staleness gap, found the honest way.
+
+    Re-enriching three companies to re-file some restricted material left
+    their scores reasoning about text that no longer existed. Nothing was
+    wrong with the numbers and there was no way to tell, which is the same
+    failure as a score taken against a rewritten brief.
+    """
+    provider = FakeProvider()
+    match_with(monkeypatch, provider, settings, conn)
+    assert len(provider.calls) == 1
+
+    match_with(monkeypatch, provider, settings, conn)
+    assert len(provider.calls) == 1, "unchanged inputs must not re-score"
+
+    # What enrich --refresh does: replaces the research wholesale.
+    db.save_site(
+        conn, 1,
+        {"status": "found", "url": "https://f.ch", "summary": "Nouvelle lecture.",
+         "signals": ["autre signal"], "method": "web-search"},
+    )
+    conn.commit()
+
+    match_with(monkeypatch, provider, settings, conn)
+    assert len(provider.calls) == 2, "new research must re-score"
+
+
+def test_a_manual_score_is_never_stale(monkeypatch, settings, conn) -> None:
+    """A person is not an input that expired."""
+    match_with(monkeypatch, FakeProvider(), settings, conn)
+    db.set_fit_manually(conn, 1, score=10, band="low", reasoning="already a client")
+    db.save_site(
+        conn, 1, {"status": "found", "url": "https://f.ch", "method": "web-search"}
+    )
+    conn.commit()
+    provider = FakeProvider()
+    stats = match_with(monkeypatch, provider, settings, conn)
+    assert stats["considered"] == 0 and provider.calls == []
