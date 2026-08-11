@@ -47,7 +47,13 @@ def run_zefix(
 ) -> dict[str, Any]:
     cantons = cantons or settings.cantons
     wanted_forms = legal_forms or settings.legal_forms
-    stats: dict[str, Any] = {"searched": 0, "seen": 0, "hydrated": 0, "cantons": cantons}
+    stats: dict[str, Any] = {
+        "searched": 0,
+        "seen": 0,
+        "hydrated": 0,
+        "refused": 0,
+        "cantons": cantons,
+    }
 
     with _client(settings) as http:
         zefix = ZefixClient(http, settings.zefix.base_url)
@@ -80,25 +86,26 @@ def run_zefix(
                         name=pattern, canton=canton, legal_form_id=_form["id"]
                     )
 
-                for prefix, companies, deepened in walk_prefixes(
-                    search, page_cap=settings.zefix.page_cap, skip=done
+                for prefix, companies, refused in walk_prefixes(
+                    search, skip=done, log=log
                 ):
-                    if not deepened:
-                        for company in companies:
-                            if not company.uid:
-                                continue
-                            company.canton = company.canton or canton
-                            company.legal_form_uid = company.legal_form_uid or form_uid
-                            company.legal_form_label = company.legal_form_label or label
-                            db.upsert_company(conn, company.as_row())
-                            stats["seen"] += 1
+                    for company in companies:
+                        if not company.uid:
+                            continue
+                        company.canton = company.canton or canton
+                        company.legal_form_uid = company.legal_form_uid or form_uid
+                        company.legal_form_label = company.legal_form_label or label
+                        db.upsert_company(conn, company.as_row())
+                        stats["seen"] += 1
+                    if refused:
+                        stats["refused"] += 1
                     db.record_sweep(
-                        conn, canton, form_uid, prefix, len(companies), deepened
+                        conn, canton, form_uid, prefix, len(companies), refused
                     )
                     conn.commit()
                     log(
                         f"{canton}/{label} {prefix}*: {len(companies)}"
-                        + (" (capped, deepening)" if deepened else "")
+                        + (" (too large, narrowing)" if refused else "")
                     )
 
         if hydrate:

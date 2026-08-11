@@ -97,6 +97,16 @@ def upsert_company(conn: sqlite3.Connection, row: dict[str, Any]) -> int:
         "first_seen": stamp,
         "hydrated_at": stamp if row.get("hydrated") else None,
     }
+    # A translated field that arrives as {de, fr, it, en} instead of a string
+    # otherwise surfaces as "Error binding parameter 16", which names no
+    # column and sends you looking in the wrong place. Fail with the name.
+    for key, value in payload.items():
+        if isinstance(value, (dict, list)):
+            raise TypeError(
+                f"company.{key} is {type(value).__name__}, not a scalar: "
+                f"{value!r:.120}. A Zefix field is probably translated; "
+                f"pass it through _text() in sources/zefix.py."
+            )
     conn.execute(
         """
         INSERT INTO company (

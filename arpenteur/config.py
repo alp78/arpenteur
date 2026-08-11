@@ -52,7 +52,6 @@ class ZefixConfig:
     base_url: str
     rate_limit: float
     max_retries: int
-    page_cap: int
     contact: str
     user: str | None = None
     password: str | None = None
@@ -114,7 +113,6 @@ def load_settings(root: Path | None = None) -> Settings:
             base_url=zefix_raw.get("base_url", ""),
             rate_limit=float(zefix_raw.get("rate_limit", 2.0)),
             max_retries=int(zefix_raw.get("max_retries", 4)),
-            page_cap=int(zefix_raw.get("page_cap", 1000)),
             contact=zefix_raw.get("contact", "arpenteur"),
             user=os.environ.get("ZEFIX_USER") or None,
             password=os.environ.get("ZEFIX_PASSWORD") or None,

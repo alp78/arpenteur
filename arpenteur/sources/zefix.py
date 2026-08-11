@@ -33,6 +33,20 @@ from ..http import PoliteClient
 ALPHABET = string.ascii_lowercase + string.digits
 
 
+class ResultListTooLarge(RuntimeError):
+    """The registry refused a search for matching too much.
+
+    Measured on 11.08.2026: the largest response the API returned was 4874
+    rows, and anything broader came back 400 RESULTLIST_TO_LARGE. There is no
+    truncation and no paging, so the only way through a broad prefix is a
+    narrower one.
+    """
+
+    def __init__(self, prefix: str) -> None:
+        super().__init__(f"Zefix refused {prefix!r}: too many results")
+        self.prefix = prefix
+
+
 @dataclass
 class Company:
     """One registry row, flattened to what the database stores."""
@@ -79,6 +93,22 @@ def _text(value: Any, lang: str = "fr") -> str | None:
     return None
 
 
+def _number(value: Any) -> float | None:
+    """Capital arrives as a string, and occasionally as something unparseable.
+
+    Returned as None rather than raising: a company with an odd capital field
+    is still a company worth surveying, and the sweep must not die on one row.
+    """
+    if value is None or isinstance(value, bool):
+        return None
+    if isinstance(value, (int, float)):
+        return float(value)
+    try:
+        return float(str(value).replace("'", "").replace(" ", ""))
+    except ValueError:
+        return None
+
+
 class ZefixClient:
     def __init__(self, client: PoliteClient, base_url: str) -> None:
         self.client = client
@@ -120,6 +150,13 @@ class ZefixClient:
         legal_form_id: int | None = None,
         active_only: bool = True,
     ) -> list[Company]:
+        """Search one name prefix.
+
+        Raises ResultListTooLarge when the registry refuses the query. It never
+        answers a too-broad search with a truncated page, so a caller that
+        treats the refusal as "no companies" would silently drop every company
+        under that prefix. The sweep catches this and narrows instead.
+        """
         query: dict[str, Any] = {"name": name, "activeOnly": active_only}
         if canton:
             query["canton"] = canton
@@ -128,6 +165,16 @@ class ZefixClient:
 
         url = f"{self.base}/api/v1/company/search"
         reply = self.client.post(url, json_body=query)
+
+        if isinstance(reply.body, dict):
+            error = reply.body.get("error") or {}
+            if error.get("type") == "RESULTLIST_TO_LARGE":
+                raise ResultListTooLarge(name)
+            raise RuntimeError(
+                f"Zefix search {name!r} failed ({reply.status}): "
+                f"{error.get('type') or reply.body}"
+            )
+
         rows = reply.body if isinstance(reply.body, list) else []
         return [self._short(row, url) for row in rows]
 
@@ -177,10 +224,13 @@ class ZefixClient:
             status=body.get("status"),
             purpose=_text(body.get("purpose")),
             address=body.get("address"),
-            capital=body.get("capitalNominal"),
+            # capitalNominal arrives as a string ("20000"), not a number.
+            capital=_number(body.get("capitalNominal")),
             capital_currency=body.get("capitalCurrency"),
             cantonal_excerpt_url=body.get("cantonalExcerptWeb"),
-            zefix_detail_url=body.get("zefixDetailWeb"),
+            # zefixDetailWeb is per-language, unlike cantonalExcerptWeb which
+            # is a plain string. Both end up as one URL in the database.
+            zefix_detail_url=_text(body.get("zefixDetailWeb")),
             source_url=url,
             hydrated=True,
         )
@@ -189,39 +239,48 @@ class ZefixClient:
 def walk_prefixes(
     search_fn: Any,
     *,
-    page_cap: int,
     skip: set[str] | None = None,
     root: str = "",
-    max_depth: int = 4,
+    max_depth: int = 6,
+    log: Any = None,
 ) -> Iterator[tuple[str, list[Company], bool]]:
-    """Walk name prefixes, deepening where the API caps the response.
+    """Walk name prefixes, narrowing wherever the registry refuses a query.
 
-    Yields (prefix, companies, deepened). `deepened` marks a prefix whose own
-    result was truncated: its rows are incomplete and its children carry the
-    real data. Recorded that way so a resumed sweep knows not to trust it.
+    Yields (prefix, companies, refused). A refused prefix returned no rows of
+    its own: its children carry the data. It is yielded anyway, and recorded,
+    so a resumed sweep can tell "asked and refused, children hold the answer"
+    apart from "never asked".
 
-    The API needs at least three characters, so the first level asks for
-    "a*", "b*" and so on and lets the server treat the star as the rest.
-    max_depth stops a pathological branch (many companies starting "asso")
-    from recursing forever; at depth 4 a truncated branch is accepted with a
-    warning rather than spidered further.
+    The registry answers a search either completely or not at all, so unlike a
+    paged API there is no truncation to detect: a 200 is the whole set and the
+    only failure mode is the refusal. That makes the sweep exact rather than
+    best-effort, provided every refusal is narrowed until it is accepted.
+
+    max_depth bounds a pathological branch. Reaching it means a six-character
+    prefix still matches more than the registry will return, which would be
+    surprising; it is surfaced through `log` rather than passed over, because
+    silently abandoning the branch loses companies.
     """
     skip = skip or set()
-    frontier = [root + ch for ch in ALPHABET] if not root else [root + ch for ch in ALPHABET]
 
-    for prefix in frontier:
+    for prefix in [root + ch for ch in ALPHABET]:
         if prefix in skip:
             continue
-        companies = search_fn(f"{prefix}*")
-        capped = len(companies) >= page_cap
-        if capped and len(prefix) < max_depth:
-            yield prefix, companies, True
+        try:
+            companies = search_fn(f"{prefix}*")
+        except ResultListTooLarge:
+            if len(prefix) >= max_depth:
+                if log:
+                    log(f"  ! {prefix}* still too large at depth {max_depth}, companies lost")
+                yield prefix, [], True
+                continue
+            yield prefix, [], True
             yield from walk_prefixes(
                 search_fn,
-                page_cap=page_cap,
                 skip=skip,
                 root=prefix,
                 max_depth=max_depth,
+                log=log,
             )
         else:
             yield prefix, companies, False

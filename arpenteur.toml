@@ -9,9 +9,12 @@ cantons = ["GE", "VD", "FR", "NE", "VS"]
 
 # Friendly names resolved to eCH-0097 codes against the live legalForm
 # catalogue on first run, so a code change at the registry does not silently
-# empty a sweep. Sole proprietorships (ri) are included deliberately: an
+# empty a sweep. Sole proprietorships (EI) are included deliberately: an
 # independent fiduciaire or architect is squarely in the target market.
-legal_forms = ["sarl", "sa", "ri"]
+# These are the catalogue's own uid codes rather than its short names: the
+# short name for a Sàrl carries a grave accent, and matching on it made the
+# sweep depend on the accent surviving every config edit and shell round trip.
+legal_forms = ["0107", "0106", "0101"]
 
 [zefix]
 base_url = "https://www.zefix.admin.ch/ZefixPublicREST"
@@ -19,9 +22,9 @@ base_url = "https://www.zefix.admin.ch/ZefixPublicREST"
 # 2/s finishes a canton in minutes and is invisible to them.
 rate_limit = 2.0
 max_retries = 4
-# Zefix caps a search response. On hitting the cap the sweep deepens the
-# prefix rather than losing the tail. Confirmed empirically on first live run.
-page_cap = 1000
+# No page_cap: measured on 11.08.2026, the registry does not truncate. It
+# answers a search in full (4874 rows was the largest observed) or refuses it
+# with 400 RESULTLIST_TO_LARGE, and the sweep narrows the prefix on refusal.
 contact = "arpenteur (contact: alexis@peringer.ch)"
 
 [llm]
