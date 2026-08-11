@@ -100,6 +100,15 @@ def run(
     log: Callable[[str], None] = print,
 ) -> dict[str, Any]:
     where = "WHERE c.purpose IS NOT NULL AND TRIM(c.purpose) <> ''"
+    params: list[Any] = []
+    # A company in liquidation is not a prospect for any campaign. Measured on
+    # 11.08.2026, 6% of the survey was BEING_CANCELLED or CANCELLED, and
+    # classifying them is the cheap end of the waste: the same rows would
+    # otherwise reach `enrich`, which bills per company.
+    clause, values = settings.status_clause()
+    if clause:
+        where += f" AND {clause}"
+        params.extend(values)
     if not reclassify:
         # Left join rather than NOT IN: a company classified into zero
         # segments still has no segment rows, and must not be re-asked.
@@ -107,7 +116,7 @@ def run(
     sql = f"SELECT c.* FROM company c {where} ORDER BY c.id"
     if limit:
         sql += f" LIMIT {int(limit)}"
-    rows = conn.execute(sql).fetchall()
+    rows = conn.execute(sql, params).fetchall()
 
     stats: dict[str, Any] = {"considered": len(rows), "classified": 0, "labels": 0}
     if not rows:

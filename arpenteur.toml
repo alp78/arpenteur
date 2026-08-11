@@ -40,6 +40,14 @@ legal_forms = ["0107", "0106", "0101"]
 # Turned off, the survey stays exactly the set the sweep found.
 admit_new = true
 
+# Register states worth spending on. A company that has been struck off or is
+# winding up stays in the database, because its departure is a fact and
+# deleting the row would take its notices and any notes with it, but the
+# stages that cost money skip it. Measured on 11.08.2026: 11'121 of 183'392
+# companies here were BEING_CANCELLED or CANCELLED, 6% of the survey.
+# Set to [] to work the whole register regardless of state.
+statuses = ["ACTIVE"]
+
 # Named territories, so a survey can be scoped without editing a canton list
 # by hand. Add your own freely: nothing here is special to the code.
 [regions]

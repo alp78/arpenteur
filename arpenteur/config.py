@@ -168,6 +168,7 @@ class Settings:
     territory: Territory
     regions: dict[str, list[str]]
     admit_new: bool
+    statuses: tuple[str, ...]
     segments: dict[str, str]
     signal_brief: str
     zefix: ZefixConfig
@@ -187,6 +188,20 @@ class Settings:
     @property
     def legal_forms(self) -> list[str]:
         return list(self.territory.legal_forms)
+
+    def status_clause(self, column: str = "c.status") -> tuple[str, list[str]]:
+        """A SQL fragment restricting to workable companies, and its parameters.
+
+        Shared rather than repeated so `profile` and `enrich` cannot disagree
+        about what is worth spending on, which is the kind of drift nobody
+        notices until a draft goes to a company in liquidation. An empty
+        `statuses` means no restriction, for a survey that genuinely wants the
+        whole register.
+        """
+        if not self.statuses:
+            return "", []
+        marks = ",".join("?" * len(self.statuses))
+        return f"{column} IN ({marks})", list(self.statuses)
 
     def scoped(
         self, *, region: str | None = None, cantons: list[str] | None = None,
@@ -224,6 +239,16 @@ class Settings:
     def cache_dir(self) -> Path:
         return self.data_dir / "http-cache"
 
+
+# Register states a company may be in and still be worth working on. This is
+# not a question of territory: a company that has been struck off stays in the
+# database, because its departure is a fact and deleting the row would take
+# its notices and any notes with it. It is a question of what the working
+# stages should spend on. Measured on 11.08.2026: 11'121 of 183'392 companies
+# were in liquidation or cancelled, 6% of the survey, and classifying them is
+# cheap while researching one costs real money and writing to one would be
+# embarrassing.
+DEFAULT_STATUSES = ("ACTIVE",)
 
 AUTH_MODES = ("auto", "api_key", "subscription")
 
@@ -278,6 +303,11 @@ def load_settings(root: Path | None = None) -> Settings:
         ),
         regions=regions,
         admit_new=bool(survey.get("admit_new", True)),
+        statuses=tuple(
+            str(v).strip().upper()
+            for v in survey.get("statuses", DEFAULT_STATUSES)
+            if str(v).strip()
+        ),
         segments=dict(raw.get("segments", {})),
         # Collapsed to one line: it goes into a JSON Schema description, where
         # the newlines of a TOML block string are noise.

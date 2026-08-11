@@ -193,6 +193,7 @@ def build_prompt(company: sqlite3.Row, officers: list[sqlite3.Row]) -> str:
 def _select(
     conn: sqlite3.Connection,
     *,
+    settings: Settings,
     uids: list[str] | None,
     canton: str | None,
     segment: str | None,
@@ -201,6 +202,15 @@ def _select(
 ) -> list[sqlite3.Row]:
     where = ["c.hydrated_at IS NOT NULL"]
     params: list[Any] = []
+    # Not for a company in liquidation. This stage bills per company, so the
+    # 6% of the register that is winding up is real money as well as a draft
+    # nobody wants sent. An explicit uid list overrides it: asking for one
+    # company by name is a deliberate act.
+    if not uids:
+        clause, values = settings.status_clause()
+        if clause:
+            where.append(clause)
+            params.extend(values)
     if uids:
         where.append(f"c.uid IN ({','.join('?' * len(uids))})")
         params.extend(uids)
@@ -238,7 +248,8 @@ def run(
         )
 
     companies = _select(
-        conn, uids=uids, canton=canton, segment=segment, limit=limit, refresh=refresh
+        conn, settings=settings, uids=uids, canton=canton, segment=segment,
+        limit=limit, refresh=refresh,
     )
     stats: dict[str, Any] = {
         "considered": len(companies),

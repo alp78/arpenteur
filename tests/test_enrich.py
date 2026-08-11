@@ -22,6 +22,7 @@ from typing import Any
 import pytest
 
 from arpenteur import db
+from arpenteur.config import Settings
 from arpenteur.llm import Research
 from arpenteur.stages import enrich
 
@@ -63,15 +64,21 @@ class FakeProvider:
 
 @pytest.fixture
 def settings(tmp_path: Path) -> SimpleNamespace:
-    return SimpleNamespace(
+    fake = SimpleNamespace(
+        statuses=("ACTIVE",),
+        signal_brief="",
         llm=SimpleNamespace(
             provider="anthropic",
             enrich_model="claude-sonnet-5",
             draft_model="claude-sonnet-5",
             enrich_max_tokens=8000,
             enrich_max_searches=4,
-        )
+        ),
     )
+    # Bound from the real class rather than reimplemented, so a change to what
+    # counts as workable cannot pass here and fail in production.
+    fake.status_clause = lambda column="c.status": Settings.status_clause(fake, column)
+    return fake
 
 
 @pytest.fixture
@@ -116,6 +123,7 @@ def test_a_large_unbounded_selection_refuses_to_run(monkeypatch, settings, conn)
                 "uid": f"CHE{index:09d}",
                 "name": f"Company {index}",
                 "canton": "VD",
+                "status": "ACTIVE",
                 "hydrated": True,
                 "method": "zefix",
             },
@@ -219,7 +227,7 @@ def test_one_failure_does_not_end_the_run(monkeypatch, settings, conn) -> None:
     db.upsert_company(
         conn,
         {"uid": "CHE222222222", "name": "Second Sàrl", "canton": "GE",
-         "hydrated": True, "method": "zefix"},
+         "status": "ACTIVE", "hydrated": True, "method": "zefix"},
     )
     conn.commit()
     stats = enrich_with(monkeypatch, FakeProvider(fail=True), settings, conn)
@@ -292,3 +300,53 @@ def test_building_a_schema_does_not_mutate_the_shared_one() -> None:
     """Two surveys in one process must not overwrite each other's brief."""
     enrich.schema_for("first brief")
     assert enrich.SCHEMA["properties"]["signals"]["description"] == ""
+
+
+# --- companies not worth spending on -----------------------------------------
+
+
+def test_a_company_in_liquidation_is_not_researched(monkeypatch, settings, conn) -> None:
+    """Found on live data: 6% of the register was winding up or cancelled.
+
+    Classifying those is cheap; researching one costs real money and writing
+    to one would be embarrassing. The filter belongs here rather than in the
+    caller's head.
+    """
+    db.upsert_company(
+        conn,
+        {"uid": "CHE333333333", "name": "Dying Sàrl", "canton": "GE",
+         "status": "BEING_CANCELLED", "hydrated": True, "method": "zefix"},
+    )
+    conn.commit()
+    provider = FakeProvider()
+    stats = enrich_with(monkeypatch, provider, settings, conn)
+    assert stats["considered"] == 1, "the cancelled company should not be selected"
+    assert len(provider.calls) == 1
+
+
+def test_naming_a_uid_overrides_the_status_filter(monkeypatch, settings, conn) -> None:
+    """Asking for one company by name is a deliberate act, and someone
+    checking why a company was skipped needs to be able to look at it."""
+    db.upsert_company(
+        conn,
+        {"uid": "CHE333333333", "name": "Dying Sàrl", "canton": "GE",
+         "status": "BEING_CANCELLED", "hydrated": True, "method": "zefix"},
+    )
+    conn.commit()
+    stats = enrich_with(
+        monkeypatch, FakeProvider(), settings, conn, uids=["CHE333333333"]
+    )
+    assert stats["considered"] == 1
+
+
+def test_a_survey_can_ask_for_the_whole_register(monkeypatch, settings, conn) -> None:
+    """statuses = [] means no restriction, for a survey that wants everything."""
+    settings.statuses = ()
+    db.upsert_company(
+        conn,
+        {"uid": "CHE333333333", "name": "Dying Sàrl", "canton": "GE",
+         "status": "BEING_CANCELLED", "hydrated": True, "method": "zefix"},
+    )
+    conn.commit()
+    stats = enrich_with(monkeypatch, FakeProvider(), settings, conn)
+    assert stats["considered"] == 2
