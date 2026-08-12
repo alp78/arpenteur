@@ -113,13 +113,24 @@ batch_size = 20
 # distribution partners.
 #
 # Keep it concrete and enumerate examples: the model is better at "hiring for
-# technical roles" than at "digital maturity". The example below is a
-# consultancy looking for firms that might need IT work; replace it.
+# technical roles" than at "digital maturity".
+#
+# It must ask for the evidence campaign.md judges on, including the evidence
+# that argues *against* approaching. A named IT partner is the brief's first
+# warn-off, and if this sentence does not ask enrich to record one, match
+# never sees it: the research is the only place that fact can come from.
 signal_brief = """
-Evidence bearing on a need for IT or digital work: an ageing or absent \
-website, processes described as manual or paper-based, hiring for technical \
-roles, named systems in use, compliance or data-handling obligations, growth \
-or new sites.
+Evidence bearing on a need for independent IT, data or AI work: an ageing or \
+absent website; processes described as manual, on paper, or re-keyed between \
+tools; several business systems that clearly do not talk to each other \
+(till, accounting, stock, CRM, scheduling); reporting or figures compiled by \
+hand; compliance, professional secrecy or personal-data obligations; \
+substantial data from measurement, laboratory, logistics or production work; \
+hiring for technical roles; growth, new sites or recent expansion. \
+Record equally the evidence against approaching: an IT provider or managed \
+service partner named on the site, an internal technical team or IT \
+director, and any sign the company itself sells IT services or resells \
+hardware and licences.
 """
 
 # The segments. Each is a filter a survey can be sliced by, and the
