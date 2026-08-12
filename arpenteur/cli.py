@@ -10,9 +10,20 @@ import argparse
 import sys
 from typing import Any
 
-from . import db
+from . import attachments as att
+from . import db, dossier
 from .config import load_settings
-from .stages import draft, enrich, match, people, profile, reach, source, sync
+from .stages import (
+    advise,
+    draft,
+    enrich,
+    match,
+    people,
+    profile,
+    reach,
+    source,
+    sync,
+)
 
 
 def _split(value: str | None) -> list[str] | None:
@@ -471,6 +482,136 @@ def cmd_stats(args: argparse.Namespace) -> int:
     return 0
 
 
+def _find_client(conn: Any, reference: str) -> Any:
+    """A client by its code, its UID or its name. Any of the three."""
+    wanted = reference.strip()
+    row = conn.execute(
+        """SELECT c.*, co.name, co.uid FROM client c
+             JOIN company co ON co.id = c.company_id
+            WHERE c.code = ? OR co.uid = ? OR REPLACE(co.uid,'-','') = ?
+               OR co.name LIKE ?
+            ORDER BY c.id LIMIT 2""",
+        (wanted.upper(), wanted, wanted.replace("-", "").replace(".", ""), f"%{wanted}%"),
+    ).fetchall()
+    if not row:
+        raise RuntimeError(f"No client matching {reference!r}. Try: arpenteur clients")
+    return row[0]
+
+
+def cmd_clients(args: argparse.Namespace) -> int:
+    settings = load_settings()
+    conn = db.open_db(settings.db_path)
+    for row in db.clients(conn):
+        print(f"{row['code']:<18} {row['status']:<9} {row['name']}")
+    conn.close()
+    return 0
+
+
+def cmd_dossier(args: argparse.Namespace) -> int:
+    """Print everything held on a client, as text.
+
+    This exists so an agent can be pointed at a client without a browser and
+    without a schema. It prints exactly what the advise stage is given, in the
+    same order, so a surprising suggestion can be read against its own input
+    rather than guessed at. `--documents` adds the extracted text of every
+    paper the client sent, which is what makes "analyse their contract"
+    something an agent can actually do.
+    """
+    settings = load_settings()
+    conn = db.open_db(settings.db_path)
+    try:
+        client = _find_client(conn, args.client)
+    except RuntimeError as exc:
+        print(f"error: {exc}", file=sys.stderr)
+        return 1
+    company = conn.execute(
+        "SELECT * FROM company WHERE id = ?", (client["company_id"],)
+    ).fetchone()
+    sections = db.dossier_for(conn, client["id"])
+    papers = db.attachments_for(conn, client["id"], with_text=args.documents)
+
+    print(f"# {company['name']}")
+    print(f"{client['code']}  {company['uid']}  {company['legal_form_label'] or ''}  "
+          f"{company['legal_seat'] or ''} ({company['canton'] or ''})  "
+          f"status {client['status']}")
+    if client["brief"]:
+        print(f"\nStanding brief: {client['brief']}")
+    print(f"\n{dossier.as_text(sections)}")
+
+    if papers:
+        print("\n## Documents held")
+        for paper in papers:
+            state = (
+                f"{paper['text_chars'] or 0} characters extracted"
+                if not paper["extract_error"] else f"NOT READABLE: {paper['extract_error']}"
+            )
+            print(f"- {paper['filename']} [{att.KIND_LABELS.get(paper['kind'] or '', '?')}] "
+                  f"{paper['bytes']} bytes, {state}")
+            if paper["note"]:
+                print(f"  note: {paper['note']}")
+            if args.documents and (paper["text"] or "").strip():
+                print(f"\n--- begin {paper['filename']} ---")
+                print(paper["text"])
+                print(f"--- end {paper['filename']} ---\n")
+
+    latest = db.approaches_for(conn, client["id"], limit=1)
+    if latest:
+        row = latest[0]
+        print(f"\n## Suggested approach ({row['created_at'][:16]}, {row['model']})")
+        print(f"\n{row['situation']}\n")
+        print(f"Opening: {row['opening']}")
+        for label, column in (("Discussion points", "points_json"),
+                              ("Services", "services_json"),
+                              ("Pricing", "pricing_json"),
+                              ("Risks", "risks_json"),
+                              ("Open questions", "questions_json")):
+            import json as _json
+
+            try:
+                items = _json.loads(row[column] or "[]")
+            except ValueError:
+                continue
+            if not items:
+                continue
+            print(f"\n{label}:")
+            for item in items:
+                if isinstance(item, dict):
+                    print("  - " + "; ".join(
+                        f"{k}: {v}" for k, v in item.items() if v is not None
+                    ))
+                else:
+                    print(f"  - {item}")
+    conn.close()
+    return 0
+
+
+def cmd_advise(args: argparse.Namespace) -> int:
+    settings = load_settings()
+    conn = db.open_db(settings.db_path)
+    try:
+        client = _find_client(conn, args.client)
+    except RuntimeError as exc:
+        print(f"error: {exc}", file=sys.stderr)
+        return 1
+    run_id = db.start_run(conn, "advise", vars(args))
+    try:
+        stats = advise.run(
+            settings, conn, client_id=client["id"], dry_run=args.dry_run
+        )
+    except Exception as exc:
+        db.finish_run(conn, run_id, error=str(exc))
+        print(f"error: {exc}", file=sys.stderr)
+        return 1
+    db.finish_run(conn, run_id, stats)
+    print(
+        f"{client['code']}: read {stats['sections']} sections and "
+        f"{stats['documents']} documents"
+        + ("" if stats.get("saved") else " (dry run, nothing saved)")
+    )
+    conn.close()
+    return 0
+
+
 def cmd_stub(args: argparse.Namespace) -> int:
     {"draft": draft}[args.command].run()
     return 0
@@ -618,6 +759,34 @@ def build_parser() -> argparse.ArgumentParser:
         "--client", action="store_true", help="also open a client record for it"
     )
     p.set_defaults(func=cmd_import)
+
+    sub.add_parser(
+        "clients", help="the client portfolio, one line each"
+    ).set_defaults(func=cmd_clients)
+
+    p = sub.add_parser(
+        "dossier",
+        help="print everything held on a client, for reading or for an agent",
+    )
+    p.add_argument("client", help="client code, UID, or part of the name")
+    p.add_argument(
+        "--documents",
+        action="store_true",
+        help="include the full extracted text of every document held",
+    )
+    p.set_defaults(func=cmd_dossier)
+
+    p = sub.add_parser(
+        "advise",
+        help="suggest an approach for a client from their dossier and papers",
+    )
+    p.add_argument("client", help="client code, UID, or part of the name")
+    p.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="report what would be read and its size, spend nothing",
+    )
+    p.set_defaults(func=cmd_advise)
 
     p = sub.add_parser("console", help="serve the browser console on localhost")
     p.add_argument("--host", default="127.0.0.1")

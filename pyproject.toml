@@ -10,8 +10,13 @@ dependencies = [
     # JavaScript build step and no node_modules; these two are the whole of it.
     "fastapi>=0.115",
     "uvicorn>=0.32",
-    # Form posts from the console. FastAPI needs it for Form(...).
+    # Form posts and file uploads from the console. FastAPI needs it for
+    # Form(...) and UploadFile.
     "python-multipart>=0.0.9",
+    # Text out of the PDFs a client sends. Pure Python, no system libraries and
+    # no build step, which is the whole reason it is this one: the alternatives
+    # want poppler or MuPDF on the machine.
+    "pypdf>=5.1",
 ]
 
 [project.scripts]

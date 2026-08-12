@@ -9,8 +9,10 @@
 __pycache__/
 *.pyc
 
-# Local data: crawled pages, registry snapshots, resolved contacts.
-# Regenerable, sometimes large, and personal data never belongs in git.
+# Local data: crawled pages, registry snapshots, resolved contacts, and
+# data/attachments/, which holds the documents clients send. Regenerable or
+# confidential, sometimes large, and neither personal data nor a client's own
+# papers ever belong in git.
 data/
 *.sqlite3
 *.db

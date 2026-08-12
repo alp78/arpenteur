@@ -41,59 +41,65 @@ KINDS: dict[str, tuple[str, str]] = {
 }
 
 STYLES = """
-.crumbs {{ font-size:.82rem; color:var(--dim); margin:0 0 .5rem; }}
-.crumbs a {{ color:var(--dim); }}
-.ident {{ display:flex; gap:1.4rem; align-items:baseline; flex-wrap:wrap; }}
-.code {{ font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-weight:700;
+.crumbs { font-size:.82rem; color:var(--dim); margin:0 0 .5rem; }
+.crumbs a { color:var(--dim); }
+.ident { display:flex; gap:1.4rem; align-items:baseline; flex-wrap:wrap; }
+.code { font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-weight:700;
          background:var(--ink); color:#fff; padding:.1rem .5rem; border-radius:2px;
-         font-size:.82rem; letter-spacing:.03em; }}
-.code.soft {{ background:#fff; color:var(--accent); border:1px solid var(--accent); }}
-.grid {{ display:grid; grid-template-columns:repeat(auto-fit,minmax(230px,1fr)); gap:1rem; }}
-.tile {{ background:#fff; border:1px solid var(--line); padding:.8rem .95rem; }}
-.tile h4 {{ margin:0 0 .3rem; font-size:.72rem; text-transform:uppercase;
-            letter-spacing:.06em; color:var(--dim); }}
-.tile .big {{ font-size:1.5rem; font-weight:600; font-variant-numeric:tabular-nums; }}
-.timeline {{ border-left:2px solid var(--line); margin:.6rem 0 0 .7rem; padding:0; }}
-.ev {{ position:relative; padding:.55rem 0 .55rem 1.5rem; }}
-.ev::before {{ content:attr(data-mark); position:absolute; left:-.72rem; top:.6rem;
+         font-size:.82rem; letter-spacing:.03em; }
+.code.soft { background:#fff; color:var(--accent); border:1px solid var(--accent); }
+.grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(230px,1fr)); gap:1rem; }
+.tile { background:#fff; border:1px solid var(--line); padding:.8rem .95rem; }
+.tile h4 { margin:0 0 .3rem; font-size:.72rem; text-transform:uppercase;
+            letter-spacing:.06em; color:var(--dim); }
+.tile .big { font-size:1.5rem; font-weight:600; font-variant-numeric:tabular-nums; }
+.timeline { border-left:2px solid var(--line); margin:.6rem 0 0 .7rem; padding:0; }
+.ev { position:relative; padding:.55rem 0 .55rem 1.5rem; }
+.ev::before { content:attr(data-mark); position:absolute; left:-.72rem; top:.6rem;
                width:1.35rem; height:1.35rem; border-radius:50%; background:#fff;
                border:1px solid var(--line); font-size:.7rem; font-weight:700;
-               display:flex; align-items:center; justify-content:center; color:var(--dim); }}
-.ev.planned::before {{ border-color:var(--accent); color:var(--accent); }}
-.ev.cancelled {{ opacity:.5; text-decoration:line-through; }}
-.ev .when {{ font-size:.78rem; color:var(--dim); }}
-.ev .subj {{ font-weight:600; }}
-.ev .body {{ white-space:pre-wrap; font-size:.88rem; margin-top:.2rem;
-             border-left:2px solid var(--line); padding-left:.7rem; color:#3a352e; }}
-.cal {{ width:100%; table-layout:fixed; }}
-.cal td {{ height:6.2rem; vertical-align:top; padding:.3rem .35rem; }}
-.cal td.out {{ background:#f4f2ee; }}
-.cal td.today {{ outline:2px solid var(--accent); outline-offset:-2px; }}
-.cal .day {{ font-size:.74rem; color:var(--dim); font-variant-numeric:tabular-nums; }}
-.cal .slot {{ display:block; font-size:.74rem; margin-top:.12rem; padding:.05rem .25rem;
+               display:flex; align-items:center; justify-content:center; color:var(--dim); }
+.ev.planned::before { border-color:var(--accent); color:var(--accent); }
+.ev.cancelled { opacity:.5; text-decoration:line-through; }
+.ev .when { font-size:.78rem; color:var(--dim); }
+.ev .subj { font-weight:600; }
+.ev .body { white-space:pre-wrap; font-size:.88rem; margin-top:.2rem;
+             border-left:2px solid var(--line); padding-left:.7rem; color:#3a352e; }
+.cal { width:100%; table-layout:fixed; }
+.cal td { height:6.2rem; vertical-align:top; padding:.3rem .35rem; }
+.cal td.out { background:#f4f2ee; }
+.cal td.today { outline:2px solid var(--accent); outline-offset:-2px; }
+.cal .day { font-size:.74rem; color:var(--dim); font-variant-numeric:tabular-nums; }
+.cal .slot { display:block; font-size:.74rem; margin-top:.12rem; padding:.05rem .25rem;
               background:var(--bg); border-left:2px solid var(--accent);
-              overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }}
-.cal .slot.done {{ border-left-color:var(--line); color:var(--dim); }}
-.split {{ display:grid; grid-template-columns:1fr 20rem; gap:1.4rem; align-items:start; }}
-@media (max-width:900px) {{ .split {{ grid-template-columns:1fr; }} }}
-.stack {{ display:flex; flex-direction:column; gap:.45rem; }}
-.stack input, .stack select, .stack textarea {{ width:100%; }}
-.stack label {{ font-size:.72rem; text-transform:uppercase; letter-spacing:.05em;
-                color:var(--dim); font-weight:600; }}
-.row2 {{ display:grid; grid-template-columns:1fr 1fr; gap:.5rem; }}
-.badge {{ display:inline-block; padding:.05rem .45rem; border-radius:2px;
+              overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.cal .slot.done { border-left-color:var(--line); color:var(--dim); }
+.split { display:grid; grid-template-columns:1fr 20rem; gap:1.4rem; align-items:start; }
+@media (max-width:900px) { .split { grid-template-columns:1fr; } }
+.stack { display:flex; flex-direction:column; gap:.45rem; }
+.stack input, .stack select, .stack textarea { width:100%; }
+.stack label { font-size:.72rem; text-transform:uppercase; letter-spacing:.05em;
+                color:var(--dim); font-weight:600; }
+.row2 { display:grid; grid-template-columns:1fr 1fr; gap:.5rem; }
+.badge { display:inline-block; padding:.05rem .45rem; border-radius:2px;
           font-size:.72rem; font-weight:600; text-transform:uppercase;
-          letter-spacing:.04em; border:1px solid var(--line); }}
-.badge.active, .badge.done {{ background:#e8f1e8; border-color:#9fc0a2; color:#1d6b2f; }}
-.badge.proposed, .badge.planned {{ background:#fdf3e6; border-color:#d9b483; color:#8a5a1f; }}
-.badge.paused, .badge.dormant {{ background:#f1f0ee; color:var(--dim); }}
-.badge.cancelled, .badge.former {{ background:#f6ecea; border-color:#c9a29b; color:#8a3a2c; }}
+          letter-spacing:.04em; border:1px solid var(--line); }
+.badge.active, .badge.done { background:#e8f1e8; border-color:#9fc0a2; color:#1d6b2f; }
+.badge.proposed, .badge.planned { background:#fdf3e6; border-color:#d9b483; color:#8a5a1f; }
+.badge.paused, .badge.dormant { background:#f1f0ee; color:var(--dim); }
+.badge.cancelled, .badge.former { background:#f6ecea; border-color:#c9a29b; color:#8a3a2c; }
+.dossier-strip { display:flex; gap:1rem; align-items:center; flex-wrap:wrap;
+                 background:#fff; border:1px solid var(--line);
+                 border-left:3px solid var(--accent); padding:.6rem .9rem;
+                 margin:.9rem 0 0; }
+.dossier-strip .go { font-weight:600; text-decoration:none; }
+.dossier-strip .go::after { content:" \\2192"; }
 """
 
 
 def shell(title: str, body: str, territory: str = "") -> str:
     """The ordinary page shell plus the styles this section needs."""
-    return page(title, f"<style>{STYLES}</style>{body}", territory)
+    return page(title, body, territory, css=STYLES)
 
 
 def _badge(value: str | None) -> str:
@@ -177,6 +183,10 @@ def client_page(
     contacts: list[sqlite3.Row],
     officers: list[sqlite3.Row],
     attribution_notice: str,
+    dossier_filled: int = 0,
+    dossier_total: int = 0,
+    documents: int = 0,
+    has_approach: bool = False,
 ) -> str:
     head = (
         f'<p class="crumbs"><a href="/clients">Clients</a> / {esc(client["code"])}</p>'
@@ -187,6 +197,9 @@ def client_page(
         f'{esc(company["legal_seat"])} ({esc(company["canton"])}) &middot; '
         f'client since {esc(client["since"] or "?")} &middot; '
         f'<a href="/company/{company["id"]}">survey record</a></p>'
+        + _dossier_strip(
+            client["id"], dossier_filled, dossier_total, documents, has_approach
+        )
     )
 
     if projects:
@@ -238,6 +251,30 @@ def client_page(
         + f'<p class="dim small" style="white-space:pre-line;margin-top:1rem">'
         + esc(attribution_notice)
         + "</p></aside></div>"
+    )
+
+
+def _dossier_strip(
+    client_id: int, filled: int, total: int, documents: int, has_approach: bool
+) -> str:
+    """The way in to the dossier, and how much of it exists.
+
+    A bare link would say nothing. The counts are what make it actionable: two
+    of ten sections filled and no approach yet is a different instruction from
+    nine of ten with a proposal already generated.
+    """
+    state = (
+        f"{filled} of {total} sections filled &middot; {documents} documents"
+        + (" &middot; an approach has been suggested" if has_approach
+           else " &middot; no approach suggested yet")
+    )
+    return (
+        '<div class="dossier-strip">'
+        f'<a class="go" href="/client/{client_id}/dossier">Dossier and approach</a>'
+        f'<span class="dim small">{state}</span>'
+        "<span class='dim small'>What they run, who decides, what is exposed, "
+        "the documents they sent, and what to propose. None of it is in the "
+        "register.</span></div>"
     )
 
 

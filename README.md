@@ -335,16 +335,79 @@ not: the survey covers a region and a set of legal forms, and the first real
 client of this tool was a foundation in Vaud where the survey was limited
 companies in five cantons. `import` is the deliberate single-company door.
 
+## The dossier, the papers and the approach
+
+The register says what a company **is**. The dossier says what it **runs**, who
+decides, what is exposed and what has already been tried, none of which is in
+any register.
+
+```bash
+uv run arpenteur dossier BOIS-GENTIL              # everything held, as text
+uv run arpenteur dossier BOIS-GENTIL --documents  # plus every document in full
+uv run arpenteur advise  BOIS-GENTIL --dry-run    # what it would read, free
+uv run arpenteur advise  BOIS-GENTIL              # suggest an approach
+```
+
+In the console it is one page per client, reached from the client card: what is
+known, what follows from it, and what it was built on, together, because
+separating them is how a proposal comes to be read without its evidence.
+
+**Sections, not columns.** A fixed schema of forty fields fits the first client
+and is wrong for the second: a care foundation has a mail estate and a resident
+record, a manufacturer has a shop floor and a stock system. So the dossier is
+ten named sections with free text inside each, grouped as the organisation, the
+systems and the engagement. The vocabulary lives in `arpenteur/dossier.py` and
+grows without a migration.
+
+**Every section carries its source.** In your own words: `public DNS,
+12.08.2026`, `said by the director on the call`, `rapport annuel p. 12`,
+`inferred`. The distinction between observed, reported and inferred is the
+difference between a diagnostic and a guess, and it is exactly what is lost
+when notes are one long textarea.
+
+**Documents are content-addressed and extracted once.** The file is stored under
+the sha256 of its contents, so `Rapport 2025 VF (2).pdf` is visibly the same
+document as `Rapport 2025 final.pdf` rather than a second one. PDF, Word and
+plain text are turned into text at upload, and each has a stable URL
+(`/attachment/{id}/text`) so an agent asked to analyse a client's papers has
+something to fetch that is the document rather than a page about it. Extraction
+happens once because it fails on scanned paper, and a failure recorded on the
+row is answerable where one that happens silently on every read is not. A file
+nothing can open is still stored and still says so.
+
+**Prices come from your rate card or not at all.** This is the one that decides
+whether the suggested approach is usable. Asked what a Swiss IT diagnostic
+costs, a model answers with a confident four-figure number from nowhere, and
+the first time that number is repeated to a client it stops being a suggestion
+and becomes a commitment. So the rate card, set under Settings, is quoted into
+the prompt; the model must name the line it used, and work the card does not
+cover comes back **unpriced** rather than invented. An empty rate card is a
+legitimate state: the advice then identifies the work and prices none of it,
+and the page says so.
+
+**Open questions are passed as questions.** The dossier's last section is the
+agenda of the next meeting, and the prompt says not to answer it. An advisor who
+guesses which package holds the resident record is worse than one who puts the
+question at the top of the list.
+
+**Advice is versioned, never overwritten.** A new suggestion is a new row
+carrying a digest of its inputs and a record of what it actually read: which
+sections were filled, which documents were opened, whether a rate card existed.
+When the client asks in September why March quoted what it quoted, the answer
+still exists along with what it was computed from. Marking one as *used*
+distinguishes advice that went into a real proposal from advice nobody acted
+on, and only one of those should be quoted back later.
+
 ## Settings
 
 ```bash
 uv run arpenteur console      # then Settings
 ```
 
-The territory, the segment vocabulary, what the research looks for and the
-campaign brief decide what every stage below them does. They used to live only
-in `arpenteur.toml` and `campaign.md`, which made the most consequential
-decisions in the tool the ones you had to leave the tool to make.
+The territory, the segment vocabulary, what the research looks for, the campaign
+brief and the rate card decide what every stage below them does. They used to
+live only in `arpenteur.toml` and `campaign.md`, which made the most
+consequential decisions in the tool the ones you had to leave the tool to make.
 
 It also hid them. A survey that contained no foundations at all, because the
 code `0110` was absent from a list in a file, is not a discoverable state: the
@@ -358,7 +421,10 @@ changed in the console is stored in the database and applied over it. Rewriting
 the TOML from a web form was the obvious alternative and would have destroyed
 sixty lines of explanation that are the reason the file is readable. The
 campaign brief is the exception and is written back to `campaign.md`, because a
-surprising run should be answerable with a diff.
+surprising run should be answerable with a diff. The rate card is the opposite
+exception and lives only in the database: the same prices apply across
+campaigns, and it is nobody's business but the operator's, so it does not want
+to be in a versioned file that gets shown to people.
 
 Every change records when it happened and by whom. Widening the territory
 changes what every later stage will spend money on, and that is a question

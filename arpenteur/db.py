@@ -1199,6 +1199,162 @@ def clients(conn: sqlite3.Connection, *, status: str = "") -> list[sqlite3.Row]:
     ).fetchall()
 
 
+# --- the dossier, the advice and the papers -----------------------------------
+#
+# See migrations/0014_dossier.sql for why the dossier is sections rather than
+# columns, why advice is versioned rather than overwritten, and why documents
+# are content-addressed on disk rather than blobs in a row.
+
+
+def save_dossier_section(
+    conn: sqlite3.Connection,
+    client_id: int,
+    section: str,
+    body: str,
+    *,
+    source: str | None = None,
+    author: str = "console",
+) -> None:
+    """Write one part of what is known. An empty body clears the section.
+
+    Clearing rather than refusing: a section that turns out to be wrong should
+    be emptiable from the same field that filled it, and an empty section is
+    already a meaningful state everywhere that reads one.
+    """
+    conn.execute(
+        "INSERT INTO dossier (client_id, section, body, source, author, updated_at)"
+        " VALUES (?, ?, ?, ?, ?, ?)"
+        " ON CONFLICT (client_id, section) DO UPDATE SET"
+        " body = excluded.body, source = excluded.source,"
+        " author = excluded.author, updated_at = excluded.updated_at",
+        (client_id, section, body.strip() or None, (source or "").strip() or None,
+         author, now()),
+    )
+
+
+def dossier_for(conn: sqlite3.Connection, client_id: int) -> dict[str, dict[str, Any]]:
+    """The dossier as a mapping of section name to its row."""
+    return {
+        row["section"]: dict(row)
+        for row in conn.execute(
+            "SELECT * FROM dossier WHERE client_id = ?", (client_id,)
+        )
+    }
+
+
+def save_approach(
+    conn: sqlite3.Connection, client_id: int, row: dict[str, Any]
+) -> int:
+    """Record a suggested approach. Always a new row, never an update.
+
+    A proposal is generated against a dossier at a moment. When the client asks
+    in September why March quoted what it quoted, the answer has to still
+    exist, alongside what it was computed from.
+    """
+    cur = conn.execute(
+        "INSERT INTO approach (client_id, created_at, source, model, inputs_hash,"
+        " read_json, situation, opening, points_json, services_json, pricing_json,"
+        " risks_json, questions_json, note)"
+        " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        (
+            client_id, now(), row.get("source", "model"), row.get("model"),
+            row.get("inputs_hash"),
+            json.dumps(row.get("read") or {}, ensure_ascii=False),
+            row.get("situation"), row.get("opening"),
+            json.dumps(row.get("points") or [], ensure_ascii=False),
+            json.dumps(row.get("services") or [], ensure_ascii=False),
+            json.dumps(row.get("pricing") or [], ensure_ascii=False),
+            json.dumps(row.get("risks") or [], ensure_ascii=False),
+            json.dumps(row.get("questions") or [], ensure_ascii=False),
+            row.get("note"),
+        ),
+    )
+    return int(cur.lastrowid)
+
+
+def approaches_for(
+    conn: sqlite3.Connection, client_id: int, *, limit: int = 20
+) -> list[sqlite3.Row]:
+    return conn.execute(
+        "SELECT * FROM approach WHERE client_id = ?"
+        " ORDER BY created_at DESC, id DESC LIMIT ?",
+        (client_id, limit),
+    ).fetchall()
+
+
+def accept_approach(conn: sqlite3.Connection, approach_id: int) -> None:
+    """Mark that a human took this and used it.
+
+    Generated advice nobody acted on is not the same object as advice that went
+    into a proposal, and only one of the two should be quoted back later.
+    """
+    conn.execute(
+        "UPDATE approach SET accepted_at = ? WHERE id = ? AND accepted_at IS NULL",
+        (now(), approach_id),
+    )
+
+
+def add_attachment(
+    conn: sqlite3.Connection, client_id: int, row: dict[str, Any]
+) -> tuple[int, bool]:
+    """Record a document. Returns its id and whether it was already held.
+
+    Deduplicated on the content digest within one client, so re-sending the
+    same file updates the label and the note rather than making a second row.
+    Never across clients: two clients may legitimately hold the same standard
+    contract, and merging those would be a confidentiality failure rather than
+    a deduplication.
+    """
+    known = conn.execute(
+        "SELECT id FROM attachment WHERE client_id = ? AND sha256 = ?",
+        (client_id, row["sha256"]),
+    ).fetchone()
+    if known:
+        conn.execute(
+            "UPDATE attachment SET filename = ?, kind = ?, note = ?,"
+            " project_id = COALESCE(?, project_id) WHERE id = ?",
+            (row["filename"], row.get("kind"), row.get("note"),
+             row.get("project_id"), known[0]),
+        )
+        return int(known[0]), True
+    cur = conn.execute(
+        "INSERT INTO attachment (client_id, project_id, filename, media_type,"
+        " bytes, sha256, kind, note, text, text_chars, extracted_at,"
+        " extract_error, uploaded_by, created_at)"
+        " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        (
+            client_id, row.get("project_id"), row["filename"],
+            row.get("media_type"), row["bytes"], row["sha256"],
+            row.get("kind"), row.get("note"), row.get("text") or None,
+            len(row.get("text") or "") or None,
+            now() if row.get("text") else None,
+            row.get("extract_error") or None,
+            row.get("uploaded_by", "console"), now(),
+        ),
+    )
+    return int(cur.lastrowid), False
+
+
+def attachments_for(
+    conn: sqlite3.Connection, client_id: int, *, with_text: bool = False
+) -> list[sqlite3.Row]:
+    """The documents held for a client.
+
+    `text` is left out unless asked for. The listing renders a dozen rows and
+    the column holds whole annual reports; selecting it to display a filename
+    would read megabytes to print kilobytes.
+    """
+    columns = "*" if with_text else (
+        "id, client_id, project_id, filename, media_type, bytes, sha256, kind,"
+        " note, text_chars, extracted_at, extract_error, uploaded_by, created_at"
+    )
+    return conn.execute(
+        f"SELECT {columns} FROM attachment WHERE client_id = ?"
+        " ORDER BY created_at DESC, id DESC",
+        (client_id,),
+    ).fetchall()
+
+
 # --- operator settings --------------------------------------------------------
 #
 # See migrations/0013_settings.sql. arpenteur.toml keeps its comments and its
@@ -1207,7 +1363,7 @@ def clients(conn: sqlite3.Connection, *, status: str = "") -> list[sqlite3.Row]:
 # Only these may be set from the console. A whitelist rather than free keys,
 # so a typo becomes an error instead of a setting that silently does nothing.
 SETTABLE = ("cantons", "legal_forms", "statuses", "admit_new", "segments",
-            "signal_brief")
+            "signal_brief", "rate_card")
 
 
 def settings_overlay(conn: sqlite3.Connection) -> dict[str, Any]:

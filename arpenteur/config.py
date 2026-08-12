@@ -74,6 +74,11 @@ class LlmConfig:
     enrich_max_tokens: int = 8000
     match_model: str = ""
     match_max_tokens: int = 4000
+    # The advise stage returns a whole briefing rather than one judgement:
+    # discussion points, services, prices and open questions. A truncated
+    # structured reply is a hard failure rather than a short answer, and 8000
+    # was measured overrunning on a full dossier with one document attached.
+    advise_max_tokens: int = 16000
     # How the model is paid for. Declared rather than inferred: the two modes
     # draw on different accounts, and a deployment that meant "my Claude
     # subscription" must not quietly fall through to billing an API key that
@@ -177,6 +182,13 @@ class Settings:
     signal_brief: str
     zefix: ZefixConfig
     llm: LlmConfig
+    # What the work costs, in the operator's own words. Read by the advise
+    # stage, which is forbidden to price anything this does not cover: a model
+    # asked for a Swiss consulting day rate will produce a confident number
+    # from nowhere, and the first time that number is repeated to a client it
+    # becomes a commitment. Empty is a legitimate state, and the advice then
+    # comes back with the work identified and no prices on it.
+    rate_card: str = ""
     data_dir: Path = field(init=False)
 
     def __post_init__(self) -> None:
@@ -341,6 +353,8 @@ def load_settings(root: Path | None = None) -> Settings:
         raw["segments"] = overlay["segments"]
     if "signal_brief" in overlay:
         raw.setdefault("enrich", {})["signal_brief"] = overlay["signal_brief"]
+    if "rate_card" in overlay:
+        raw.setdefault("rates", {})["card"] = overlay["rate_card"]
     zefix_raw = raw.get("zefix", {})
     llm_raw = raw.get("llm", {})
     regions = {
@@ -369,6 +383,9 @@ def load_settings(root: Path | None = None) -> Settings:
         signal_brief=" ".join(
             str((raw.get("enrich") or {}).get("signal_brief", DEFAULT_SIGNAL_BRIEF)).split()
         ),
+        # Not collapsed, unlike the signal brief: this is a rate card and its
+        # line structure is the whole of its meaning.
+        rate_card=str((raw.get("rates") or {}).get("card", "")).strip(),
         zefix=ZefixConfig(
             base_url=zefix_raw.get("base_url", ""),
             rate_limit=float(zefix_raw.get("rate_limit", 2.0)),
@@ -387,6 +404,7 @@ def load_settings(root: Path | None = None) -> Settings:
             enrich_max_tokens=int(llm_raw.get("enrich_max_tokens", 8000)),
             match_model=llm_raw.get("match_model", ""),
             match_max_tokens=int(llm_raw.get("match_max_tokens", 4000)),
+            advise_max_tokens=int(llm_raw.get("advise_max_tokens", 16000)),
             auth_mode=_auth_mode(llm_raw.get("auth_mode", "auto")),
             api_key=os.environ.get("ANTHROPIC_API_KEY") or None,
         ),

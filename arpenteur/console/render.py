@@ -122,6 +122,7 @@ details.card summary {{ cursor:pointer; }}
 pre.log {{ background:#fff; border:1px solid var(--line); padding:.8rem 1rem; margin:0;
            max-height:70vh; overflow:auto; font-size:.82rem; line-height:1.5;
            white-space:pre-wrap; word-break:break-word; }}
+{css}
 </style></head><body>
 <header>
   <span class="brand">ARPENTEUR</span>
@@ -143,8 +144,25 @@ def esc(value: Any) -> str:
     return html.escape("" if value is None else str(value))
 
 
-def page(title: str, body: str, territory: str = "") -> str:
-    return HEAD.format(title=esc(title), territory=esc(territory)) + body + FOOT
+def page(title: str, body: str, territory: str = "", css: str = "") -> str:
+    """The shell, with a section's own stylesheet folded into the head.
+
+    `css` goes through the format call rather than being concatenated into the
+    body, and that is the whole point of the parameter. A section used to pass
+    its rules as `<style>` inside `body`, which meant every brace had to be
+    doubled to survive an f-string, and the doubled braces then reached the
+    browser: `.crumbs {{ ... }}` is a selector followed by a block whose only
+    contents are an invalid declaration, so CSS error recovery discarded every
+    rule in the file. The Clients and Settings pages were rendering with none
+    of their own styling and nothing anywhere said so. A substituted value is
+    not re-scanned for placeholders, so passing it here lets the rules be
+    written once, normally, and arrive intact.
+    """
+    return (
+        HEAD.format(title=esc(title), territory=esc(territory), css=css)
+        + body
+        + FOOT
+    )
 
 
 def as_list(value: Any) -> list[str]:

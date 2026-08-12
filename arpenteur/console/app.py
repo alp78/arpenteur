@@ -29,13 +29,15 @@ from datetime import date, timedelta
 from typing import Any
 from urllib.parse import quote
 
-from fastapi import FastAPI, Form, Request
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi import FastAPI, File, Form, Request, UploadFile
+from fastapi.responses import HTMLResponse, PlainTextResponse, RedirectResponse
 
-from .. import attribution, db
+from .. import attachments as att
+from .. import attribution, db, dossier
 from ..config import Settings, load_settings
-from ..stages import match, source
+from ..stages import advise, match, source
 from . import clients as clients_view
+from . import dossier_page as dossier_view
 from . import render
 from . import settings_page as settings_view_page
 from .runner import ORDER, STAGES, Runner, close_orphans, options_for, status_of
@@ -570,6 +572,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                 (client["company_id"],),
             ).fetchall()
             methods = ["zefix"] + (["shab"] if officers else [])
+            sections = db.dossier_for(conn, client_id)
             return client_shell(
                 clients_view.client_page(
                     client, company, projects,
@@ -580,6 +583,18 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                     ).fetchall(),
                     officers,
                     attribution.notice(methods),
+                    dossier_filled=len(dossier.filled(sections)),
+                    dossier_total=len(dossier.SECTIONS),
+                    documents=conn.execute(
+                        "SELECT COUNT(*) FROM attachment WHERE client_id = ?",
+                        (client_id,),
+                    ).fetchone()[0],
+                    has_approach=bool(
+                        conn.execute(
+                            "SELECT 1 FROM approach WHERE client_id = ? LIMIT 1",
+                            (client_id,),
+                        ).fetchone()
+                    ),
                 )
             )
         finally:
@@ -729,6 +744,206 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         finally:
             conn.close()
 
+    # --- the dossier, the advice and the client's papers ------------------------
+    #
+    # See migrations/0014_dossier.sql. What is known, what follows from it, and
+    # what it was built on, on one page because they are one thing in use.
+
+    def dossier_shell(body: str) -> HTMLResponse:
+        return HTMLResponse(
+            dossier_view.shell(body, settings.territory.describe())
+        )
+
+    @app.get("/client/{client_id}/dossier", response_class=HTMLResponse)
+    def client_dossier(client_id: int, request: Request) -> HTMLResponse:
+        conn = connect()
+        try:
+            client, company = _client_rows(conn, client_id)
+            if client is None:
+                return HTMLResponse("<h1>Not found</h1>", status_code=404)
+            history = db.approaches_for(conn, client_id)
+            return dossier_shell(
+                dossier_view.dossier_page(
+                    client,
+                    company,
+                    db.dossier_for(conn, client_id),
+                    history[0] if history else None,
+                    history[1:],
+                    db.attachments_for(conn, client_id),
+                    conn.execute(
+                        "SELECT * FROM project WHERE client_id = ? ORDER BY code",
+                        (client_id,),
+                    ).fetchall(),
+                    bool(_fresh().rate_card.strip()),
+                    request.query_params.get("note", ""),
+                )
+            )
+        finally:
+            conn.close()
+
+    @app.post("/dossier/{client_id}/section")
+    def save_section(
+        client_id: int,
+        section: str = Form(...),
+        body: str = Form(""),
+        source_line: str = Form("", alias="source"),
+    ) -> RedirectResponse:
+        conn = connect()
+        try:
+            db.save_dossier_section(
+                conn, client_id, section, body, source=source_line, author="console"
+            )
+            conn.commit()
+            return RedirectResponse(
+                f"/client/{client_id}/dossier#{quote(section)}", status_code=303
+            )
+        finally:
+            conn.close()
+
+    @app.post("/dossier/{client_id}/advise")
+    def suggest_approach(client_id: int, dry_run: str = Form("")) -> RedirectResponse:
+        """Read the dossier and the client's documents, and suggest an approach.
+
+        Run inline rather than through the stage runner. The runner exists to
+        keep one long expensive sweep from colliding with another; this is one
+        model call about one client and finishes while the request is open, so
+        queueing it behind a canton-wide sweep would be an odd thing to do to
+        someone who is about to walk into a meeting.
+        """
+        conn = connect()
+        try:
+            run_id = db.start_run(
+                conn, "advise", {"client_id": client_id, "dry_run": bool(dry_run)},
+                started_by="console",
+            )
+            try:
+                stats = advise.run(
+                    _fresh(), conn, client_id=client_id, dry_run=bool(dry_run),
+                    log=lambda m: db.append_line(conn, run_id, m),
+                )
+                db.finish_run(conn, run_id, stats)
+            except Exception as exc:
+                db.finish_run(conn, run_id, error=str(exc))
+                return RedirectResponse(
+                    f"/client/{client_id}/dossier?note={quote(str(exc))}",
+                    status_code=303,
+                )
+            if dry_run:
+                return RedirectResponse(f"/runs/{run_id}", status_code=303)
+            return RedirectResponse(f"/client/{client_id}/dossier", status_code=303)
+        finally:
+            conn.close()
+
+    @app.post("/approach/{approach_id}/accept")
+    def accept_approach(approach_id: int) -> RedirectResponse:
+        conn = connect()
+        try:
+            row = conn.execute(
+                "SELECT client_id FROM approach WHERE id = ?", (approach_id,)
+            ).fetchone()
+            db.accept_approach(conn, approach_id)
+            conn.commit()
+            target = f"/client/{row['client_id']}/dossier" if row else "/clients"
+            return RedirectResponse(target, status_code=303)
+        finally:
+            conn.close()
+
+    @app.post("/dossier/{client_id}/documents")
+    async def upload_document(
+        client_id: int,
+        file: UploadFile = File(...),
+        kind: str = Form(""),
+        note: str = Form(""),
+        project_id: str = Form(""),
+    ) -> RedirectResponse:
+        """Store a document the client sent, and extract its text.
+
+        Extraction happens here rather than at read time so that a file nothing
+        can open is a recorded state on the row instead of a silent absence
+        every time an agent asks for it.
+        """
+        content = await file.read()
+        back = f"/client/{client_id}/dossier"
+        conn = connect()
+        try:
+            try:
+                stored = att.store(settings.data_dir, content, file.filename or "file")
+            except ValueError as exc:
+                return RedirectResponse(f"{back}?note={quote(str(exc))}", status_code=303)
+            text, error = att.extract(
+                content, file.filename or "", file.content_type or ""
+            )
+            _id, existed = db.add_attachment(
+                conn,
+                client_id,
+                {
+                    "filename": file.filename or stored.sha256,
+                    "media_type": file.content_type or "",
+                    "bytes": stored.bytes,
+                    "sha256": stored.sha256,
+                    "kind": kind or None,
+                    "note": note.strip() or None,
+                    "project_id": int(project_id) if project_id.strip() else None,
+                    "text": text,
+                    "extract_error": error,
+                },
+            )
+            if not existed:
+                # A document arriving is part of the record. The timeline
+                # should be able to answer "when did we get the accounts"
+                # without anyone remembering to write a note saying so.
+                db.record_event(
+                    conn, client_id, kind="document", occurred_at=db.now(),
+                    subject=f"Document received: {file.filename}",
+                    body=note.strip() or None,
+                    project_id=int(project_id) if project_id.strip() else None,
+                    author="console",
+                )
+            conn.commit()
+            if existed:
+                return RedirectResponse(
+                    f"{back}?note=" + quote(
+                        f"{file.filename} is byte for byte a document already "
+                        "held, so the label and note were updated rather than a "
+                        "second copy stored."
+                    ),
+                    status_code=303,
+                )
+            if error:
+                return RedirectResponse(
+                    f"{back}?note=" + quote(f"Stored, but not readable. {error}"),
+                    status_code=303,
+                )
+            return RedirectResponse(back, status_code=303)
+        finally:
+            conn.close()
+
+    @app.get("/attachment/{attachment_id}/text", response_class=PlainTextResponse)
+    def attachment_text(attachment_id: int) -> PlainTextResponse:
+        """The extracted text, as plain text.
+
+        A stable URL rather than a rendered page, so an agent asked to analyse
+        a client's documents has something to fetch that is the document and
+        not a page about the document.
+        """
+        conn = connect()
+        try:
+            row = conn.execute(
+                "SELECT filename, text, extract_error FROM attachment WHERE id = ?",
+                (attachment_id,),
+            ).fetchone()
+            if row is None:
+                return PlainTextResponse("Not found", status_code=404)
+            if not row["text"]:
+                return PlainTextResponse(
+                    f"{row['filename']}: no text was extracted.\n"
+                    f"{row['extract_error'] or ''}\n",
+                    status_code=409,
+                )
+            return PlainTextResponse(row["text"])
+        finally:
+            conn.close()
+
     @app.get("/calendar", response_class=HTMLResponse)
     def diary(month: str = "") -> HTMLResponse:
         conn = connect()
@@ -796,6 +1011,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                         scored=conn.execute("SELECT COUNT(*) FROM fit").fetchone()[0],
                         campaign_path="campaign.md",
                         history=db.setting_history(conn),
+                        rate_card=live.rate_card,
                         note=request.query_params.get("note", ""),
                     ),
                     live.territory.describe(),
@@ -892,6 +1108,23 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         conn = connect()
         try:
             db.save_setting(conn, "signal_brief", " ".join(signal_brief.split()))
+            conn.commit()
+            return RedirectResponse("/settings", status_code=303)
+        finally:
+            conn.close()
+
+    @app.post("/settings/rates")
+    def save_rates(rate_card: str = Form("")) -> RedirectResponse:
+        """The rate card, kept in the database rather than in campaign.md.
+
+        It is not part of the campaign: the same prices apply across campaigns,
+        and it is the one setting here that is nobody's business but the
+        operator's, so it does not want to be in a versioned file that gets
+        shown to people.
+        """
+        conn = connect()
+        try:
+            db.save_setting(conn, "rate_card", rate_card.strip())
             conn.commit()
             return RedirectResponse("/settings", status_code=303)
         finally:

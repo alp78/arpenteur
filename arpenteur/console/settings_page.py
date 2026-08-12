@@ -22,34 +22,34 @@ from typing import Any
 from .render import esc, page
 
 STYLES = """
-.setting {{ background:#fff; border:1px solid var(--line); margin-bottom:1.2rem; }}
-.setting > header {{ padding:.9rem 1.1rem .2rem; border:0; position:static;
-                     display:block; background:#fff; }}
-.setting h3 {{ margin:0; font-size:1.05rem; }}
-.setting .what {{ margin:.25rem 0 0; color:var(--dim); max-width:66ch; }}
-.setting .inner {{ padding:.5rem 1.1rem 1rem; }}
-.setting footer {{ padding:.7rem 1.1rem; border-top:1px solid var(--line);
+.setting { background:#fff; border:1px solid var(--line); margin-bottom:1.2rem; }
+.setting > header { padding:.9rem 1.1rem .2rem; border:0; position:static;
+                     display:block; background:#fff; }
+.setting h3 { margin:0; font-size:1.05rem; }
+.setting .what { margin:.25rem 0 0; color:var(--dim); max-width:66ch; }
+.setting .inner { padding:.5rem 1.1rem 1rem; }
+.setting footer { padding:.7rem 1.1rem; border-top:1px solid var(--line);
                    background:var(--bg); display:flex; gap:.8rem;
-                   align-items:center; flex-wrap:wrap; }}
-.picker {{ display:flex; flex-wrap:wrap; gap:.3rem .5rem; margin:.4rem 0; }}
-.picker label {{ display:flex; align-items:center; gap:.3rem; border:1px solid var(--line);
+                   align-items:center; flex-wrap:wrap; }
+.picker { display:flex; flex-wrap:wrap; gap:.3rem .5rem; margin:.4rem 0; }
+.picker label { display:flex; align-items:center; gap:.3rem; border:1px solid var(--line);
                  padding:.15rem .5rem; background:#fff; font-size:.85rem;
-                 cursor:pointer; border-radius:2px; }}
-.picker label:has(input:checked) {{ border-color:var(--accent); color:var(--accent);
-                                    font-weight:600; }}
-.picker input {{ margin:0; }}
-.picker.forms label {{ min-width:19rem; }}
-.picker .code {{ font-family:ui-monospace,Menlo,monospace; color:var(--dim); }}
-.seg {{ display:grid; grid-template-columns:11rem 1fr auto; gap:.4rem;
-        align-items:start; margin-bottom:.4rem; }}
-.seg input[type=text] {{ width:100%; }}
-.big-text {{ width:100%; min-height:11rem; font:13px/1.6 ui-monospace,Menlo,monospace; }}
-.changed {{ font-size:.78rem; color:var(--dim); }}
+                 cursor:pointer; border-radius:2px; }
+.picker label:has(input:checked) { border-color:var(--accent); color:var(--accent);
+                                    font-weight:600; }
+.picker input { margin:0; }
+.picker.forms label { min-width:19rem; }
+.picker .code { font-family:ui-monospace,Menlo,monospace; color:var(--dim); }
+.seg { display:grid; grid-template-columns:11rem 1fr auto; gap:.4rem;
+        align-items:start; margin-bottom:.4rem; }
+.seg input[type=text] { width:100%; }
+.big-text { width:100%; min-height:11rem; font:13px/1.6 ui-monospace,Menlo,monospace; }
+.changed { font-size:.78rem; color:var(--dim); }
 """
 
 
 def shell(body: str, territory: str = "") -> str:
-    return page("arpenteur settings", f"<style>{STYLES}</style>{body}", territory)
+    return page("arpenteur settings", body, territory, css=STYLES)
 
 
 def _block(
@@ -178,6 +178,38 @@ def signal_block(brief: str, changed: str) -> str:
     )
 
 
+def rate_card_block(text: str, changed: str) -> str:
+    return _block(
+        "What the work costs",
+        "Your rate card, in your own words. The suggested approach on a client "
+        "dossier prices work from this and from nothing else: it must name the "
+        "line it used, and work this card does not cover comes back with no "
+        "price rather than an invented one.",
+        f'<textarea class="big-text" name="rate_card" '
+        f'placeholder="Diagnostic, fixed fee. 2 to 4 days on site: inventory of '
+        f'systems, mapping of flows, written report. CHF 3\'600 to CHF 7\'200 '
+        f'depending on the number of sites.&#10;Day rate, time and materials: '
+        f'CHF 1\'400 to CHF 1\'800.&#10;Retainer, monthly: CHF 1\'200 to '
+        f'CHF 3\'500, minimum six months.">{esc(text)}</textarea>'
+        "<p class='hint'>Write it the way you actually quote. Name the unit "
+        "(day, package, month), give a range where you quote a range, and say "
+        "what moves a price inside it. One arrangement per line.</p>"
+        "<p class='hint'><b>Why this is a setting rather than something the "
+        "model works out.</b> Asked what a Swiss IT diagnostic costs, a model "
+        "answers with a confident four-figure number from nowhere, and the "
+        "first time that number is repeated to a client it stops being a "
+        "suggestion and becomes a commitment. Leaving this empty is a "
+        "legitimate choice: the advice then identifies the work and prices "
+        "none of it.</p>",
+        "Save rate card",
+        "Applies to approaches suggested from now on. Approaches already "
+        "generated keep the prices they were given, and record whether a card "
+        "was set when they ran.",
+        "/settings/rates",
+        changed,
+    )
+
+
 def campaign_block(text: str, digest: str, scored: int, path: str) -> str:
     return _block(
         "Campaign brief",
@@ -201,7 +233,7 @@ def settings_page(
     cantons: list[str], forms: list[str], catalogue: list[dict[str, Any]],
     counts: dict[str, int], segments: dict[str, str], signal_brief: str,
     campaign: str, campaign_digest: str, scored: int, campaign_path: str,
-    history: list[sqlite3.Row], note: str = "",
+    history: list[sqlite3.Row], rate_card: str = "", note: str = "",
 ) -> str:
     when = {row["key"]: (row["updated_at"] or "")[:10] for row in history}
 
@@ -232,4 +264,5 @@ def settings_page(
         + segments_block(segments, changed("segments"))
         + signal_block(signal_brief, changed("signal_brief"))
         + campaign_block(campaign, campaign_digest, scored, campaign_path)
+        + rate_card_block(rate_card, changed("rate_card"))
     )

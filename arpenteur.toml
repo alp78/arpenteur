@@ -101,6 +101,15 @@ enrich_max_tokens = 8000
 # classifier; no web access, so no server-tool requirement either.
 match_model = "claude-sonnet-5"
 match_max_tokens = 4000
+# The advise stage reads a client's whole dossier and their own documents and
+# returns a briefing: discussion points, services, prices and open questions.
+# It uses match_model. Much larger than match_max_tokens because it returns a
+# whole structure rather than one judgement, and a structured reply cut off
+# partway is a hard failure rather than a short answer. Measured 12.08.2026: a
+# ten-section dossier with one 21'000-character document attached produced
+# seven discussion points, five services and twelve open questions, and
+# overran 8000 tokens.
+advise_max_tokens = 16000
 # Companies per classification call. Larger batches are cheaper per company
 # and degrade accuracy once the prompt gets long.
 batch_size = 20
@@ -131,6 +140,37 @@ Record equally the evidence against approaching: an IT provider or managed \
 service partner named on the site, an internal technical team or IT \
 director, and any sign the company itself sells IT services or resells \
 hardware and licences.
+"""
+
+[rates]
+# What the work costs, in your own words. The advise stage reads this when it
+# suggests an approach to a client, and it is forbidden to price anything this
+# does not cover.
+#
+# That constraint is the reason this section exists. A model asked what a Swiss
+# IT diagnostic costs will produce a confident four-figure number from nowhere,
+# and the first time that number is repeated to a client it stops being a
+# suggestion and becomes a commitment. Prices have to come from you.
+#
+# Leaving it empty is a legitimate choice: the advice then comes back with the
+# work identified and no prices on it, which is honest. Editable from Settings
+# in the console.
+#
+# Write it however you actually quote. Name the unit (day, package, month),
+# give a range where you quote a range, and say what moves a price inside it.
+card = """
+Diagnostic, fixed fee. 2 to 4 days on site: inventory of systems, mapping of \
+flows, written report and a prioritised list. CHF 3'600 to CHF 7'200 \
+depending on the number of sites and systems. This is the usual way in.
+Day rate, time and materials: CHF 1'400 to CHF 1'800. The upper end for work \
+carrying regulatory exposure or out-of-hours migration.
+Implementation, fixed fee, quoted only after a diagnostic: CHF 8'000 to \
+CHF 40'000 depending on scope. Never quoted before the diagnostic is done.
+Retainer, monthly: CHF 1'200 to CHF 3'500, minimum six months, for ongoing \
+custody of a data platform or standing advisory to a management team.
+Second opinion on a supplier's proposal, fixed fee: CHF 1'800, one to two days.
+Travel inside the surveyed cantons is not billed. Nothing is billed before a \
+written order.
 """
 
 # The segments. Each is a filter a survey can be sliced by, and the
