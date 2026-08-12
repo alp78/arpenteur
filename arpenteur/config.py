@@ -8,7 +8,9 @@ prints a secret, including in exception messages.
 
 from __future__ import annotations
 
+import json
 import os
+import sqlite3
 import tomllib
 from dataclasses import dataclass, field, replace
 from pathlib import Path
@@ -280,14 +282,65 @@ def _auth_mode(value: object) -> str:
     return mode
 
 
+def _overlay(db_path: Path) -> dict[str, Any]:
+    """Operator settings, or nothing at all if there is no database yet.
+
+    Deliberately silent on every failure. Configuration must not become the
+    reason the tool will not start: a missing file, a database from before the
+    table existed, or a half-written value should all leave the shipped
+    defaults in place rather than raise.
+    """
+    if not db_path.is_file():
+        return {}
+    try:
+        conn = sqlite3.connect(f"file:{db_path}?mode=ro", uri=True)
+        try:
+            rows = conn.execute("SELECT key, value_json FROM setting").fetchall()
+        finally:
+            conn.close()
+    except sqlite3.Error:
+        return {}
+    out: dict[str, Any] = {}
+    for key, value in rows:
+        try:
+            out[key] = json.loads(value)
+        except (TypeError, ValueError):
+            continue
+    return out
+
+
 def load_settings(root: Path | None = None) -> Settings:
+    """The file, with whatever the operator changed in the console over it.
+
+    arpenteur.toml keeps its comments and its defaults and stays the reference
+    for anyone reading the repository. The overlay is this deployment's
+    decisions, stored in the database because the most consequential choices
+    in the tool should not be the ones you have to leave the application to
+    make. See migrations/0013_settings.sql.
+
+    Read directly rather than through db.open_db: this is called before the
+    console exists and must not depend on it, and a database that is not there
+    yet simply contributes nothing.
+    """
     base = root or project_root()
     load_env(base / ".env")
 
     with (base / "arpenteur.toml").open("rb") as handle:
         raw = tomllib.load(handle)
 
-    survey = raw.get("survey", {})
+    survey = dict(raw.get("survey", {}))
+    overlay = _overlay(base / "data" / "arpenteur.sqlite3")
+    for key in ("cantons", "legal_forms", "statuses", "admit_new"):
+        if key in overlay:
+            survey[key] = overlay[key]
+            # A canton list chosen in the console is the whole answer, so a
+            # region name left in the file must not narrow it afterwards.
+            if key == "cantons":
+                survey["region"] = None
+    if "segments" in overlay:
+        raw["segments"] = overlay["segments"]
+    if "signal_brief" in overlay:
+        raw.setdefault("enrich", {})["signal_brief"] = overlay["signal_brief"]
     zefix_raw = raw.get("zefix", {})
     llm_raw = raw.get("llm", {})
     regions = {

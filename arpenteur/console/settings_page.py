@@ -1,0 +1,235 @@
+"""Settings: what the survey is for, changed from the application.
+
+The territory, the segment vocabulary, what counts as a signal and the campaign
+brief decide what every stage below them does. They lived in `arpenteur.toml`
+and `campaign.md`, which made the most consequential decisions in the tool the
+ones you had to leave the tool to make.
+
+It also hid them. A survey that silently contained no foundations because the
+code `0110` was absent from a list in a file is not a discoverable state: the
+canton was in scope, the sweep ran, and nothing anywhere said that an entire
+class of entity had never been asked for.
+
+So every one of them is here, with the register's own catalogue as the source
+for legal forms rather than a code typed from memory.
+"""
+
+from __future__ import annotations
+
+import sqlite3
+from typing import Any
+
+from .render import esc, page
+
+STYLES = """
+.setting {{ background:#fff; border:1px solid var(--line); margin-bottom:1.2rem; }}
+.setting > header {{ padding:.9rem 1.1rem .2rem; border:0; position:static;
+                     display:block; background:#fff; }}
+.setting h3 {{ margin:0; font-size:1.05rem; }}
+.setting .what {{ margin:.25rem 0 0; color:var(--dim); max-width:66ch; }}
+.setting .inner {{ padding:.5rem 1.1rem 1rem; }}
+.setting footer {{ padding:.7rem 1.1rem; border-top:1px solid var(--line);
+                   background:var(--bg); display:flex; gap:.8rem;
+                   align-items:center; flex-wrap:wrap; }}
+.picker {{ display:flex; flex-wrap:wrap; gap:.3rem .5rem; margin:.4rem 0; }}
+.picker label {{ display:flex; align-items:center; gap:.3rem; border:1px solid var(--line);
+                 padding:.15rem .5rem; background:#fff; font-size:.85rem;
+                 cursor:pointer; border-radius:2px; }}
+.picker label:has(input:checked) {{ border-color:var(--accent); color:var(--accent);
+                                    font-weight:600; }}
+.picker input {{ margin:0; }}
+.picker.forms label {{ min-width:19rem; }}
+.picker .code {{ font-family:ui-monospace,Menlo,monospace; color:var(--dim); }}
+.seg {{ display:grid; grid-template-columns:11rem 1fr auto; gap:.4rem;
+        align-items:start; margin-bottom:.4rem; }}
+.seg input[type=text] {{ width:100%; }}
+.big-text {{ width:100%; min-height:11rem; font:13px/1.6 ui-monospace,Menlo,monospace; }}
+.changed {{ font-size:.78rem; color:var(--dim); }}
+"""
+
+
+def shell(body: str, territory: str = "") -> str:
+    return page("arpenteur settings", f"<style>{STYLES}</style>{body}", territory)
+
+
+def _block(
+    title: str, what: str, inner: str, button: str, does: str, action: str,
+    note: str = "",
+) -> str:
+    return (
+        f'<form class="setting" method="post" action="{esc(action)}">'
+        f"<header><h3>{esc(title)}</h3><p class='what'>{esc(what)}</p></header>"
+        f'<div class="inner">{inner}</div>'
+        f'<footer><button class="primary">{esc(button)}</button>'
+        f"<span class='hint'>{esc(does)}</span>"
+        + (f"<span class='changed'>{esc(note)}</span>" if note else "")
+        + "</footer></form>"
+    )
+
+
+CANTONS = (
+    ("GE", "Genève"), ("VD", "Vaud"), ("VS", "Valais"), ("FR", "Fribourg"),
+    ("NE", "Neuchâtel"), ("JU", "Jura"), ("BE", "Bern"), ("ZH", "Zürich"),
+    ("BS", "Basel-Stadt"), ("BL", "Basel-Landschaft"), ("AG", "Aargau"),
+    ("SO", "Solothurn"), ("LU", "Luzern"), ("ZG", "Zug"), ("SZ", "Schwyz"),
+    ("SG", "St. Gallen"), ("TG", "Thurgau"), ("SH", "Schaffhausen"),
+    ("GR", "Graubünden"), ("TI", "Ticino"), ("UR", "Uri"), ("OW", "Obwalden"),
+    ("NW", "Nidwalden"), ("GL", "Glarus"), ("AR", "Appenzell A.Rh."),
+    ("AI", "Appenzell I.Rh."),
+)
+
+
+def territory_block(
+    chosen_cantons: list[str], chosen_forms: list[str],
+    forms: list[dict[str, Any]], counts: dict[str, int], changed: str,
+) -> str:
+    cantons = "".join(
+        f'<label><input type="checkbox" name="cantons" value="{esc(code)}"'
+        + (" checked" if code in chosen_cantons else "")
+        + f'> {esc(name)} <span class="code">{esc(code)}</span></label>'
+        for code, name in CANTONS
+    )
+    if forms:
+        rows = "".join(
+            f'<label><input type="checkbox" name="legal_forms" value="{esc(f["uid"])}"'
+            + (" checked" if str(f["uid"]) in chosen_forms else "")
+            + f'> <span class="code">{esc(f["uid"])}</span> {esc(f.get("label") or "")}'
+            + (
+                f' <span class="dim">({counts.get(str(f["uid"]), 0):,} held)</span>'
+                if counts.get(str(f["uid"]))
+                else ""
+            )
+            + "</label>"
+            for f in forms
+        )
+        form_picker = f'<div class="picker forms">{rows}</div>'
+    else:
+        form_picker = (
+            "<p class='hint'>The register's catalogue has not been fetched yet. "
+            "Use the button below and it will appear here.</p>"
+            + "".join(
+                f'<input type="hidden" name="legal_forms" value="{esc(code)}">'
+                for code in chosen_forms
+            )
+        )
+    return _block(
+        "Territory",
+        "Which cantons the survey covers, and which kinds of entity. A legal "
+        "form that is not ticked is never asked for, in any canton: this is "
+        "the setting that decides whether foundations, associations and "
+        "cooperatives exist for this tool at all.",
+        f'<h4 class="dim small">Cantons</h4><div class="picker">{cantons}</div>'
+        f'<h4 class="dim small" style="margin-top:.9rem">Legal forms</h4>'
+        f"{form_picker}",
+        "Save territory",
+        "Applies to every stage from the next run onwards. Companies already "
+        "held are kept whatever this says, so narrowing never loses data.",
+        "/settings/territory",
+        changed,
+    )
+
+
+def segments_block(segments: dict[str, str], changed: str) -> str:
+    rows = "".join(
+        '<div class="seg">'
+        f'<input type="text" name="seg_name" value="{esc(name)}">'
+        f'<input type="text" name="seg_text" value="{esc(text)}">'
+        '<label class="check small"><input type="checkbox" name="seg_drop" '
+        f'value="{esc(name)}"> drop</label></div>'
+        for name, text in sorted(segments.items())
+    )
+    rows += (
+        '<div class="seg">'
+        '<input type="text" name="seg_name" placeholder="new-segment">'
+        '<input type="text" name="seg_text" placeholder="One concrete line. '
+        'The classifier sees nothing else.">'
+        "<span></span></div>"
+    )
+    return _block(
+        "Segments",
+        "The vocabulary the survey is sliced by. These definitions are the "
+        "classifier's prompt, word for word, so they are the whole of what it "
+        "knows. Keep each to one concrete line, and keep them distinguishable "
+        "from each other.",
+        rows,
+        "Save segments",
+        "Existing labels are kept. Re-run Sort into segments with "
+        "'re-label' to apply a changed definition; labels you set by hand are "
+        "never overwritten.",
+        "/settings/segments",
+        changed,
+    )
+
+
+def signal_block(brief: str, changed: str) -> str:
+    return _block(
+        "What the research looks for",
+        "The website research reads every company against this sentence and "
+        "returns what it found. It is the difference between a survey that "
+        "scouts for work, one that scouts for hiring and one that scouts for "
+        "partners. It must also ask for the evidence that argues against "
+        "approaching, because the scoring cannot weigh what was never collected.",
+        f'<textarea class="big-text" name="signal_brief">{esc(brief)}</textarea>',
+        "Save",
+        "Applies to companies researched from now on. Companies already "
+        "researched keep their previous reading until re-researched.",
+        "/settings/signal",
+        changed,
+    )
+
+
+def campaign_block(text: str, digest: str, scored: int, path: str) -> str:
+    return _block(
+        "Campaign brief",
+        "What companies are scored against: what this campaign offers, who it "
+        "serves well, who it serves badly, what to look for, what warns off, "
+        "and how it opens a conversation. It is read into the prompt verbatim.",
+        f'<textarea class="big-text" name="campaign" '
+        f'style="min-height:22rem">{esc(text)}</textarea>'
+        f"<p class='hint'>Stored as <code>{esc(path)}</code>, so it stays in "
+        f"version control and a surprising run can be answered with a diff. "
+        f"Current version {esc(digest)}, {scored:,} scores taken against it.</p>",
+        "Save brief",
+        "Every score taken against the previous text becomes stale and the "
+        "next scoring run re-takes exactly those. Scores set by hand survive.",
+        "/settings/campaign",
+    )
+
+
+def settings_page(
+    *,
+    cantons: list[str], forms: list[str], catalogue: list[dict[str, Any]],
+    counts: dict[str, int], segments: dict[str, str], signal_brief: str,
+    campaign: str, campaign_digest: str, scored: int, campaign_path: str,
+    history: list[sqlite3.Row], note: str = "",
+) -> str:
+    when = {row["key"]: (row["updated_at"] or "")[:10] for row in history}
+
+    def changed(key: str) -> str:
+        return f"changed {when[key]}" if key in when else "shipped default"
+
+    banner = f'<div class="warn">{esc(note)}</div>' if note else ""
+    catalogue_when = when.get("_legal_form_catalogue", "")
+    return (
+        "<h1>Settings</h1>"
+        "<p class='lede'>What the survey is for. Everything here decides what "
+        "the stages below it do, so it lives in the application rather than in "
+        "a file you have to open a terminal to edit.</p>"
+        + banner
+        + territory_block(cantons, forms, catalogue, counts, changed("cantons"))
+        + '<form class="setting" method="post" action="/settings/catalogue">'
+        "<div class='inner'><b>Legal form catalogue</b>"
+        "<p class='what'>Fetched from the register rather than typed from "
+        "memory, so a code that changes there stops being silently wrong here."
+        "</p></div><footer><button>Refresh from the register</button>"
+        f"<span class='hint'>One request. "
+        + (
+            f"Last fetched {esc(catalogue_when)}, {len(catalogue)} forms."
+            if catalogue
+            else "Never fetched."
+        )
+        + "</span></footer></form>"
+        + segments_block(segments, changed("segments"))
+        + signal_block(signal_brief, changed("signal_brief"))
+        + campaign_block(campaign, campaign_digest, scored, campaign_path)
+    )

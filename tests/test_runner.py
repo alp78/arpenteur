@@ -320,7 +320,7 @@ def test_every_stage_is_offered_with_what_it_costs(client) -> None:
     """"Costs money per company" is the one thing an operator must not have
     to remember, so it is on the card rather than in the documentation."""
     body = client.get("/pipeline").text
-    for name in ("sync", "hydrate", "people", "profile", "enrich", "match", "reach"):
+    for name in runner_module.ORDER:
         assert f"/run/{name}" in body
     assert "centimes" in body and "THE EXPENSIVE ONE" in body
 
@@ -329,8 +329,8 @@ def test_every_stage_says_what_it_needs_and_what_it_produces(client) -> None:
     """An empty result should read as "nothing to do yet" rather than as a
     broken stage, which needs the prerequisite stated on the card."""
     body = client.get("/pipeline").text
-    assert body.count("Needs first") == 7
-    assert body.count("Produces") == 7
+    assert body.count("Needs first") == len(runner_module.ORDER)
+    assert body.count("Produces") == len(runner_module.ORDER)
 
 
 def test_every_button_says_what_pressing_it_will_do(client) -> None:

@@ -131,6 +131,7 @@ pre.log {{ background:#fff; border:1px solid var(--line); padding:.8rem 1rem; ma
   <a href="/">Survey</a>
   <a href="/pipeline">Operations</a>
   <a href="/runs">History</a>
+  <a href="/settings">Settings</a>
   <span class="dim small" style="margin-left:auto">{territory}</span>
 </header><main>
 """
@@ -696,13 +697,19 @@ def _control(field: Any, stage_name: str, options: dict[str, tuple]) -> str:
 
     if field.kind == "select":
         chosen = _options(field, options)
+        multi = getattr(field, "multi", False)
         body = "".join(
             f"<option value='{esc(value)}'"
-            + (" selected" if str(value) == str(field.default) else "")
+            + (" selected" if not multi and str(value) == str(field.default) else "")
             + f">{esc(label)}</option>"
             for value, label in chosen
         )
-        inner = f"<select name='{esc(field.name)}' id='{esc(ident)}'>{body}</select>"
+        attrs = (
+            f" multiple size='{min(len(chosen), 8)}'" if multi else ""
+        )
+        inner = (
+            f"<select name='{esc(field.name)}' id='{esc(ident)}'{attrs}>{body}</select>"
+        )
     elif field.kind == "date":
         inner = (
             f"<input type='date' name='{esc(field.name)}' id='{esc(ident)}'>"

@@ -1197,3 +1197,82 @@ def clients(conn: sqlite3.Connection, *, status: str = "") -> list[sqlite3.Row]:
              ORDER BY c.status, co.name""",
         params,
     ).fetchall()
+
+
+# --- operator settings --------------------------------------------------------
+#
+# See migrations/0013_settings.sql. arpenteur.toml keeps its comments and its
+# defaults; a row here is this deployment's decision, overlaid on them.
+
+# Only these may be set from the console. A whitelist rather than free keys,
+# so a typo becomes an error instead of a setting that silently does nothing.
+SETTABLE = ("cantons", "legal_forms", "statuses", "admit_new", "segments",
+            "signal_brief")
+
+
+def settings_overlay(conn: sqlite3.Connection) -> dict[str, Any]:
+    """Everything an operator has changed, ready to apply over the file."""
+    out: dict[str, Any] = {}
+    for row in conn.execute("SELECT key, value_json FROM setting"):
+        if row[0] not in SETTABLE:
+            continue
+        try:
+            out[row[0]] = json.loads(row[1])
+        except (TypeError, ValueError):
+            continue
+    return out
+
+
+def save_setting(
+    conn: sqlite3.Connection, key: str, value: Any, *, by: str = "console"
+) -> None:
+    if key not in SETTABLE:
+        raise ValueError(f"{key!r} is not an operator setting")
+    conn.execute(
+        "INSERT INTO setting (key, value_json, updated_at, updated_by)"
+        " VALUES (?, ?, ?, ?)"
+        " ON CONFLICT (key) DO UPDATE SET value_json = excluded.value_json,"
+        " updated_at = excluded.updated_at, updated_by = excluded.updated_by",
+        (key, json.dumps(value, ensure_ascii=False), now(), by),
+    )
+
+
+def setting_history(conn: sqlite3.Connection) -> list[sqlite3.Row]:
+    """When each setting was last changed, and by whom.
+
+    Widening the territory changes what every later stage will spend money on,
+    and that is a question asked after the bill rather than before it.
+    """
+    return conn.execute(
+        "SELECT key, updated_at, updated_by FROM setting ORDER BY updated_at DESC"
+    ).fetchall()
+
+
+# The register's legal form catalogue, cached so a settings page can offer it
+# as a list without a network call on every render. Not a setting: it is a
+# copy of something the register owns, so it is written by a refresh rather
+# than by a person and is deliberately outside SETTABLE.
+CATALOGUE_KEY = "_legal_form_catalogue"
+
+
+def save_catalogue(conn: sqlite3.Connection, forms: list[dict[str, Any]]) -> None:
+    conn.execute(
+        "INSERT INTO setting (key, value_json, updated_at, updated_by)"
+        " VALUES (?, ?, ?, 'register')"
+        " ON CONFLICT (key) DO UPDATE SET value_json = excluded.value_json,"
+        " updated_at = excluded.updated_at",
+        (CATALOGUE_KEY, json.dumps(forms, ensure_ascii=False), now()),
+    )
+    conn.commit()
+
+
+def catalogue(conn: sqlite3.Connection) -> list[dict[str, Any]]:
+    row = conn.execute(
+        "SELECT value_json FROM setting WHERE key = ?", (CATALOGUE_KEY,)
+    ).fetchone()
+    if row is None:
+        return []
+    try:
+        return json.loads(row[0])
+    except (TypeError, ValueError):
+        return []

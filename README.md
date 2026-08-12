@@ -227,6 +227,9 @@ brief written for a different campaign produces confident scores built on
 nothing, which is worse than no scores. Write it in the language you will
 write to companies in; the approach advice comes back in the same one.
 
+It is edited in the console under Settings and written back to the file, so it
+stays a versioned artefact rather than a database column.
+
 It is committed and versioned because the score is only as good as this file,
 and when a run produces surprising results the first question is what changed
 here, which a diff answers and a database field would not. Every score stores
@@ -331,6 +334,35 @@ A client does not have to be inside the surveyed territory, and normally is
 not: the survey covers a region and a set of legal forms, and the first real
 client of this tool was a foundation in Vaud where the survey was limited
 companies in five cantons. `import` is the deliberate single-company door.
+
+## Settings
+
+```bash
+uv run arpenteur console      # then Settings
+```
+
+The territory, the segment vocabulary, what the research looks for and the
+campaign brief decide what every stage below them does. They used to live only
+in `arpenteur.toml` and `campaign.md`, which made the most consequential
+decisions in the tool the ones you had to leave the tool to make.
+
+It also hid them. A survey that contained no foundations at all, because the
+code `0110` was absent from a list in a file, is not a discoverable state: the
+canton was in scope, the sweep ran, and nothing anywhere said that an entire
+class of entity had never been asked for. The legal form picker is now the
+register's own catalogue, fetched rather than typed from memory.
+
+**Overlay, not replacement.** `arpenteur.toml` keeps its comments and its
+defaults and stays the reference for anyone reading the repository; a setting
+changed in the console is stored in the database and applied over it. Rewriting
+the TOML from a web form was the obvious alternative and would have destroyed
+sixty lines of explanation that are the reason the file is readable. The
+campaign brief is the exception and is written back to `campaign.md`, because a
+surprising run should be answerable with a diff.
+
+Every change records when it happened and by whom. Widening the territory
+changes what every later stage will spend money on, and that is a question
+asked after the bill rather than before it.
 
 ## The console
 

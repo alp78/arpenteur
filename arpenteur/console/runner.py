@@ -59,6 +59,15 @@ class Field:
     example: str = ""
     where: str = ""
     default: str = ""
+    # The stage's keyword, when the control is not named after it. `canton`
+    # reads better on a form than `cantons`, and the stage should not have to
+    # care what a form called its input.
+    param: str = ""
+    # For a checkbox that reads better as the opposite of the stage's flag:
+    # "Names only, skip the detail" is `hydrate=False`.
+    invert: bool = False
+    # Several values allowed. Reaches the stage as a list.
+    multi: bool = False
 
 
 @dataclass(frozen=True)
@@ -147,6 +156,48 @@ UIDS = Field(
 
 
 STAGES: dict[str, Stage] = {
+    "source": Stage(
+        name="source",
+        title="Sweep the register",
+        what="Ask the commercial register for every company in the chosen cantons "
+             "and legal forms, and store their names. This is where the survey "
+             "comes from: nothing below can run on a company this has not found.",
+        call=source.run_zefix,
+        fields=(
+            Field("canton", "Cantons", "select", source="cantons_multi",
+                  param="cantons", multi=True,
+                  help="Hold Ctrl (Cmd on a Mac) to pick several. "
+                       "Leave nothing selected to use the configured territory."),
+            Field("legal_form", "Legal forms", "select", source="forms_multi",
+                  param="legal_forms", multi=True,
+                  help="Which kinds of entity to look for.",
+                  where="Codes come from the register's own catalogue, kept "
+                        "current in Settings. A form that is not selected is "
+                        "never asked for, in any canton."),
+            Field("no_hydrate", "Names only, skip the detail", "bool", default="1",
+                  param="hydrate", invert=True,
+                  help="Recommended. The sweep is a few hundred requests; "
+                       "fetching detail is one per company and belongs in its "
+                       "own run where you can size it."),
+            Field("no_resume", "Start again from the beginning", "bool",
+                  param="resume", invert=True,
+                  help="Off by default: a sweep is resumable and re-running "
+                       "skips the name prefixes already covered."),
+        ),
+        needs="Zefix credentials, which are free. Nothing else.",
+        produces="Company names, legal forms and seats. Everything else comes "
+                 "from Fetch company detail.",
+        cost="A few hundred register requests per canton and form. Free, and "
+             "minutes rather than hours.",
+        button="Sweep the register",
+        button_does="Walks the alphabet for each canton and legal form chosen, "
+                    "storing every company it finds. Safe to re-run: it skips "
+                    "what it has already covered.",
+        done_sql="SELECT COUNT(*) FROM company",
+        waiting_sql="SELECT 0",
+        done_label="companies found",
+        waiting_label="",
+    ),
     "sync": Stage(
         name="sync",
         title="Sync the register",
@@ -191,7 +242,7 @@ STAGES: dict[str, Stage] = {
                   help="Required above 2000 companies. The register asks users to avoid "
                        "regular mass querying, so a run that size has to be deliberate."),
         ),
-        needs="A sweep, from the command line: arpenteur source zefix --canton VD",
+        needs="Sweep the register, above.",
         produces="Purpose text, capital, address and gazette notices for each company.",
         cost="One register request per company. Free, but paced at about two a second, "
              "so ten thousand companies is roughly ninety minutes.",
@@ -333,7 +384,7 @@ STAGES: dict[str, Stage] = {
 }
 
 # The order the operations page shows them in, which is the order they run in.
-ORDER = ("sync", "hydrate", "people", "profile", "enrich", "match", "reach")
+ORDER = ("source", "sync", "hydrate", "people", "profile", "enrich", "match", "reach")
 
 # Sizes offered instead of a free number box. "No limit" is last and named
 # rather than blank, so choosing it is a decision rather than an oversight.
@@ -371,8 +422,29 @@ def options_for(conn: sqlite3.Connection, settings: Settings) -> dict[str, tuple
         )
     ]
     segments = [(name, name) for name in sorted(settings.segments)]
+    # Every Swiss canton, not only the ones already swept: this list is what a
+    # sweep is aimed at, and offering only cantons already in the database
+    # would make it impossible to add one.
+    all_cantons = [
+        (code, code) for code in (
+            "AG", "AI", "AR", "BE", "BL", "BS", "FR", "GE", "GL", "GR", "JU",
+            "LU", "NE", "NW", "OW", "SG", "SH", "SO", "SZ", "TG", "TI", "UR",
+            "VD", "VS", "ZG", "ZH",
+        )
+    ]
+    forms = [
+        (str(f.get("uid")), f"{f.get('uid')}  {f.get('label') or f.get('name') or ''}")
+        for f in db.catalogue(conn)
+        if f.get("uid")
+    ]
+    if not forms:
+        # Before the catalogue has been fetched, offer what the territory is
+        # already set to rather than an empty list that looks broken.
+        forms = [(code, code) for code in settings.territory.legal_forms]
     return {
         "cantons": (("", "All cantons"), *cantons),
+        "cantons_multi": tuple(all_cantons),
+        "forms_multi": tuple(forms),
         "segments": (("", "All segments"), *segments),
         "bands": BAND_CHOICES,
         "limits": LIMIT_CHOICES,
@@ -405,9 +477,23 @@ def coerce(stage: Stage, form: dict[str, Any]) -> dict[str, Any]:
     """
     kwargs: dict[str, Any] = {}
     for field_ in stage.fields:
+        key = field_.param or field_.name
         raw = form.get(field_.name)
         if field_.kind == "bool":
-            kwargs[field_.name] = bool(raw)
+            ticked = bool(raw)
+            kwargs[key] = (not ticked) if field_.invert else ticked
+            continue
+        if field_.multi:
+            # A multi-select posts one value per selection. Nothing selected
+            # means "whatever the territory says", not "no cantons at all",
+            # which would sweep nothing and look like a broken run.
+            chosen = form.get(field_.name + "[]") or raw
+            values = chosen if isinstance(chosen, list) else (
+                [chosen] if chosen else []
+            )
+            values = [str(v).strip() for v in values if str(v).strip()]
+            if values:
+                kwargs[key] = values
             continue
         if raw is None or str(raw).strip() == "":
             continue
@@ -417,13 +503,13 @@ def coerce(stage: Stage, form: dict[str, Any]) -> dict[str, Any]:
         # learning about it.
         if field_.kind == "int" or field_.name == "limit":
             try:
-                kwargs[field_.name] = int(value)
+                kwargs[key] = int(value)
             except ValueError as exc:
                 raise ValueError(f"{field_.label} must be a whole number") from exc
         elif field_.name == "uids":
             kwargs["uids"] = [part.strip() for part in value.split(",") if part.strip()]
         else:
-            kwargs[field_.name] = value
+            kwargs[key] = value
     return kwargs
 
 

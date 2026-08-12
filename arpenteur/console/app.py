@@ -34,9 +34,10 @@ from fastapi.responses import HTMLResponse, RedirectResponse
 
 from .. import attribution, db
 from ..config import Settings, load_settings
-from ..stages import source
+from ..stages import match, source
 from . import clients as clients_view
 from . import render
+from . import settings_page as settings_view_page
 from .runner import ORDER, STAGES, Runner, close_orphans, options_for, status_of
 
 
@@ -754,6 +755,166 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             )
         finally:
             conn.close()
+
+    # --- settings -------------------------------------------------------------
+    #
+    # The territory, the segments, the signal brief and the campaign brief
+    # decide what every stage does. Keeping them in files made the most
+    # consequential decisions in the tool the ones you had to leave the tool to
+    # make, and hid them: a survey containing no foundations because 0110 was
+    # absent from a list is not a discoverable state.
+
+    def _fresh() -> Settings:
+        """Settings re-read after a change, so a redirect shows the new value."""
+        return load_settings(settings.root)
+
+    @app.get("/settings", response_class=HTMLResponse)
+    def settings_view(request: Request) -> HTMLResponse:
+        conn = connect()
+        try:
+            live = _fresh()
+            counts = {
+                str(r["legal_form_uid"]): r["n"]
+                for r in conn.execute(
+                    "SELECT legal_form_uid, COUNT(*) n FROM company "
+                    "WHERE legal_form_uid IS NOT NULL GROUP BY 1"
+                )
+            }
+            brief_path = live.root / "campaign.md"
+            text = brief_path.read_text(encoding="utf-8") if brief_path.is_file() else ""
+            return HTMLResponse(
+                settings_view_page.shell(
+                    settings_view_page.settings_page(
+                        cantons=list(live.territory.cantons),
+                        forms=list(live.territory.legal_forms),
+                        catalogue=db.catalogue(conn),
+                        counts=counts,
+                        segments=dict(live.segments),
+                        signal_brief=live.signal_brief,
+                        campaign=text,
+                        campaign_digest=match.brief_digest(text.strip()) if text.strip() else "—",
+                        scored=conn.execute("SELECT COUNT(*) FROM fit").fetchone()[0],
+                        campaign_path="campaign.md",
+                        history=db.setting_history(conn),
+                        note=request.query_params.get("note", ""),
+                    ),
+                    live.territory.describe(),
+                )
+            )
+        finally:
+            conn.close()
+
+    @app.post("/settings/territory")
+    async def save_territory(request: Request) -> RedirectResponse:
+        form = await request.form()
+        cantons = [str(v).strip().upper() for v in form.getlist("cantons") if str(v).strip()]
+        forms = [str(v).strip() for v in form.getlist("legal_forms") if str(v).strip()]
+        if not cantons or not forms:
+            # An empty canton list means "no restriction" everywhere else in
+            # this codebase, so saving one from a form where nothing was ticked
+            # would silently widen the survey to Switzerland.
+            return RedirectResponse(
+                "/settings?note=" + quote(
+                    "Pick at least one canton and one legal form. An empty list "
+                    "means no restriction, which would widen the survey rather "
+                    "than narrow it."
+                ),
+                status_code=303,
+            )
+        conn = connect()
+        try:
+            db.save_setting(conn, "cantons", cantons)
+            db.save_setting(conn, "legal_forms", forms)
+            conn.commit()
+            return RedirectResponse("/settings", status_code=303)
+        finally:
+            conn.close()
+
+    @app.post("/settings/catalogue")
+    def refresh_catalogue() -> RedirectResponse:
+        """The register's own list of legal forms, so a code is picked rather
+        than remembered."""
+        conn = connect()
+        try:
+            from ..sources.zefix import ZefixClient
+            from ..stages.source import _client
+
+            with _client(settings) as http:
+                raw = ZefixClient(http, settings.zefix.base_url).legal_forms()
+            forms = []
+            for entry in raw:
+                name, short = entry.get("name"), entry.get("shortName")
+                label = name.get("fr") if isinstance(name, dict) else name
+                tag = short.get("fr") if isinstance(short, dict) else short
+                if entry.get("uid"):
+                    forms.append({
+                        "uid": str(entry["uid"]),
+                        "label": label or tag or str(entry["uid"]),
+                        "short": tag or "",
+                    })
+            db.save_catalogue(conn, sorted(forms, key=lambda f: f["uid"]))
+            return RedirectResponse("/settings", status_code=303)
+        except Exception as exc:
+            return RedirectResponse(
+                f"/settings?note={quote(str(exc))}", status_code=303
+            )
+        finally:
+            conn.close()
+
+    @app.post("/settings/segments")
+    async def save_segments_setting(request: Request) -> RedirectResponse:
+        form = await request.form()
+        names = form.getlist("seg_name")
+        texts = form.getlist("seg_text")
+        dropped = {str(v) for v in form.getlist("seg_drop")}
+        segments = {
+            str(name).strip(): str(text).strip()
+            for name, text in zip(names, texts)
+            if str(name).strip() and str(text).strip() and str(name).strip() not in dropped
+        }
+        if not segments:
+            return RedirectResponse(
+                "/settings?note=" + quote(
+                    "A survey with no segments cannot be sliced. Keep at least one."
+                ),
+                status_code=303,
+            )
+        conn = connect()
+        try:
+            db.save_setting(conn, "segments", segments)
+            conn.commit()
+            return RedirectResponse("/settings", status_code=303)
+        finally:
+            conn.close()
+
+    @app.post("/settings/signal")
+    def save_signal(signal_brief: str = Form("")) -> RedirectResponse:
+        conn = connect()
+        try:
+            db.save_setting(conn, "signal_brief", " ".join(signal_brief.split()))
+            conn.commit()
+            return RedirectResponse("/settings", status_code=303)
+        finally:
+            conn.close()
+
+    @app.post("/settings/campaign")
+    def save_campaign(campaign: str = Form("")) -> RedirectResponse:
+        """Written back to campaign.md rather than into the database.
+
+        It stays a versioned file on purpose: when a run produces surprising
+        scores the first question is what changed in the brief, and a diff
+        answers that where a database column does not.
+        """
+        if not campaign.strip():
+            return RedirectResponse(
+                "/settings?note=" + quote(
+                    "An empty brief would produce confident scores built on "
+                    "nothing, which is worse than no scores."
+                ),
+                status_code=303,
+            )
+        (settings.root / "campaign.md").write_text(campaign, encoding="utf-8")
+        return RedirectResponse("/settings", status_code=303)
 
     @app.get("/healthz")
     def healthz() -> dict[str, str]:
