@@ -299,10 +299,34 @@ under their own name. Swiss law (LCD art. 3 al. 1 let. o) draws the line at
 *mass* advertising email without prior consent, and the defence against ever
 crossing it is that the software has no mechanism, which a test asserts.
 
-**It cannot start the expensive stages** either. A web form that spends four
-searches per company is too easy to submit twice, so `enrich` and `match` stay
-on the command line where the cost guards and the `--dry-run` habit are. The
-console watches what they did.
+**It runs the stages, and shows the work.** `/run` starts any stage and drops
+you on its log, which fills in as the stage talks. Every stage already took an
+injectable `log` callable, so this swapped the sink rather than touching a
+single stage's internals: lines go to a `run_line` table, which means the log
+survives a reload, a run started from the command line is watchable in the
+same view, and a stage that emits sixty thousand lines is polled for only what
+the page has not seen.
+
+The objection was never to the button but to spending real money from a page
+that looks like a filter, so the guards that made the command line safe are
+enforced on the server, in `console/runner.py`:
+
+- **One at a time.** Two `enrich` runs would spend twice and interleave their
+  writes.
+- **A declared size.** `enrich` and `match` will not start without a limit, a
+  named list of UIDs, or a dry run. Checked in the handler, because a
+  `required` attribute is a convenience for the person, not a constraint on
+  the request.
+- **A dry run offered first**, and ticked by default. Note that `profile` is
+  the exception and the form says so: its dry run still calls the model for
+  every batch and skips only the write.
+- **Every stage's own refusal still applies.** This adds guards, it does not
+  replace them: a wide `enrich` is still refused by `enrich`.
+
+A run is a thread inside the console, so stopping the console kills it. Those
+runs are settled as interrupted at the next startup rather than left claiming
+to be running; a run started from the command line is left alone, since it may
+belong to a process still working in another terminal.
 
 It binds to localhost and has no authentication, because there is no intent
 that it be reachable. The database holds contact details for thousands of

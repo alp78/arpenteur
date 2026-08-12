@@ -14,16 +14,19 @@ Swiss law (LCD art. 3 al. 1 let. o) draws the line at *mass* advertising email
 without consent, and the defence against ever crossing it is that the software
 has no mechanism, not that nobody clicks the button.
 
-**It does not start expensive stages.** Running `enrich` or `match` from a web
-form would make it far too easy to spend a lot of money from a page that looks
-like a filter. The stages stay on the command line where the cost guards and
-the `--dry-run` habit live; the console watches what they did.
+**It runs stages, under the guards that made the command line safe.** One at a
+time, the paid stages refusing to start without a declared size, and a dry run
+offered first. The objection was never to the button but to spending real
+money from a page that looks like a filter, so the guards are enforced on the
+server in `runner.py` rather than by a disabled field. Every stage's own cost
+refusal is untouched and still applies.
 """
 
 from __future__ import annotations
 
 import sqlite3
 from typing import Any
+from urllib.parse import quote
 
 from fastapi import FastAPI, Form, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
@@ -31,6 +34,7 @@ from fastapi.responses import HTMLResponse, RedirectResponse
 from .. import attribution, db
 from ..config import Settings, load_settings
 from . import render
+from .runner import STAGES, Runner, close_orphans
 
 
 def create_app(settings: Settings | None = None) -> FastAPI:
@@ -38,6 +42,20 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     settings = settings or load_settings()
     app = FastAPI(title="arpenteur", docs_url=None, redoc_url=None)
     app.state.settings = settings
+    # One runner per app, holding the one-at-a-time lock. On the app rather
+    # than at module scope so two consoles in one test process do not share a
+    # lock and refuse each other's runs.
+    runner = Runner(settings)
+    app.state.runner = runner
+
+    # A run is a thread inside this process, so a previous console that was
+    # stopped mid-run left a row claiming to be running. Settled at startup,
+    # before any page can show it or poll it.
+    _startup = db.open_db(settings.db_path)
+    try:
+        close_orphans(_startup)
+    finally:
+        _startup.close()
 
     def connect() -> sqlite3.Connection:
         # One connection per request. SQLite in WAL mode handles concurrent
@@ -329,6 +347,63 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         finally:
             conn.close()
 
+    @app.get("/runs/{run_id}", response_class=HTMLResponse)
+    def one_run(run_id: int) -> HTMLResponse:
+        """One run, read line by line as it happens."""
+        conn = connect()
+        try:
+            run = conn.execute("SELECT * FROM run WHERE id = ?", (run_id,)).fetchone()
+            if run is None:
+                return HTMLResponse("<h1>Not found</h1>", status_code=404)
+            rows = db.lines_after(conn, run_id, 0)
+            after = rows[-1]["seq"] if rows else 0
+            return shell(render.run_page(run, rows, after))
+        finally:
+            conn.close()
+
+    @app.get("/runs/{run_id}/lines", response_class=HTMLResponse)
+    def run_lines(run_id: int, after: int = 0) -> HTMLResponse:
+        """The lines a watcher has not seen, and a tail asking for the next.
+
+        Only what is new: the tail carries the sequence it has reached, so a
+        run emitting sixty thousand lines does not re-send them every poll.
+        """
+        conn = connect()
+        try:
+            run = conn.execute(
+                "SELECT finished_at FROM run WHERE id = ?", (run_id,)
+            ).fetchone()
+            rows = db.lines_after(conn, run_id, after)
+            reached = rows[-1]["seq"] if rows else after
+            # Finished is read after the lines, never before: a run that ended
+            # between the two queries must still have its last lines delivered,
+            # and the cost of the other order is a log missing its own ending.
+            done = run is not None and run["finished_at"] is not None
+            return HTMLResponse(render.run_log(rows, run_id, done, reached))
+        finally:
+            conn.close()
+
+    # --- starting one ---------------------------------------------------------
+
+    @app.get("/run", response_class=HTMLResponse)
+    def run_form(request: Request) -> HTMLResponse:
+        return shell(
+            render.start_page(
+                STAGES.values(), runner.running(), request.query_params.get("note", "")
+            )
+        )
+
+    @app.post("/run/{name}")
+    async def start_run(name: str, request: Request) -> RedirectResponse:
+        form = dict(await request.form())
+        try:
+            run_id = runner.start(name, form)
+        except (ValueError, RuntimeError) as exc:
+            # Back to the form with the reason, rather than an error page: the
+            # answer is always to change something and try again.
+            return RedirectResponse(f"/run?note={quote(str(exc))}", status_code=303)
+        return RedirectResponse(f"/runs/{run_id}", status_code=303)
+
     @app.get("/pipeline", response_class=HTMLResponse)
     def pipeline() -> HTMLResponse:
         conn = connect()
@@ -348,15 +423,19 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             )
             return shell(
                 "<h1>Pipeline</h1>"
-                "<p class='dim small'>Stages run from the command line, where the "
-                "cost guards and the dry runs are. This is what they have produced.</p>"
+                "<p class='dim small'>What the stages have produced so far. "
+                "Start one from <a href='/run'>run</a>, or from the command line; "
+                "both write the same rows and both are watchable.</p>"
                 f"<table><tbody>{rows}</tbody></table>"
-                "<h2>next</h2><div class='card small' style='white-space:pre-line'>"
-                "arpenteur sync            keep the register copy current\n"
-                "arpenteur hydrate         fetch detail for new and changed companies\n"
-                "arpenteur profile         sort into segments\n"
-                "arpenteur enrich --limit  read websites (costs money per company)\n"
-                "arpenteur match --limit   score against campaign.md</div>"
+                "<h2>the order they go in</h2>"
+                "<div class='card small' style='white-space:pre-line'>"
+                "sync      keep the register copy current\n"
+                "hydrate   fetch detail for new and changed companies\n"
+                "people    officers from the notices already stored\n"
+                "profile   sort into segments\n"
+                "enrich    read websites (costs money per company)\n"
+                "match     score against campaign.md\n"
+                "reach     read those sites for a published address</div>"
             )
         finally:
             conn.close()

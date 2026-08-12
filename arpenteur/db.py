@@ -875,13 +875,48 @@ def mark_reached(
     )
 
 
-def start_run(conn: sqlite3.Connection, stage: str, args: dict[str, Any]) -> int:
+def start_run(
+    conn: sqlite3.Connection,
+    stage: str,
+    args: dict[str, Any],
+    *,
+    started_by: str = "cli",
+) -> int:
     cur = conn.execute(
-        "INSERT INTO run (stage, args_json, started_at) VALUES (?, ?, ?)",
-        (stage, json.dumps(args, ensure_ascii=False, default=str), now()),
+        "INSERT INTO run (stage, args_json, started_at, started_by) VALUES (?, ?, ?, ?)",
+        (stage, json.dumps(args, ensure_ascii=False, default=str), now(), started_by),
     )
     conn.commit()
     return int(cur.lastrowid)
+
+
+def append_line(conn: sqlite3.Connection, run_id: int, text: str) -> int:
+    """Record one line a running stage emitted. Returns its sequence number.
+
+    The sink behind the `log` callable every stage already accepts. See
+    migrations/0011_run_lines.sql for why this is a table: a hydration of
+    sixty thousand companies is otherwise one row reading "running" for eight
+    hours.
+    """
+    seq = conn.execute(
+        "SELECT COALESCE(MAX(seq), 0) + 1 FROM run_line WHERE run_id = ?", (run_id,)
+    ).fetchone()[0]
+    conn.execute(
+        "INSERT INTO run_line (run_id, seq, at, text) VALUES (?, ?, ?, ?)",
+        (run_id, seq, now(), text),
+    )
+    return int(seq)
+
+
+def lines_after(
+    conn: sqlite3.Connection, run_id: int, after: int = 0, limit: int = 500
+) -> list[sqlite3.Row]:
+    """Lines a watcher has not seen yet. A range scan on (run_id, seq)."""
+    return conn.execute(
+        "SELECT seq, at, text FROM run_line WHERE run_id = ? AND seq > ? "
+        "ORDER BY seq LIMIT ?",
+        (run_id, after, limit),
+    ).fetchall()
 
 
 def finish_run(

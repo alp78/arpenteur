@@ -64,11 +64,25 @@ button.primary {{ background:var(--accent); color:#fff; border-color:var(--accen
 .note {{ border-left:2px solid var(--line); padding:.15rem 0 .15rem .7rem; margin:.6rem 0; }}
 .warn {{ background:#fff7f0; border-left:3px solid var(--accent); padding:.6rem .9rem;
          margin:1rem 0; font-size:.9rem; }}
+.controls {{ display:flex; gap:.8rem; flex-wrap:wrap; align-items:end; margin:.7rem 0; }}
+.ctl {{ display:flex; flex-direction:column; gap:.15rem; }}
+.ctl input[type=text] {{ width:11rem; }}
+.ctl input[type=number] {{ width:6rem; }}
+label.check {{ display:flex; gap:.35rem; align-items:center; white-space:nowrap; }}
+label.check input {{ margin:0; }}
+.cost {{ margin-top:.15rem; }}
+.state-running {{ color:var(--accent); font-weight:600; }}
+.state-error {{ color:#a3341c; font-weight:600; }}
+.state-done {{ color:var(--dim); }}
+pre.log {{ background:#fff; border:1px solid var(--line); padding:.8rem 1rem; margin:0;
+           max-height:70vh; overflow:auto; font-size:.82rem; line-height:1.5;
+           white-space:pre-wrap; word-break:break-word; }}
 </style></head><body>
 <header>
   <span class="brand">ARPENTEUR</span>
   <a href="/">companies</a>
   <a href="/pipeline">pipeline</a>
+  <a href="/run">run</a>
   <a href="/runs">runs</a>
   <span class="dim small" style="margin-left:auto">{territory}</span>
 </header><main>
@@ -426,15 +440,18 @@ def runs_table(rows: list[sqlite3.Row]) -> str:
         detail = row["error"] or row["stats_json"] or ""
         out.append(
             f"<tr><td class='small'>{esc(row['started_at'][:19])}</td>"
-            f"<td>{esc(row['stage'])}</td><td>{esc(state)}</td>"
-            f"<td class='small dim'>{esc(detail[:180])}</td></tr>"
+            f"<td><a href='/runs/{row['id']}'>{esc(row['stage'])}</a></td>"
+            f"<td class='state-{state}'>{esc(state)}</td>"
+            f"<td class='small dim'>{esc(row['started_by'] or '')}</td>"
+            f"<td class='small dim'>{esc(detail[:160])}</td></tr>"
         )
     body = "".join(out) or (
-        '<tr><td colspan="4" class="dim">Nothing has been run yet.</td></tr>'
+        '<tr><td colspan="5" class="dim">Nothing has been run yet.</td></tr>'
     )
     return (
         '<table id="runs" hx-get="/runs/rows" hx-trigger="every 3s" hx-swap="outerHTML">'
-        "<thead><tr><th>started</th><th>stage</th><th>state</th><th>result</th></tr></thead>"
+        "<thead><tr><th>started</th><th>stage</th><th>state</th><th>by</th>"
+        "<th>result</th></tr></thead>"
         f"<tbody>{body}</tbody></table>"
     )
 
@@ -443,5 +460,109 @@ def runs_page(rows: list[sqlite3.Row]) -> str:
     return (
         "<h1>Runs</h1>"
         "<p class='dim small'>Every stage records what it did. This view refreshes "
-        "itself while a run is in progress.</p>" + runs_table(rows)
+        "itself while a run is in progress. Open one to read it line by line.</p>"
+        + runs_table(rows)
     )
+
+
+# --- starting a stage ---------------------------------------------------------
+
+
+def _control(field: Any, stage_name: str) -> str:
+    """One labelled control. `field` is a runner.Field."""
+    ident = f"{stage_name}-{field.name}"
+    if field.kind == "bool":
+        checked = " checked" if field.default else ""
+        control = (
+            f"<label class='check'><input type='checkbox' name='{esc(field.name)}' "
+            f"id='{esc(ident)}' value='1'{checked}> {esc(field.label)}</label>"
+        )
+        note = f"<span class='dim small'> {esc(field.help)}</span>" if field.help else ""
+        return f"<div class='ctl'>{control}{note}</div>"
+    if field.kind == "choice":
+        options = "".join(
+            f"<option value='{esc(c)}'>{esc(c or 'any')}</option>" for c in field.choices
+        )
+        inner = f"<select name='{esc(field.name)}' id='{esc(ident)}'>{options}</select>"
+    else:
+        kind = "number" if field.kind == "int" else "text"
+        inner = (
+            f"<input type='{kind}' name='{esc(field.name)}' id='{esc(ident)}' "
+            f"placeholder='{esc(field.help)}'>"
+        )
+    return (
+        f"<div class='ctl'><label for='{esc(ident)}' class='small dim'>"
+        f"{esc(field.label)}</label>{inner}</div>"
+    )
+
+
+def stage_form(stage: Any, busy: int | None) -> str:
+    """The start form for one stage. `stage` is a runner.Stage."""
+    controls = "".join(_control(f, stage.name) for f in stage.fields)
+    disabled = " disabled" if busy else ""
+    button = (
+        f"<button class='primary'{disabled}>run {esc(stage.name)}</button>"
+        if not busy
+        else f"<button disabled>run {esc(stage.name)}</button>"
+        f"<span class='dim small'> run {busy} is still going</span>"
+    )
+    return (
+        f"<form class='card' method='post' action='/run/{esc(stage.name)}'>"
+        f"<b>{esc(stage.name)}</b> <span class='dim small'>{esc(stage.summary)}</span>"
+        f"<div class='dim small cost'>{esc(stage.cost)}</div>"
+        f"<div class='controls'>{controls}</div>{button}</form>"
+    )
+
+
+def start_page(stages: Any, busy: int | None, note: str = "") -> str:
+    forms = "".join(stage_form(stage, busy) for stage in stages)
+    banner = f"<div class='warn'>{esc(note)}</div>" if note else ""
+    return (
+        "<h1>Run a stage</h1>"
+        "<p class='dim small'>One at a time. The paid stages will not start without "
+        "a limit or a named list, and every stage that can be run dry offers it "
+        "first. Nothing here sends anything to anybody.</p>"
+        + banner + forms
+    )
+
+
+# --- watching one run ---------------------------------------------------------
+
+
+def run_log(rows: list[sqlite3.Row], run_id: int, done: bool, after: int) -> str:
+    """The lines, followed by the element that asks for the ones after them.
+
+    The tail replaces itself, carrying the sequence number it has reached, so
+    each poll fetches only what is new. A run emitting sixty thousand lines
+    would otherwise re-send all of them every two seconds.
+
+    When the run has finished the tail is rendered without a trigger, which is
+    how the polling stops: there is no timer to cancel and no connection left
+    hanging if the run died.
+    """
+    lines = "".join(
+        f"<span class='dim'>{esc(row['at'][11:19])}</span> {esc(row['text'])}\n"
+        for row in rows
+    )
+    poll = (
+        ""
+        if done
+        else f" hx-get='/runs/{run_id}/lines?after={after}' hx-trigger='every 2s' "
+        "hx-swap='outerHTML'"
+    )
+    return f"{lines}<span id='tail'{poll}></span>"
+
+
+def run_page(run: sqlite3.Row, rows: list[sqlite3.Row], after: int) -> str:
+    done = bool(run["finished_at"])
+    state = "error" if run["error"] else ("done" if done else "running")
+    detail = run["error"] or run["stats_json"] or ""
+    header = (
+        f"<h1>{esc(run['stage'])} <span class='dim small'>run {run['id']}</span></h1>"
+        f"<div class='card small'>"
+        f"<div>started {esc(run['started_at'][:19])} by {esc(run['started_by'] or '?')}"
+        f" &middot; <span class='state-{state}'>{esc(state)}</span></div>"
+        f"<div class='dim'>{esc(run['args_json'] or '')}</div>"
+        f"<div>{esc(detail)}</div></div>"
+    )
+    return header + f"<pre id='log' class='log'>{run_log(rows, run['id'], done, after)}</pre>"
