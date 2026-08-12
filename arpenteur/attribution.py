@@ -36,10 +36,16 @@ ORIGIN = {
     "shab": "FOSC / SHAB, via Zefix (OFRC)",
     "web-search": "Site web de l'entreprise",
     "site": "Site web de l'entreprise",
+    "published": "Site web de l'entreprise",
 }
 
 # Methods whose rows are our reading of a source rather than the source, and
 # so must be declared as modified under the second condition above.
+#
+# `published` is deliberately absent. An address lifted verbatim from a
+# `mailto:` link on a company's own contact page is not our reading of
+# anything: it is the string the company published, copied. The line is
+# between transcription and interpretation, not between registry and web.
 DERIVED = frozenset({"shab", "web-search", "site"})
 
 SOURCE_NOTICE = (

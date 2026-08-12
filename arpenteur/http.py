@@ -85,6 +85,7 @@ class PoliteClient:
         cache_dir: Path | None = None,
         auth: tuple[str, str] | None = None,
         timeout: float = 30.0,
+        accept: str = "application/json",
     ) -> None:
         self.limiter = RateLimiter(rate_limit)
         self.max_retries = max_retries
@@ -98,7 +99,10 @@ class PoliteClient:
                 # Naming the tool and a way to reach its operator is what
                 # separates a courteous client from an anonymous scraper.
                 "User-Agent": contact,
-                "Accept": "application/json",
+                # A registry API and a company's own website want opposite
+                # answers here, and a site with a strict content negotiator
+                # replies 406 to a client that only ever asks for JSON.
+                "Accept": accept,
             },
             follow_redirects=True,
         )

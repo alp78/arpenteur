@@ -1,0 +1,22 @@
+-- Arpenteur schema, version 10: a record of having looked for an address.
+--
+-- Without a marker, `reach` can only ask "does this company have an email
+-- yet?", and the answer is no for two entirely different companies: one
+-- nobody has looked at, and one whose site publishes only a web form. Every
+-- run would then re-fetch the second one forever, which is exactly the
+-- behaviour the disk cache hides and the site's owner would call scraping.
+--
+-- So this is the same shape as `company.hydrated_at`: a nullable timestamp
+-- that means "looked", distinct from whatever was found.
+--
+-- `reach_pages` records how many pages were read to reach that conclusion.
+-- Zero pages with an address means the address was already in hand; several
+-- pages with none means the site genuinely does not publish one, which is
+-- the finding that sends a company to the `pattern` tier rather than a
+-- reason to look again.
+--
+-- Neither column enters `site.content_hash`: SITE_JUDGED_FIELDS is an
+-- explicit whitelist of what the fit judge is shown, and having looked for
+-- an address is not something a score was computed from.
+ALTER TABLE site ADD COLUMN reached_at TEXT;
+ALTER TABLE site ADD COLUMN reach_pages INTEGER;

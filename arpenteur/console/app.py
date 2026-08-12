@@ -294,16 +294,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             row = conn.execute(
                 "SELECT * FROM contact WHERE id = ?", (contact_id,)
             ).fetchone()
-            state = "suppressed" if row["suppressed"] else ""
-            return HTMLResponse(
-                f"<tr><td>{render.esc(row['value'])}</td>"
-                f"<td class='small dim'>{render.esc(row['method'])}</td>"
-                f"<td class='small'>{state}</td>"
-                f"<td><form class='inline' hx-post='/contact/{contact_id}/suppress' "
-                "hx-target='closest tr' hx-swap='outerHTML'>"
-                f"<button>{'restore' if row['suppressed'] else 'suppress'}</button>"
-                "</form></td></tr>"
-            )
+            return HTMLResponse(render.contact_row(row))
         finally:
             conn.close()
 

@@ -302,6 +302,37 @@ def cmd_match(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_reach(args: argparse.Namespace) -> int:
+    settings = load_settings()
+    conn = db.open_db(settings.db_path)
+    run_id = db.start_run(conn, "reach", vars(args))
+    try:
+        stats = reach.run(
+            settings,
+            conn,
+            uids=_split(args.uid),
+            segment=args.segment,
+            band=args.band,
+            limit=args.limit,
+            refresh=args.refresh,
+            dry_run=args.dry_run,
+        )
+    except Exception as exc:
+        db.finish_run(conn, run_id, error=str(exc))
+        print(f"error: {exc}", file=sys.stderr)
+        return 1
+    db.finish_run(conn, run_id, stats)
+    print(
+        f"read {stats['pages']} pages: {stats['with_address']} companies with a "
+        f"published address ({stats['new']} new of {stats['addresses']} found), "
+        f"{stats['without']} without, {stats['blocked']} declined by robots.txt, "
+        f"{stats['unreadable']} unreadable; "
+        f"{stats['for_pattern']} left for the pattern tier"
+    )
+    conn.close()
+    return 0
+
+
 def cmd_stats(args: argparse.Namespace) -> int:
     settings = load_settings()
     conn = db.open_db(settings.db_path)
@@ -392,7 +423,7 @@ def cmd_stats(args: argparse.Namespace) -> int:
 
 
 def cmd_stub(args: argparse.Namespace) -> int:
-    {"people": people, "reach": reach, "draft": draft}[args.command].run()
+    {"draft": draft}[args.command].run()
     return 0
 
 
@@ -524,11 +555,23 @@ def build_parser() -> argparse.ArgumentParser:
         "legal-forms", help="the registry's legal form catalogue, with uid codes"
     ).set_defaults(func=cmd_legal_forms)
 
-    for name, helptext in (
-        ("reach", "resolve a point of contact (not built yet)"),
-        ("draft", "propose messages for review (not built yet)"),
-    ):
-        sub.add_parser(name, help=helptext).set_defaults(func=cmd_stub)
+    p = sub.add_parser(
+        "reach",
+        help="read a company's own site for a published address (no model cost)",
+    )
+    p.add_argument("--uid", help="comma separated UIDs")
+    p.add_argument("--segment", help="only companies carrying this segment")
+    p.add_argument("--band", help="only companies whose fit is in this band")
+    p.add_argument("--limit", type=int, help="required for runs over 200 companies")
+    p.add_argument(
+        "--refresh", action="store_true", help="re-read sites already looked at"
+    )
+    p.add_argument("--dry-run", action="store_true", help="list the sites, fetch nothing")
+    p.set_defaults(func=cmd_reach)
+
+    sub.add_parser(
+        "draft", help="propose messages for review (not built yet)"
+    ).set_defaults(func=cmd_stub)
 
     return parser
 

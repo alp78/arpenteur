@@ -27,9 +27,9 @@ Pipeline stages, each a standalone command:
    signals, partnerships, published email *(built)*
 6. **match** — score each company against `campaign.md`, with the
    reasoning and what to open with *(built)*
-7. **reach** — a point of contact: published addresses first, then the
-   domain's own naming pattern, then a paid lookup for the remainder
-   *(planned)*
+7. **reach** — a point of contact: published addresses *(built)*, then
+   the domain's own naming pattern, then a paid lookup for the
+   remainder *(planned)*
 8. **draft** — outreach proposals, always human-reviewed, never
    auto-sent *(planned)*
 
@@ -179,6 +179,9 @@ uv run arpenteur enrich --canton VS --segment data-driven --limit 20
 # score what was researched against campaign.md, with an approach for each
 uv run arpenteur match --limit 20
 
+# read those sites for a published address. No model, so no cost per company
+uv run arpenteur reach --band high
+
 uv run arpenteur stats
 
 # then read, correct and annotate the result in a browser
@@ -208,6 +211,54 @@ here, which a diff answers and a database field would not. Every score stores
 a digest of the brief it was taken against, so rewriting the brief invalidates
 the scores rather than leaving old and new sitting together looking equally
 current: the next `match` re-scores exactly what the rewrite made stale.
+
+## Finding an address
+
+```bash
+uv run arpenteur reach --band high --dry-run   # which sites would be read
+uv run arpenteur reach --band high
+```
+
+`reach` opens the websites `enrich` found and takes the addresses the company
+publishes on them. It costs nothing per company: an address is a `mailto:`
+href or a string with an `@` in it, so a regex finds it, always gives the same
+answer twice, and can name the exact page it came from. `enrich` already reads
+these sites with a model at around forty centimes each and returned no address
+at all on the companies it has run on, which is the honest argument for not
+using one here.
+
+Home page first, then a handful of links that look like they carry contact
+details, ranked so a page called `contact` is read before an `about` page. A
+site whose navigation is JavaScript serves markup with no links in it at all,
+so when there are none to follow the sitemap is used instead: that is what a
+sitemap is for, and it is cheaper and politer than crawling. The first live
+run found nothing on such a site while its address sat on `mentions-légales`,
+which is also why the hints are matched with accents and percent-encoding
+folded away.
+
+**robots.txt is honoured.** Everything else this tool fetches is either an API
+it holds credentials for or a fetch Anthropic's servers perform. This is the
+one stage that opens a stranger's website itself, and a tool that reads
+company sites without asking is a scraper whatever its rate limit says. A site
+with no robots.txt is treated as allowing; absence of a rule is not a
+prohibition.
+
+Every address stores the page it was on, so a suppression decision months
+later can be checked against what was actually published. `method` is
+`published`, which is not in the derived set: an address copied from a
+`mailto:` link is the company's own string, not our reading of anything.
+
+Having looked is recorded separately from having found. A site publishing only
+a web form is a settled answer, not a company to re-fetch on every run, and
+those companies are counted as waiting for the pattern tier rather than
+reported as done. Re-running `enrich` onto a different URL clears the marker;
+onto the same URL it does not.
+
+The other two tiers are not built. `pattern` would infer the house convention
+from an address already on the domain and the officers in `person`, and needs
+a way to verify a guess before it is stored as a fact. `provider` is a paid
+lookup and needs an account and a processing agreement read first. What each
+still needs is written at the foot of `arpenteur/stages/reach.py`.
 
 ## The console
 
@@ -381,4 +432,7 @@ No network and no credential required. The Zefix client runs against
 recorded fixtures in `tests/fixtures/`; the sweep, migrations, the SHAB
 officer parser and the classification parsing are tested directly; and
 `enrich` runs end to end against a fake provider, since the provider
-protocol is the seam.
+protocol is the seam. `reach` is tested the same way against a fake HTTP
+client that records every URL it was asked for, which is how the claims
+about robots.txt and the page budget are actually checked rather than
+asserted in prose.

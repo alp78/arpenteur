@@ -353,21 +353,40 @@ def _site_card(site: sqlite3.Row | None) -> str:
     return f'<h2>web research</h2><div class="card">{"".join(body)}</div>'
 
 
+def contact_row(c: sqlite3.Row) -> str:
+    """One contact, as the page draws it and as the suppress route redraws it.
+
+    One function rather than two matching string literals: the route swaps
+    this row in place, so a column added here and forgotten there produces a
+    table that changes shape when a button is pressed.
+
+    The source is a link because that is what `source_url` is for. Deciding
+    months later whether to keep suppressing an address means looking at the
+    page that published it, and a row that only says "published" cannot
+    answer where.
+    """
+    state = "suppressed" if c["suppressed"] else ""
+    source = (
+        f"<a href='{esc(c['source_url'])}' rel='noreferrer noopener' "
+        f"target='_blank'>{esc(c['method'])}</a>"
+        if c["source_url"]
+        else esc(c["method"])
+    )
+    return (
+        f"<tr><td>{esc(c['value'])}</td><td class='small dim'>{source}</td>"
+        f"<td class='small'>{esc(state)}</td>"
+        f"<td><form class='inline' hx-post='/contact/{c['id']}/suppress' "
+        "hx-target='closest tr' hx-swap='outerHTML'>"
+        f"<button>{'restore' if c['suppressed'] else 'suppress'}</button>"
+        "</form></td></tr>"
+    )
+
+
 def _contacts_card(contacts: list[sqlite3.Row]) -> str:
     if not contacts:
         return ""
-    rows = []
-    for c in contacts:
-        state = "suppressed" if c["suppressed"] else ""
-        rows.append(
-            f"<tr><td>{esc(c['value'])}</td><td class='small dim'>{esc(c['method'])}</td>"
-            f"<td class='small'>{esc(state)}</td>"
-            f"<td><form class='inline' hx-post='/contact/{c['id']}/suppress' "
-            "hx-target='closest tr' hx-swap='outerHTML'>"
-            f"<button>{'restore' if c['suppressed'] else 'suppress'}</button>"
-            "</form></td></tr>"
-        )
-    return "<h2>contacts</h2><table><tbody>" + "".join(rows) + "</tbody></table>"
+    rows = "".join(contact_row(c) for c in contacts)
+    return f"<h2>contacts</h2><table><tbody>{rows}</tbody></table>"
 
 
 def _notes_card(company_id: int, notes: list[sqlite3.Row]) -> str:

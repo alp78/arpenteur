@@ -750,7 +750,16 @@ def save_site(conn: sqlite3.Connection, company_id: int, row: dict[str, Any]) ->
             fetched_at = excluded.fetched_at,
             model = excluded.model,
             searches = excluded.searches,
-            fetches = excluded.fetches
+            fetches = excluded.fetches,
+            -- Having looked for an address survives a re-reading of the same
+            -- site and does not survive a different one. Clearing it
+            -- unconditionally would make every enrich --refresh re-fetch
+            -- pages whose answer had not changed; never clearing it would
+            -- leave a company pointing at a new domain nobody had opened.
+            reached_at = CASE WHEN site.url IS excluded.url
+                              THEN site.reached_at ELSE NULL END,
+            reach_pages = CASE WHEN site.url IS excluded.url
+                               THEN site.reach_pages ELSE NULL END
         """,
         {
             "company_id": company_id,
@@ -823,20 +832,47 @@ def save_contact(
 
     Never clears `suppressed`: an address a human has suppressed must stay
     suppressed even when a later run finds it published again.
+
+    The count is taken by looking first rather than from the cursor, which is
+    the same correction `set_prospect` needed. On the conflict path an upsert
+    still reports rowcount 1, and `lastrowid` keeps whatever the connection's
+    last real insert left there, so the obvious test is true for a row that
+    was only updated: every re-run would report addresses it already had as
+    newly found.
     """
-    cur = conn.execute(
+    known = conn.execute(
+        "SELECT 1 FROM contact WHERE company_id = ? AND kind = ? AND value = ?",
+        (company_id, kind, value),
+    ).fetchone()
+    conn.execute(
         """
         INSERT INTO contact (
             person_id, company_id, kind, value, source_url, method, fetched_at
         ) VALUES (?, ?, ?, ?, ?, ?, ?)
         ON CONFLICT (company_id, kind, value) DO UPDATE SET
+            person_id = COALESCE(contact.person_id, excluded.person_id),
             source_url = COALESCE(excluded.source_url, contact.source_url),
             method = COALESCE(excluded.method, contact.method),
             fetched_at = excluded.fetched_at
         """,
         (person_id, company_id, kind, value, source_url, method, now()),
     )
-    return 1 if cur.rowcount and cur.lastrowid else 0
+    return 0 if known else 1
+
+
+def mark_reached(
+    conn: sqlite3.Connection, company_id: int, *, pages: int
+) -> None:
+    """Record that this company's site was read for an address.
+
+    Distinct from having found one. See migrations/0010_reach.sql: without
+    it, a site that publishes only a web form is indistinguishable from one
+    nobody has opened, and every run re-fetches it.
+    """
+    conn.execute(
+        "UPDATE site SET reached_at = ?, reach_pages = ? WHERE company_id = ?",
+        (now(), int(pages), company_id),
+    )
 
 
 def start_run(conn: sqlite3.Connection, stage: str, args: dict[str, Any]) -> int:

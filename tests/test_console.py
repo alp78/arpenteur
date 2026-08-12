@@ -155,6 +155,31 @@ def test_suppressing_a_contact_toggles_and_persists(client, conn) -> None:
     assert conn.execute("SELECT suppressed FROM contact").fetchone()[0] == 0
 
 
+def test_an_address_says_which_page_published_it(client, conn) -> None:
+    """Deciding months later whether to keep suppressing an address means
+    looking at the page that published it."""
+    db.save_contact(
+        conn, company_id=1, kind="email", value="a@f.ch", method="published",
+        source_url="https://f.ch/mentions-legales",
+    )
+    conn.commit()
+    body = client.get("/company/1").text
+    assert "https://f.ch/mentions-legales" in body
+
+
+def test_suppressing_redraws_the_same_row_the_page_drew(client, conn) -> None:
+    """The route swaps the row in place, so the two must not drift apart."""
+    db.save_contact(
+        conn, company_id=1, kind="email", value="a@f.ch", method="published",
+        source_url="https://f.ch/contact",
+    )
+    conn.commit()
+    contact_id = conn.execute("SELECT id FROM contact").fetchone()[0]
+    swapped = client.post(f"/contact/{contact_id}/suppress").text
+    assert "https://f.ch/contact" in swapped
+    assert swapped.count("<td>") + swapped.count("<td class") == 4
+
+
 # --- escaping -----------------------------------------------------------------
 
 
