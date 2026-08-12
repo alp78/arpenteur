@@ -112,8 +112,9 @@ Put a key from [console.anthropic.com](https://console.anthropic.com) in
 `.env` as `ANTHROPIC_API_KEY`. Nothing else changes: this is the path a
 published copy of the tool takes, and it needs no `ant` install.
 
-Either way, `enrich` bills per web search rather than per token, so start
-a run with `--limit 2` before pointing it at a shortlist.
+Either way, `enrich` is the expensive stage: about a franc and anywhere from
+seven to forty-five minutes per company, measured. Start a run with
+`--limit 2` before pointing it at a shortlist.
 
 ## The territory
 
@@ -240,7 +241,7 @@ uv run arpenteur reach --band high
 publishes on them. It costs nothing per company: an address is a `mailto:`
 href or a string with an `@` in it, so a regex finds it, always gives the same
 answer twice, and can name the exact page it came from. `enrich` already reads
-these sites with a model at around forty centimes each and returned no address
+these sites with a model at around a franc each and returned no address
 at all on the companies it has run on, which is the honest argument for not
 using one here.
 
@@ -459,11 +460,21 @@ reading a refusal as an empty result and silently dropping every company
 under that letter; the largest response actually observed was 4874 rows,
 so the ceiling is real but never signalled by a short answer.
 
-**The stages that cost money refuse to run wide.** `enrich` bills per web
-search, so it takes an explicit UID list or a filter, and a filter that
-resolves to more than 200 companies raises rather than spends. `--limit`
-is how you say you meant it. `site.searches` and `site.fetches` record
-what each company actually cost, so a run can be priced afterwards.
+**The stages that cost money refuse to run wide.** `enrich` takes an
+explicit UID list or a filter, and a filter that resolves to more than
+200 companies raises rather than spends. `--limit` is how you say you
+meant it.
+
+Its bill is tokens, not searches, which took a measurement to establish.
+The cost was assumed to be per search because that is the conspicuous
+thing about a search tool, and only searches and fetches were recorded.
+One company measured on 12.08.2026 used four searches and **465'812 input
+tokens**: the tokens were about a franc and the searches a few centimes.
+Every search result read comes back as input on the following turn, and a
+turn the model pauses and resumes re-sends the whole conversation, so a
+company that searches hard costs superlinearly. Runs now record tokens
+and continuations alongside the search counts, so the next figure is read
+off a run rather than remembered.
 
 **A found website is a guess until it is not.** Swiss SME names collide,
 so `enrich` records `status` and `confidence` beside every result, and

@@ -330,7 +330,7 @@ def _actions(
         _act(uid, "enrich",
              "Research again" if site else "Research this website",
              "Searches the web for this company and reads what it finds. "
-             "About 40 centimes and a few minutes.", busy),
+             "About 1 franc, and anywhere from 7 to 45 minutes.", busy),
         _act(uid, "match",
              "Score again" if fit else "Score this company",
              "Reads it against campaign.md and writes the fit and the opening line.",

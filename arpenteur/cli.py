@@ -288,6 +288,7 @@ def cmd_enrich(args: argparse.Namespace) -> int:
         f"not found {stats['not_found']}, failed {stats['failed']}; "
         f"{stats['emails']} new emails; "
         f"{stats['searches']} searches, {stats['fetches']} fetches, "
+        f"{stats['turns']} turns, "
         f"{stats['input_tokens']}/{stats['output_tokens']} tokens in/out"
     )
     conn.close()

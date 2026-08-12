@@ -147,6 +147,10 @@ def test_tokens_accumulate_across_a_resumed_turn() -> None:
     result = research(provider_returning([first, second]))
     assert (result.input_tokens, result.output_tokens) == (130_000, 900)
     assert result.searches == 3
+    # The count that explains the token total: a continuation re-sends the
+    # whole conversation, every search result included, so turns is the thing
+    # to look at when a company costs three times its neighbour.
+    assert result.turns == 2
 
 
 def test_a_reply_with_no_text_block_says_so() -> None:

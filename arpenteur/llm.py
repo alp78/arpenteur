@@ -63,6 +63,12 @@ class Research:
     fetches: int = 0
     input_tokens: int = 0
     output_tokens: int = 0
+    # How many requests the turn took. This is what explains the token count:
+    # a continuation re-sends the whole conversation including every search
+    # result already read, so a company needing three turns costs far more
+    # than three times one turn. Measured 12.08.2026, one company reached
+    # 465'812 input tokens on four searches.
+    turns: int = 1
     pages: list[str] = field(default_factory=list)
 
 
@@ -157,9 +163,15 @@ class AnthropicProvider:
         """Search the web, read what is found, and return it against a schema.
 
         Anthropic runs the searching and fetching, so nothing here touches the
-        open web directly and the PoliteClient rate limit does not apply. The
-        cost is per search rather than per request, which is why max_searches
-        is bounded by the caller rather than left to the model.
+        open web directly and the PoliteClient rate limit does not apply.
+
+        max_searches is bounded by the caller rather than left to the model,
+        and the reason is not the per-search charge. Every result read comes
+        back as input on the following turn, and a turn the model pauses and
+        resumes re-sends the whole conversation, so searches drive the token
+        bill and the token bill is nearly all of the cost: one company
+        measured on 12.08.2026 spent about a franc, of which the four searches
+        were a few centimes and 465'812 input tokens were the rest.
 
         Citations are deliberately not enabled: they are incompatible with
         structured outputs and would turn this into prose parsing again.
@@ -184,7 +196,7 @@ class AnthropicProvider:
         # A server-tool turn can stop with pause_turn when the model's own
         # tool loop hits its iteration limit. Resuming is a plain re-send of
         # the conversation; the cap stops a pathological company from looping.
-        for _ in range(4):
+        for turn in range(1, 5):
             # Streamed rather than a plain create(). A server-tool turn holds
             # one HTTP request open for the whole search-and-read loop, and
             # measured on 11.08.2026 a single company took just over six
@@ -267,6 +279,7 @@ class AnthropicProvider:
                 fetches=fetches,
                 input_tokens=input_tokens,
                 output_tokens=output_tokens,
+                turns=turn,
                 pages=pages,
             )
 

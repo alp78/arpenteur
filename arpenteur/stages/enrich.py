@@ -5,16 +5,23 @@ what it runs on, or where to write. That is on the company's own site, so this
 stage asks a model to search for it, read it, and answer a fixed set of
 questions about it.
 
-This is the first stage that costs real money per company, and the cost is per
-search rather than per token. Two consequences shape the design:
+This is the first stage that costs real money per company: about a franc,
+measured. The bill is tokens rather than searches, which took a measurement to
+establish and is the opposite of what was assumed. Two consequences shape the
+design:
 
   it never runs on the corpus   the caller passes uids, or a filter that
                                resolves to a shortlist. There is deliberately
                                no "enrich everything" path: 183k companies at
                                four searches each is not a run anyone means
                                to start by accident.
-  it records what it spent     `site.searches` and `site.fetches` carry the
-                               real counts so a run can be priced afterwards.
+  it records what it spent     the run stats carry searches, fetches, tokens
+                               and continuations, so a run is priced from its
+                               own record. Tokens were the omission that
+                               mattered: they are the bill, and an estimate of
+                               forty centimes a company survived unchecked
+                               until one was measured at 465'812 input tokens,
+                               about a franc.
 
 Every field here is an inference from a page, not a registry fact. `status`
 and `confidence` are stored beside them because a guessed website silently
@@ -265,6 +272,8 @@ def run(
         # in development and never checked, which is the wrong half to count.
         "input_tokens": 0,
         "output_tokens": 0,
+        # Continuations, which is what explains the token count.
+        "turns": 0,
         "model": model,
     }
     if not companies:
@@ -320,6 +329,7 @@ def run(
         stats["fetches"] += result.fetches
         stats["input_tokens"] += result.input_tokens
         stats["output_tokens"] += result.output_tokens
+        stats["turns"] += result.turns
         status = str(data.get("status") or "not_found")
         stats[status if status in ("found", "not_found", "ambiguous") else "failed"] += 1
 

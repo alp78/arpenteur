@@ -265,8 +265,13 @@ STAGES: dict[str, Stage] = {
                 DRY),
         needs="Sort into segments, so there is something to narrow by.",
         produces="Website, summary, signals and any published email address.",
-        cost="THE EXPENSIVE ONE. Roughly 30 to 45 centimes and 7 minutes per company. "
-             "A hundred companies is about half a working day and forty francs.",
+        # Measured, not estimated. One company on 12.08.2026: 465'812 input
+        # tokens, 7'106 output, 4 searches, 3 fetches, 45 minutes, and it
+        # found nothing. The earlier guess of forty centimes came from a
+        # single half-remembered figure and was out by three and a half times.
+        cost="THE EXPENSIVE ONE. About 1 franc and 7 to 45 minutes per company, "
+             "measured. A hundred companies is upwards of a hundred francs and "
+             "can be a full day. Searching hard and finding nothing costs the most.",
         button="Research websites",
         button_does="Searches the web for each company, opens what it finds, and stores "
                     "one reading per company. Will not start without a size or a dry run.",
