@@ -21,12 +21,20 @@ def _split(value: str | None) -> list[str] | None:
     return [part.strip() for part in value.split(",") if part.strip()]
 
 
+def _db_path(settings: Any, fixture: bool) -> Any:
+    """Keep recorded rows out of the database that will hold live registry data."""
+    if fixture:
+        return settings.data_dir / "arpenteur.fixture.sqlite3"
+    return settings.db_path
+
+
 def cmd_init_db(args: argparse.Namespace) -> int:
     settings = load_settings()
-    conn = db.connect(settings.db_path)
+    path = _db_path(settings, args.fixture)
+    conn = db.connect(path)
     version = db.migrate(conn)
     conn.close()
-    print(f"{settings.db_path} ready, schema version {version}")
+    print(f"{path} ready, schema version {version}")
     return 0
 
 
@@ -45,9 +53,16 @@ def _scoped(args: argparse.Namespace):
 
 def cmd_source(args: argparse.Namespace) -> int:
     settings = _scoped(args)
-    conn = db.open_db(settings.db_path)
-    run_id = db.start_run(conn, f"source:{args.provider}", vars(args))
-    print(f"territory: {settings.territory.describe()}")
+    conn = db.open_db(_db_path(settings, args.fixture))
+    stage = f"source:{args.provider}" + (":fixture" if args.fixture else "")
+    run_id = db.start_run(conn, stage, vars(args))
+    # The fixture set is its own small territory, so announcing the configured
+    # one would name cantons the run is not going to touch.
+    print(
+        "territory: recorded fixture set (VD, Sàrl)"
+        if args.fixture
+        else f"territory: {settings.territory.describe()}"
+    )
     try:
         stats = source.run_zefix(
             settings,
@@ -56,6 +71,7 @@ def cmd_source(args: argparse.Namespace) -> int:
             hydrate=not args.no_hydrate,
             limit=args.limit,
             bulk=args.bulk,
+            fixture=args.fixture,
         )
     except Exception as exc:
         db.finish_run(conn, run_id, error=str(exc))
@@ -72,16 +88,20 @@ def cmd_source(args: argparse.Namespace) -> int:
 
 def cmd_hydrate(args: argparse.Namespace) -> int:
     settings = _scoped(args)
-    conn = db.open_db(settings.db_path)
-    run_id = db.start_run(conn, "hydrate", vars(args))
+    conn = db.open_db(_db_path(settings, args.fixture))
+    run_id = db.start_run(conn, "hydrate" + (":fixture" if args.fixture else ""), vars(args))
     try:
         count = source.hydrate_pending(
             settings,
             conn,
-            cantons=settings.cantons,
-            legal_forms=settings.legal_forms,
+            # The fixture database holds only what the fixture sweep put there,
+            # so narrowing it to the configured territory would filter a set
+            # that is already the whole of it.
+            cantons=None if args.fixture else settings.cantons,
+            legal_forms=None if args.fixture else settings.legal_forms,
             limit=args.limit,
             bulk=args.bulk,
+            fixture=args.fixture,
         )
     except Exception as exc:
         db.finish_run(conn, run_id, error=str(exc))
@@ -194,8 +214,8 @@ def cmd_regions(args: argparse.Namespace) -> int:
 
 def cmd_profile(args: argparse.Namespace) -> int:
     settings = load_settings()
-    conn = db.open_db(settings.db_path)
-    run_id = db.start_run(conn, "profile", vars(args))
+    conn = db.open_db(_db_path(settings, args.fixture))
+    run_id = db.start_run(conn, "profile" + (":fixture" if args.fixture else ""), vars(args))
     try:
         stats = profile.run(
             settings,
@@ -335,7 +355,7 @@ def cmd_reach(args: argparse.Namespace) -> int:
 
 def cmd_stats(args: argparse.Namespace) -> int:
     settings = load_settings()
-    conn = db.open_db(settings.db_path)
+    conn = db.open_db(_db_path(settings, args.fixture))
 
     total = conn.execute("SELECT COUNT(*) FROM company").fetchone()[0]
     hydrated = conn.execute(
@@ -434,9 +454,13 @@ def build_parser() -> argparse.ArgumentParser:
     )
     sub = parser.add_subparsers(dest="command", required=True)
 
-    sub.add_parser("init-db", help="create or migrate the database").set_defaults(
-        func=cmd_init_db
+    p = sub.add_parser("init-db", help="create or migrate the database")
+    p.add_argument(
+        "--fixture",
+        action="store_true",
+        help="use the separate database reserved for recorded fixture data",
     )
+    p.set_defaults(func=cmd_init_db)
 
     def territory_flags(parser: argparse.ArgumentParser) -> None:
         """The same three flags on every command that acts on a territory.
@@ -466,6 +490,11 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help=f"accept a detail pass over {source.POLITE_HYDRATION_LIMIT}+ companies",
     )
+    p.add_argument(
+        "--fixture",
+        action="store_true",
+        help="replay bundled VD/Sàrl responses without credentials or network",
+    )
     p.set_defaults(func=cmd_source)
 
     p = sub.add_parser("hydrate", help="fetch detail for companies missing it")
@@ -476,6 +505,11 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help=f"accept a run over {source.POLITE_HYDRATION_LIMIT} companies "
         "(Zefix asks users to avoid regular mass querying)",
+    )
+    p.add_argument(
+        "--fixture",
+        action="store_true",
+        help="replay bundled details from the separate fixture database",
     )
     p.set_defaults(func=cmd_hydrate)
 
@@ -501,6 +535,11 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--limit", type=int)
     p.add_argument("--reclassify", action="store_true", help="include already classified")
     p.add_argument("--dry-run", action="store_true", help="print, write nothing")
+    p.add_argument(
+        "--fixture",
+        action="store_true",
+        help="read from the separate fixture database",
+    )
     p.set_defaults(func=cmd_profile)
 
     p = sub.add_parser("people", help="officers from the register's SHAB notices")
@@ -547,7 +586,13 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--port", type=int, default=8000)
     p.set_defaults(func=cmd_console)
 
-    sub.add_parser("stats", help="what the survey holds").set_defaults(func=cmd_stats)
+    p = sub.add_parser("stats", help="what the survey holds")
+    p.add_argument(
+        "--fixture",
+        action="store_true",
+        help="read from the separate fixture database",
+    )
+    p.set_defaults(func=cmd_stats)
     sub.add_parser(
         "regions", help="territories defined in arpenteur.toml, and the active one"
     ).set_defaults(func=cmd_regions)
