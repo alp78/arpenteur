@@ -68,7 +68,13 @@ def wait_for(predicate, timeout: float = 5.0) -> bool:
 
 
 def fake_stage(name: str, call, **kw) -> Stage:
-    return Stage(name, "a test stage", call, kw.pop("fields", ()), **kw)
+    """Keyword-built on purpose: Stage carries the words the page shows, so it
+    gains fields as the explanations improve and positional construction would
+    silently shift `call` into a description."""
+    return Stage(
+        name=name, title=name, what="a test stage", call=call,
+        button=f"run {name}", **kw,
+    )
 
 
 # --- the guards ---------------------------------------------------------------
@@ -312,16 +318,90 @@ def test_the_dry_run_that_still_costs_says_so(client) -> None:
 
 def test_every_stage_is_offered_with_what_it_costs(client) -> None:
     """"Costs money per company" is the one thing an operator must not have
-    to remember."""
-    body = client.get("/run").text
+    to remember, so it is on the card rather than in the documentation."""
+    body = client.get("/pipeline").text
     for name in ("sync", "hydrate", "people", "profile", "enrich", "match", "reach"):
         assert f"/run/{name}" in body
-    assert "40 centimes" in body
+    assert "centimes" in body and "THE EXPENSIVE ONE" in body
+
+
+def test_every_stage_says_what_it_needs_and_what_it_produces(client) -> None:
+    """An empty result should read as "nothing to do yet" rather than as a
+    broken stage, which needs the prerequisite stated on the card."""
+    body = client.get("/pipeline").text
+    assert body.count("Needs first") == 7
+    assert body.count("Produces") == 7
+
+
+def test_every_button_says_what_pressing_it_will_do(client) -> None:
+    body = client.get("/pipeline").text
+    assert "Works through the companies that have no detail yet" in body
+    assert "Will not start without a size or a dry run" in body
+
+
+def test_the_old_separate_form_leads_to_the_operations_page(client) -> None:
+    """It was a stack of unlabelled boxes on a page of its own. The controls
+    belong next to the counts that say which one to press."""
+    reply = client.get("/run", follow_redirects=False)
+    assert reply.status_code == 307 and reply.headers["location"] == "/pipeline"
+
+
+def test_sync_counts_days_of_gazette_not_companies(client, conn) -> None:
+    """Its backlog is days not yet read. Showing the count of companies marked
+    as changed said the gazette was behind when what was behind was the
+    re-reading, which is the next stage's job."""
+    body = client.get("/pipeline").text
+    assert "days behind" in body and "days read" in body
+
+
+def test_a_stage_shows_how_much_is_waiting_for_it(client, conn) -> None:
+    """The number that turns a form into an instrument. A bare button says
+    nothing about whether pressing it would do anything at all."""
+    db.upsert_company(
+        conn,
+        {"uid": "CHE2", "name": "Sans détail Sàrl", "canton": "GE", "method": "zefix"},
+    )
+    conn.commit()
+    body = client.get("/pipeline").text
+    assert "waiting</span>" in body
+
+
+def test_choices_are_offered_rather_than_typed(client, conn) -> None:
+    """Anything with a knowable set of values is a list to pick from. A canton
+    typed by hand is a filter that silently matches nothing."""
+    body = client.get("/pipeline").text
+    assert "<option value='GE'>GE</option>" in body
+    assert "All cantons" in body and "sme-owner" in body
+    # And the sizes, which used to be a bare number box.
+    assert "100 companies" in body and "No limit, run the whole queue" in body
+
+
+def test_a_field_that_must_be_typed_says_where_to_get_it(client) -> None:
+    body = client.get("/pipeline").text
+    assert "CHE164075515" in body, "an example of the format"
+    assert "or from zefix.ch" in body, "where to find one"
 
 
 def test_a_refusal_comes_back_on_the_form(client) -> None:
     reply = client.post("/run/enrich", data={}, follow_redirects=True)
     assert "limit" in reply.text
+
+
+def test_a_company_can_be_actioned_from_its_own_page(client, conn) -> None:
+    """The other half of running a stage: having opened a company and decided
+    it is interesting, acting on it without going back to build a filter that
+    selects exactly it."""
+    body = client.get("/company/1").text
+    assert "/run/enrich" in body and "/run/match" in body
+    assert "value='CHE1'" in body, "the action must name this company"
+
+
+def test_a_named_company_needs_no_size(client, conn) -> None:
+    """Naming a company is declaring the size of the run, which is why the
+    paid stages accept it without a limit."""
+    reply = client.post("/run/enrich", data={"uids": "CHE1"}, follow_redirects=False)
+    assert reply.status_code == 303
+    assert "/runs/" in reply.headers["location"], reply.headers["location"]
 
 
 def test_the_console_still_cannot_send(client, conn) -> None:

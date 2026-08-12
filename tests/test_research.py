@@ -22,7 +22,8 @@ class Block(SimpleNamespace):
 
 
 def message(
-    blocks: list[Any], *, searches: int = 0, fetches: int = 0, stop: str = "end_turn"
+    blocks: list[Any], *, searches: int = 0, fetches: int = 0, stop: str = "end_turn",
+    input_tokens: int = 0, output_tokens: int = 0,
 ) -> SimpleNamespace:
     return SimpleNamespace(
         content=blocks,
@@ -31,7 +32,9 @@ def message(
         usage=SimpleNamespace(
             server_tool_use=SimpleNamespace(
                 web_search_requests=searches, web_fetch_requests=fetches
-            )
+            ),
+            input_tokens=input_tokens,
+            output_tokens=output_tokens,
         ),
     )
 
@@ -50,12 +53,16 @@ class StubStream:
         return self.reply
 
 
-def provider_returning(reply: SimpleNamespace) -> AnthropicProvider:
+def provider_returning(reply: SimpleNamespace | list) -> AnthropicProvider:
+    """One reply, or a sequence of them for a turn the server pauses."""
+    replies = list(reply) if isinstance(reply, list) else [reply]
+
+    def next_stream(**_kw) -> StubStream:
+        return StubStream(replies.pop(0) if len(replies) > 1 else replies[0])
+
     p = AnthropicProvider(api_key="test-only-not-a-real-key")
     p.client = SimpleNamespace(
-        beta=SimpleNamespace(
-            messages=SimpleNamespace(stream=lambda **_kw: StubStream(reply))
-        )
+        beta=SimpleNamespace(messages=SimpleNamespace(stream=next_stream))
     )
     return p
 
@@ -112,6 +119,34 @@ def test_spend_comes_from_usage_not_from_counting_blocks() -> None:
         blocks.insert(0, Block(type="code_execution_tool_result", content=[]))
     result = research(provider_returning(message(blocks, searches=4, fetches=2)))
     assert (result.searches, result.fetches) == (4, 2)
+
+
+def test_tokens_are_recorded_because_they_are_the_bill() -> None:
+    """The counters that existed were the small half of the cost.
+
+    A per-company figure of about forty centimes was quoted from one
+    observation in development, and nothing stored it, so it could never be
+    checked against a run. Searches and fetches were counted while the larger
+    number was not.
+    """
+    reply = message(
+        [Block(type="text", text=JSON)], searches=4, input_tokens=132_759,
+        output_tokens=900,
+    )
+    result = research(provider_returning(reply))
+    assert (result.input_tokens, result.output_tokens) == (132_759, 900)
+
+
+def test_tokens_accumulate_across_a_resumed_turn() -> None:
+    """Each resumed request reports only its own usage, and the company was
+    billed for all of them. Same reason searches accumulate."""
+    first = message([Block(type="server_tool_use", name="web_search", input={})],
+                    searches=2, input_tokens=40_000, output_tokens=300, stop="pause_turn")
+    second = message([Block(type="text", text=JSON)],
+                     searches=1, input_tokens=90_000, output_tokens=600)
+    result = research(provider_returning([first, second]))
+    assert (result.input_tokens, result.output_tokens) == (130_000, 900)
+    assert result.searches == 3
 
 
 def test_a_reply_with_no_text_block_says_so() -> None:

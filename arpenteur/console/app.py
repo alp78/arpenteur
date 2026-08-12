@@ -34,7 +34,7 @@ from fastapi.responses import HTMLResponse, RedirectResponse
 from .. import attribution, db
 from ..config import Settings, load_settings
 from . import render
-from .runner import STAGES, Runner, close_orphans
+from .runner import ORDER, STAGES, Runner, close_orphans, options_for, status_of
 
 
 def create_app(settings: Settings | None = None) -> FastAPI:
@@ -70,12 +70,35 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     # --- the company list -----------------------------------------------------
 
+    # "Where has this company got to" as a filter, so the list can answer the
+    # question the operations page raises: which companies are the 41'238
+    # waiting for research, and which are the ones already scored.
+    STAGE_FILTERS = {
+        "": "",
+        "no-detail": "c.hydrated_at IS NULL",
+        "detail": "c.hydrated_at IS NOT NULL",
+        "changed": "c.stale_since IS NOT NULL",
+        "unclassified": "c.hydrated_at IS NOT NULL AND NOT EXISTS "
+                        "(SELECT 1 FROM segment s WHERE s.company_id = c.id)",
+        "classified": "EXISTS (SELECT 1 FROM segment s WHERE s.company_id = c.id)",
+        "unresearched": "EXISTS (SELECT 1 FROM segment s WHERE s.company_id = c.id) "
+                        "AND w.company_id IS NULL",
+        "researched": "w.company_id IS NOT NULL",
+        "unscored": "w.company_id IS NOT NULL AND f.company_id IS NULL",
+        "scored": "f.company_id IS NOT NULL",
+        "with-address": "EXISTS (SELECT 1 FROM contact ct WHERE ct.company_id = c.id "
+                        "AND ct.kind = 'email' AND ct.suppressed = 0)",
+    }
+
     def _query(
         conn: sqlite3.Connection, *, q: str, canton: str, segment: str,
-        band: str, state: str, limit: int = 200,
+        band: str, state: str, stage: str = "", limit: int = 200,
     ) -> tuple[list[sqlite3.Row], int]:
         where = ["1=1"]
         params: list[Any] = []
+        clause_stage = STAGE_FILTERS.get(stage, "")
+        if clause_stage:
+            where.append(clause_stage)
         if q:
             where.append("(c.name LIKE ? OR c.uid LIKE ?)")
             params += [f"%{q}%", f"%{q}%"]
@@ -94,26 +117,33 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             where.append("p.state = ?")
             params.append(state)
         clause = " AND ".join(where)
+        joins = (
+            "FROM company c "
+            "LEFT JOIN fit f ON f.company_id = c.id "
+            "LEFT JOIN site w ON w.company_id = c.id "
+            "LEFT JOIN prospect p ON p.company_id = c.id"
+        )
         sql = f"""
             SELECT c.id, c.uid, c.name, c.canton,
                    (SELECT json_group_array(s.segment) FROM segment s
                      WHERE s.company_id = c.id) AS segments,
-                   f.score, f.band, f.source, w.url, p.state
-              FROM company c
-              LEFT JOIN fit f ON f.company_id = c.id
-              LEFT JOIN site w ON w.company_id = c.id
-              LEFT JOIN prospect p ON p.company_id = c.id
+                   f.score, f.band, f.source, w.url, p.state,
+                   -- The progress stamps, as five booleans rather than five
+                   -- round trips: this list is 200 rows and a per-row query
+                   -- each would be a thousand.
+                   c.hydrated_at IS NOT NULL AS hydrated,
+                   EXISTS (SELECT 1 FROM segment s WHERE s.company_id = c.id) AS classified,
+                   w.company_id IS NOT NULL AS researched,
+                   f.company_id IS NOT NULL AS scored,
+                   w.reached_at IS NOT NULL AS reached
+              {joins}
              WHERE {clause}
              ORDER BY f.score DESC NULLS LAST, c.name
              LIMIT ?
         """
         rows = conn.execute(sql, params + [limit]).fetchall()
         total = conn.execute(
-            f"""SELECT COUNT(*) FROM company c
-                LEFT JOIN fit f ON f.company_id = c.id
-                LEFT JOIN prospect p ON p.company_id = c.id
-                WHERE {clause}""",
-            params,
+            f"SELECT COUNT(*) {joins} WHERE {clause}", params
         ).fetchone()[0]
         return rows, total
 
@@ -125,7 +155,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             rows, total = _query(
                 conn, q=args.get("q", ""), canton=args.get("canton", ""),
                 segment=args.get("segment", ""), band=args.get("band", ""),
-                state=args.get("state", ""),
+                state=args.get("state", ""), stage=args.get("stage", ""),
             )
             cantons = [r[0] for r in conn.execute(
                 "SELECT DISTINCT canton FROM company WHERE canton IS NOT NULL ORDER BY canton"
@@ -135,7 +165,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                 + render.filter_form(
                     q=args.get("q", ""), canton=args.get("canton", ""),
                     segment=args.get("segment", ""), band_name=args.get("band", ""),
-                    state=args.get("state", ""), cantons=cantons,
+                    state=args.get("state", ""), stage=args.get("stage", ""),
+                    cantons=cantons,
                     segments=sorted(settings.segments), states=list(db.PROSPECT_STATES),
                 )
                 + f'<div id="list">{render.company_table(rows, total)}</div>'
@@ -153,7 +184,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             rows, total = _query(
                 conn, q=args.get("q", ""), canton=args.get("canton", ""),
                 segment=args.get("segment", ""), band=args.get("band", ""),
-                state=args.get("state", ""),
+                state=args.get("state", ""), stage=args.get("stage", ""),
             )
             return HTMLResponse(
                 f'<div id="list">{render.company_table(rows, total)}</div>'
@@ -211,6 +242,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                 # any modification declared; the methods behind this page
                 # decide which notices apply.
                 attribution.notice(methods),
+                runner.running(),
             )
             return shell(body)
         finally:
@@ -385,13 +417,34 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     # --- starting one ---------------------------------------------------------
 
-    @app.get("/run", response_class=HTMLResponse)
-    def run_form(request: Request) -> HTMLResponse:
-        return shell(
-            render.start_page(
-                STAGES.values(), runner.running(), request.query_params.get("note", "")
+    @app.get("/pipeline", response_class=HTMLResponse)
+    def pipeline(request: Request) -> HTMLResponse:
+        """The operations page: every stage, where it stands, and how to run it.
+
+        One page rather than a form page and a counts page. The number that
+        makes a button meaningful is how much work is queued for it, and that
+        was on the other page: "3 done, 41'238 waiting" says what to press
+        next, where a bare button says nothing at all.
+        """
+        conn = connect()
+        try:
+            stages = [STAGES[name] for name in ORDER]
+            return shell(
+                render.pipeline_page(
+                    stages,
+                    {stage.name: status_of(conn, stage) for stage in stages},
+                    options_for(conn, settings),
+                    runner.running(),
+                    request.query_params.get("note", ""),
+                )
             )
-        )
+        finally:
+            conn.close()
+
+    @app.get("/run", response_class=HTMLResponse)
+    def run_redirect() -> RedirectResponse:
+        """The old separate form. Its contents live on the operations page."""
+        return RedirectResponse("/pipeline", status_code=307)
 
     @app.post("/run/{name}")
     async def start_run(name: str, request: Request) -> RedirectResponse:
@@ -399,46 +452,10 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         try:
             run_id = runner.start(name, form)
         except (ValueError, RuntimeError) as exc:
-            # Back to the form with the reason, rather than an error page: the
-            # answer is always to change something and try again.
-            return RedirectResponse(f"/run?note={quote(str(exc))}", status_code=303)
+            # Back to the operations page with the reason, rather than an error
+            # page: the answer is always to change something and try again.
+            return RedirectResponse(f"/pipeline?note={quote(str(exc))}", status_code=303)
         return RedirectResponse(f"/runs/{run_id}", status_code=303)
-
-    @app.get("/pipeline", response_class=HTMLResponse)
-    def pipeline() -> HTMLResponse:
-        conn = connect()
-        try:
-            counts = {
-                "companies": "SELECT COUNT(*) FROM company",
-                "hydrated": "SELECT COUNT(*) FROM company WHERE hydrated_at IS NOT NULL",
-                "awaiting refresh": "SELECT COUNT(*) FROM company WHERE stale_since IS NOT NULL",
-                "classified": "SELECT COUNT(DISTINCT company_id) FROM segment",
-                "researched": "SELECT COUNT(*) FROM site",
-                "scored": "SELECT COUNT(*) FROM fit",
-                "in the pipeline": "SELECT COUNT(*) FROM prospect",
-            }
-            rows = "".join(
-                f"<tr><td>{name}</td><td>{conn.execute(sql).fetchone()[0]}</td></tr>"
-                for name, sql in counts.items()
-            )
-            return shell(
-                "<h1>Pipeline</h1>"
-                "<p class='dim small'>What the stages have produced so far. "
-                "Start one from <a href='/run'>run</a>, or from the command line; "
-                "both write the same rows and both are watchable.</p>"
-                f"<table><tbody>{rows}</tbody></table>"
-                "<h2>the order they go in</h2>"
-                "<div class='card small' style='white-space:pre-line'>"
-                "sync      keep the register copy current\n"
-                "hydrate   fetch detail for new and changed companies\n"
-                "people    officers from the notices already stored\n"
-                "profile   sort into segments\n"
-                "enrich    read websites (costs money per company)\n"
-                "match     score against campaign.md\n"
-                "reach     read those sites for a published address</div>"
-            )
-        finally:
-            conn.close()
 
     @app.get("/healthz")
     def healthz() -> dict[str, str]:

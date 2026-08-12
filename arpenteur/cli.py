@@ -287,7 +287,8 @@ def cmd_enrich(args: argparse.Namespace) -> int:
         f"found {stats['found']}, ambiguous {stats['ambiguous']}, "
         f"not found {stats['not_found']}, failed {stats['failed']}; "
         f"{stats['emails']} new emails; "
-        f"{stats['searches']} searches, {stats['fetches']} fetches"
+        f"{stats['searches']} searches, {stats['fetches']} fetches, "
+        f"{stats['input_tokens']}/{stats['output_tokens']} tokens in/out"
     )
     conn.close()
     return 0

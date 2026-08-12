@@ -299,13 +299,30 @@ under their own name. Swiss law (LCD art. 3 al. 1 let. o) draws the line at
 *mass* advertising email without prior consent, and the defence against ever
 crossing it is that the software has no mechanism, which a test asserts.
 
-**It runs the stages, and shows the work.** `/run` starts any stage and drops
-you on its log, which fills in as the stage talks. Every stage already took an
-injectable `log` callable, so this swapped the sink rather than touching a
-single stage's internals: lines go to a `run_line` table, which means the log
-survives a reload, a run started from the command line is watchable in the
-same view, and a stage that emits sixty thousand lines is polled for only what
-the page has not seen.
+**It runs the stages, and shows the work.** Three views: **Companies**, the
+survey with a progress stamp per company and a filter for where each one has
+got to; **Operations**, every stage with how much it has done, how much is
+queued for it, and the control to advance it; **History**, what has been run.
+
+Operations is one page rather than a form page and a counts page, because the
+number that makes a button meaningful is how much work is waiting for it.
+"3 done, 41'238 waiting" says what to press next; a bare button says nothing.
+Each card states what the stage does, what must have happened first, what it
+produces, what it costs, and exactly what pressing the button will do. Any
+field with a knowable set of values is a list to pick from; anything that must
+be typed carries an example and says where to get it.
+
+A company page carries the same actions for that one company, since having
+opened it and decided it is interesting, the alternative is going back and
+constructing a filter that selects exactly it. Naming a company is itself a
+declaration of size, which is why the paid stages accept it without a limit.
+
+Starting a stage drops you on its log, which fills in as the stage talks.
+Every stage already took an injectable `log` callable, so this swapped the sink
+rather than touching a single stage's internals: lines go to a `run_line`
+table, which means the log survives a reload, a run started from the command
+line is watchable in the same view, and a stage that emits sixty thousand lines
+is polled for only what the page has not seen.
 
 The objection was never to the button but to spending real money from a page
 that looks like a filter, so the guards that made the command line safe are

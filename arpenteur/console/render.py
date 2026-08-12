@@ -64,13 +64,56 @@ button.primary {{ background:var(--accent); color:#fff; border-color:var(--accen
 .note {{ border-left:2px solid var(--line); padding:.15rem 0 .15rem .7rem; margin:.6rem 0; }}
 .warn {{ background:#fff7f0; border-left:3px solid var(--accent); padding:.6rem .9rem;
          margin:1rem 0; font-size:.9rem; }}
-.controls {{ display:flex; gap:.8rem; flex-wrap:wrap; align-items:end; margin:.7rem 0; }}
-.ctl {{ display:flex; flex-direction:column; gap:.15rem; }}
-.ctl input[type=text] {{ width:11rem; }}
-.ctl input[type=number] {{ width:6rem; }}
-label.check {{ display:flex; gap:.35rem; align-items:center; white-space:nowrap; }}
-label.check input {{ margin:0; }}
-.cost {{ margin-top:.15rem; }}
+.lede {{ color:var(--dim); max-width:62ch; margin:.2rem 0 1.4rem; }}
+.stages {{ display:flex; flex-direction:column; gap:1rem; }}
+.stage {{ background:#fff; border:1px solid var(--line); border-radius:3px; }}
+.stage-head {{ display:flex; gap:.9rem; align-items:flex-start; padding:1rem 1.1rem .3rem; }}
+.step {{ flex:0 0 1.6rem; height:1.6rem; border-radius:50%; background:var(--ink);
+         color:#fff; font-size:.8rem; display:flex; align-items:center;
+         justify-content:center; margin-top:.1rem; }}
+.stage-title {{ flex:1; }}
+.stage-title h3 {{ margin:0; font-size:1.05rem; }}
+.what {{ margin:.25rem 0 0; color:var(--dim); max-width:64ch; }}
+.stage-count {{ display:flex; gap:1.1rem; text-align:right; }}
+.stage-count div {{ display:flex; flex-direction:column; }}
+.stage-count b {{ font-size:1.15rem; font-variant-numeric:tabular-nums; }}
+.stage-count span {{ font-size:.7rem; text-transform:uppercase;
+                     letter-spacing:.05em; color:var(--dim); }}
+.stage-count .waiting b {{ color:var(--accent); }}
+dl.facts {{ display:grid; grid-template-columns:9rem 1fr; gap:.15rem .8rem;
+            margin:.8rem 1.1rem; padding:.7rem .9rem; background:var(--bg);
+            border:1px solid var(--line); font-size:.86rem; }}
+dl.facts dt {{ color:var(--dim); text-transform:uppercase; font-size:.7rem;
+               letter-spacing:.05em; padding-top:.18rem; }}
+dl.facts dd {{ margin:0; }}
+dl.facts dd.money {{ color:var(--accent); font-weight:600; }}
+.controls {{ display:flex; gap:1rem 1.3rem; flex-wrap:wrap; align-items:start;
+             margin:0 1.1rem 1rem; }}
+.ctl {{ display:flex; flex-direction:column; gap:.2rem; max-width:19rem; }}
+.ctl.ctl-wide {{ max-width:26rem; }}
+.ctl > label {{ font-size:.74rem; text-transform:uppercase; letter-spacing:.05em;
+                color:var(--dim); font-weight:600; }}
+.ctl input[type=text] {{ width:17rem; }}
+.hint {{ font-size:.79rem; color:var(--dim); line-height:1.4; }}
+label.check {{ display:flex; gap:.45rem; align-items:flex-start; }}
+label.check input {{ margin:.25rem 0 0; }}
+label.check b {{ display:block; font-weight:600; font-size:.9rem; }}
+.action {{ display:flex; gap:.8rem; align-items:center; flex-wrap:wrap;
+           padding:.8rem 1.1rem; border-top:1px solid var(--line); background:var(--bg); }}
+.action button {{ padding:.45rem 1.1rem; font-weight:600; }}
+.action .hint {{ max-width:56ch; }}
+.stamp {{ display:inline-block; width:1.15rem; height:1.15rem; line-height:1.15rem;
+          text-align:center; border-radius:2px; font-size:.66rem; font-weight:700;
+          margin-right:.12rem; border:1px solid var(--line); color:var(--dim);
+          background:#fff; }}
+.stamp.on {{ background:var(--ink); border-color:var(--ink); color:#fff; }}
+.stamp.on.paid {{ background:var(--accent); border-color:var(--accent); }}
+.acts {{ display:flex; gap:.8rem; flex-wrap:wrap; align-items:flex-start;
+         background:#fff; border:1px solid var(--line); padding:.8rem .9rem;
+         margin:0 0 1.2rem; }}
+.act {{ display:flex; flex-direction:column; gap:.2rem; max-width:17rem; }}
+.act button {{ font-weight:600; }}
+.nowrap {{ white-space:nowrap; }}
 .state-running {{ color:var(--accent); font-weight:600; }}
 .state-error {{ color:#a3341c; font-weight:600; }}
 .state-done {{ color:var(--dim); }}
@@ -80,10 +123,9 @@ pre.log {{ background:#fff; border:1px solid var(--line); padding:.8rem 1rem; ma
 </style></head><body>
 <header>
   <span class="brand">ARPENTEUR</span>
-  <a href="/">companies</a>
-  <a href="/pipeline">pipeline</a>
-  <a href="/run">run</a>
-  <a href="/runs">runs</a>
+  <a href="/">Companies</a>
+  <a href="/pipeline">Operations</a>
+  <a href="/runs">History</a>
   <span class="dim small" style="margin-left:auto">{territory}</span>
 </header><main>
 """
@@ -131,39 +173,94 @@ def band(row: sqlite3.Row | None) -> str:
 # --- the company list ---------------------------------------------------------
 
 
+# How far each company has been taken, as five stamps in pipeline order. The
+# letter is the stage; filled means done. One glance answers "what has actually
+# happened to this company", which a row of blank cells does not.
+PROGRESS = (
+    ("D", "hydrated", "Detail fetched from the register"),
+    ("S", "classified", "Sorted into segments"),
+    ("W", "researched", "Website researched"),
+    ("F", "scored", "Scored against the campaign"),
+    ("@", "reached", "An address was looked for"),
+)
+
+
+def progress(row: sqlite3.Row) -> str:
+    """The five stamps for one company."""
+    keys = set(row.keys())
+    out = []
+    for letter, key, title in PROGRESS:
+        on = " on" if key in keys and row[key] else ""
+        paid = " paid" if key in ("researched", "scored") else ""
+        out.append(
+            f'<span class="stamp{on}{paid if on else ""}" title="{esc(title)}'
+            f'{"" if on else " — not yet"}">{esc(letter)}</span>'
+        )
+    return "".join(out)
+
+
 def company_rows(rows: list[sqlite3.Row]) -> str:
     if not rows:
         return (
-            '<tr><td colspan="6" class="dim">Nothing matches. Widen the filter, '
-            "or run a stage that would fill this in.</td></tr>"
+            '<tr><td colspan="7" class="dim">Nothing matches. Widen the filter, '
+            'or run a stage on the <a href="/pipeline">operations</a> page.</td></tr>'
         )
     out = []
     for row in rows:
         segments = pills(as_list(row["segments"]))
-        state = row["state"] or ""
+        url = row["url"] or ""
+        site = (
+            f'<a href="{esc(url)}" rel="noreferrer noopener" target="_blank">'
+            f'{esc(url[:38])}</a>'
+            if url
+            else '<span class="dim">&mdash;</span>'
+        )
         out.append(
             f'<tr><td><a href="/company/{row["id"]}">{esc(row["name"])}</a>'
             f'<div class="dim small">{esc(row["uid"])}</div></td>'
-            f'<td>{esc(row["canton"])}</td>'
+            f'<td class="small">{esc(row["canton"])}</td>'
+            f'<td class="small nowrap">{progress(row)}</td>'
             f'<td class="small">{segments}</td>'
             f'<td>{band(row)}</td>'
-            f'<td class="small">{esc(row["url"] or "")}</td>'
-            f'<td class="small">{esc(state)}</td></tr>'
+            f'<td class="small">{site}</td>'
+            f'<td class="small">{esc(row["state"] or "")}</td></tr>'
         )
     return "".join(out)
 
 
 def company_table(rows: list[sqlite3.Row], total: int) -> str:
+    legend = " &middot; ".join(
+        f"<b>{esc(letter)}</b> {esc(title.lower())}" for letter, _key, title in PROGRESS
+    )
     return (
-        f'<p class="dim small">{total} companies match.</p>'
-        '<table><thead><tr><th>company</th><th>canton</th><th>segments</th>'
-        '<th>fit</th><th>website</th><th>state</th></tr></thead>'
+        f'<p class="dim small">{total:,} companies match. '
+        f'Progress: {legend}</p>'
+        '<table><thead><tr><th>company</th><th>canton</th><th>progress</th>'
+        '<th>segments</th><th>fit</th><th>website</th><th>state</th></tr></thead>'
         f"<tbody>{company_rows(rows)}</tbody></table>"
     )
 
 
+# The pipeline as a filter, worded as a question about the company rather than
+# as the name of a stage: an operator asks "which ones still need research",
+# not "which ones fail the enrich selection predicate".
+STAGE_FILTERS = (
+    ("", "Anywhere in the pipeline"),
+    ("no-detail", "Name only, no detail fetched"),
+    ("changed", "Changed in the register, needs re-reading"),
+    ("detail", "Detail fetched"),
+    ("unclassified", "Detail fetched, not yet segmented"),
+    ("classified", "Segmented"),
+    ("unresearched", "Segmented, website not researched"),
+    ("researched", "Website researched"),
+    ("unscored", "Researched, not yet scored"),
+    ("scored", "Scored against the campaign"),
+    ("with-address", "Has a usable email address"),
+)
+
+
 def filter_form(
-    *, q: str, canton: str, segment: str, band_name: str, state: str,
+    *, q: str, canton: str, segment: str, band_name: str, state: str, stage: str,
     cantons: list[str], segments: list[str], states: list[str],
 ) -> str:
     def options(values: list[str], chosen: str, label: str) -> str:
@@ -173,20 +270,85 @@ def filter_form(
             out.append(f'<option value="{esc(value)}"{sel}>{esc(value)}</option>')
         return "".join(out)
 
+    stages = "".join(
+        f'<option value="{esc(value)}"'
+        + (" selected" if value == stage else "")
+        + f">{esc(label)}</option>"
+        for value, label in STAGE_FILTERS
+    )
     return (
         '<form class="filters" hx-get="/companies" hx-target="#list" hx-trigger="submit, change">'
-        f'<label>search<br><input name="q" value="{esc(q)}" placeholder="name or UID"></label>'
-        f'<label>canton<br><select name="canton">{options(cantons, canton, "any")}</select></label>'
-        f'<label>segment<br><select name="segment">{options(segments, segment, "any")}</select></label>'
-        '<label>fit<br><select name="band">'
-        + options(["high", "medium", "low", "excluded"], band_name, "any")
-        + "</select></label>"
-        f'<label>state<br><select name="state">{options(states, state, "any")}</select></label>'
-        "<button>filter</button></form>"
+        '<div class="ctl"><label>Search</label>'
+        f'<input name="q" value="{esc(q)}" placeholder="Name, or CHE164075515"></div>'
+        f'<div class="ctl"><label>Canton</label><select name="canton">'
+        f'{options(cantons, canton, "All cantons")}</select></div>'
+        f'<div class="ctl"><label>Segment</label><select name="segment">'
+        f'{options(segments, segment, "All segments")}</select></div>'
+        '<div class="ctl"><label>Fit band</label><select name="band">'
+        + options(["high", "medium", "low", "excluded"], band_name, "Any band")
+        + "</select></div>"
+        f'<div class="ctl"><label>Pipeline state</label><select name="state">'
+        f'{options(states, state, "Any state")}</select></div>'
+        f'<div class="ctl ctl-wide"><label>Progress</label>'
+        f'<select name="stage">{stages}</select></div>'
+        '<div class="ctl"><label>&nbsp;</label><button class="primary">Filter</button></div>'
+        "</form>"
     )
 
 
 # --- one company --------------------------------------------------------------
+
+
+def _act(uid: str, stage: str, label: str, note: str, busy: int | None) -> str:
+    """One per-company action. Runs exactly this company, so no size is needed.
+
+    The same POST the operations page uses, with the UID filled in. Naming a
+    company *is* declaring the size of the run, which is why the paid stages
+    accept it without a limit.
+    """
+    disabled = " disabled" if busy else ""
+    return (
+        f"<form method='post' action='/run/{esc(stage)}' class='act'>"
+        f"<input type='hidden' name='uids' value='{esc(uid)}'>"
+        f"<button{disabled}>{esc(label)}</button>"
+        f"<span class='hint'>{esc(note)}</span></form>"
+    )
+
+
+def _actions(
+    company: sqlite3.Row, site: sqlite3.Row | None, fit: sqlite3.Row | None,
+    busy: int | None,
+) -> str:
+    """What can be done to this one company, right here.
+
+    The operations page runs a stage over a queue. This is the other half an
+    operator needs: having opened a company and decided it is interesting,
+    acting on it without going back and constructing a filter that selects it.
+    """
+    uid = company["uid"]
+    acts = [
+        _act(uid, "enrich",
+             "Research again" if site else "Research this website",
+             "Searches the web for this company and reads what it finds. "
+             "About 40 centimes and a few minutes.", busy),
+        _act(uid, "match",
+             "Score again" if fit else "Score this company",
+             "Reads it against campaign.md and writes the fit and the opening line.",
+             busy),
+    ]
+    if site is not None and site["url"]:
+        acts.append(
+            _act(uid, "reach", "Find an address",
+                 "Opens the site and its contact pages for a published address. Free.",
+                 busy)
+        )
+    banner = (
+        f"<div class='hint'>A stage is running. "
+        f"<a href='/runs/{busy}'>Watch it</a> before starting another.</div>"
+        if busy
+        else ""
+    )
+    return f"<div class='acts'>{''.join(acts)}{banner}</div>"
 
 
 def company_page(
@@ -202,6 +364,7 @@ def company_page(
     vocabulary: list[str],
     states: list[str],
     attribution: str,
+    busy: int | None = None,
 ) -> str:
     out = [
         f"<h1>{esc(company['name'])}</h1>",
@@ -209,6 +372,7 @@ def company_page(
         f'{esc(company["legal_form_label"])} &middot; '
         f'{esc(company["legal_seat"])} ({esc(company["canton"])}) &middot; '
         f'{esc(company["status"])}</p>',
+        _actions(company, site, fit, busy),
     ]
 
     if company["status"] and company["status"] != "ACTIVE":
@@ -465,67 +629,136 @@ def runs_page(rows: list[sqlite3.Row]) -> str:
     )
 
 
-# --- starting a stage ---------------------------------------------------------
+# --- the operations page ------------------------------------------------------
+#
+# The first version of this was a stack of unlabelled boxes, which is a debug
+# form rather than a product: it did not say what a stage does, what it needs
+# first, what it costs, what the button will do, or what to type in any field.
+#
+# Three rules came out of that and are worth keeping. Anything with a knowable
+# set of values is a list to pick from. Anything that must be typed carries an
+# example and says where to get it. And every stage states what it will do
+# before you press it, next to how much of the work is still waiting.
 
 
-def _control(field: Any, stage_name: str) -> str:
-    """One labelled control. `field` is a runner.Field."""
+def _options(field: Any, options: dict[str, tuple]) -> tuple:
+    if field.source:
+        return tuple(options.get(field.source, ()))
+    return tuple(field.choices)
+
+
+def _control(field: Any, stage_name: str, options: dict[str, tuple]) -> str:
+    """One labelled control, with its explanation attached rather than implied."""
     ident = f"{stage_name}-{field.name}"
+    note = " ".join(part for part in (field.help, field.where) if part)
+
     if field.kind == "bool":
         checked = " checked" if field.default else ""
-        control = (
-            f"<label class='check'><input type='checkbox' name='{esc(field.name)}' "
-            f"id='{esc(ident)}' value='1'{checked}> {esc(field.label)}</label>"
+        return (
+            f"<div class='ctl ctl-wide'><label class='check'>"
+            f"<input type='checkbox' name='{esc(field.name)}' id='{esc(ident)}'"
+            f" value='1'{checked}>"
+            f"<span><b>{esc(field.label)}</b>"
+            f"<span class='hint'>{esc(note)}</span></span></label></div>"
         )
-        note = f"<span class='dim small'> {esc(field.help)}</span>" if field.help else ""
-        return f"<div class='ctl'>{control}{note}</div>"
-    if field.kind == "choice":
-        options = "".join(
-            f"<option value='{esc(c)}'>{esc(c or 'any')}</option>" for c in field.choices
+
+    if field.kind == "select":
+        chosen = _options(field, options)
+        body = "".join(
+            f"<option value='{esc(value)}'"
+            + (" selected" if str(value) == str(field.default) else "")
+            + f">{esc(label)}</option>"
+            for value, label in chosen
         )
-        inner = f"<select name='{esc(field.name)}' id='{esc(ident)}'>{options}</select>"
-    else:
-        kind = "number" if field.kind == "int" else "text"
+        inner = f"<select name='{esc(field.name)}' id='{esc(ident)}'>{body}</select>"
+    elif field.kind == "date":
         inner = (
-            f"<input type='{kind}' name='{esc(field.name)}' id='{esc(ident)}' "
-            f"placeholder='{esc(field.help)}'>"
+            f"<input type='date' name='{esc(field.name)}' id='{esc(ident)}'>"
+        )
+    else:
+        inner = (
+            f"<input type='text' name='{esc(field.name)}' id='{esc(ident)}'"
+            f" placeholder='{esc(field.example or 'optional')}'>"
         )
     return (
-        f"<div class='ctl'><label for='{esc(ident)}' class='small dim'>"
-        f"{esc(field.label)}</label>{inner}</div>"
+        f"<div class='ctl'><label for='{esc(ident)}'>{esc(field.label)}</label>"
+        f"{inner}<span class='hint'>{esc(note)}</span></div>"
     )
 
 
-def stage_form(stage: Any, busy: int | None) -> str:
-    """The start form for one stage. `stage` is a runner.Stage."""
-    controls = "".join(_control(f, stage.name) for f in stage.fields)
-    disabled = " disabled" if busy else ""
-    button = (
-        f"<button class='primary'{disabled}>run {esc(stage.name)}</button>"
-        if not busy
-        else f"<button disabled>run {esc(stage.name)}</button>"
-        f"<span class='dim small'> run {busy} is still going</span>"
-    )
+def stage_card(
+    stage: Any, status: dict[str, int], options: dict[str, tuple],
+    busy: int | None, index: int,
+) -> str:
+    """One stage: what it is, where it stands, and the control to advance it."""
+    controls = "".join(_control(f, stage.name, options) for f in stage.fields)
+    waiting = status.get("waiting", 0)
+    done = status.get("done", 0)
+
+    if busy:
+        action = (
+            f"<button disabled>{esc(stage.button)}</button>"
+            f"<span class='hint'>Run {busy} is still going. "
+            "One stage at a time.</span>"
+        )
+    elif waiting == 0:
+        # Not disabled: a filter or a re-run flag can still make work for it,
+        # and a button that refuses to be pressed cannot say why.
+        action = (
+            f"<button class='primary'>{esc(stage.button)}</button>"
+            f"<span class='hint'>Nothing is waiting. {esc(stage.button_does)}</span>"
+        )
+    else:
+        action = (
+            f"<button class='primary'>{esc(stage.button)}</button>"
+            f"<span class='hint'>{esc(stage.button_does)}</span>"
+        )
+
+    money = "cost" in stage.cost.lower() or "centimes" in stage.cost.lower()
     return (
-        f"<form class='card' method='post' action='/run/{esc(stage.name)}'>"
-        f"<b>{esc(stage.name)}</b> <span class='dim small'>{esc(stage.summary)}</span>"
-        f"<div class='dim small cost'>{esc(stage.cost)}</div>"
-        f"<div class='controls'>{controls}</div>{button}</form>"
+        f"<form class='stage' method='post' action='/run/{esc(stage.name)}'>"
+        f"<div class='stage-head'>"
+        f"<span class='step'>{index}</span>"
+        f"<div class='stage-title'><h3>{esc(stage.title)}</h3>"
+        f"<p class='what'>{esc(stage.what)}</p></div>"
+        f"<div class='stage-count'>"
+        f"<div><b>{done:,}</b><span>{esc(stage.done_label)}</span></div>"
+        f"<div class='{'waiting' if waiting else ''}'>"
+        f"<b>{waiting:,}</b><span>{esc(stage.waiting_label)}</span></div>"
+        f"</div></div>"
+        f"<dl class='facts'>"
+        f"<dt>Needs first</dt><dd>{esc(stage.needs)}</dd>"
+        f"<dt>Produces</dt><dd>{esc(stage.produces)}</dd>"
+        f"<dt>Cost</dt><dd class='{'money' if money else ''}'>{esc(stage.cost)}</dd>"
+        f"</dl>"
+        f"<div class='controls'>{controls}</div>"
+        f"<div class='action'>{action}</div>"
+        f"</form>"
     )
 
 
-def start_page(stages: Any, busy: int | None, note: str = "") -> str:
-    forms = "".join(stage_form(stage, busy) for stage in stages)
+def pipeline_page(
+    stages: Any, statuses: dict[str, dict[str, int]], options: dict[str, tuple],
+    busy: int | None, note: str = "",
+) -> str:
+    cards = "".join(
+        stage_card(stage, statuses.get(stage.name, {}), options, busy, index)
+        for index, stage in enumerate(stages, 1)
+    )
     banner = f"<div class='warn'>{esc(note)}</div>" if note else ""
-    return (
-        "<h1>Run a stage</h1>"
-        "<p class='dim small'>One at a time. The paid stages will not start without "
-        "a limit or a named list, and every stage that can be run dry offers it "
-        "first. Nothing here sends anything to anybody.</p>"
-        + banner + forms
+    running = (
+        f"<div class='warn'>A stage is running. "
+        f"<a href='/runs/{busy}'>Watch it</a>, or wait for it to finish.</div>"
+        if busy
+        else ""
     )
-
-
+    return (
+        "<h1>Operations</h1>"
+        "<p class='lede'>The pipeline runs top to bottom. Each stage works on what "
+        "the one above it produced, and every stage picks up where it left off, so "
+        "running one twice is safe and costs nothing extra.</p>"
+        + banner + running + f"<div class='stages'>{cards}</div>"
+    )
 # --- watching one run ---------------------------------------------------------
 
 

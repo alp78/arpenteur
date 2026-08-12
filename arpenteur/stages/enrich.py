@@ -260,6 +260,11 @@ def run(
         "emails": 0,
         "searches": 0,
         "fetches": 0,
+        # The dominant cost, and the one that was not being recorded. Searches
+        # and fetches were counted while the larger number was estimated once
+        # in development and never checked, which is the wrong half to count.
+        "input_tokens": 0,
+        "output_tokens": 0,
         "model": model,
     }
     if not companies:
@@ -313,6 +318,8 @@ def run(
         data = result.data
         stats["searches"] += result.searches
         stats["fetches"] += result.fetches
+        stats["input_tokens"] += result.input_tokens
+        stats["output_tokens"] += result.output_tokens
         status = str(data.get("status") or "not_found")
         stats[status if status in ("found", "not_found", "ambiguous") else "failed"] += 1
 

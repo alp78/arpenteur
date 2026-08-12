@@ -42,14 +42,27 @@ class Research:
     """The result of a search-and-read call.
 
     `data` is validated against the caller's schema by the provider, so a
-    stage can index it without parsing. `searches` and `fetches` are carried
-    because this is the first stage that costs money per company, and a run
-    that cannot be priced afterwards cannot be tuned.
+    stage can index it without parsing. The counters are carried because this
+    is the first stage that costs money per company, and a run that cannot be
+    priced afterwards cannot be tuned.
+
+    Tokens are carried for a reason worth stating: they are the dominant cost
+    and were the one thing not recorded. A per-company estimate of about forty
+    centimes was quoted from a single observation during development, and
+    because nothing stored the figure it could not be checked afterwards
+    against anything. Searches and fetches were counted while the larger
+    number was not, which is precisely the wrong half.
+
+    They accumulate across the pause_turn loop, like the tool counters: each
+    resumed request reports only its own usage, and the company was billed for
+    all of them.
     """
 
     data: dict[str, Any]
     searches: int = 0
     fetches: int = 0
+    input_tokens: int = 0
+    output_tokens: int = 0
     pages: list[str] = field(default_factory=list)
 
 
@@ -165,6 +178,7 @@ class AnthropicProvider:
         ]
         messages: list[dict[str, Any]] = [{"role": "user", "content": user}]
         searches = fetches = 0
+        input_tokens = output_tokens = 0
         pages: list[str] = []
 
         # A server-tool turn can stop with pause_turn when the model's own
@@ -194,9 +208,16 @@ class AnthropicProvider:
             # and two fetches. The block stream is an implementation detail of
             # how the server runs the tools; usage is the billed figure, which
             # is the one a run has to be priced against.
-            server = getattr(getattr(message, "usage", None), "server_tool_use", None)
+            usage = getattr(message, "usage", None)
+            server = getattr(usage, "server_tool_use", None)
             searches += getattr(server, "web_search_requests", 0) or 0
             fetches += getattr(server, "web_fetch_requests", 0) or 0
+            # Every search result the model reads comes back as input on the
+            # next turn, so this grows far past the prompt this stage wrote.
+            # That is the whole reason enrich is expensive and the reason it
+            # is worth recording rather than estimating.
+            input_tokens += getattr(usage, "input_tokens", 0) or 0
+            output_tokens += getattr(usage, "output_tokens", 0) or 0
             for block in message.content:
                 if getattr(block, "type", "") == "server_tool_use":
                     url = (getattr(block, "input", None) or {}).get("url")
@@ -244,6 +265,8 @@ class AnthropicProvider:
                 data=extract_json(texts[-1]),
                 searches=searches,
                 fetches=fetches,
+                input_tokens=input_tokens,
+                output_tokens=output_tokens,
                 pages=pages,
             )
 
