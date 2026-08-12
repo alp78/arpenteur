@@ -281,6 +281,7 @@ def _dossier_strip(
     return (
         '<div class="dossier-strip">'
         f'<a class="go" href="/client/{client_id}/dossier">Dossier and approach</a>'
+        f'<a class="go" href="/client/{client_id}/prep">Interview prep</a>'
         f'<span class="dim small">{state}</span>'
         "<span class='dim small'>What they run, who decides, what is exposed, "
         "the documents they sent, and what to propose. None of it is in the "

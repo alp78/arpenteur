@@ -78,7 +78,18 @@ class LlmConfig:
     # discussion points, services, prices and open questions. A truncated
     # structured reply is a hard failure rather than a short answer, and 8000
     # was measured overrunning on a full dossier with one document attached.
-    advise_max_tokens: int = 16000
+    # Thinking tokens count against the same ceiling, so raising effort means
+    # raising this too.
+    advise_model: str = ""
+    advise_effort: str = ""
+    advise_max_tokens: int = 32000
+    # The prep stage extracts every term, acronym, technology and topic in a
+    # client's file and writes the material to revise before the meeting. It is
+    # recall and organisation rather than judgement, which is a different job
+    # from arbitration and deserves a different model.
+    prep_model: str = ""
+    prep_effort: str = ""
+    prep_max_tokens: int = 48000
     # How the model is paid for. Declared rather than inferred: the two modes
     # draw on different accounts, and a deployment that meant "my Claude
     # subscription" must not quietly fall through to billing an API key that
@@ -278,6 +289,26 @@ DEFAULT_SIGNAL_BRIEF = (
 )
 
 
+EFFORTS = ("low", "medium", "high", "xhigh", "max")
+
+
+def _effort(value: object) -> str:
+    """Validate an effort level at load time, not at the first model call.
+
+    Empty means the model's own default and is legitimate. A typo is not: a
+    stage silently running at the default when the file says `xhigh` is exactly
+    the kind of difference nobody notices until the answers are worse and the
+    bill is smaller.
+    """
+    level = str(value or "").strip().lower()
+    if level and level not in EFFORTS:
+        raise ValueError(
+            f"Unknown effort {level!r}. Expected one of: {', '.join(EFFORTS)}, "
+            "or empty for the model's default."
+        )
+    return level
+
+
 def _auth_mode(value: object) -> str:
     """Validate llm.auth_mode at load time rather than at first model call.
 
@@ -404,7 +435,12 @@ def load_settings(root: Path | None = None) -> Settings:
             enrich_max_tokens=int(llm_raw.get("enrich_max_tokens", 8000)),
             match_model=llm_raw.get("match_model", ""),
             match_max_tokens=int(llm_raw.get("match_max_tokens", 4000)),
-            advise_max_tokens=int(llm_raw.get("advise_max_tokens", 16000)),
+            advise_model=llm_raw.get("advise_model", ""),
+            advise_effort=_effort(llm_raw.get("advise_effort", "")),
+            advise_max_tokens=int(llm_raw.get("advise_max_tokens", 32000)),
+            prep_model=llm_raw.get("prep_model", ""),
+            prep_effort=_effort(llm_raw.get("prep_effort", "")),
+            prep_max_tokens=int(llm_raw.get("prep_max_tokens", 48000)),
             auth_mode=_auth_mode(llm_raw.get("auth_mode", "auto")),
             api_key=os.environ.get("ANTHROPIC_API_KEY") or None,
         ),

@@ -447,7 +447,8 @@ def dossier_page(
         "been tried, none of which is in any register.</p>"
         + (f'<div class="warn">{esc(note)}</div>' if note else "")
         + f'<p class="meta">{filled} of {len(vocab.SECTIONS)} sections filled '
-          f'&middot; {len(papers)} documents held</p>'
+          f'&middot; {len(papers)} documents held &middot; '
+          f'<a href="/client/{client["id"]}/prep">interview prep</a></p>'
         + "<h2>suggested approach</h2>"
         + generate_form(client["id"], filled, len(papers), rate_card)
         + approach_block(approach, rate_card)

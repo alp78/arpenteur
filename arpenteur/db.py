@@ -1424,6 +1424,112 @@ def add_attachment(
     return int(cur.lastrowid), False
 
 
+def save_briefing(
+    conn: sqlite3.Connection, client_id: int, row: dict[str, Any]
+) -> int:
+    cur = conn.execute(
+        "INSERT INTO briefing (client_id, created_at, model, effort, inputs_hash,"
+        " read_json, orientation, agenda_json)"
+        " VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+        (client_id, now(), row.get("model"), row.get("effort"),
+         row.get("inputs_hash"),
+         json.dumps(row.get("read") or {}, ensure_ascii=False),
+         row.get("orientation"),
+         json.dumps(row.get("agenda") or [], ensure_ascii=False)),
+    )
+    return int(cur.lastrowid)
+
+
+def briefings_for(
+    conn: sqlite3.Connection, client_id: int, *, limit: int = 20
+) -> list[sqlite3.Row]:
+    return conn.execute(
+        "SELECT * FROM briefing WHERE client_id = ?"
+        " ORDER BY created_at DESC, id DESC LIMIT ?",
+        (client_id, limit),
+    ).fetchall()
+
+
+def save_terms(
+    conn: sqlite3.Connection, client_id: int, terms: list[dict[str, Any]],
+    *, briefing_id: int | None = None,
+) -> tuple[int, int]:
+    """Add what is new and refresh what is known. Returns (added, refreshed).
+
+    `known` and `note` are never written here. They belong to the person, and a
+    regeneration after the client sends a document must not reset what has
+    already been learned. Same rule that keeps a hand-set segment label from
+    being erased by a re-run, applied to the one column a person owns.
+    """
+    added = refreshed = 0
+    for term in terms:
+        name = str(term.get("term") or "").strip()
+        if not name:
+            continue
+        seen = conn.execute(
+            "SELECT 1 FROM glossary WHERE client_id = ? AND term = ?",
+            (client_id, name),
+        ).fetchone()
+        conn.execute(
+            "INSERT INTO glossary (client_id, term, category, expansion,"
+            " what_it_is, why_here, must_know, question, reference, priority,"
+            " first_seen, updated_at, briefing_id)"
+            " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+            " ON CONFLICT (client_id, term) DO UPDATE SET"
+            " category = excluded.category, expansion = excluded.expansion,"
+            " what_it_is = excluded.what_it_is, why_here = excluded.why_here,"
+            " must_know = excluded.must_know, question = excluded.question,"
+            " reference = excluded.reference, priority = excluded.priority,"
+            " updated_at = excluded.updated_at, briefing_id = excluded.briefing_id",
+            (client_id, name, term.get("category"), term.get("expansion"),
+             term.get("what_it_is"), term.get("why_here"), term.get("must_know"),
+             term.get("question"), term.get("reference"), term.get("priority"),
+             now(), now(), briefing_id),
+        )
+        if seen:
+            refreshed += 1
+        else:
+            added += 1
+    return added, refreshed
+
+
+def glossary_for(conn: sqlite3.Connection, client_id: int) -> list[sqlite3.Row]:
+    """Every term held for a client, unrevised first within each category."""
+    return conn.execute(
+        "SELECT * FROM glossary WHERE client_id = ?"
+        " ORDER BY category, CASE priority WHEN 'must' THEN 0 WHEN 'should'"
+        " THEN 1 ELSE 2 END, known, term",
+        (client_id,),
+    ).fetchall()
+
+
+def set_term_known(
+    conn: sqlite3.Connection, term_id: int, *, known: bool, note: str | None = None
+) -> None:
+    if note is None:
+        conn.execute(
+            "UPDATE glossary SET known = ? WHERE id = ?", (1 if known else 0, term_id)
+        )
+        return
+    conn.execute(
+        "UPDATE glossary SET known = ?, note = ? WHERE id = ?",
+        (1 if known else 0, note.strip() or None, term_id),
+    )
+
+
+def delete_term(conn: sqlite3.Connection, term_id: int) -> int | None:
+    """Remove a term. No tombstone: a glossary is a study aid, not a record of
+    what happened, and a note saying "removed: MX" would be noise in a client's
+    timeline."""
+    row = conn.execute(
+        "SELECT client_id FROM glossary WHERE id = ?", (term_id,)
+    ).fetchone()
+    if row is None:
+        return None
+    conn.execute("DELETE FROM glossary WHERE id = ?", (term_id,))
+    return int(row["client_id"])
+
+
 def attachments_for(
     conn: sqlite3.Connection, client_id: int, *, with_text: bool = False
 ) -> list[sqlite3.Row]:

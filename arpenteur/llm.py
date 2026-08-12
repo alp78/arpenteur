@@ -22,7 +22,7 @@ class Provider(Protocol):
 
     def complete_json(
         self, *, system: str, user: str, model: str, max_tokens: int,
-        schema: dict[str, Any],
+        schema: dict[str, Any], effort: str = "",
     ) -> dict[str, Any]: ...
 
     def research(
@@ -110,29 +110,56 @@ class AnthropicProvider:
         model: str,
         max_tokens: int,
         schema: dict[str, Any],
+        effort: str = "",
     ) -> dict[str, Any]:
         """A structured answer, with no web access.
 
-        Separate from `research` because the shapes differ in ways that matter:
-        there are no server tools, so no pause_turn, no spend to account for
-        and no long-held request needing a stream. Separate from `complete`
+        Separate from `research` because there are no server tools, so no
+        pause_turn and no spend to account for. Separate from `complete`
         because the caller wants fields rather than prose, and validating at
         the API rather than parsing afterwards is the difference between a
         retry and a crash.
+
+        `effort` is how much thinking the model does before answering, and it
+        belongs to the stage rather than to this function: extracting a
+        glossary and arbitrating between three architecture proposals are not
+        the same kind of work and should not cost the same. It rides in
+        `output_config` alongside the schema, which is where the API puts it.
+        Empty means the model's own default.
+
+        Streamed, not created outright. This used to be a plain create(), which
+        was right when the only caller asked for four thousand tokens. It
+        stopped being right the moment a stage asked for twenty-four thousand:
+        the SDK estimates how long a request of that size could take, sees it
+        cross ten minutes, and refuses before sending anything. Streaming
+        removes the ceiling and costs nothing here, since the final message is
+        all this function ever wanted.
         """
-        message = self.client.beta.messages.create(
+        output_config: dict[str, Any] = {
+            "format": {"type": "json_schema", "schema": schema}
+        }
+        if effort:
+            output_config["effort"] = effort
+        with self.client.beta.messages.stream(
             model=model,
             max_tokens=max_tokens,
             system=system,
             messages=[{"role": "user", "content": user}],
-            output_config={"format": {"type": "json_schema", "schema": schema}},
-        )
+            output_config=output_config,
+        ) as stream:
+            message = stream.get_final_message()
         if message.stop_reason == "refusal":
             raise RuntimeError("the model declined this request")
         if message.stop_reason == "max_tokens":
             raise RuntimeError(
                 "reply hit max_tokens before returning JSON; raise the stage's "
                 "max_tokens in arpenteur.toml"
+                + (
+                    f" (effort is {effort!r}, and thinking tokens count against "
+                    "the same ceiling)"
+                    if effort in ("xhigh", "max")
+                    else ""
+                )
             )
         # Last text block, for the reason set out in research(): a reply can
         # carry several, and joining them corrupts the JSON.

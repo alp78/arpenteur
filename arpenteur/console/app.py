@@ -35,9 +35,10 @@ from fastapi.responses import HTMLResponse, PlainTextResponse, RedirectResponse
 from .. import attachments as att
 from .. import attribution, db, dossier
 from ..config import Settings, load_settings
-from ..stages import advise, match, source
+from ..stages import advise, match, prep, source
 from . import clients as clients_view
 from . import dossier_page as dossier_view
+from . import prep_page as prep_view
 from . import render
 from . import settings_page as settings_view_page
 from .runner import ORDER, STAGES, Runner, close_orphans, options_for, status_of
@@ -941,6 +942,81 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                     status_code=409,
                 )
             return PlainTextResponse(row["text"])
+        finally:
+            conn.close()
+
+    # --- preparing for the meeting ---------------------------------------------
+
+    @app.get("/client/{client_id}/prep", response_class=HTMLResponse)
+    def prep_view_page(client_id: int, request: Request) -> HTMLResponse:
+        conn = connect()
+        try:
+            client, company = _client_rows(conn, client_id)
+            if client is None:
+                return HTMLResponse("<h1>Not found</h1>", status_code=404)
+            live = _fresh()
+            briefings = db.briefings_for(conn, client_id, limit=1)
+            return HTMLResponse(
+                prep_view.shell(
+                    prep_view.prep_page(
+                        client, company,
+                        db.glossary_for(conn, client_id),
+                        briefings[0] if briefings else None,
+                        len(dossier.filled(db.dossier_for(conn, client_id))),
+                        live.llm.prep_model or live.llm.match_model,
+                        live.llm.prep_effort,
+                        request.query_params.get("note", ""),
+                    ),
+                    settings.territory.describe(),
+                )
+            )
+        finally:
+            conn.close()
+
+    @app.post("/client/{client_id}/prep")
+    def extract_vocabulary(client_id: int, dry_run: str = Form("")) -> RedirectResponse:
+        conn = connect()
+        try:
+            run_id = db.start_run(
+                conn, "prep", {"client_id": client_id, "dry_run": bool(dry_run)},
+                started_by="console",
+            )
+            try:
+                stats = prep.run(
+                    _fresh(), conn, client_id=client_id, dry_run=bool(dry_run),
+                    log=lambda m: db.append_line(conn, run_id, m),
+                )
+                db.finish_run(conn, run_id, stats)
+            except Exception as exc:
+                db.finish_run(conn, run_id, error=str(exc))
+                return RedirectResponse(
+                    f"/client/{client_id}/prep?note={quote(str(exc))}", status_code=303
+                )
+            if dry_run:
+                return RedirectResponse(f"/runs/{run_id}", status_code=303)
+            return RedirectResponse(f"/client/{client_id}/prep", status_code=303)
+        finally:
+            conn.close()
+
+    @app.post("/term/{term_id}/known")
+    def tick_term(term_id: int, known: str = Form("1")) -> RedirectResponse:
+        """The one writable field on that page, and no run ever overwrites it.
+
+        Same rule as a hand-set segment label: what a person decided outranks
+        what a model produced, permanently. Without that, re-running after the
+        client sends a document would silently reset an evening's revision.
+        """
+        conn = connect()
+        try:
+            row = conn.execute(
+                "SELECT client_id FROM glossary WHERE id = ?", (term_id,)
+            ).fetchone()
+            db.set_term_known(conn, term_id, known=known == "1")
+            conn.commit()
+            return RedirectResponse(
+                f"/client/{row['client_id']}/prep#terms" if row else "/clients",
+                status_code=303,
+            )
         finally:
             conn.close()
 

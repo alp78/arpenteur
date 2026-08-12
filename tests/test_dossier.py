@@ -293,7 +293,7 @@ class FakeProvider:
         self.reply = reply
         self.seen: list[str] = []
 
-    def complete_json(self, *, system, user, model, max_tokens, schema):
+    def complete_json(self, *, system, user, model, max_tokens, schema, effort=""):
         self.seen.append(user)
         return self.reply
 

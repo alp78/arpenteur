@@ -19,6 +19,7 @@ from .stages import (
     enrich,
     match,
     people,
+    prep,
     profile,
     reach,
     source,
@@ -612,6 +613,46 @@ def cmd_advise(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_prep(args: argparse.Namespace) -> int:
+    settings = load_settings()
+    conn = db.open_db(settings.db_path)
+    try:
+        client = _find_client(conn, args.client)
+    except RuntimeError as exc:
+        print(f"error: {exc}", file=sys.stderr)
+        return 1
+    if args.list:
+        rows = db.glossary_for(conn, client["id"])
+        if not rows:
+            print("Nothing extracted yet. Run without --list first.")
+            return 0
+        shelf = None
+        for row in rows:
+            if row["category"] != shelf:
+                shelf = row["category"]
+                print(f"\n## {shelf}")
+            mark = "x" if row["known"] else " "
+            print(f"[{mark}] {row['priority']:<6} {row['term']}"
+                  + (f" ({row['expansion']})" if row["expansion"] else ""))
+            for label, key in (("  what", "what_it_is"), ("  here", "why_here"),
+                               ("  cold", "must_know"), ("  ask ", "question"),
+                               ("  ref ", "reference")):
+                if row[key]:
+                    print(f"{label}: {row[key]}")
+        conn.close()
+        return 0
+    run_id = db.start_run(conn, "prep", vars(args))
+    try:
+        stats = prep.run(settings, conn, client_id=client["id"], dry_run=args.dry_run)
+    except Exception as exc:
+        db.finish_run(conn, run_id, error=str(exc))
+        print(f"error: {exc}", file=sys.stderr)
+        return 1
+    db.finish_run(conn, run_id, stats)
+    conn.close()
+    return 0
+
+
 def cmd_stub(args: argparse.Namespace) -> int:
     {"draft": draft}[args.command].run()
     return 0
@@ -787,6 +828,21 @@ def build_parser() -> argparse.ArgumentParser:
         help="report what would be read and its size, spend nothing",
     )
     p.set_defaults(func=cmd_advise)
+
+    p = sub.add_parser(
+        "prep",
+        help="extract a client's vocabulary and what to revise before meeting them",
+    )
+    p.add_argument("client", help="client code, UID, or part of the name")
+    p.add_argument(
+        "--list", action="store_true",
+        help="print what has already been extracted, without calling a model",
+    )
+    p.add_argument(
+        "--dry-run", action="store_true",
+        help="report what would be read and its size, spend nothing",
+    )
+    p.set_defaults(func=cmd_prep)
 
     p = sub.add_parser("console", help="serve the browser console on localhost")
     p.add_argument("--host", default="127.0.0.1")

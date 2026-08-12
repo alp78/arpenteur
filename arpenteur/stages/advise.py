@@ -329,7 +329,15 @@ def run(
     prompt, read = build_prompt(
         company, client, sections, projects, papers, officers, settings.rate_card
     )
-    model = settings.llm.match_model or settings.llm.draft_model
+    # This is the hardest judgement the tool makes and the one whose output
+    # gets repeated out loud to a client, so it carries its own model and
+    # effort rather than sharing the scoring stage's.
+    model = (
+        settings.llm.advise_model
+        or settings.llm.match_model
+        or settings.llm.draft_model
+    )
+    effort = settings.llm.advise_effort
     digest = inputs_digest([prompt])
 
     stats: dict[str, Any] = {
@@ -338,6 +346,7 @@ def run(
         "documents": len(read["documents"]),
         "rate_card": read["rate_card"],
         "model": model,
+        "effort": effort or "default",
         "inputs": digest,
         "chars": len(prompt),
     }
@@ -356,7 +365,8 @@ def run(
 
     log(
         f"  reading {len(read['sections'])} dossier sections, "
-        f"{len(read['documents'])} documents, {len(prompt):,} characters"
+        f"{len(read['documents'])} documents, {len(prompt):,} characters "
+        f"({model}, effort {effort or 'default'})"
     )
     if dry_run:
         log("  dry run: nothing sent to the model, nothing saved.")
@@ -370,6 +380,7 @@ def run(
         model=model,
         max_tokens=settings.llm.advise_max_tokens,
         schema=SCHEMA,
+        effort=effort,
     )
 
     approach_id = db.save_approach(
@@ -400,7 +411,9 @@ def run(
         subject="Suggested approach generated",
         body=(
             f"Read {len(read['sections'])} dossier sections and "
-            f"{len(read['documents'])} documents. Model {model}, inputs {digest}."
+            f"{len(read['documents'])} documents. Model {model}"
+            + (f" at effort {effort}" if effort else "")
+            + f", inputs {digest}."
         ),
         author="advise",
         source="model",

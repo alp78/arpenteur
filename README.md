@@ -399,6 +399,42 @@ agenda of the next meeting, and the prompt says not to answer it. An advisor who
 guesses which package holds the resident record is worse than one who puts the
 question at the top of the list.
 
+**Interview prep is its own page.** A client's file accumulates vocabulary
+faster than anyone absorbs it: one foundation's dossier carries DMARC, SPF,
+DKIM, FortiMail, Exchange Online, VMware Cloud Director, nLPD art. 5 let. c,
+ISO 9001:2015, ISO 27001, SOMED, DGCS, CIVESS, CEESV, Medidata, EMS, EPSM, CAT,
+Sadies DIR, Opale, Syselcom, Infomaniak and Digital 2030. Some of those you know
+cold and some you half know, and the difference shows in a meeting where the
+client's own IT expert is in the room.
+
+```bash
+uv run arpenteur prep BOIS-GENTIL          # extract the vocabulary
+uv run arpenteur prep BOIS-GENTIL --list   # read it back, no model call
+```
+
+Each term gets what it is, **why it is in this client's file**, what to be able
+to say without looking it up, one question it lets you ask, and where to check
+it. That third line is the one that earns the entry: a general glossary is a
+search away and worth nothing at the table. References are **named, never
+linked** (`RFC 7489`, `nLPD art. 5 let. c`, `ISO 9001:2015 §7.5`) because a name
+can be checked and an invented URL looks exactly like a real one. Above the
+glossary sits the agenda: twenty terms is a list, and three hours before a
+meeting the useful thing is which four decide the conversation.
+
+Tick a term as known and no re-run ever unticks it. Same rule as a hand-set
+segment label: what a person decided outranks what a model produced. Without
+that, regenerating after the client sends a document would silently reset an
+evening's revision.
+
+**The two stages use different models, on purpose.** Arbitrating between three
+architecture proposals is judgement whose output gets repeated out loud to a
+client, so `advise` runs the strongest model at a high `effort`. Extracting a
+glossary is recall over material already in front of it, so `prep` runs a
+lighter one. Both are set in `arpenteur.toml`; `effort` is validated at load
+time, because a stage silently running at the default when the file says `xhigh`
+is exactly the difference nobody notices until the answers are worse and the
+bill is smaller.
+
 **Advice is versioned, never overwritten.** A new suggestion is a new row
 carrying a digest of its inputs and a record of what it actually read: which
 sections were filled, which documents were opened, whether a rate card existed.
