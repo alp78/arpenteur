@@ -20,8 +20,18 @@
 -- one table means the calendar and the history are the same query, so a
 -- meeting cannot be in the diary and missing from the file.
 --
--- NOTHING IS DELETED. `state` carries cancelled; no row is removed. An audit
--- trail with a delete button is a diary.
+-- CANCELLED IS A STATE, NOT A DELETION. `state` carries cancelled, so a
+-- meeting that was real and did not happen keeps its row.
+--
+-- This originally said nothing is ever deleted, because an audit trail with a
+-- delete button is a diary. That was half right, and the half it got wrong
+-- cost more: on 12.08.2026 rows describing a meeting and a project that never
+-- existed were written into a live record and there was no way to take them
+-- out. A log that cannot be corrected is not more truthful than one that can,
+-- only more confident. See `db.delete_event`: a row can go, and its going
+-- leaves a tombstone naming what it was and why. Cancelling still asserts that
+-- a meeting was once planned, which is exactly the claim that has to stop
+-- being made when the row was never true.
 --
 -- The client is a company, not a copy of one. Promoting a prospect keeps the
 -- register entry, the officers, the research and the notes already gathered.

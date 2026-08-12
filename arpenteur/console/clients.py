@@ -94,6 +94,16 @@ STYLES = """
                  margin:.9rem 0 0; }
 .dossier-strip .go { font-weight:600; text-decoration:none; }
 .dossier-strip .go::after { content:" \\2192"; }
+details.del { display:inline-block; }
+details.del summary { cursor:pointer; color:var(--dim); font-size:.8rem;
+                      list-style:none; }
+details.del summary::-webkit-details-marker { display:none; }
+details.del summary:hover { color:#8a3a2c; }
+details.del form { display:flex; gap:.4rem; align-items:center; flex-wrap:wrap;
+                   margin-top:.35rem; padding:.5rem .6rem; background:#fdf6f4;
+                   border:1px solid #d9bdb6; }
+details.del input { min-width:20rem; }
+details.del .hint { flex-basis:100%; }
 """
 
 
@@ -423,8 +433,23 @@ def _timeline(events: list[sqlite3.Row]) -> str:
                 "<button>Mark as happened</button></form> "
                 f'<form class="inline" method="post" action="/event/{e["id"]}/state">'
                 "<input type='hidden' name='state' value='cancelled'>"
-                "<button>Cancel</button></form>"
+                "<button>Cancel</button></form> "
             )
+        # Cancelling says a meeting was planned and did not happen. Deleting
+        # says it was never true. They are different corrections and the record
+        # needs both: a row describing something that never occurred cannot be
+        # struck through, it has to go, and its going leaves a tombstone.
+        actions += (
+            f'<details class="del"><summary>delete</summary>'
+            f'<form method="post" action="/event/{e["id"]}/delete">'
+            "<input name='reason' placeholder='Why, for the tombstone. "
+            "&quot;Never happened, seeded by mistake&quot;'>"
+            "<button>Delete this entry</button>"
+            "<span class='hint'>Removes the row and leaves a note saying what "
+            "was removed and why. Use this when the entry is not true. Use "
+            "Cancel when it was true and then did not happen.</span>"
+            "</form></details>"
+        )
         out.append(
             f'<li class="ev {esc(e["state"])}" data-mark="{esc(mark)}">'
             f'<div class="when">{_when(e)} &middot; {meta}</div>'
@@ -514,6 +539,15 @@ def _project_form(project: sqlite3.Row) -> str:
         "<label for='sm'>What it is</label>"
         f'<textarea id="sm" name="summary">{esc(project["summary"] or "")}</textarea>'
         '<div><button class="primary">Save</button></div></form>'
+        + '<details class="del" style="display:block;margin-top:.6rem">'
+        "<summary>delete this project</summary>"
+        f'<form method="post" action="/project/{project["id"]}/delete">'
+        "<input name='reason' placeholder='Why, for the tombstone'>"
+        "<button>Delete project</button>"
+        "<span class='hint'>Removes the project. Anything logged against it "
+        "survives, detached: correspondence that happened is still "
+        "correspondence that happened. Use Cancelled instead when the work was "
+        "real and did not go ahead.</span></form></details>"
     )
 
 

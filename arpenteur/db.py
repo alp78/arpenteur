@@ -1134,6 +1134,95 @@ def set_event_state(conn: sqlite3.Connection, event_id: int, state: str) -> None
     conn.execute("UPDATE event SET state = ? WHERE id = ?", (state, event_id))
 
 
+def _tombstone(
+    conn: sqlite3.Connection, client_id: int, what: str, reason: str, by: str
+) -> None:
+    record_event(
+        conn, client_id, kind="note", occurred_at=now(),
+        subject=f"Removed: {what}",
+        body=reason.strip() or "No reason given.",
+        author=by, source="manual",
+    )
+
+
+def delete_event(
+    conn: sqlite3.Connection, event_id: int, *, reason: str = "", by: str = "console"
+) -> bool:
+    """Remove one line of the record, and record that it was removed.
+
+    This schema was written saying nothing is ever deleted, on the grounds that
+    an audit trail with a delete button is a diary. That was half right, and
+    the half it got wrong cost more: on 12.08.2026 rows that described a
+    meeting and a project that never existed were written into a live record,
+    and there was no way to take them out. A log that cannot be corrected is
+    not more truthful than one that can, it is only more confident.
+
+    So a row can go, and its going leaves a tombstone naming what it was and
+    why. The state a cancelled meeting carries is not enough here: cancelled
+    still asserts that a meeting was once planned, which is exactly the claim
+    that has to stop being made.
+    """
+    row = conn.execute(
+        "SELECT client_id, kind, subject, occurred_at FROM event WHERE id = ?",
+        (event_id,),
+    ).fetchone()
+    if row is None:
+        return False
+    what = (
+        f"{row['kind']} {(row['occurred_at'] or '')[:16].replace('T', ' ')}"
+        + (f" — {row['subject']}" if row["subject"] else "")
+    )
+    conn.execute("DELETE FROM event WHERE id = ?", (event_id,))
+    _tombstone(conn, row["client_id"], what, reason, by)
+    return True
+
+
+def delete_project(
+    conn: sqlite3.Connection, project_id: int, *, reason: str = "", by: str = "console"
+) -> int | None:
+    """Remove a project. Its events survive, detached rather than destroyed.
+
+    The foreign key is ON DELETE SET NULL for this reason: correspondence that
+    happened is still correspondence that happened, even when the piece of work
+    it was filed under turns out never to have existed.
+    """
+    row = conn.execute(
+        "SELECT client_id, code, name FROM project WHERE id = ?", (project_id,)
+    ).fetchone()
+    if row is None:
+        return None
+    conn.execute("DELETE FROM project WHERE id = ?", (project_id,))
+    _tombstone(conn, row["client_id"], f"project {row['code']} — {row['name']}", reason, by)
+    return int(row["client_id"])
+
+
+def delete_attachment(
+    conn: sqlite3.Connection, attachment_id: int, *, reason: str = "",
+    by: str = "console",
+) -> tuple[int, str] | None:
+    """Remove a document, and say whether its bytes are now unreferenced.
+
+    Returns the client and the digest, or None. The caller decides about the
+    file: storage is content-addressed, so another client may legitimately hold
+    the same document and unlinking here would take theirs too.
+    """
+    row = conn.execute(
+        "SELECT client_id, filename, sha256 FROM attachment WHERE id = ?",
+        (attachment_id,),
+    ).fetchone()
+    if row is None:
+        return None
+    conn.execute("DELETE FROM attachment WHERE id = ?", (attachment_id,))
+    _tombstone(conn, row["client_id"], f"document {row['filename']}", reason, by)
+    return int(row["client_id"]), str(row["sha256"])
+
+
+def sha_is_orphaned(conn: sqlite3.Connection, digest: str) -> bool:
+    return not conn.execute(
+        "SELECT 1 FROM attachment WHERE sha256 = ? LIMIT 1", (digest,)
+    ).fetchone()
+
+
 def timeline(
     conn: sqlite3.Connection,
     client_id: int,

@@ -944,6 +944,69 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         finally:
             conn.close()
 
+    # --- removing what is not true ---------------------------------------------
+    #
+    # This schema was written saying nothing is ever deleted, on the grounds
+    # that an audit trail with a delete button is a diary. That was half right,
+    # and the half it got wrong cost more: on 12.08.2026 rows describing a
+    # meeting and a project that never existed were written into a live record
+    # and there was no way to take them out. A log that cannot be corrected is
+    # not more truthful than one that can, only more confident.
+    #
+    # Cancelling and deleting are different corrections and the record needs
+    # both. Cancelled says a thing was true and then did not happen; deleted
+    # says it was never true, which is the claim that has to stop being made.
+    # Every deletion leaves a tombstone naming what went and why.
+
+    @app.post("/event/{event_id}/delete")
+    def remove_event(event_id: int, reason: str = Form("")) -> RedirectResponse:
+        conn = connect()
+        try:
+            row = conn.execute(
+                "SELECT client_id FROM event WHERE id = ?", (event_id,)
+            ).fetchone()
+            db.delete_event(conn, event_id, reason=reason)
+            conn.commit()
+            return RedirectResponse(
+                f"/client/{row['client_id']}" if row else "/clients", status_code=303
+            )
+        finally:
+            conn.close()
+
+    @app.post("/project/{project_id}/delete")
+    def remove_project(project_id: int, reason: str = Form("")) -> RedirectResponse:
+        conn = connect()
+        try:
+            client_id = db.delete_project(conn, project_id, reason=reason)
+            conn.commit()
+            return RedirectResponse(
+                f"/client/{client_id}" if client_id else "/clients", status_code=303
+            )
+        finally:
+            conn.close()
+
+    @app.post("/attachment/{attachment_id}/delete")
+    def remove_attachment(
+        attachment_id: int, reason: str = Form("")
+    ) -> RedirectResponse:
+        conn = connect()
+        try:
+            removed = db.delete_attachment(conn, attachment_id, reason=reason)
+            if removed is None:
+                return RedirectResponse("/clients", status_code=303)
+            client_id, digest = removed
+            conn.commit()
+            # Storage is content-addressed, so the file only goes when nobody
+            # else references those bytes: another client may legitimately hold
+            # the same standard document and unlinking would take theirs too.
+            if db.sha_is_orphaned(conn, digest):
+                folder = att.root_for(settings.data_dir) / digest[:2]
+                for path in folder.glob(f"{digest}*"):
+                    path.unlink(missing_ok=True)
+            return RedirectResponse(f"/client/{client_id}/dossier", status_code=303)
+        finally:
+            conn.close()
+
     @app.get("/calendar", response_class=HTMLResponse)
     def diary(month: str = "") -> HTMLResponse:
         conn = connect()

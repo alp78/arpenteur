@@ -388,11 +388,18 @@ def documents_table(rows: list[sqlite3.Row]) -> str:
             f'<td class="small">{state}</td>'
             f'<td class="small dim nowrap">{esc((row["created_at"] or "")[:10])}</td>'
             f'<td class="small dim" title="content digest">{esc((row["sha256"] or "")[:12])}</td>'
+            f'<td class="small"><details class="del"><summary>delete</summary>'
+            f'<form method="post" action="/attachment/{row["id"]}/delete">'
+            "<input name='reason' placeholder='Why, for the tombstone'>"
+            "<button>Delete document</button>"
+            "<span class='hint'>Removes the entry, leaves a note saying what "
+            "was removed and why, and erases the stored file unless another "
+            "client holds the same bytes.</span></form></details></td>"
             "</tr>"
         )
     return (
         '<table class="docs"><thead><tr><th>document</th><th>what it is</th>'
-        "<th>size</th><th>text</th><th>added</th><th>digest</th>"
+        "<th>size</th><th>text</th><th>added</th><th>digest</th><th></th>"
         f"</tr></thead><tbody>{''.join(out)}</tbody></table>"
     )
 

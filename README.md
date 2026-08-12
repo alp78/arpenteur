@@ -317,8 +317,17 @@ be in the diary and missing from the file, because they are one row.
 **A planned event is an event.** A meeting next Tuesday and one last Tuesday
 differ by a date and a state, not by their nature.
 
-**Nothing is deleted.** A cancelled meeting keeps its row and leaves the diary.
-An audit trail with a delete button is a diary.
+**Cancelling and deleting are different corrections, and the record needs
+both.** This started out as "nothing is ever deleted", on the grounds that an
+audit trail with a delete button is a diary. That was half right, and the half
+it got wrong cost more: rows describing a meeting and a project that never
+existed were once written into a live record, and there was no way to take them
+out. A log that cannot be corrected is not more truthful than one that can, only
+more confident. So *cancelled* says a thing was true and then did not happen,
+and keeps its row; *delete* says it was never true, removes the row, and leaves
+a tombstone naming what went and why. Events, projects and documents can all go
+this way. Deleting a project detaches its events rather than destroying them,
+because correspondence that happened is still correspondence that happened.
 
 **Correspondence carries its Message-ID.** Paste it with the email and the same
 message can never be recorded twice. Every tool surveyed loses this and

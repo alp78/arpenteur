@@ -516,6 +516,112 @@ def test_a_client_is_found_by_code_uid_or_name(
         assert "Fondation Bois-Gentil" in capsys.readouterr().out
 
 
+# --- removing what is not true ------------------------------------------------
+#
+# The schema was written saying nothing is ever deleted, because an audit trail
+# with a delete button is a diary. That was half right, and the half it got
+# wrong cost more: on 12.08.2026 rows describing a meeting and a project that
+# never existed were written into a live record and there was no way to take
+# them out. A log that cannot be corrected is not more truthful, only more
+# confident.
+
+
+def test_an_entry_that_is_not_true_can_be_removed(web, conn, client_id) -> None:
+    event_id = db.record_event(
+        conn, client_id, kind="meeting", occurred_at="2026-08-20T14:00:00",
+        subject="Réunion qui n'a jamais existé",
+    )
+    conn.commit()
+    web.post(f"/event/{event_id}/delete", data={"reason": "Never happened."},
+             follow_redirects=False)
+    subjects = [e["subject"] for e in db.timeline(conn, client_id)]
+    assert "Réunion qui n'a jamais existé" not in subjects
+
+
+def test_removing_an_entry_leaves_a_tombstone(conn, client_id) -> None:
+    """Cancelled still asserts that a meeting was once planned, which is
+    exactly the claim that has to stop being made. Deleting says it was never
+    true, and says so on the record."""
+    event_id = db.record_event(
+        conn, client_id, kind="meeting", occurred_at="2026-08-20T14:00:00",
+        subject="Réunion inventée",
+    )
+    db.delete_event(conn, event_id, reason="Seeded by mistake during development.")
+    conn.commit()
+    rows = db.timeline(conn, client_id)
+    assert len(rows) == 1
+    assert rows[0]["subject"].startswith("Removed: meeting 2026-08-20 14:00")
+    assert "Seeded by mistake" in rows[0]["body"]
+
+
+def test_a_deletion_with_no_reason_says_so_rather_than_leaving_it_blank(
+    conn, client_id
+) -> None:
+    event_id = db.record_event(
+        conn, client_id, kind="note", occurred_at="2026-08-01T09:00:00", subject="x"
+    )
+    db.delete_event(conn, event_id)
+    conn.commit()
+    assert db.timeline(conn, client_id)[0]["body"] == "No reason given."
+
+
+def test_deleting_a_project_keeps_what_was_logged_against_it(
+    conn, client_id
+) -> None:
+    """Correspondence that happened is still correspondence that happened, even
+    when the piece of work it was filed under turns out never to have existed."""
+    project_id = db.add_project(conn, client_id, "Projet inventé")
+    kept = db.record_event(
+        conn, client_id, kind="email", occurred_at="2026-08-05T10:00:00",
+        subject="Un vrai message", project_id=project_id,
+    )
+    db.delete_project(conn, project_id, reason="Never proposed.")
+    conn.commit()
+    assert conn.execute("SELECT COUNT(*) FROM project").fetchone()[0] == 0
+    row = conn.execute("SELECT * FROM event WHERE id = ?", (kept,)).fetchone()
+    assert row["subject"] == "Un vrai message"
+    assert row["project_id"] is None
+
+
+def test_deleting_a_document_erases_the_file(web, conn, client_id, root) -> None:
+    web.post(
+        f"/dossier/{client_id}/documents",
+        files={"file": ("a.txt", b"to be removed", "text/plain")},
+        follow_redirects=False,
+    )
+    row = db.attachments_for(conn, client_id)[0]
+    stored = list((root / "data" / "attachments").rglob(f"{row['sha256']}*"))
+    assert stored and stored[0].exists()
+    web.post(f"/attachment/{row['id']}/delete", data={"reason": "Wrong client."},
+             follow_redirects=False)
+    assert db.attachments_for(conn, client_id) == []
+    assert not stored[0].exists()
+
+
+def test_a_document_two_clients_hold_is_not_erased_from_under_the_other(
+    conn, client_id
+) -> None:
+    """Storage is content-addressed, so two clients may legitimately hold the
+    same standard contract and unlinking would take theirs too."""
+    other_company = conn.execute(
+        "INSERT INTO company (uid, name, canton, source_url, method, fetched_at,"
+        " first_seen) VALUES ('CHE999', 'Autre SA', 'VD', 'x', 'zefix', 'now', 'now')"
+    ).lastrowid
+    other = db.promote_to_client(conn, other_company)
+    for owner in (client_id, other):
+        db.add_attachment(
+            conn, owner,
+            {"filename": "contrat-type.txt", "bytes": 4, "sha256": "f" * 64,
+             "text": "same"},
+        )
+    conn.commit()
+    removed = db.delete_attachment(conn,
+        db.attachments_for(conn, client_id)[0]["id"], reason="not ours")
+    conn.commit()
+    assert removed is not None
+    assert db.sha_is_orphaned(conn, "f" * 64) is False
+
+
 # --- the stylesheet defect this work uncovered --------------------------------
 
 
