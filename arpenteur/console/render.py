@@ -114,6 +114,8 @@ label.check b {{ display:block; font-weight:600; font-size:.9rem; }}
 .act {{ display:flex; flex-direction:column; gap:.2rem; max-width:17rem; }}
 .act button {{ font-weight:600; }}
 .nowrap {{ white-space:nowrap; }}
+header .sep {{ color:var(--line); }}
+details.card summary {{ cursor:pointer; }}
 .state-running {{ color:var(--accent); font-weight:600; }}
 .state-error {{ color:#a3341c; font-weight:600; }}
 .state-done {{ color:var(--dim); }}
@@ -123,7 +125,10 @@ pre.log {{ background:#fff; border:1px solid var(--line); padding:.8rem 1rem; ma
 </style></head><body>
 <header>
   <span class="brand">ARPENTEUR</span>
-  <a href="/">Companies</a>
+  <a href="/clients">Clients</a>
+  <a href="/calendar">Calendar</a>
+  <span class="sep">|</span>
+  <a href="/">Survey</a>
   <a href="/pipeline">Operations</a>
   <a href="/runs">History</a>
   <span class="dim small" style="margin-left:auto">{territory}</span>
@@ -315,9 +320,34 @@ def _act(uid: str, stage: str, label: str, note: str, busy: int | None) -> str:
     )
 
 
+def _client_action(company: sqlite3.Row, client: sqlite3.Row | None) -> str:
+    """Promote to client, or the link to the client this already is.
+
+    A reference rather than a copy. The surveyed tools call the alternative
+    the handoff gap: a system that stops at "closed won" makes the first day
+    of an engagement a copy-paste job, when the register entry, the officers,
+    the research and the notes are exactly what is worth having.
+    """
+    if client is not None:
+        return (
+            f"<form class='act'><a href='/client/{client['id']}'>"
+            f"<button type='button' class='primary'>Open client "
+            f"{esc(client['code'])}</button></a>"
+            "<span class='hint'>This company is a client. Projects, "
+            "correspondence and the diary are on its client page.</span></form>"
+        )
+    return (
+        f"<form method='post' action='/company/{company['id']}/client' class='act'>"
+        "<button class='primary'>Make this a client</button>"
+        "<span class='hint'>Opens a client record for it, keeping everything "
+        "already known: the register entry, the officers, the research and "
+        "the notes.</span></form>"
+    )
+
+
 def _actions(
     company: sqlite3.Row, site: sqlite3.Row | None, fit: sqlite3.Row | None,
-    busy: int | None,
+    busy: int | None, client: sqlite3.Row | None = None,
 ) -> str:
     """What can be done to this one company, right here.
 
@@ -327,6 +357,7 @@ def _actions(
     """
     uid = company["uid"]
     acts = [
+        _client_action(company, client),
         _act(uid, "enrich",
              "Research again" if site else "Research this website",
              "Searches the web for this company and reads what it finds. "
@@ -365,6 +396,7 @@ def company_page(
     states: list[str],
     attribution: str,
     busy: int | None = None,
+    client: sqlite3.Row | None = None,
 ) -> str:
     out = [
         f"<h1>{esc(company['name'])}</h1>",
@@ -372,7 +404,7 @@ def company_page(
         f'{esc(company["legal_form_label"])} &middot; '
         f'{esc(company["legal_seat"])} ({esc(company["canton"])}) &middot; '
         f'{esc(company["status"])}</p>',
-        _actions(company, site, fit, busy),
+        _actions(company, site, fit, busy, client),
     ]
 
     if company["status"] and company["status"] != "ACTIVE":

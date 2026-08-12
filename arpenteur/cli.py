@@ -355,6 +355,33 @@ def cmd_reach(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_import(args: argparse.Namespace) -> int:
+    """One company by UID, whatever the territory says.
+
+    A client does not have to be inside the surveyed region and legal forms,
+    and requiring one to be would let the survey dictate who may be a client.
+    """
+    settings = load_settings()
+    conn = db.open_db(settings.db_path)
+    run_id = db.start_run(conn, "import", vars(args))
+    try:
+        found = source.import_company(settings, conn, args.uid)
+        if args.client:
+            client_id = db.promote_to_client(conn, found["company_id"])
+            conn.commit()
+            code = conn.execute(
+                "SELECT code FROM client WHERE id = ?", (client_id,)
+            ).fetchone()[0]
+            print(f"client {code} created")
+    except Exception as exc:
+        db.finish_run(conn, run_id, error=str(exc))
+        print(f"error: {exc}", file=sys.stderr)
+        return 1
+    db.finish_run(conn, run_id, found)
+    conn.close()
+    return 0
+
+
 def cmd_stats(args: argparse.Namespace) -> int:
     settings = load_settings()
     conn = db.open_db(_db_path(settings, args.fixture))
@@ -582,6 +609,15 @@ def build_parser() -> argparse.ArgumentParser:
     )
     p.add_argument("--dry-run", action="store_true", help="list the shortlist, spend nothing")
     p.set_defaults(func=cmd_match)
+
+    p = sub.add_parser(
+        "import", help="fetch one company by UID, inside the territory or not"
+    )
+    p.add_argument("uid", help="e.g. CHE-103.895.771 or CHE103895771")
+    p.add_argument(
+        "--client", action="store_true", help="also open a client record for it"
+    )
+    p.set_defaults(func=cmd_import)
 
     p = sub.add_parser("console", help="serve the browser console on localhost")
     p.add_argument("--host", default="127.0.0.1")

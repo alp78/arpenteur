@@ -33,7 +33,11 @@ Pipeline stages, each a standalone command:
 8. **draft** — outreach proposals, always human-reviewed, never
    auto-sent *(planned)*
 
-And a **console** over the result: `arpenteur console`.
+Then the other half, for the companies that say yes: **clients**, their
+**projects**, one auditable **record** of every exchange, and a
+**calendar** *(built)*.
+
+And a **console** over all of it: `arpenteur console`.
 
 Storage is SQLite. Secrets live in `.env` (never committed). Outreach
 volume stays low by design: Swiss law (LCD art. 3 al. 1 let. o) draws
@@ -277,6 +281,56 @@ from an address already on the domain and the officers in `person`, and needs
 a way to verify a guess before it is stored as a fact. `provider` is a paid
 lookup and needs an account and a processing agreement read first. What each
 still needs is written at the foot of `arpenteur/stages/reach.py`.
+
+## Clients, projects and the record
+
+Everything above finds companies. This is the half that starts when one says
+yes, and it is a different job: a client has projects, a project has a history,
+and the history has to survive an audit rather than merely jog a memory.
+
+```bash
+uv run arpenteur import CHE-103.895.771 --client   # a client the survey never saw
+uv run arpenteur console                           # then Clients, Calendar
+```
+
+**Clients** is the portfolio: who, which code, how many projects running, when
+you last spoke and what is next. **A client card** carries the register entry,
+the officers, the research already done, the projects, and the record.
+**A project** has its own reference (`BOIS-GENTIL-01`), because it outlives the
+conversation that created it and has to be nameable in a contract, an invoice
+and a file. **Calendar** is the month.
+
+Four decisions, each taken against how the established professional-services
+tools do it.
+
+**One event log, not two.** The comparisons make the same point repeatedly: the
+compliance audit trail and the narrative client timeline are the same stream of
+events rendered for two audiences, and tools that build them separately drift.
+The drift is always discovered during the audit. So there is one `event` table,
+written once and projected differently: the client page reads it as a story, the
+calendar reads it as a diary, an export reads it as a record. A meeting cannot
+be in the diary and missing from the file, because they are one row.
+
+**A planned event is an event.** A meeting next Tuesday and one last Tuesday
+differ by a date and a state, not by their nature.
+
+**Nothing is deleted.** A cancelled meeting keeps its row and leaves the diary.
+An audit trail with a delete button is a diary.
+
+**Correspondence carries its Message-ID.** Paste it with the email and the same
+message can never be recorded twice. Every tool surveyed loses this and
+duplicates correspondence on re-import; it costs one column not to.
+
+And the client is the company, not a copy of it. Promoting a prospect keeps
+everything already gathered. The comparisons call the alternative the handoff
+gap: a system that stops at "closed won" makes the first day of an engagement a
+copy-paste job, when the register entry, the officers, the research and the
+notes are exactly what is worth having.
+
+A client does not have to be inside the surveyed territory, and normally is
+not: the survey covers a region and a set of legal forms, and the first real
+client of this tool was a foundation in Vaud where the survey was limited
+companies in five cantons. `import` is the deliberate single-company door.
 
 ## The console
 

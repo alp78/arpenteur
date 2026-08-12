@@ -9,7 +9,9 @@ from __future__ import annotations
 
 import hashlib
 import json
+import re
 import sqlite3
+import unicodedata
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -930,3 +932,268 @@ def finish_run(
         (now(), json.dumps(stats or {}, ensure_ascii=False, default=str), error, run_id),
     )
     conn.commit()
+
+
+# --- clients, projects, and the one event log ---------------------------------
+#
+# See migrations/0012_clients.sql for why the audit trail, the client timeline
+# and the calendar are one table rather than three.
+
+CLIENT_STATES = ("active", "prospect", "dormant", "former")
+PROJECT_STATES = ("proposed", "active", "paused", "delivered", "cancelled")
+EVENT_KINDS = ("email", "call", "meeting", "note", "milestone", "document", "decision")
+EVENT_STATES = ("planned", "done", "cancelled")
+
+
+def make_code(name: str, taken: set[str], *, length: int = 14) -> str:
+    """A quotable reference from a company name: BOIS-GENTIL.
+
+    Generated rather than typed because the first thing an operator does with
+    a blank required field is put something inconsistent in it, and this ends
+    up on invoices. Editable afterwards, because a generated code is a
+    starting point and not a decision.
+    """
+    words = re.findall(r"[A-Za-z0-9]+", unicodedata.normalize("NFKD", name))
+    skip = {"la", "le", "les", "de", "du", "des", "sa", "sarl", "ag", "gmbh",
+            "fondation", "association", "the", "of"}
+    kept = [w.upper() for w in words if w.lower() not in skip] or [w.upper() for w in words]
+    base = "-".join(kept)[:length].strip("-") or "CLIENT"
+    if base not in taken:
+        return base
+    for suffix in range(2, 100):
+        candidate = f"{base}-{suffix}"
+        if candidate not in taken:
+            return candidate
+    raise ValueError(f"could not derive a free code from {name!r}")
+
+
+def promote_to_client(
+    conn: sqlite3.Connection,
+    company_id: int,
+    *,
+    code: str | None = None,
+    owner: str | None = None,
+    brief: str | None = None,
+    status: str = "active",
+) -> int:
+    """Make a company a client, keeping everything already known about it.
+
+    A reference rather than a copy. The comparisons of professional-services
+    tools call the alternative the handoff gap: a system that stops at "closed
+    won" makes the first day of the engagement a copy-paste job, and the
+    register entry, the officers, the research and the notes are exactly what
+    is worth having on day one.
+
+    Idempotent: promoting twice returns the existing client rather than
+    failing, because the button that does it is on a page anyone may reload.
+    """
+    existing = conn.execute(
+        "SELECT id FROM client WHERE company_id = ?", (company_id,)
+    ).fetchone()
+    if existing:
+        return int(existing[0])
+
+    name = conn.execute(
+        "SELECT name FROM company WHERE id = ?", (company_id,)
+    ).fetchone()
+    if name is None:
+        raise ValueError(f"no company with id {company_id}")
+    taken = {row[0] for row in conn.execute("SELECT code FROM client")}
+    cur = conn.execute(
+        "INSERT INTO client (company_id, code, status, since, owner, brief, created_at)"
+        " VALUES (?, ?, ?, ?, ?, ?, ?)",
+        (company_id, code or make_code(name[0], taken), status, now()[:10],
+         owner, brief, now()),
+    )
+    return int(cur.lastrowid)
+
+
+def update_client(conn: sqlite3.Connection, client_id: int, **fields: Any) -> None:
+    allowed = {"code", "status", "since", "owner", "brief"}
+    sets = {k: v for k, v in fields.items() if k in allowed and v is not None}
+    if not sets:
+        return
+    assignments = ", ".join(f"{k} = :{k}" for k in sets)
+    conn.execute(
+        f"UPDATE client SET {assignments}, updated_at = :now WHERE id = :id",
+        {**sets, "now": now(), "id": client_id},
+    )
+
+
+def add_project(
+    conn: sqlite3.Connection,
+    client_id: int,
+    name: str,
+    *,
+    code: str | None = None,
+    status: str = "proposed",
+    billing: str | None = None,
+    budget: float | None = None,
+    summary: str | None = None,
+    started_at: str | None = None,
+    due_at: str | None = None,
+) -> int:
+    """A piece of work, with its own reference.
+
+    The code is the client's plus a sequence: BOIS-GENTIL-01. A project
+    outlives the conversation that started it and has to be nameable in a
+    contract, an invoice and a file name.
+    """
+    client = conn.execute(
+        "SELECT code FROM client WHERE id = ?", (client_id,)
+    ).fetchone()
+    if client is None:
+        raise ValueError(f"no client with id {client_id}")
+    if not code:
+        used = conn.execute(
+            "SELECT COUNT(*) FROM project WHERE client_id = ?", (client_id,)
+        ).fetchone()[0]
+        taken = {row[0] for row in conn.execute("SELECT code FROM project")}
+        for n in range(used + 1, used + 100):
+            candidate = f"{client[0]}-{n:02d}"
+            if candidate not in taken:
+                code = candidate
+                break
+    cur = conn.execute(
+        "INSERT INTO project (client_id, code, name, status, billing, budget,"
+        " summary, started_at, due_at, created_at)"
+        " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        (client_id, code, name, status, billing, budget, summary,
+         started_at, due_at, now()),
+    )
+    return int(cur.lastrowid)
+
+
+def update_project(conn: sqlite3.Connection, project_id: int, **fields: Any) -> None:
+    allowed = {"name", "status", "billing", "budget", "summary", "started_at",
+               "due_at", "closed_at", "code"}
+    sets = {k: v for k, v in fields.items() if k in allowed and v is not None}
+    if not sets:
+        return
+    # Closing a project stamps the date if the caller did not, so a delivered
+    # project always says when rather than only that.
+    if sets.get("status") in ("delivered", "cancelled") and "closed_at" not in sets:
+        sets["closed_at"] = now()[:10]
+    assignments = ", ".join(f"{k} = :{k}" for k in sets)
+    conn.execute(
+        f"UPDATE project SET {assignments}, updated_at = :now WHERE id = :id",
+        {**sets, "now": now(), "id": project_id},
+    )
+
+
+def record_event(
+    conn: sqlite3.Connection,
+    client_id: int,
+    *,
+    kind: str,
+    occurred_at: str,
+    subject: str | None = None,
+    body: str | None = None,
+    project_id: int | None = None,
+    state: str = "done",
+    ends_at: str | None = None,
+    direction: str | None = None,
+    with_whom: str | None = None,
+    author: str | None = None,
+    source: str = "manual",
+    external_id: str | None = None,
+) -> int:
+    """Write one line of the record. Returns its id, or the existing one.
+
+    Correspondence carries its Message-ID in `external_id`, so importing the
+    same message twice is one row rather than two. Every established tool
+    surveyed loses this and duplicates correspondence on re-import; it costs
+    one column not to.
+    """
+    if external_id:
+        seen = conn.execute(
+            "SELECT id FROM event WHERE client_id = ? AND external_id = ?",
+            (client_id, external_id),
+        ).fetchone()
+        if seen:
+            return int(seen[0])
+    cur = conn.execute(
+        "INSERT INTO event (client_id, project_id, kind, state, occurred_at,"
+        " ends_at, subject, body, direction, with_whom, author, source,"
+        " external_id, created_at)"
+        " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        (client_id, project_id, kind, state, occurred_at, ends_at, subject,
+         body, direction, with_whom, author, source, external_id, now()),
+    )
+    return int(cur.lastrowid)
+
+
+def set_event_state(conn: sqlite3.Connection, event_id: int, state: str) -> None:
+    """A planned meeting becomes done, or cancelled. Never removed.
+
+    An audit trail with a delete button is a diary, so this is the only way an
+    event ever changes state.
+    """
+    if state not in EVENT_STATES:
+        raise ValueError(f"unknown event state {state!r}")
+    conn.execute("UPDATE event SET state = ? WHERE id = ?", (state, event_id))
+
+
+def timeline(
+    conn: sqlite3.Connection,
+    client_id: int,
+    *,
+    project_id: int | None = None,
+    limit: int = 200,
+) -> list[sqlite3.Row]:
+    """The record for one client, or one project within it, newest first."""
+    where = ["e.client_id = ?"]
+    params: list[Any] = [client_id]
+    if project_id is not None:
+        where.append("e.project_id = ?")
+        params.append(project_id)
+    return conn.execute(
+        f"""SELECT e.*, p.code AS project_code, p.name AS project_name
+              FROM event e LEFT JOIN project p ON p.id = e.project_id
+             WHERE {' AND '.join(where)}
+             ORDER BY e.occurred_at DESC, e.id DESC LIMIT ?""",
+        params + [limit],
+    ).fetchall()
+
+
+def diary(
+    conn: sqlite3.Connection, *, since: str, until: str
+) -> list[sqlite3.Row]:
+    """Everything in the calendar between two dates, across every client.
+
+    The same table as the timeline. A meeting cannot be in the diary and
+    missing from the file, because they are one row read two ways.
+    """
+    return conn.execute(
+        """SELECT e.*, c.code AS client_code, p.code AS project_code,
+                  co.name AS company_name
+             FROM event e
+             JOIN client c ON c.id = e.client_id
+             JOIN company co ON co.id = c.company_id
+             LEFT JOIN project p ON p.id = e.project_id
+            WHERE e.state <> 'cancelled'
+              AND date(e.occurred_at) BETWEEN date(?) AND date(?)
+            ORDER BY e.occurred_at, e.id""",
+        (since, until),
+    ).fetchall()
+
+
+def clients(conn: sqlite3.Connection, *, status: str = "") -> list[sqlite3.Row]:
+    """The portfolio, with the numbers that say whether anything is adrift."""
+    where = "WHERE c.status = ?" if status else ""
+    params = [status] if status else []
+    return conn.execute(
+        f"""SELECT c.*, co.name, co.uid, co.canton, co.legal_form_label,
+                   (SELECT COUNT(*) FROM project p
+                     WHERE p.client_id = c.id AND p.status = 'active') AS active_projects,
+                   (SELECT COUNT(*) FROM project p WHERE p.client_id = c.id) AS projects,
+                   (SELECT MAX(e.occurred_at) FROM event e
+                     WHERE e.client_id = c.id AND e.state = 'done') AS last_contact,
+                   (SELECT MIN(e.occurred_at) FROM event e
+                     WHERE e.client_id = c.id AND e.state = 'planned'
+                       AND date(e.occurred_at) >= date('now')) AS next_at
+              FROM client c JOIN company co ON co.id = c.company_id
+              {where}
+             ORDER BY c.status, co.name""",
+        params,
+    ).fetchall()

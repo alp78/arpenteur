@@ -265,3 +265,44 @@ def hydrate_pending(
         if owns_client and http:
             http.close()
     return count
+
+
+def import_company(
+    settings: Settings,
+    conn: sqlite3.Connection,
+    uid: str,
+    *,
+    log: Callable[[str], None] = print,
+) -> dict[str, Any]:
+    """Fetch one company by UID, whatever the territory says.
+
+    The survey covers a territory; a client does not have to be inside it. The
+    first real client of this tool was a foundation in Vaud, and the territory
+    was five cantons of limited companies: a sweep would never have found it,
+    and requiring one to would be the tool dictating who may be a client.
+
+    So this is the deliberate single-company door. It hydrates in one request
+    and stores the gazette notices alongside, exactly as the bulk path does.
+    """
+    cleaned = uid.strip().upper().replace("-", "").replace(".", "").replace(" ", "")
+    if not cleaned.startswith("CHE") or not cleaned[3:].isdigit():
+        raise RuntimeError(
+            f"{uid!r} is not a Swiss UID. They look like CHE-103.895.771 or "
+            "CHE103895771, and are on any company's page at zefix.ch."
+        )
+    with _client(settings) as http:
+        zefix = ZefixClient(http, settings.zefix.base_url)
+        full = zefix.company(cleaned, max_age=0)
+    if full is None:
+        raise RuntimeError(
+            f"The register has no company with UID {cleaned}. Check it at "
+            "zefix.ch; a struck-off company keeps its UID and would be found."
+        )
+    company_id = db.upsert_company(conn, full.as_row())
+    db.save_publications(conn, company_id, full.publications)
+    conn.commit()
+    log(f"  {full.uid}  {full.name}  ({full.legal_form_label}, {full.canton})")
+    return {
+        "company_id": company_id, "uid": full.uid, "name": full.name,
+        "canton": full.canton, "publications": len(full.publications),
+    }

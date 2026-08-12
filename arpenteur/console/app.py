@@ -25,6 +25,7 @@ refusal is untouched and still applies.
 from __future__ import annotations
 
 import sqlite3
+from datetime import date, timedelta
 from typing import Any
 from urllib.parse import quote
 
@@ -33,6 +34,8 @@ from fastapi.responses import HTMLResponse, RedirectResponse
 
 from .. import attribution, db
 from ..config import Settings, load_settings
+from ..stages import source
+from . import clients as clients_view
 from . import render
 from .runner import ORDER, STAGES, Runner, close_orphans, options_for, status_of
 
@@ -243,6 +246,9 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                 # decide which notices apply.
                 attribution.notice(methods),
                 runner.running(),
+                conn.execute(
+                    "SELECT * FROM client WHERE company_id = ?", (company_id,)
+                ).fetchone(),
             )
             return shell(body)
         finally:
@@ -456,6 +462,298 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             # page: the answer is always to change something and try again.
             return RedirectResponse(f"/pipeline?note={quote(str(exc))}", status_code=303)
         return RedirectResponse(f"/runs/{run_id}", status_code=303)
+
+    # --- clients, projects, and the record -------------------------------------
+    #
+    # The half of the product that starts after a company says yes. See
+    # migrations/0012_clients.sql for why the audit trail, the client timeline
+    # and the calendar are one table read three ways.
+
+    def _stamp(value: str) -> str:
+        """A browser datetime-local into the one shape this database stores.
+
+        `2026-08-11T09:20` arrives from the control; `db.now()` writes
+        `2026-08-11T09:20:00+00:00`. Storing one with a space and the other
+        with a T looks harmless and sorts wrong: a space is below `T` in
+        ASCII, so a 09:20 typed by hand would order before an 09:00 recorded
+        by the system on the same day, and the timeline is ordered by this
+        column.
+        """
+        text = (value or "").strip().replace(" ", "T")
+        if len(text) == 16:  # no seconds
+            text += ":00"
+        return text or db.now()
+
+    def client_shell(body: str) -> HTMLResponse:
+        return HTMLResponse(
+            clients_view.shell("arpenteur", body, settings.territory.describe())
+        )
+
+    @app.get("/clients", response_class=HTMLResponse)
+    def portfolio() -> HTMLResponse:
+        conn = connect()
+        try:
+            rows = db.clients(conn)
+            projects = conn.execute("SELECT COUNT(*) FROM project").fetchone()[0]
+            upcoming = conn.execute(
+                "SELECT COUNT(*) FROM event WHERE state = 'planned' "
+                "AND date(occurred_at) BETWEEN date('now') AND date('now','+30 day')"
+            ).fetchone()[0]
+            return client_shell(clients_view.portfolio(rows, projects, upcoming))
+        finally:
+            conn.close()
+
+    @app.post("/clients/import")
+    def import_client(uid: str = Form("")) -> RedirectResponse:
+        """Fetch a company from the register and make it a client.
+
+        The door for a client the survey never saw, which is the normal case
+        rather than the exception: the survey covers a region and a set of
+        legal forms, and a client does not have to be inside either.
+        """
+        conn = connect()
+        try:
+            run_id = db.start_run(conn, "import", {"uid": uid}, started_by="console")
+            try:
+                found = source.import_company(
+                    settings, conn, uid, log=lambda m: db.append_line(conn, run_id, m)
+                )
+                client_id = db.promote_to_client(conn, found["company_id"])
+                conn.commit()
+                db.finish_run(conn, run_id, found)
+            except Exception as exc:
+                db.finish_run(conn, run_id, error=str(exc))
+                return RedirectResponse(
+                    f"/clients?note={quote(str(exc))}", status_code=303
+                )
+            return RedirectResponse(f"/client/{client_id}", status_code=303)
+        finally:
+            conn.close()
+
+    @app.post("/company/{company_id}/client")
+    def make_client(company_id: int) -> RedirectResponse:
+        """Promote a surveyed company. A reference, not a copy: the register
+        entry, the officers, the research and the notes are exactly what is
+        worth having on the first day of an engagement."""
+        conn = connect()
+        try:
+            client_id = db.promote_to_client(conn, company_id)
+            conn.commit()
+            return RedirectResponse(f"/client/{client_id}", status_code=303)
+        finally:
+            conn.close()
+
+    def _client_rows(conn: sqlite3.Connection, client_id: int):
+        client = conn.execute(
+            "SELECT * FROM client WHERE id = ?", (client_id,)
+        ).fetchone()
+        if client is None:
+            return None, None
+        company = conn.execute(
+            "SELECT * FROM company WHERE id = ?", (client["company_id"],)
+        ).fetchone()
+        return client, company
+
+    @app.get("/client/{client_id}", response_class=HTMLResponse)
+    def client_card(client_id: int) -> HTMLResponse:
+        conn = connect()
+        try:
+            client, company = _client_rows(conn, client_id)
+            if client is None:
+                return HTMLResponse("<h1>Not found</h1>", status_code=404)
+            projects = conn.execute(
+                "SELECT * FROM project WHERE client_id = ? ORDER BY code", (client_id,)
+            ).fetchall()
+            officers = conn.execute(
+                "SELECT * FROM person WHERE company_id = ? ORDER BY role",
+                (client["company_id"],),
+            ).fetchall()
+            methods = ["zefix"] + (["shab"] if officers else [])
+            return client_shell(
+                clients_view.client_page(
+                    client, company, projects,
+                    db.timeline(conn, client_id),
+                    conn.execute(
+                        "SELECT * FROM contact WHERE company_id = ? ORDER BY id",
+                        (client["company_id"],),
+                    ).fetchall(),
+                    officers,
+                    attribution.notice(methods),
+                )
+            )
+        finally:
+            conn.close()
+
+    @app.post("/client/{client_id}/brief")
+    def save_brief(
+        client_id: int,
+        brief: str = Form(""),
+        owner: str = Form(""),
+        status: str = Form(""),
+    ) -> RedirectResponse:
+        conn = connect()
+        try:
+            db.update_client(
+                conn, client_id, brief=brief, owner=owner, status=status or None
+            )
+            conn.commit()
+            return RedirectResponse(f"/client/{client_id}", status_code=303)
+        finally:
+            conn.close()
+
+    @app.post("/client/{client_id}/projects")
+    def create_project(
+        client_id: int,
+        name: str = Form(...),
+        billing: str = Form(""),
+        budget: str = Form(""),
+        started_at: str = Form(""),
+        due_at: str = Form(""),
+        summary: str = Form(""),
+    ) -> RedirectResponse:
+        conn = connect()
+        try:
+            project_id = db.add_project(
+                conn, client_id, name.strip(),
+                billing=billing or None,
+                budget=float(budget) if budget.strip() else None,
+                started_at=started_at or None, due_at=due_at or None,
+                summary=summary or None,
+            )
+            # A project starting is itself part of the record, so it is logged
+            # rather than only stored: the timeline should answer "what
+            # happened" without anyone having to remember to say it.
+            db.record_event(
+                conn, client_id, kind="milestone", occurred_at=db.now(),
+                subject=f"Project opened: {name.strip()}",
+                project_id=project_id, author="console", source="manual",
+            )
+            conn.commit()
+            return RedirectResponse(f"/project/{project_id}", status_code=303)
+        finally:
+            conn.close()
+
+    @app.get("/project/{project_id}", response_class=HTMLResponse)
+    def project_space(project_id: int) -> HTMLResponse:
+        conn = connect()
+        try:
+            project = conn.execute(
+                "SELECT * FROM project WHERE id = ?", (project_id,)
+            ).fetchone()
+            if project is None:
+                return HTMLResponse("<h1>Not found</h1>", status_code=404)
+            client, company = _client_rows(conn, project["client_id"])
+            return client_shell(
+                clients_view.project_page(
+                    project, client, company,
+                    db.timeline(conn, project["client_id"], project_id=project_id),
+                )
+            )
+        finally:
+            conn.close()
+
+    @app.post("/project/{project_id}")
+    def save_project(
+        project_id: int,
+        name: str = Form(""),
+        status: str = Form(""),
+        billing: str = Form(""),
+        budget: str = Form(""),
+        due_at: str = Form(""),
+        summary: str = Form(""),
+    ) -> RedirectResponse:
+        conn = connect()
+        try:
+            before = conn.execute(
+                "SELECT client_id, status FROM project WHERE id = ?", (project_id,)
+            ).fetchone()
+            db.update_project(
+                conn, project_id, name=name or None, status=status or None,
+                billing=billing, budget=float(budget) if budget.strip() else None,
+                due_at=due_at or None, summary=summary,
+            )
+            if before and status and status != before["status"]:
+                db.record_event(
+                    conn, before["client_id"], kind="decision", occurred_at=db.now(),
+                    subject=f"Status: {before['status']} to {status}",
+                    project_id=project_id, author="console",
+                )
+            conn.commit()
+            return RedirectResponse(f"/project/{project_id}", status_code=303)
+        finally:
+            conn.close()
+
+    @app.post("/client/{client_id}/events")
+    def log_event(
+        client_id: int,
+        kind: str = Form("note"),
+        state: str = Form("done"),
+        occurred_at: str = Form(...),
+        direction: str = Form(""),
+        project_id: str = Form(""),
+        with_whom: str = Form(""),
+        subject: str = Form(""),
+        body: str = Form(""),
+        external_id: str = Form(""),
+    ) -> RedirectResponse:
+        conn = connect()
+        try:
+            db.record_event(
+                conn, client_id, kind=kind, state=state,
+                occurred_at=_stamp(occurred_at),
+                direction=direction or None,
+                project_id=int(project_id) if project_id.strip() else None,
+                with_whom=with_whom or None, subject=subject or None,
+                body=body or None, author="console",
+                external_id=external_id.strip() or None,
+            )
+            conn.commit()
+            return RedirectResponse(f"/client/{client_id}", status_code=303)
+        finally:
+            conn.close()
+
+    @app.post("/event/{event_id}/state")
+    def move_event(event_id: int, state: str = Form(...)) -> RedirectResponse:
+        """A planned meeting becomes done, or cancelled. Never removed: an
+        audit trail with a delete button is a diary."""
+        conn = connect()
+        try:
+            row = conn.execute(
+                "SELECT client_id FROM event WHERE id = ?", (event_id,)
+            ).fetchone()
+            db.set_event_state(conn, event_id, state)
+            conn.commit()
+            target = f"/client/{row['client_id']}" if row else "/clients"
+            return RedirectResponse(target, status_code=303)
+        finally:
+            conn.close()
+
+    @app.get("/calendar", response_class=HTMLResponse)
+    def diary(month: str = "") -> HTMLResponse:
+        conn = connect()
+        try:
+            today = date.fromisoformat(
+                conn.execute("SELECT date('now')").fetchone()[0]
+            )
+            try:
+                year, mon = (int(p) for p in (month or today.strftime("%Y-%m")).split("-"))
+            except ValueError:
+                year, mon = today.year, today.month
+            first = date(year, mon, 1)
+            last = (first + timedelta(days=32)).replace(day=1)
+            return client_shell(
+                clients_view.calendar_page(
+                    year, mon,
+                    db.diary(
+                        conn,
+                        since=(first - timedelta(days=7)).isoformat(),
+                        until=(last + timedelta(days=7)).isoformat(),
+                    ),
+                    today,
+                )
+            )
+        finally:
+            conn.close()
 
     @app.get("/healthz")
     def healthz() -> dict[str, str]:
