@@ -17,6 +17,7 @@ from .stages import (
     advise,
     draft,
     enrich,
+    geocode,
     match,
     people,
     prep,
@@ -369,6 +370,40 @@ def cmd_reach(args: argparse.Namespace) -> int:
         f"{stats['without']} without, {stats['blocked']} declined by robots.txt, "
         f"{stats['unreadable']} unreadable; "
         f"{stats['for_pattern']} left for the pattern tier"
+    )
+    conn.close()
+    return 0
+
+
+def cmd_geocode(args: argparse.Namespace) -> int:
+    settings = load_settings()
+    conn = db.open_db(settings.database_url)
+    run_id = db.start_run(conn, "geocode", vars(args))
+    try:
+        stats = geocode.run(
+            settings,
+            conn,
+            uids=_split(args.uid),
+            canton=args.canton or "",
+            segment=args.segment or "",
+            band=args.band or "",
+            worked=args.worked,
+            limit=args.limit,
+            dry_run=args.dry_run,
+        )
+    except Exception as exc:
+        db.finish_run(conn, run_id, error=str(exc))
+        print(f"error: {exc}", file=sys.stderr)
+        return 1
+    db.finish_run(conn, run_id, stats)
+    # Reported by precision rather than as one total. "412 placed" says nothing
+    # about whether the map is worth looking at; "380 on a door, 32 on a town"
+    # says exactly how much of it to believe.
+    print(
+        f"placed {stats['placed']} of {stats['considered']}: "
+        f"{stats['address']} on an address, {stats['street']} on a street, "
+        f"{stats['postcode']} on a town only; {stats['unplaced']} unplaced, "
+        f"{stats['no_domicile']} with no domicile on the register"
     )
     conn.close()
     return 0
@@ -955,6 +990,22 @@ def build_parser() -> argparse.ArgumentParser:
     )
     p.add_argument("--dry-run", action="store_true", help="list the sites, fetch nothing")
     p.set_defaults(func=cmd_reach)
+
+    p = sub.add_parser(
+        "geocode",
+        help="place companies on the map from the address the register gives (free)",
+    )
+    p.add_argument("--uid", help="comma separated UIDs")
+    p.add_argument("--canton", help="only companies in this canton")
+    p.add_argument("--segment", help="only companies carrying this segment")
+    p.add_argument("--band", help="only companies whose fit is in this band")
+    p.add_argument(
+        "--worked", action="store_true",
+        help="only companies with a pipeline state, which is the shortlist a map is read for",
+    )
+    p.add_argument("--limit", type=int, help="required for runs over 500 companies")
+    p.add_argument("--dry-run", action="store_true", help="list the addresses, ask nothing")
+    p.set_defaults(func=cmd_geocode)
 
     sub.add_parser(
         "draft", help="propose messages for review (not built yet)"

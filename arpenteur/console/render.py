@@ -130,6 +130,7 @@ pre.log {{ background:#fff; border:1px solid var(--line); padding:.8rem 1rem; ma
   <span class="sep">|</span>
   <a href="/">Survey</a>
   <a href="/board">Board</a>
+  <a href="/map">Map</a>
   <a href="/pipeline">Operations</a>
   <a href="/runs">History</a>
   <a href="/settings">Settings</a>

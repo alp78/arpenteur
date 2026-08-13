@@ -33,7 +33,7 @@ from typing import Any, Callable
 from .. import db
 from ..config import Settings
 from ..kernel.db import Connection, Row
-from ..stages import enrich, match, people, profile, reach, source, sync
+from ..stages import enrich, geocode, match, people, profile, reach, source, sync
 
 
 @dataclass(frozen=True)
@@ -107,6 +107,10 @@ class Stage:
     # without this the runner recorded `{}` for it: a finished run whose
     # result line said nothing at all, which is worse than no view.
     result_key: str = ""
+    # Which module owns it. A stage whose module is not enabled is not offered:
+    # its tables do not exist, and a button that can only fail is worse than an
+    # absent one.
+    module: str = "scout"
 
 
 # --- the controls shared between stages ---------------------------------------
@@ -382,10 +386,40 @@ STAGES: dict[str, Stage] = {
         waiting_sql="SELECT COUNT(*) FROM intel.site WHERE status = 'found' "
                     "AND url IS NOT NULL AND url <> '' AND reached_at IS NULL",
     ),
+    "geocode": Stage(
+        name="geocode",
+        title="Put them on the map",
+        what="Turn the postal address the register gives into a coordinate, through "
+             "the Confederation's own address search, so companies and clients can "
+             "be seen on a map and asked about by distance.",
+        call=geocode.run,
+        fields=(CANTON, SEGMENT, BAND, UIDS,
+                Field("worked", "Only what is on the board", "bool",
+                      help="The companies with a pipeline state. This is the "
+                           "shortlist a map is actually read for, and it is a "
+                           "few dozen requests rather than a few thousand."),
+                SIZES, DRY),
+        needs="Fetched detail. An address only arrives with hydration, and 3'690 "
+              "of the companies held carry one.",
+        produces="An establishment with a point, and the precision of the match: "
+                 "a door, a street, or merely the right town.",
+        cost="Free. One request per company to api3.geo.admin.ch, no model, no key.",
+        button="Geocode",
+        button_does="Records each company's registered address and asks swisstopo "
+                    "where it is. An address that resolves to nothing is left "
+                    "without a point rather than guessed at.",
+        done_sql="SELECT COUNT(*) FROM geo.establishment WHERE point IS NOT NULL",
+        waiting_sql="SELECT COUNT(*) FROM core.company c WHERE c.address_json IS NOT NULL"
+                    " AND NOT EXISTS (SELECT 1 FROM geo.establishment e"
+                    " WHERE e.company_id = c.id AND e.is_seat AND e.point IS NOT NULL)",
+        done_label="placed",
+        module="geo",
+    ),
 }
 
 # The order the operations page shows them in, which is the order they run in.
-ORDER = ("source", "sync", "hydrate", "people", "profile", "enrich", "match", "reach")
+ORDER = ("source", "sync", "hydrate", "people", "profile", "enrich", "match",
+         "reach", "geocode")
 
 # Sizes offered instead of a free number box. "No limit" is last and named
 # rather than blank, so choosing it is a decision rather than an oversight.
@@ -464,6 +498,11 @@ def status_of(conn: Connection, stage: Stage) -> dict[str, int]:
         try:
             return int(next(iter(conn.execute(sql).fetchone().values())))
         except psycopg.Error:
+            # A failed statement leaves the transaction poisoned, and every
+            # later count on this connection would then fail too: one absent
+            # table would report the whole pipeline as empty rather than the
+            # one stage that cannot answer.
+            conn.rollback()
             return 0
 
     return {"done": count(stage.done_sql), "waiting": count(stage.waiting_sql)}

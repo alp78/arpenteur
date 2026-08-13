@@ -29,17 +29,23 @@ from typing import Any
 from urllib.parse import quote
 
 from fastapi import FastAPI, File, Form, Request, UploadFile
-from fastapi.responses import HTMLResponse, PlainTextResponse, RedirectResponse
+from fastapi.responses import (
+    HTMLResponse, JSONResponse, PlainTextResponse, RedirectResponse,
+)
 
 from .. import attachments as att
 from .. import attribution, db, dossier
+from ..kernel import modules as module_registry
 from ..kernel.db import Connection, Row
 from ..modules.clients import store as clients_store
+from ..modules.geo import store as geo_store
 from ..modules.scout import store as scout_store
 from ..config import Settings, load_settings
-from ..stages import advise, match, prep, source
+from ..sources import geoadmin
+from ..stages import advise, geocode, match, prep, source
 from . import board as board_view
 from . import clients as clients_view
+from . import map_page as map_view_page
 from . import dossier_page as dossier_view
 from . import prep_page as prep_view
 from . import render
@@ -349,6 +355,133 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         finally:
             conn.close()
 
+    # --- the map --------------------------------------------------------------
+    #
+    # Markers as a GeoJSON fetch rather than as rendered HTML: the map draws
+    # them on the GPU, pans and zooms without asking again, and the same URL is
+    # something an analyst can open with anything that reads GeoJSON.
+
+    def _map_filters(args: Any) -> dict[str, str]:
+        return {
+            "canton": args.get("canton", ""), "segment": args.get("segment", ""),
+            "band": args.get("band", ""), "state": args.get("state", ""),
+        }
+
+    @app.get("/map", response_class=HTMLResponse)
+    def map_view(request: Request) -> HTMLResponse:
+        conn = connect()
+        try:
+            chosen = _map_filters(request.query_params)
+            counts = geo_store.counts(conn)
+            shown = len(geo_store.points(conn, **chosen))
+            return HTMLResponse(
+                map_view_page.shell(
+                    map_view_page.map_page(
+                        count=shown,
+                        placed=counts["placed"],
+                        with_address=counts["with_address"],
+                        cantons=scout_store.cantons_present(conn),
+                        segments=sorted(settings.segments),
+                        states=list(db.PROSPECT_STATES),
+                        attribution_notice=attribution.notice(["zefix", "geoadmin"]),
+                        **chosen,
+                    ),
+                    settings.territory.describe(),
+                )
+            )
+        finally:
+            conn.close()
+
+    @app.get("/map/points.geojson")
+    def map_points(request: Request) -> JSONResponse:
+        conn = connect()
+        try:
+            rows = geo_store.points(conn, **_map_filters(request.query_params))
+            return JSONResponse(map_view_page.collection(rows))
+        finally:
+            conn.close()
+
+    @app.post("/client/{client_id}/sites")
+    def add_site(
+        client_id: int,
+        name: str = Form(""),
+        street: str = Form(""),
+        house_number: str = Form(""),
+        postal_code: str = Form(""),
+        city: str = Form(""),
+        kind: str = Form(""),
+    ) -> RedirectResponse:
+        """Record one of a client's sites, and place it.
+
+        Typed by a person, because this is the half of the geography the
+        register does not hold: it knows one registered address per legal
+        entity, and a foundation running seven sites has seven. Geocoded
+        inline: it is one request to a free service and finishes while the
+        redirect is being written.
+        """
+        conn = connect()
+        try:
+            client = clients_store.client(conn, client_id)
+            if client is None:
+                return RedirectResponse("/clients", status_code=303)
+            asked = {
+                "street": street.strip() or None,
+                "house_number": house_number.strip() or None,
+                "postal_code": postal_code.strip() or None,
+                "city": city.strip() or None,
+            }
+            address_id = geo_store.save_address(
+                conn, {**asked, "query": geoadmin.one_line(asked), "method": "manual"}
+            )
+            site_id = geo_store.save_establishment(
+                conn, int(client["company_id"]), address_id=address_id,
+                name=name.strip() or None, kind=kind.strip() or None,
+                method="manual",
+            )
+            note = ""
+            try:
+                with geocode.client_for(settings) as http:
+                    found = geoadmin.geocode(http, asked)
+                if found is None:
+                    note = (
+                        f"{name or 'The site'} was saved, but the address did not "
+                        "resolve to a point. Check the street and the postcode; "
+                        "nothing is placed on a guess."
+                    )
+                else:
+                    geo_store.place(
+                        conn, site_id, lat=found.lat, lon=found.lon,
+                        precision=found.precision, confidence=found.confidence,
+                        source_url=geoadmin.source_url(geoadmin.one_line(asked)),
+                    )
+            except Exception as exc:
+                note = f"Saved, but the geocoder did not answer: {exc}"
+            conn.commit()
+            back = f"/client/{client_id}#sites"
+            return RedirectResponse(
+                f"/client/{client_id}?note={quote(note)}#sites" if note else back,
+                status_code=303,
+            )
+        finally:
+            conn.close()
+
+    @app.post("/establishment/{establishment_id}/delete")
+    def remove_site(establishment_id: int) -> RedirectResponse:
+        conn = connect()
+        try:
+            company_id = geo_store.delete_establishment(conn, establishment_id)
+            conn.commit()
+            client = (
+                clients_store.client_for_company(conn, company_id)
+                if company_id else None
+            )
+            return RedirectResponse(
+                f"/client/{client['id']}#sites" if client else "/clients",
+                status_code=303,
+            )
+        finally:
+            conn.close()
+
     # --- watching the pipeline ------------------------------------------------
 
     @app.get("/runs", response_class=HTMLResponse)
@@ -421,7 +554,10 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         """
         conn = connect()
         try:
-            stages = [STAGES[name] for name in ORDER]
+            # Only the stages whose module is installed. A geocode button on a
+            # console with no `geo` schema is one that can only fail.
+            enabled = set(getattr(settings, "modules", None) or module_registry.DEFAULT)
+            stages = [STAGES[name] for name in ORDER if STAGES[name].module in enabled]
             return shell(
                 render.pipeline_page(
                     stages,
@@ -534,7 +670,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         return client, scout_store.company(conn, client["company_id"])
 
     @app.get("/client/{client_id}", response_class=HTMLResponse)
-    def client_card(client_id: int) -> HTMLResponse:
+    def client_card(client_id: int, request: Request) -> HTMLResponse:
         conn = connect()
         try:
             client, company = _client_rows(conn, client_id)
@@ -555,6 +691,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                     dossier_total=len(dossier.SECTIONS),
                     documents=clients_store.attachment_count(conn, client_id),
                     has_approach=clients_store.has_approach(conn, client_id),
+                    sites=geo_store.establishments_for(conn, client["company_id"]),
+                    note=request.query_params.get("note", ""),
                 )
             )
         finally:

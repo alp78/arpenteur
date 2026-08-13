@@ -1,0 +1,260 @@
+{
+ "results": [
+  {
+   "attrs": {
+    "detail": "rue traversiere 1 1018 lausanne 5586 lausanne ch vd",
+    "featureId": "882896_1",
+    "geom_quadindex": "020333330113031313222",
+    "geom_st_box2d": "BOX(6.630591 46.529333,6.630591 46.529333)",
+    "label": "Rue Traversière 1 <b>1018 Lausanne</b>",
+    "lat": 46.52933883666992,
+    "links": [
+     {
+      "href": "/rest/services/ech/MapServer/ch.swisstopo.amtliches-gebaeudeadressverzeichnis/101552928",
+      "rel": "related",
+      "title": "ch.swisstopo.amtliches-gebaeudeadressverzeichnis"
+     },
+     {
+      "href": "/rest/services/ech/MapServer/ch.bfs.gebaeude_wohnungs_register/882896_1",
+      "rel": "related",
+      "title": "ch.bfs.gebaeude_wohnungs_register"
+     }
+    ],
+    "lon": 6.630585193634033,
+    "num": 1,
+    "objectclass": "",
+    "origin": "address",
+    "rank": 7,
+    "x": 6.630585193634033,
+    "y": 46.52933883666992,
+    "zoomlevel": 10
+   },
+   "id": 279116,
+   "weight": 9
+  },
+  {
+   "attrs": {
+    "detail": "avenue du parc-de-la-rouvraie 1 1018 lausanne 5586 lausanne ch vd",
+    "featureId": "886592_0",
+    "geom_quadindex": "020333331000103202012",
+    "geom_st_box2d": "BOX(6.634052 46.531755,6.634052 46.531755)",
+    "label": "Avenue du Parc-de-la-Rouvraie 1 <b>1018 Lausanne</b>",
+    "lat": 46.53175735473633,
+    "links": [
+     {
+      "href": "/rest/services/ech/MapServer/ch.swisstopo.amtliches-gebaeudeadressverzeichnis/102193060",
+      "rel": "related",
+      "title": "ch.swisstopo.amtliches-gebaeudeadressverzeichnis"
+     },
+     {
+      "href": "/rest/services/ech/MapServer/ch.bfs.gebaeude_wohnungs_register/886592_0",
+      "rel": "related",
+      "title": "ch.bfs.gebaeude_wohnungs_register"
+     }
+    ],
+    "lon": 6.6340460777282715,
+    "num": 1,
+    "objectclass": "",
+    "origin": "address",
+    "rank": 7,
+    "x": 6.6340460777282715,
+    "y": 46.53175735473633,
+    "zoomlevel": 10
+   },
+   "id": 285954,
+   "weight": 9
+  },
+  {
+   "attrs": {
+    "detail": "rue des maisons-familiales 1 1018 lausanne 5586 lausanne ch vd",
+    "featureId": "880622_0",
+    "geom_quadindex": "020333313222000132132",
+    "geom_st_box2d": "BOX(6.632416 46.534173,6.632416 46.534173)",
+    "label": "Rue des Maisons-Familiales 1 <b>1018 Lausanne</b>",
+    "lat": 46.534175872802734,
+    "links": [
+     {
+      "href": "/rest/services/ech/MapServer/ch.swisstopo.amtliches-gebaeudeadressverzeichnis/100566832",
+      "rel": "related",
+      "title": "ch.swisstopo.amtliches-gebaeudeadressverzeichnis"
+     },
+     {
+      "href": "/rest/services/ech/MapServer/ch.bfs.gebaeude_wohnungs_register/880622_0",
+      "rel": "related",
+      "title": "ch.bfs.gebaeude_wohnungs_register"
+     }
+    ],
+    "lon": 6.632411003112793,
+    "num": 1,
+    "objectclass": "",
+    "origin": "address",
+    "rank": 7,
+    "x": 6.632411003112793,
+    "y": 46.534175872802734,
+    "zoomlevel": 10
+   },
+   "id": 340736,
+   "weight": 9
+  },
+  {
+   "attrs": {
+    "detail": "route du signal 1a 1018 lausanne 5586 lausanne ch vd",
+    "featureId": "280093805_0",
+    "geom_quadindex": "020333331001213003333",
+    "geom_st_box2d": "BOX(6.636433 46.530824,6.636433 46.530824)",
+    "label": "Route du Signal 1a <b>1018 Lausanne</b>",
+    "lat": 46.530826568603516,
+    "links": [
+     {
+      "href": "/rest/services/ech/MapServer/ch.swisstopo.amtliches-gebaeudeadressverzeichnis/101890178",
+      "rel": "related",
+      "title": "ch.swisstopo.amtliches-gebaeudeadressverzeichnis"
+     },
+     {
+      "href": "/rest/services/ech/MapServer/ch.bfs.gebaeude_wohnungs_register/280093805_0",
+      "rel": "related",
+      "title": "ch.bfs.gebaeude_wohnungs_register"
+     }
+    ],
+    "lon": 6.636427402496338,
+    "num": 1,
+    "objectclass": "",
+    "origin": "address",
+    "rank": 7,
+    "x": 6.636427402496338,
+    "y": 46.530826568603516,
+    "zoomlevel": 10
+   },
+   "id": 342174,
+   "weight": 9
+  },
+  {
+   "attrs": {
+    "detail": "parc du loup 1a 1018 lausanne 5586 lausanne ch vd",
+    "featureId": "280122555_0",
+    "geom_quadindex": "020333312302030320221",
+    "geom_st_box2d": "BOX(6.620783 46.537668,6.620783 46.537668)",
+    "label": "Parc du Loup 1a <b>1018 Lausanne</b>",
+    "lat": 46.53767395019531,
+    "links": [
+     {
+      "href": "/rest/services/ech/MapServer/ch.swisstopo.amtliches-gebaeudeadressverzeichnis/102622394",
+      "rel": "related",
+      "title": "ch.swisstopo.amtliches-gebaeudeadressverzeichnis"
+     },
+     {
+      "href": "/rest/services/ech/MapServer/ch.bfs.gebaeude_wohnungs_register/280122555_0",
+      "rel": "related",
+      "title": "ch.bfs.gebaeude_wohnungs_register"
+     }
+    ],
+    "lon": 6.620777606964111,
+    "num": 1,
+    "objectclass": "",
+    "origin": "address",
+    "rank": 7,
+    "x": 6.620777606964111,
+    "y": 46.53767395019531,
+    "zoomlevel": 10
+   },
+   "id": 343722,
+   "weight": 9
+  },
+  {
+   "attrs": {
+    "detail": "chemin de la lisiere 1 1018 lausanne 5586 lausanne ch vd",
+    "featureId": "880420_0",
+    "geom_quadindex": "020333313223120133211",
+    "geom_st_box2d": "BOX(6.637038 46.533672,6.637038 46.533672)",
+    "label": "Chemin de la Lisière 1 <b>1018 Lausanne</b>",
+    "lat": 46.53367614746094,
+    "links": [
+     {
+      "href": "/rest/services/ech/MapServer/ch.swisstopo.amtliches-gebaeudeadressverzeichnis/100577886",
+      "rel": "related",
+      "title": "ch.swisstopo.amtliches-gebaeudeadressverzeichnis"
+     },
+     {
+      "href": "/rest/services/ech/MapServer/ch.bfs.gebaeude_wohnungs_register/880420_0",
+      "rel": "related",
+      "title": "ch.bfs.gebaeude_wohnungs_register"
+     }
+    ],
+    "lon": 6.637032508850098,
+    "num": 1,
+    "objectclass": "",
+    "origin": "address",
+    "rank": 7,
+    "x": 6.637032508850098,
+    "y": 46.53367614746094,
+    "zoomlevel": 10
+   },
+   "id": 346824,
+   "weight": 9
+  },
+  {
+   "attrs": {
+    "detail": "avenue du mont-blanc 1 1018 lausanne 5586 lausanne ch vd",
+    "featureId": "882822_0",
+    "geom_quadindex": "020333330110132021321",
+    "geom_st_box2d": "BOX(6.628398 46.531266,6.628398 46.531266)",
+    "label": "Avenue du Mont-Blanc 1 <b>1018 Lausanne</b>",
+    "lat": 46.53126907348633,
+    "links": [
+     {
+      "href": "/rest/services/ech/MapServer/ch.swisstopo.amtliches-gebaeudeadressverzeichnis/100570557",
+      "rel": "related",
+      "title": "ch.swisstopo.amtliches-gebaeudeadressverzeichnis"
+     },
+     {
+      "href": "/rest/services/ech/MapServer/ch.bfs.gebaeude_wohnungs_register/882822_0",
+      "rel": "related",
+      "title": "ch.bfs.gebaeude_wohnungs_register"
+     }
+    ],
+    "lon": 6.628392219543457,
+    "num": 1,
+    "objectclass": "",
+    "origin": "address",
+    "rank": 7,
+    "x": 6.628392219543457,
+    "y": 46.53126907348633,
+    "zoomlevel": 10
+   },
+   "id": 359407,
+   "weight": 9
+  },
+  {
+   "attrs": {
+    "detail": "avenue des oiseaux 1 1018 lausanne 5586 lausanne ch vd",
+    "featureId": "882803_0",
+    "geom_quadindex": "020333330111020123232",
+    "geom_st_box2d": "BOX(6.629329 46.531496,6.629329 46.531496)",
+    "label": "Avenue des Oiseaux 1 <b>1018 Lausanne</b>",
+    "lat": 46.53150177001953,
+    "links": [
+     {
+      "href": "/rest/services/ech/MapServer/ch.swisstopo.amtliches-gebaeudeadressverzeichnis/100578472",
+      "rel": "related",
+      "title": "ch.swisstopo.amtliches-gebaeudeadressverzeichnis"
+     },
+     {
+      "href": "/rest/services/ech/MapServer/ch.bfs.gebaeude_wohnungs_register/882803_0",
+      "rel": "related",
+      "title": "ch.bfs.gebaeude_wohnungs_register"
+     }
+    ],
+    "lon": 6.629323482513428,
+    "num": 1,
+    "objectclass": "",
+    "origin": "address",
+    "rank": 7,
+    "x": 6.629323482513428,
+    "y": 46.53150177001953,
+    "zoomlevel": 10
+   },
+   "id": 360766,
+   "weight": 9
+  }
+ ]
+}

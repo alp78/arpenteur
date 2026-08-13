@@ -30,7 +30,9 @@ Pipeline stages, each a standalone command:
 7. **reach** — a point of contact: published addresses *(built)*, then
    the domain's own naming pattern, then a paid lookup for the
    remainder *(planned)*
-8. **draft** — outreach proposals, always human-reviewed, never
+8. **geocode** — turn the register's postal address into a coordinate,
+   through the Confederation's own address search *(built)*
+9. **draft** — outreach proposals, always human-reviewed, never
    auto-sent *(planned)*
 
 Then the other half, for the companies that say yes: **clients**, their
@@ -53,7 +55,7 @@ each owning one Postgres schema and its own numbered migrations:
 | module | schema | what |
 |---|---|---|
 | `scout` | `core`, `intel` | the survey: sweep, detail, officers, segments, website research, scoring |
-| `geo` | `geo` | establishments with coordinates, cantonal boundaries, the map |
+| `geo` | `geo` | the geocode stage, establishments with coordinates, the map |
 | `clients` | `crm` | clients, projects, the interaction log, dossier, approach, prep |
 | `sales` | `commercial` | services, rate cards, quotes, invoices, time entries |
 
@@ -567,11 +569,11 @@ under their own name. Swiss law (LCD art. 3 al. 1 let. o) draws the line at
 *mass* advertising email without prior consent, and the defence against ever
 crossing it is that the software has no mechanism, which a test asserts.
 
-**It runs the stages, and shows the work.** Four views: **Companies**, the
+**It runs the stages, and shows the work.** Five views: **Companies**, the
 survey with a progress stamp per company and a filter for where each one has
-got to; **Board**, where each company being worked stands; **Operations**,
-every stage with how much it has done, how much is queued for it, and the
-control to advance it; **History**, what has been run.
+got to; **Board**, where each company being worked stands; **Map**, where they
+are; **Operations**, every stage with how much it has done, how much is queued
+for it, and the control to advance it; **History**, what has been run.
 
 Operations is one page rather than a form page and a counts page, because the
 number that makes a button meaningful is how much work is waiting for it.
@@ -620,6 +622,48 @@ name.
 The board is a scout view. It reads `intel.prospect` and knows nothing about
 `crm`; the client chip on a won card is looked up by the console, which is
 allowed to know about both modules where `modules/scout` is not.
+
+### The map
+
+Every establishment with a coordinate, on swisstopo's own base map. Markers
+are coloured by fit band, filtered by canton, segment, band and pipeline state,
+and each one opens the company.
+
+**A company has no location; its establishments do.** A foundation running an
+EMS, a day centre and three residences is one legal entity at seven places, and
+a single marker for it would be wrong in six of them. So `geo.establishment` is
+a table: the seat arrives from the register through the `geocode` stage, and
+the other sites are typed on the client page, where they are geocoded as they
+are saved.
+
+**A point is separate from the address it was made from.** An address is what
+the register or the client told us; a point is what a geocoder made of it, at a
+precision, on a date. A bad geocode over a good address is the ordinary case,
+and one row could not tell them apart.
+
+**The precision is graded here, not read from the reply.** This is the part
+worth knowing before trusting the map. The federal search calls everything it
+returns an address, including the arbitrary building it picks when the query
+was only a postcode. Measured on 13.08.2026:
+
+```
+"Chemin du Petit-Flon 49, 1018 Lausanne"  ->  origin=address, Chemin du Petit-Flon 49
+"1018 Lausanne"                           ->  origin=address, Rue Traversière 1
+```
+
+The second is a real building in the right postcode with nothing to do with the
+question, and its `origin`, `rank` and `weight` are indistinguishable from the
+first's. So each answer is compared with what was asked: the postcode must
+agree or nothing is stored, and a point is called an address only when the
+street and the house number are in the answer too. A marker placed on a town is
+drawn hollow and says so when clicked. On the first live run of 166 Geneva
+companies, 159 landed on a door, 2 on a street and 5 on a town only.
+
+Both the base map and the geocoder are swisstopo, published as open government
+data on the single condition that the source is named, which the page does.
+Nothing is sent to a commercial geocoder: putting every client's address
+through a third party to learn what the Confederation publishes would be a
+data-protection decision taken for no gain.
 
 A company page carries the same actions for that one company, since having
 opened it and decided it is interesting, the alternative is going back and

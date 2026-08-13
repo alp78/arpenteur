@@ -37,7 +37,18 @@ ORIGIN = {
     "web-search": "Site web de l'entreprise",
     "site": "Site web de l'entreprise",
     "published": "Site web de l'entreprise",
+    "geoadmin": "Géocodage : swisstopo, api3.geo.admin.ch",
+    "manual": "Saisi à la main",
 }
+
+# swisstopo publishes the base map and the address search as open government
+# data, free to use including commercially, on the single condition that the
+# source is named. Anything showing a map or a coordinate carries this.
+SWISSTOPO_NOTICE = (
+    "Fond de carte et géocodage : © swisstopo (geo.admin.ch). "
+    "Coordonnées obtenues par géocodage automatique d'une adresse postale ; "
+    "un point peut être faux là où l'adresse est juste."
+)
 
 # Methods whose rows are our reading of a source rather than the source, and
 # so must be declared as modified under the second condition above.
@@ -76,9 +87,12 @@ def notice(methods: object = ()) -> str:
     built only from verbatim registry fields does not carry a modification
     disclaimer it does not need, and one built on a SHAB parse always does.
     """
+    names = [str(method) for method in methods]
     lines = [SOURCE_NOTICE, NO_WARRANTY_NOTICE]
-    if any(str(method) in DERIVED for method in methods):
+    if any(name in DERIVED for name in names):
         lines.append(MODIFIED_NOTICE)
+    if "geoadmin" in names:
+        lines.append(SWISSTOPO_NOTICE)
     return "\n".join(lines)
 
 
