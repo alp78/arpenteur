@@ -23,6 +23,7 @@ from .stages import (
     prep,
     profile,
     reach,
+    resolve,
     source,
     sync,
 )
@@ -281,6 +282,21 @@ def cmd_people(args: argparse.Namespace) -> int:
            if stats.get("pruned") else "")
         + (" (dry run, nothing written)" if args.dry_run else "")
     )
+    conn.close()
+    return 0
+
+
+def cmd_resolve(args: argparse.Namespace) -> int:
+    settings = load_settings()
+    conn = db.open_db(settings.database_url)
+    run_id = db.start_run(conn, "resolve", vars(args))
+    try:
+        stats = resolve.run(settings, conn, dry_run=args.dry_run)
+    except Exception as exc:
+        db.finish_run(conn, run_id, error=str(exc))
+        print(f"error: {exc}", file=sys.stderr)
+        return 1
+    db.finish_run(conn, run_id, stats)
     conn.close()
     return 0
 
@@ -1008,6 +1024,13 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--limit", type=int, help="required for runs over 500 companies")
     p.add_argument("--dry-run", action="store_true", help="list the addresses, ask nothing")
     p.set_defaults(func=cmd_geocode)
+
+    p = sub.add_parser(
+        "resolve",
+        help="work out which officer rows are the same person (free, seconds)",
+    )
+    p.add_argument("--dry-run", action="store_true", help="say what it would do")
+    p.set_defaults(func=cmd_resolve)
 
     sub.add_parser(
         "draft", help="propose messages for review (not built yet)"

@@ -46,6 +46,7 @@ from ..stages import advise, geocode, match, prep, source
 from . import board as board_view
 from . import clients as clients_view
 from . import map_page as map_view_page
+from . import people_page as people_view_page
 from . import dossier_page as dossier_view
 from . import prep_page as prep_view
 from . import render
@@ -163,6 +164,10 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                 attribution.notice(methods),
                 runner.running(),
                 clients_store.client_for_company(conn, company_id),
+                parties=scout_store.parties_for_company(conn, company_id),
+                overlap=people_view_page.overlap_panel(
+                    scout_store.board_overlap(conn, company_id), company_id
+                ),
             )
             return shell(body)
         finally:
@@ -352,6 +357,85 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                      "already on the board, or none has been scored in that band."
             )
             return RedirectResponse(f"/board?note={quote(note)}", status_code=303)
+        finally:
+            conn.close()
+
+    # --- people, and who reaches whom -----------------------------------------
+    #
+    # The survey answers "who exists". This answers "who do we already reach",
+    # which decides whether a first approach is a cold letter or a word with
+    # somebody's colleague.
+
+    @app.get("/people", response_class=HTMLResponse)
+    def people_view(request: Request) -> HTMLResponse:
+        args = request.query_params
+        try:
+            min_boards = max(1, min(20, int(args.get("min_boards", "1"))))
+        except ValueError:
+            min_boards = 1
+        conn = connect()
+        try:
+            return HTMLResponse(
+                people_view_page.shell(
+                    people_view_page.people_page(
+                        scout_store.parties(
+                            conn, q=args.get("q", ""), min_boards=min_boards
+                        ),
+                        q=args.get("q", ""),
+                        min_boards=min_boards,
+                        counts=scout_store.party_counts(conn),
+                    ),
+                    settings.territory.describe(),
+                )
+            )
+        finally:
+            conn.close()
+
+    @app.get("/party/{party_id}", response_class=HTMLResponse)
+    def party_view(party_id: int) -> HTMLResponse:
+        conn = connect()
+        try:
+            row = scout_store.party(conn, party_id)
+            if row is None:
+                return HTMLResponse("<h1>Not found</h1>", status_code=404)
+            return HTMLResponse(
+                people_view_page.shell(
+                    people_view_page.party_page(
+                        row,
+                        scout_store.roles_for_party(conn, party_id),
+                        also_named=scout_store.same_name_parties(conn, party_id),
+                    ),
+                    settings.territory.describe(),
+                )
+            )
+        finally:
+            conn.close()
+
+    @app.get("/company/{company_id}/route/{target_id}", response_class=HTMLResponse)
+    def route_view(company_id: int, target_id: int) -> HTMLResponse:
+        """The chain of shared officers from one company to another."""
+        conn = connect()
+        try:
+            start = scout_store.company(conn, company_id)
+            target = scout_store.company(conn, target_id)
+            if start is None or target is None:
+                return HTMLResponse("<h1>Not found</h1>", status_code=404)
+            routes = scout_store.path_between(conn, company_id, target_id)
+            named = {
+                int(row["id"]): row["name"]
+                for row in scout_store.companies_named(
+                    conn, sorted({int(c) for r in routes for c in r["path"]})
+                )
+            }
+            body = (
+                f'<p class="crumbs"><a href="/company/{company_id}">'
+                f'{render.esc(start["name"])}</a> / route</p>'
+                f'<h1>{render.esc(start["name"])} to {render.esc(target["name"])}</h1>'
+                + people_view_page.route_panel(routes, named, target["name"])
+            )
+            return HTMLResponse(
+                people_view_page.shell(body, settings.territory.describe())
+            )
         finally:
             conn.close()
 

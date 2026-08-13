@@ -33,7 +33,9 @@ from typing import Any, Callable
 from .. import db
 from ..config import Settings
 from ..kernel.db import Connection, Row
-from ..stages import enrich, geocode, match, people, profile, reach, source, sync
+from ..stages import (
+    enrich, geocode, match, people, profile, reach, resolve, source, sync,
+)
 
 
 @dataclass(frozen=True)
@@ -386,6 +388,28 @@ STAGES: dict[str, Stage] = {
         waiting_sql="SELECT COUNT(*) FROM intel.site WHERE status = 'found' "
                     "AND url IS NOT NULL AND url <> '' AND reached_at IS NULL",
     ),
+    "resolve": Stage(
+        name="resolve",
+        title="Resolve the people",
+        what="Work out which officer rows are the same human, and record the "
+             "boards each of them sits on. This is what makes 'who else does "
+             "this director sit with' a question the survey can answer.",
+        call=resolve.run,
+        fields=(DRY,),
+        needs="Officers, from the people stage. Nothing else.",
+        produces="One party per person, and an edge per role, each carrying how "
+                 "sure the identity is and what it was decided on.",
+        cost="Free. No request and no model: a few thousand local rows, seconds.",
+        button="Resolve",
+        button_does="Rebuilds the party table from the officer rows. The rule "
+                    "splits when unsure, because a person wrongly merged is a "
+                    "false statement about a named individual.",
+        done_sql="SELECT COUNT(*) FROM core.party",
+        waiting_sql="SELECT GREATEST(0, (SELECT COUNT(*) FROM core.person)"
+                    " - (SELECT COUNT(*) FROM core.party_role))",
+        done_label="people",
+        waiting_label="unresolved",
+    ),
     "geocode": Stage(
         name="geocode",
         title="Put them on the map",
@@ -418,8 +442,8 @@ STAGES: dict[str, Stage] = {
 }
 
 # The order the operations page shows them in, which is the order they run in.
-ORDER = ("source", "sync", "hydrate", "people", "profile", "enrich", "match",
-         "reach", "geocode")
+ORDER = ("source", "sync", "hydrate", "people", "resolve", "profile", "enrich",
+         "match", "reach", "geocode")
 
 # Sizes offered instead of a free number box. "No limit" is last and named
 # rather than blank, so choosing it is a decision rather than an oversight.

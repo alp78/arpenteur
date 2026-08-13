@@ -29,6 +29,9 @@ from __future__ import annotations
 
 import hashlib
 import json
+import re
+import unicodedata
+from collections import Counter
 from typing import Any
 
 from ...kernel.db import Connection, Row, json_param, now
@@ -762,6 +765,323 @@ def remove_from_board(conn: Connection, company_id: int) -> None:
     being one of the 184'939 in the register.
     """
     conn.execute("DELETE FROM intel.prospect WHERE company_id = %s", (company_id,))
+
+
+# --- one human, across several companies ---------------------------------------
+#
+# `core.person` is what a notice said, where it said it. `core.party` is the
+# human those rows are about. The resolution between them is the whole of the
+# relationship graph's honesty, so the rule is stated once, here, and every
+# party carries which branch of it produced them.
+
+
+def sort_name(text: str) -> str:
+    """The comparison form of a name: unaccented, lowercased, letters only.
+
+    `Boccard Christian` and `BOCCARD Christian` are one person written twice;
+    `Müller` and `Mueller` are not necessarily, and are deliberately left
+    distinct. Folding further would start merging people to make the graph
+    look better.
+    """
+    stripped = unicodedata.normalize("NFKD", text or "")
+    ascii_only = "".join(c for c in stripped if not unicodedata.combining(c))
+    return " ".join(re.sub(r"[^a-z0-9]+", " ", ascii_only.lower()).split())
+
+
+def resolve_parties(conn: Connection) -> dict[str, int]:
+    """Build `core.party` and `core.party_role` from the officer rows.
+
+    The rule, and why it errs where it does.
+
+    Two officer rows are the same person when their names fold to the same
+    string **and** their registered origins agree. The origin is what makes
+    this possible: it is a legal attribute of a Swiss person, printed in the
+    notice, and it does not change when they move house. The domicile does, so
+    it is recorded and never keyed on.
+
+    A row with no origin joins the others of that name only when exactly one
+    origin is known among them. Two known origins under one name means two
+    people, or a parse that went wrong, and a silent row cannot say which.
+
+    Splitting when unsure is the deliberate direction. A person wrongly split
+    is a missing edge, and a missing edge is a gap in a suggestion. A person
+    wrongly merged is a false statement about a named individual in a tool
+    that goes on to propose writing to them, and no later correction reaches
+    the message that was already sent.
+
+    Rebuilt whole each time rather than updated in place: the input is a few
+    thousand rows, the rule will change, and a resolution that accumulated its
+    own history would make every improvement a migration.
+    """
+    conn.execute("TRUNCATE core.party RESTART IDENTITY CASCADE")
+    rows = conn.execute(
+        "SELECT id, company_id, full_name, role, origin, domicile, signature,"
+        "       last_seen_date, source_url, method"
+        "  FROM core.person ORDER BY full_name, company_id, id"
+    ).fetchall()
+
+    # Which origins are known for each folded name, so a silent row can be
+    # attached only where there is exactly one candidate.
+    origins: dict[str, set[str]] = {}
+    for row in rows:
+        key = sort_name(row["full_name"])
+        if row["origin"]:
+            origins.setdefault(key, set()).add(row["origin"].strip())
+        else:
+            origins.setdefault(key, set())
+
+    # Group the officer rows into parties before writing any, so a party's
+    # method can describe the group rather than whichever row arrived first.
+    groups: dict[tuple[str, str, str], list[Row]] = {}
+    for row in rows:
+        key = sort_name(row["full_name"])
+        known = origins.get(key, set())
+        if row["origin"]:
+            groups.setdefault((key, row["origin"].strip(), "name-and-origin"), []).append(row)
+        elif len(known) == 1:
+            groups.setdefault((key, next(iter(known)), "sole-origin"), []).append(row)
+        else:
+            groups.setdefault((key, "", "name-only"), []).append(row)
+
+    # A silent row attached to the one known origin belongs with the rows that
+    # stated it, not beside them: they are the same person and the merge is
+    # the point. Folded together after grouping so the weaker method is
+    # recorded on the party.
+    merged: dict[tuple[str, str], dict[str, Any]] = {}
+    for (key, origin, method), members in groups.items():
+        target = merged.setdefault(
+            (key, origin), {"rows": [], "methods": set()}
+        )
+        target["rows"].extend(members)
+        target["methods"].add(method)
+
+    stats = {"parties": 0, "roles": 0, "merged": 0, "uncertain": 0}
+    for (key, origin), group in merged.items():
+        members = group["rows"]
+        companies = {row["company_id"] for row in members}
+        if len(members) == 1:
+            method, confidence = "single", 1.0
+        elif "name-only" in group["methods"]:
+            method, confidence = "name-only", 0.5
+        elif "sole-origin" in group["methods"]:
+            method, confidence = "sole-origin", 0.7
+        else:
+            method, confidence = "name-and-origin", 0.9
+
+        # The display form is the commonest spelling, and the longest of those
+        # when they tie: "de la Fontaine Marie" over "Fontaine Marie".
+        spellings = Counter(row["full_name"] for row in members)
+        best = max(spellings.items(), key=lambda item: (item[1], len(item[0])))[0]
+        domicile = next(
+            (row["domicile"] for row in reversed(members) if row["domicile"]), None
+        )
+        party = conn.execute(
+            "INSERT INTO core.party (kind, full_name, sort_name, origin, domicile,"
+            " method, confidence, created_at, updated_at)"
+            " VALUES ('person', %s, %s, %s, %s, %s, %s, %s, %s) RETURNING id",
+            (best, key, origin or None, domicile, method, confidence, now(), now()),
+        ).fetchone()
+        stats["parties"] += 1
+        if len(companies) > 1:
+            stats["merged"] += 1
+        if confidence < 0.9:
+            stats["uncertain"] += 1
+
+        for row in members:
+            written = conn.execute(
+                "INSERT INTO core.party_role (party_id, company_id, person_id,"
+                " role, signature, valid_to, source_url, method, created_at)"
+                " VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)"
+                " ON CONFLICT (party_id, company_id, role) DO NOTHING"
+                " RETURNING id",
+                (party["id"], row["company_id"], row["id"], row["role"],
+                 row["signature"], None, row["source_url"],
+                 row["method"] or "shab", now()),
+            ).fetchone()
+            if written:
+                stats["roles"] += 1
+    return stats
+
+
+def party(conn: Connection, party_id: int) -> Row | None:
+    return conn.execute(
+        "SELECT * FROM core.party WHERE id = %s", (party_id,)
+    ).fetchone()
+
+
+def parties(
+    conn: Connection, *, q: str = "", min_boards: int = 1, limit: int = 200
+) -> list[Row]:
+    """People, with how many boards each sits on. Busiest first.
+
+    The order is the useful one: a name on nine boards is a route into nine
+    companies, and a name on one is a contact.
+    """
+    where = ["TRUE"]
+    params: list[Any] = []
+    if q:
+        where.append("p.full_name %% %s")
+        params.append(q)
+    order = "boards DESC, p.full_name"
+    if q:
+        order = "similarity(p.full_name, %s) DESC, boards DESC"
+        params_tail = [q]
+    else:
+        params_tail = []
+    return conn.execute(
+        f"""SELECT p.*, COUNT(DISTINCT r.company_id) AS boards
+              FROM core.party p
+              LEFT JOIN core.party_role r ON r.party_id = p.id
+             WHERE {' AND '.join(where)}
+             GROUP BY p.id
+            HAVING COUNT(DISTINCT r.company_id) >= %s
+             ORDER BY {order} LIMIT %s""",
+        params + [min_boards] + params_tail + [limit],
+    ).fetchall()
+
+
+def roles_for_party(conn: Connection, party_id: int) -> list[Row]:
+    return conn.execute(
+        """SELECT r.*, c.name, c.uid, c.canton, c.status,
+                  f.score, f.band, pr.state
+             FROM core.party_role r
+             JOIN core.company c ON c.id = r.company_id
+             LEFT JOIN intel.fit f ON f.company_id = c.id
+             LEFT JOIN intel.prospect pr ON pr.company_id = c.id
+            WHERE r.party_id = %s
+            ORDER BY c.name""",
+        (party_id,),
+    ).fetchall()
+
+
+def parties_for_company(conn: Connection, company_id: int) -> list[Row]:
+    """The people named at this company, and how many boards each also sits on."""
+    return conn.execute(
+        """SELECT p.*, r.role, r.signature, r.valid_from, r.valid_to,
+                  (SELECT COUNT(DISTINCT o.company_id) FROM core.party_role o
+                    WHERE o.party_id = p.id) AS boards
+             FROM core.party_role r
+             JOIN core.party p ON p.id = r.party_id
+            WHERE r.company_id = %s
+            ORDER BY boards DESC, p.full_name""",
+        (company_id,),
+    ).fetchall()
+
+
+def board_overlap(conn: Connection, company_id: int, *, limit: int = 40) -> list[Row]:
+    """Companies sharing an officer with this one, and who the officer is.
+
+    The question the party table exists for. Asked of `core.person` it cannot
+    be answered without matching names in the query, which is how two different
+    people with one surname become a business relationship.
+    """
+    return conn.execute(
+        """SELECT other.company_id, c.name, c.uid, c.canton,
+                  f.score, f.band, pr.state,
+                  array_agg(DISTINCT p.full_name ORDER BY p.full_name) AS people,
+                  COUNT(DISTINCT p.id) AS shared
+             FROM core.party_role mine
+             JOIN core.party_role other
+               ON other.party_id = mine.party_id AND other.company_id <> mine.company_id
+             JOIN core.party p ON p.id = mine.party_id
+             JOIN core.company c ON c.id = other.company_id
+             LEFT JOIN intel.fit f ON f.company_id = c.id
+             LEFT JOIN intel.prospect pr ON pr.company_id = c.id
+            WHERE mine.company_id = %s
+            GROUP BY other.company_id, c.name, c.uid, c.canton, f.score, f.band, pr.state
+            ORDER BY shared DESC, f.score DESC NULLS LAST, c.name
+            LIMIT %s""",
+        (company_id, limit),
+    ).fetchall()
+
+
+def path_between(
+    conn: Connection, start_id: int, target_id: int, *, max_hops: int = 4
+) -> list[Row]:
+    """The shortest chain of shared officers from one company to another.
+
+    A recursive walk over company -> party -> company, stopping at the first
+    depth that reaches the target. Four hops by default: beyond that a "warm
+    introduction" is a chain of strangers, and the query grows as fast as the
+    claim weakens.
+    """
+    return conn.execute(
+        """
+        WITH RECURSIVE walk(company_id, path, people, depth) AS (
+            SELECT %s::bigint, ARRAY[%s::bigint], ARRAY[]::text[], 0
+          -- UNION rather than UNION ALL. One person can hold two roles at the
+          -- same company, and the join then produces the identical route
+          -- twice; deduplicating in the walk keeps it out of the frontier as
+          -- well as out of the answer.
+          UNION
+            SELECT other.company_id,
+                   walk.path || other.company_id,
+                   walk.people || p.full_name,
+                   walk.depth + 1
+              FROM walk
+              JOIN core.party_role mine ON mine.company_id = walk.company_id
+              JOIN core.party_role other
+                ON other.party_id = mine.party_id
+               AND other.company_id <> walk.company_id
+              JOIN core.party p ON p.id = mine.party_id
+             WHERE walk.depth < %s
+               AND NOT other.company_id = ANY(walk.path)
+               -- Stop expanding a branch that has already arrived. Without it
+               -- the walk carries on past the answer and returns longer routes
+               -- to the same place.
+               AND walk.company_id <> %s
+        )
+        SELECT * FROM (
+            SELECT DISTINCT ON (path) path, people, depth
+              FROM walk WHERE company_id = %s ORDER BY path, depth
+        ) routes ORDER BY depth, path LIMIT 5
+        """,
+        (start_id, start_id, max_hops, target_id, target_id),
+    ).fetchall()
+
+
+def same_name_parties(conn: Connection, party_id: int) -> list[Row]:
+    """Other parties whose name folds the same, held apart by their origin.
+
+    Offered rather than merged. Two of these turned up in the first live
+    resolution and neither is a fault in the rule: `Macédoine` and `Macédoine
+    du Nord` are one country renamed in 2019, and the commune of `Rossens` was
+    absorbed into `Gibloux` in 2016. Both move a person's stated origin without
+    moving the person. A rule loose enough to join them would also join two
+    genuinely different people, so the split stands and a human is shown the
+    candidates.
+    """
+    return conn.execute(
+        """SELECT p.*, (SELECT COUNT(DISTINCT r.company_id) FROM core.party_role r
+                         WHERE r.party_id = p.id) AS boards
+             FROM core.party p
+            WHERE p.sort_name = (SELECT sort_name FROM core.party WHERE id = %s)
+              AND p.id <> %s
+            ORDER BY p.full_name""",
+        (party_id, party_id),
+    ).fetchall()
+
+
+def companies_named(conn: Connection, ids: list[int]) -> list[Row]:
+    """Names for a set of company ids, for rendering a path."""
+    if not ids:
+        return []
+    return conn.execute(
+        "SELECT id, name FROM core.company WHERE id = ANY(%s)", (list(ids),)
+    ).fetchall()
+
+
+def party_counts(conn: Connection) -> dict[str, int]:
+    row = conn.execute(
+        """SELECT (SELECT COUNT(*) FROM core.party) AS parties,
+                  (SELECT COUNT(*) FROM core.party_role) AS roles,
+                  (SELECT COUNT(*) FROM (
+                       SELECT party_id FROM core.party_role
+                        GROUP BY party_id HAVING COUNT(DISTINCT company_id) > 1
+                   ) x) AS connectors,
+                  (SELECT COUNT(*) FROM core.person) AS people"""
+    ).fetchone()
+    return {k: int(v) for k, v in row.items()}
 
 
 # --- notices and officers -----------------------------------------------------

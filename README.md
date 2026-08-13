@@ -23,16 +23,18 @@ Pipeline stages, each a standalone command:
    purpose text *(built)*
 4. **people** — officers from the SHAB notices the register publishes
    alongside each company *(built)*
-5. **enrich** — find and read a company's own website: offerings, IT
+5. **resolve** — work out which officer rows are the same human, and the
+   boards each of them sits on *(built)*
+6. **enrich** — find and read a company's own website: offerings, IT
    signals, partnerships, published email *(built)*
-6. **match** — score each company against `campaign.md`, with the
+7. **match** — score each company against `campaign.md`, with the
    reasoning and what to open with *(built)*
-7. **reach** — a point of contact: published addresses *(built)*, then
+8. **reach** — a point of contact: published addresses *(built)*, then
    the domain's own naming pattern, then a paid lookup for the
    remainder *(planned)*
-8. **geocode** — turn the register's postal address into a coordinate,
+9. **geocode** — turn the register's postal address into a coordinate,
    through the Confederation's own address search *(built)*
-9. **draft** — outreach proposals, always human-reviewed, never
+10. **draft** — outreach proposals, always human-reviewed, never
    auto-sent *(planned)*
 
 Then the other half, for the companies that say yes: **clients**, their
@@ -569,11 +571,12 @@ under their own name. Swiss law (LCD art. 3 al. 1 let. o) draws the line at
 *mass* advertising email without prior consent, and the defence against ever
 crossing it is that the software has no mechanism, which a test asserts.
 
-**It runs the stages, and shows the work.** Five views: **Companies**, the
+**It runs the stages, and shows the work.** Six views: **Companies**, the
 survey with a progress stamp per company and a filter for where each one has
-got to; **Board**, where each company being worked stands; **Map**, where they
-are; **Operations**, every stage with how much it has done, how much is queued
-for it, and the control to advance it; **History**, what has been run.
+got to; **Board**, where each company being worked stands; **People**, who sits
+on what; **Map**, where they are; **Operations**, every stage with how much it
+has done, how much is queued for it, and the control to advance it; **History**,
+what has been run.
 
 Operations is one page rather than a form page and a counts page, because the
 number that makes a button meaningful is how much work is waiting for it.
@@ -622,6 +625,51 @@ name.
 The board is a scout view. It reads `intel.prospect` and knows nothing about
 `crm`; the client chip on a won card is looked up by the console, which is
 allowed to know about both modules where `modules/scout` is not.
+
+### People, and who reaches whom
+
+The register publishes a notice on every mutation, and those notices name
+officers. Parsed, they are 4'943 rows across 2'530 companies, obtained without
+a single request: the notices were already stored, and the `people` stage reads
+them. `resolve` then works out which of those rows are the same human, and the
+edges between them are what turn a list of companies into a map of who reaches
+whom.
+
+**The resolution splits when unsure, on purpose.** Two officer rows are one
+person when their names fold to the same string *and* their registered origins
+agree. The origin is what makes this possible at all: it is a legal attribute
+of a Swiss person, printed in the notice, and unlike the domicile it does not
+change when they move house. A row with no origin joins the others of its name
+only when exactly one origin is known among them.
+
+The direction of error is chosen. A person wrongly split is a missing edge: a
+gap in a suggestion, and recoverable. A person wrongly merged is a false
+statement about a named individual in a tool that goes on to propose writing to
+them, and no later correction reaches the letter that was sent. So every party
+records which branch of the rule produced it and how much to believe it, and
+the weaker kinds say so where they are read rather than in a footnote.
+
+Two live splits are worth knowing about, because neither is a fault in the
+rule: `Macédoine` and `Macédoine du Nord` are one country renamed in 2019, and
+the commune of `Rossens` was absorbed into `Gibloux` in 2016. Both move a
+person's stated origin without moving the person. A rule loose enough to join
+them would also join two genuinely different people, so the split stands and
+the candidates are offered to a human on the party's page.
+
+**Before trusting any of it, look at the most connected name.** The first time
+that was done here it was `Carouge GE`, on twenty-three boards. It is a town:
+a domicile is a capitalised run of two words exactly like a surname and a first
+name, and the officer parser had been reading them as people. It would have
+become the most valuable node in the graph and it was nobody at all. Three
+parser faults and two write faults came out of that afternoon, and they are why
+`people --reparse` can now withdraw a row and overwrite an attribute rather
+than only add.
+
+From 4'943 officer rows: 3'852 people, of whom 129 sit on more than one board.
+A company page names its officers, says how many other boards each sits on, and
+lists the companies it shares one with. `/company/A/route/B` walks up to four
+hops of shared officers and reports no route as an answer, because a chain
+longer than that is a chain of strangers.
 
 ### The map
 

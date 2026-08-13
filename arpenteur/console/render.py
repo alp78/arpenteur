@@ -130,6 +130,7 @@ pre.log {{ background:#fff; border:1px solid var(--line); padding:.8rem 1rem; ma
   <span class="sep">|</span>
   <a href="/">Survey</a>
   <a href="/board">Board</a>
+  <a href="/people">People</a>
   <a href="/map">Map</a>
   <a href="/pipeline">Operations</a>
   <a href="/runs">History</a>
@@ -422,6 +423,8 @@ def company_page(
     attribution: str,
     busy: int | None = None,
     client: Row | None = None,
+    parties: list[Row] | None = None,
+    overlap: str = "",
 ) -> str:
     out = [
         f"<h1>{esc(company['name'])}</h1>",
@@ -448,7 +451,31 @@ def company_page(
             f'<h2>registered purpose</h2><div class="card">{esc(company["purpose"])}</div>'
         )
 
-    if officers:
+    if parties:
+        # Linked to the person rather than printed as a string, and carrying
+        # how many other boards each sits on. That number is the whole reason
+        # the party table exists: a director on nine boards is a route into
+        # nine companies, and a name in a cell is not.
+        rows = "".join(
+            f'<tr><td><a href="/party/{o["id"]}">{esc(o["full_name"])}</a></td>'
+            f"<td>{esc(o['role'] or '')}</td>"
+            f"<td class='small dim'>{esc(o['signature'] or '')}</td>"
+            + (
+                f'<td class="small"><a href="/party/{o["id"]}">'
+                f'{o["boards"] - 1} other board'
+                f'{"s" if o["boards"] - 1 != 1 else ""}</a></td>'
+                if o["boards"] > 1
+                else '<td class="small dim">only here</td>'
+            )
+            + "</tr>"
+            for o in parties
+        )
+        out.append(
+            "<h2>officers</h2><table><tbody>" + rows + "</tbody></table>"
+            '<p class="dim small">Parsed from FOSC publications, not a registry '
+            "field. Verify against the certified excerpt before relying on it.</p>"
+        )
+    elif officers:
         rows = "".join(
             f"<tr><td>{esc(o['full_name'])}</td><td>{esc(o['role'])}</td>"
             f"<td class='small dim'>{esc(o['signature'] or '')}</td></tr>"
@@ -456,10 +483,13 @@ def company_page(
         )
         out.append(
             "<h2>officers</h2><table><tbody>" + rows + "</tbody></table>"
-            '<p class="dim small">Parsed from FOSC publications, not a registry '
-            "field. Verify against the certified excerpt before relying on it.</p>"
+            '<p class="dim small">Parsed from FOSC publications, and not yet '
+            'resolved into people. Run <a href="/pipeline">resolve</a>, which '
+            "is free, to see what else they sit on.</p>"
         )
 
+    if overlap:
+        out.append(overlap)
     out.append(_site_card(site))
     out.append(_contacts_card(contacts))
     out.append(_notes_card(company["id"], notes))
