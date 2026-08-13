@@ -63,6 +63,57 @@ class ZefixConfig:
 
 
 @dataclass(frozen=True)
+class ServiceEntry:
+    """One offering and its price range, as the operator wrote it."""
+
+    code: str
+    name: str
+    unit: str = "fixed"
+    low: str | None = None
+    high: str | None = None
+    what: str = ""
+    prerequisite: str = ""
+    basis: str = ""
+    sort_order: int = 100
+
+
+@dataclass(frozen=True)
+class IssuerConfig:
+    """Who is billing, as it appears on a document and in a QR-bill.
+
+    Not secret, and deliberately in the committed file rather than in .env:
+    every field here is printed on paper that goes to a client. The IBAN is on
+    the payment part by definition, and hiding it in a secrets file would only
+    make it harder to review.
+    """
+
+    name: str = ""
+    street: str = ""
+    building: str = ""
+    postcode: str = ""
+    town: str = ""
+    country: str = "CH"
+    iban: str = ""
+    vat_number: str = ""
+    payment_terms: str = ""
+    payment_days: int = 30
+
+    @property
+    def can_bill(self) -> bool:
+        """Whether an invoice can carry a payment part.
+
+        A name and an IBAN. Without them the document is a statement of what is
+        owed with no way to pay it, which is worse than refusing to produce it.
+        """
+        return bool(self.name and self.iban)
+
+    @property
+    def subject_to_vat(self) -> bool:
+        """A business under the CHF 100'000 threshold is not, and says so."""
+        return bool(self.vat_number.strip())
+
+
+@dataclass(frozen=True)
 class MailConfig:
     """Where correspondence is read from. There is no send half, deliberately.
 
@@ -239,6 +290,12 @@ class Settings:
     # registry resolves dependencies; this is only what was asked for.
     modules: tuple[str, ...] = ()
     mail: MailConfig = field(default_factory=MailConfig)
+    issuer: IssuerConfig = field(default_factory=IssuerConfig)
+    # The rate card as rows. The prose `rate_card` above stays as what
+    # the advise stage reads until a catalogue is loaded into the
+    # database, so a survey with neither still gets honest advice.
+    catalogue: tuple[ServiceEntry, ...] = ()
+    card_note: str = ""
     data_dir: Path = field(init=False)
 
     def __post_init__(self) -> None:
@@ -503,7 +560,51 @@ def load_settings(root: Path | None = None) -> Settings:
             api_key=os.environ.get("ANTHROPIC_API_KEY") or None,
         ),
         mail=_mail(raw.get("mail") or {}),
+        issuer=_issuer(raw.get("issuer") or {}),
+        catalogue=_catalogue(raw.get("rates") or {}),
+        card_note=str(((raw.get("rates") or {}).get("card_note") or {}).get("text", "")).strip(),
     )
+
+
+def _issuer(raw: dict) -> IssuerConfig:
+    return IssuerConfig(
+        name=str(raw.get("name", "")).strip(),
+        street=str(raw.get("street", "")).strip(),
+        building=str(raw.get("building", "")).strip(),
+        postcode=str(raw.get("postcode", "")).strip(),
+        town=str(raw.get("town", "")).strip(),
+        country=str(raw.get("country", "CH")).strip().upper() or "CH",
+        iban=str(raw.get("iban", "")).strip(),
+        vat_number=str(raw.get("vat_number", "")).strip(),
+        payment_terms=str(raw.get("payment_terms", "")).strip(),
+        payment_days=int(raw.get("payment_days", 30) or 30),
+    )
+
+
+def _catalogue(raw: dict) -> tuple[ServiceEntry, ...]:
+    """The [[rates.service]] entries, as written.
+
+    Prices are carried as strings rather than floats all the way to the
+    database. A rate card is money, and a float cannot represent 1400.05; the
+    conversion happens once, in `money.money`, against a Decimal.
+    """
+    found = []
+    for entry in raw.get("service") or []:
+        code = str(entry.get("code", "")).strip()
+        if not code:
+            continue
+        found.append(ServiceEntry(
+            code=code,
+            name=str(entry.get("name", code)).strip(),
+            unit=str(entry.get("unit", "fixed")).strip() or "fixed",
+            low=None if entry.get("low") is None else str(entry["low"]),
+            high=None if entry.get("high") is None else str(entry["high"]),
+            what=str(entry.get("what", "")).strip(),
+            prerequisite=str(entry.get("prerequisite", "")).strip(),
+            basis=str(entry.get("basis", "")).strip(),
+            sort_order=int(entry.get("sort_order", 100)),
+        ))
+    return tuple(found)
 
 
 def _env(*names: str) -> str:

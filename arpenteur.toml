@@ -172,6 +172,35 @@ director, and any sign the company itself sells IT services or resells \
 hardware and licences.
 """
 
+# Who is billing, as it must appear on an invoice and in the payment part of a
+# Swiss QR-bill. This is not a secret and belongs in the committed file: every
+# one of these values is printed on documents that go to clients.
+#
+# `iban` decides the shape of the payment reference on its own. An IBAN whose
+# institution number falls in the reserved 30000-31999 range is a QR-IBAN and
+# takes a 27-digit QR reference; an ordinary IBAN takes an ISO 11649 creditor
+# reference beginning RF. Arpenteur works out which and refuses the mismatched
+# combinations, because a QR-bill built the wrong way prints perfectly, scans
+# perfectly, and is rejected at the bank.
+#
+# `vat_number` empty means not subject to TVA, which is the ordinary state of a
+# business under the CHF 100'000 threshold. Invoices then carry no tax line and
+# say so in words, rather than showing 0.00 beside a rate.
+[issuer]
+name = ""
+street = ""
+building = ""
+postcode = ""
+town = ""
+country = "CH"
+iban = ""
+vat_number = ""
+# Printed under the total. Payment terms, and anything a client's accounts
+# payable department needs in order to pay without telephoning.
+payment_terms = "Payable within 30 days."
+# Days from the issue date to the due date, used when nothing else is said.
+payment_days = 30
+
 [rates]
 # What the work costs, in your own words. The advise stage reads this when it
 # suggests an approach to a client, and it is forbidden to price anything this
@@ -208,6 +237,75 @@ written order.
 # mutually distinguishable, because the classifier sees nothing else. These
 # are an example vocabulary, not a fixed one. Rewrite them for the campaign
 # at hand; a recruiter's segments and a distributor's have nothing in common.
+# The same card as rows, which is what quotes and invoices are built from.
+#
+# The prose above is what the advise stage reads when this list is empty, and
+# it stays for that reason: a survey that has not set up a catalogue should
+# still get advice with honest prices on it. Once these entries exist,
+# `arpenteur rates load` puts them in the database, the advise stage prices
+# from them instead, and a quote line can cite the card line it came from.
+#
+# `unit` is fixed, day, month or hour, and decides how a quote line multiplies
+# out. `low` and `high` are a range because that is how the work is actually
+# quoted; `basis` says what moves a price inside it, which otherwise lives only
+# in the operator's head. Leave both empty for price on application.
+#
+# These figures are the ones written in the prose card above, restated. Nothing
+# here is a suggestion from the tool: prices come from you, and a model asked
+# what a Swiss consulting day costs will produce a confident number from
+# nowhere.
+[[rates.service]]
+code = "diagnostic"
+name = "Diagnostic"
+unit = "fixed"
+low = 3600
+high = 7200
+what = "Two to four days on site: inventory of systems, mapping of flows, written report and a prioritised list."
+basis = "The number of sites and systems."
+sort_order = 10
+
+[[rates.service]]
+code = "day"
+name = "Day rate, time and materials"
+unit = "day"
+low = 1400
+high = 1800
+basis = "The upper end for work carrying regulatory exposure or out-of-hours migration."
+sort_order = 20
+
+[[rates.service]]
+code = "implementation"
+name = "Implementation"
+unit = "fixed"
+low = 8000
+high = 40000
+what = "Fixed fee, quoted only after a diagnostic."
+prerequisite = "A completed diagnostic. Never quoted before."
+basis = "Scope."
+sort_order = 30
+
+[[rates.service]]
+code = "retainer"
+name = "Retainer"
+unit = "month"
+low = 1200
+high = 3500
+what = "Ongoing custody of a data platform, or standing advisory to a management team."
+prerequisite = "Minimum six months."
+sort_order = 40
+
+[[rates.service]]
+code = "second-opinion"
+name = "Second opinion on a supplier's proposal"
+unit = "fixed"
+low = 1800
+high = 1800
+what = "One to two days."
+sort_order = 50
+
+[rates.card_note]
+text = "Travel inside the surveyed cantons is not billed. Nothing is billed before a written order."
+
 [segments]
 sme-owner = "A small owner-run business, typically under 50 people, where the owner decides."
 mature-sme = "An established firm, long registered, with structured operations and likely several sites or departments."

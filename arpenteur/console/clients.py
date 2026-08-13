@@ -220,6 +220,10 @@ def client_page(
     note: str = "",
     notes: str = "",
     moves: list[Row] | None = None,
+    # Rendered by the sales module's own page module and passed in as
+    # markup, so the clients console does not import the module that
+    # may not be installed.
+    money: str = "",
 ) -> str:
     head = (
         f'<p class="crumbs"><a href="/clients">Clients</a> / {esc(client["code"])}</p>'
@@ -284,6 +288,7 @@ def client_page(
         + _log_form(client["id"], projects)
         + _client_brief(client)
         + _moves(moves or [])
+        + money
         + who
         + '<p class="dim small" style="white-space:pre-line;margin-top:1rem">'
         + esc(attribution_notice)

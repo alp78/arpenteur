@@ -429,6 +429,46 @@ def cmd_mail(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_rates(args: argparse.Namespace) -> int:
+    """The catalogue: load it from arpenteur.toml, or read back what is held."""
+    from .modules.sales import store as sales
+
+    settings = load_settings()
+    conn = db.open_db(settings.database_url)
+    if args.action == "show":
+        card = sales.current_card(conn)
+        if card is None:
+            print(
+                "No rate card loaded. The [[rates.service]] entries in "
+                "arpenteur.toml become one with `arpenteur rates load`."
+            )
+            conn.close()
+            return 0
+        print(f"{card['name']}, in force from {card['valid_from']}")
+        print()
+        print(sales.catalogue_text(conn))
+        conn.close()
+        return 0
+
+    if not settings.catalogue:
+        print(
+            "No [[rates.service]] entries in arpenteur.toml. Nothing is "
+            "invented here: prices come from you.",
+            file=sys.stderr,
+        )
+        conn.close()
+        return 1
+    card_id, count = sales.load_catalogue(
+        conn, list(settings.catalogue), note=settings.card_note,
+    )
+    conn.commit()
+    # A new card rather than an edit of the old one, so a quote sent last month
+    # is still explainable by the card it cites.
+    print(f"rate card {card_id} opened with {count} services, in force from today")
+    conn.close()
+    return 0
+
+
 def cmd_geocode(args: argparse.Namespace) -> int:
     settings = load_settings()
     conn = db.open_db(settings.database_url)
@@ -1183,6 +1223,16 @@ def build_parser() -> argparse.ArgumentParser:
         "--dry-run", action="store_true", help="list what would be queued, write nothing"
     )
     p.set_defaults(func=cmd_mail)
+
+    p = sub.add_parser(
+        "rates", help="the service catalogue and its prices"
+    )
+    p.add_argument(
+        "action", choices=("load", "show"),
+        help="load the [[rates.service]] entries from arpenteur.toml into a new "
+             "rate card, or print the card in force",
+    )
+    p.set_defaults(func=cmd_rates)
 
     p = sub.add_parser(
         "note", help="notes on a client, written in Markdown"

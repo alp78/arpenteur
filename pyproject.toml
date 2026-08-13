@@ -25,6 +25,13 @@ dependencies = [
     # needs no build step, and escapes raw HTML by default, which is the
     # property that matters when the result is put on a page.
     "markdown-it-py>=3.0",
+    # The Swiss QR Code on an invoice's payment part. Pure Python with no
+    # dependencies of its own and no build step, which is why it is this one:
+    # the alternatives want Pillow, and the PDF libraries that would have
+    # rendered the whole bill want cairo and pango on the machine. The document
+    # is printed from the browser instead, so this is the only piece that
+    # genuinely could not be drawn by hand.
+    "segno>=1.6.6",
 ]
 
 [project.scripts]

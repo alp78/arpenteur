@@ -337,6 +337,27 @@ def gather(
     )
 
 
+def _rate_card(settings: Settings, conn: Connection) -> str:
+    """The prices to advise from: the catalogue if there is one, else the prose.
+
+    Imported inside the function and guarded, because the sales module is
+    removable. A deployment running the survey and the clients without the
+    money half has no `commercial` schema at all, and advice is still worth
+    having there: it comes back priced from the prose card in settings, which
+    is what this stage read before a catalogue existed.
+    """
+    try:
+        from ..modules.sales import store as sales
+
+        found = sales.catalogue_text(conn)
+    except Exception:
+        # A missing schema leaves the transaction unusable for the next
+        # statement, and everything after this reads the dossier.
+        conn.rollback()
+        return settings.rate_card
+    return found or settings.rate_card
+
+
 def run(
     settings: Settings,
     conn: Connection,
@@ -349,8 +370,15 @@ def run(
     client, company, sections, projects, papers, officers, notes = gather(
         conn, client_id
     )
+    # The catalogue in the database wins over the prose in settings when there
+    # is one. Both say the same thing; the rows are the version a quote line
+    # can cite afterwards, so advice priced from them can be turned into a
+    # quote without anybody retyping a figure. An empty catalogue falls back
+    # rather than failing, because a survey that has not set one up should
+    # still get advice with honest prices on it.
+    card = _rate_card(settings, conn)
     prompt, read = build_prompt(
-        company, client, sections, projects, papers, officers, settings.rate_card,
+        company, client, sections, projects, papers, officers, card,
         notes=notes,
     )
     # This is the hardest judgement the tool makes and the one whose output

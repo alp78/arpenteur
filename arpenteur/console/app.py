@@ -40,6 +40,8 @@ from ..kernel import modules as module_registry
 from ..kernel.db import Connection, Row
 from ..modules.clients import store as clients_store
 from ..modules.geo import store as geo_store
+from ..modules.sales import money as money_lib
+from ..modules.sales import store as sales_store
 from ..modules.scout import store as scout_store
 from ..config import Settings, load_settings
 from ..sources import geoadmin
@@ -48,6 +50,7 @@ from ..stages import advise, geocode, mail as mail_stage, match, prep, source
 from . import board as board_view
 from . import clients as clients_view
 from . import mail_page as mail_view
+from . import money_page as money_view
 from . import map_page as map_view_page
 from . import notes_page as notes_view
 from . import people_page as people_view_page
@@ -797,6 +800,369 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         return RedirectResponse(f"/company/{company_id}" if company_id else "/mail",
                                 status_code=303)
 
+    # --- money ----------------------------------------------------------------
+
+    def _address_of(conn, company_id: int):
+        row = scout_store.company(conn, company_id)
+        return (row["address_json"] if row else None) or None
+
+    def _vat_for(conn, when=None):
+        """The rate to apply, or None when the issuer is not registered.
+
+        Not being subject to TVA is the ordinary state of a business under the
+        CHF 100'000 threshold, and it is a different thing from a rate of zero:
+        the document has to say so in words rather than print 0.00 beside a
+        rate, which reads as an exemption claim.
+        """
+        from datetime import date as _date
+
+        if not settings.issuer.subject_to_vat:
+            return None
+        return money_lib.vat_rate(when or _date.today())
+
+    @app.post("/client/{client_id}/quotes")
+    def start_quote(client_id: int) -> RedirectResponse:
+        conn = connect()
+        try:
+            quote_id = sales_store.create_quote(conn, client_id)
+            sales_store.add_version(conn, quote_id)
+            conn.commit()
+        finally:
+            conn.close()
+        return RedirectResponse(f"/quote/{quote_id}", status_code=303)
+
+    @app.get("/quote/{quote_id}", response_class=HTMLResponse)
+    def one_quote(quote_id: int, request: Request) -> HTMLResponse:
+        conn = connect()
+        try:
+            quote = sales_store.quote(conn, quote_id)
+            if quote is None:
+                return HTMLResponse("<h1>Not found</h1>", status_code=404)
+            versions = sales_store.versions_for(conn, quote_id)
+            if not versions:
+                return HTMLResponse("<h1>No versions</h1>", status_code=404)
+            wanted = request.query_params.get("v", "")
+            shown = next(
+                (v for v in versions if str(v["version"]) == wanted), versions[0]
+            )
+            full = sales_store.version(conn, int(shown["id"]))
+            return HTMLResponse(money_view.quote_page(
+                quote, versions, full,
+                sales_store.lines_for(conn, int(shown["id"])),
+                sales_store.services(conn),
+                territory=settings.territory.describe(),
+            ))
+        finally:
+            conn.close()
+
+    @app.post("/quote/{quote_id}/versions")
+    def new_version(quote_id: int) -> RedirectResponse:
+        conn = connect()
+        try:
+            previous = sales_store.latest_version(conn, quote_id)
+            version_id = sales_store.add_version(conn, quote_id)
+            if previous is not None:
+                sales_store.copy_lines(conn, int(previous["id"]), version_id)
+                sales_store.recompute(conn, version_id, vat_rate=_vat_for(conn))
+            conn.commit()
+        finally:
+            conn.close()
+        return RedirectResponse(f"/quote/{quote_id}", status_code=303)
+
+    @app.post("/quote-version/{version_id}/lines")
+    def add_quote_line(
+        version_id: int, service_id: str = Form(""), label: str = Form(""),
+        quantity: str = Form("1"), unit_price: str = Form(""), at: str = Form("low"),
+    ) -> RedirectResponse:
+        conn = connect()
+        try:
+            held = sales_store.version(conn, version_id)
+            if held is None:
+                return RedirectResponse("/clients", status_code=303)
+            try:
+                if service_id:
+                    sales_store.line_from_service(
+                        conn, version_id, int(service_id), quantity=quantity or 1,
+                        unit_price=unit_price or None, at=at,
+                    )
+                elif label.strip():
+                    sales_store.add_line(conn, version_id, {
+                        "label": label.strip(), "quantity": quantity or 1,
+                        "unit_price": unit_price or 0,
+                    })
+                sales_store.recompute(conn, version_id, vat_rate=_vat_for(conn))
+                conn.commit()
+            except ValueError:
+                # A price the card does not cover, or a sent version. Both are
+                # refusals the store makes on purpose; the page redraws showing
+                # what is actually there.
+                conn.rollback()
+            return RedirectResponse(f"/quote/{held['quote_id']}", status_code=303)
+        finally:
+            conn.close()
+
+    @app.post("/quote-line/{line_id}/delete")
+    def drop_quote_line(line_id: int) -> RedirectResponse:
+        conn = connect()
+        try:
+            row = conn.execute(
+                "SELECT v.id AS version_id, v.quote_id FROM commercial.quote_line l"
+                " JOIN commercial.quote_version v ON v.id = l.quote_version_id"
+                " WHERE l.id = %s", (line_id,)
+            ).fetchone()
+            if row is None:
+                return RedirectResponse("/clients", status_code=303)
+            sales_store.delete_line(conn, line_id)
+            sales_store.recompute(conn, int(row["version_id"]), vat_rate=_vat_for(conn))
+            conn.commit()
+            return RedirectResponse(f"/quote/{row['quote_id']}", status_code=303)
+        finally:
+            conn.close()
+
+    @app.post("/quote-version/{version_id}/sent")
+    def mark_quote_sent(version_id: int, to: str = Form("")) -> RedirectResponse:
+        conn = connect()
+        try:
+            held = sales_store.version(conn, version_id)
+            if held is None:
+                return RedirectResponse("/clients", status_code=303)
+            sales_store.recompute(conn, version_id, vat_rate=_vat_for(conn))
+            sales_store.mark_sent(conn, version_id, to=to)
+            conn.commit()
+            return RedirectResponse(f"/quote/{held['quote_id']}", status_code=303)
+        finally:
+            conn.close()
+
+    @app.post("/quote/{quote_id}/status")
+    def set_quote_state(quote_id: int, status: str = Form(...),
+                        reason: str = Form("")) -> RedirectResponse:
+        conn = connect()
+        try:
+            sales_store.set_quote_status(conn, quote_id, status, reason=reason,
+                                         by="console")
+            conn.commit()
+        finally:
+            conn.close()
+        return RedirectResponse(f"/quote/{quote_id}", status_code=303)
+
+    @app.get("/quote/{quote_id}/print", response_class=HTMLResponse)
+    def print_quote(quote_id: int, request: Request) -> HTMLResponse:
+        conn = connect()
+        try:
+            quote = sales_store.quote(conn, quote_id)
+            versions = sales_store.versions_for(conn, quote_id)
+            if quote is None or not versions:
+                return HTMLResponse("<h1>Not found</h1>", status_code=404)
+            wanted = request.query_params.get("v", "")
+            shown = next(
+                (v for v in versions if str(v["version"]) == wanted), versions[0]
+            )
+            client = clients_store.client(conn, int(quote["client_id"]))
+            return HTMLResponse(money_view.quote_print(
+                quote, sales_store.version(conn, int(shown["id"])),
+                sales_store.lines_for(conn, int(shown["id"])),
+                _address_of(conn, int(client["company_id"])),
+                issuer=settings.issuer,
+            ))
+        finally:
+            conn.close()
+
+    @app.post("/client/{client_id}/invoices")
+    def start_invoice(client_id: int) -> RedirectResponse:
+        conn = connect()
+        try:
+            invoice_id = sales_store.create_invoice(conn, client_id)
+            conn.commit()
+        finally:
+            conn.close()
+        return RedirectResponse(f"/invoice/{invoice_id}", status_code=303)
+
+    @app.post("/quote/{quote_id}/invoice")
+    def invoice_from_quote(quote_id: int) -> RedirectResponse:
+        """Bill an accepted quote, line for line.
+
+        Copied rather than referenced: an invoice is its own document and must
+        go on saying what it said even if the quote is later revised.
+        """
+        conn = connect()
+        try:
+            quote = sales_store.quote(conn, quote_id)
+            latest = sales_store.latest_version(conn, quote_id)
+            if quote is None or latest is None:
+                return RedirectResponse("/clients", status_code=303)
+            invoice_id = sales_store.create_invoice(
+                conn, int(quote["client_id"]), project_id=quote["project_id"],
+                quote_id=quote_id,
+            )
+            for line in sales_store.lines_for(conn, int(latest["id"])):
+                sales_store.add_invoice_line(conn, invoice_id, {
+                    "service_id": line["service_id"], "label": line["label"],
+                    "detail": line["detail"], "unit": line["unit"],
+                    "quantity": line["quantity"], "unit_price": line["unit_price"],
+                })
+            sales_store.recompute_invoice(conn, invoice_id, vat_rate=_vat_for(conn))
+            conn.commit()
+            return RedirectResponse(f"/invoice/{invoice_id}", status_code=303)
+        finally:
+            conn.close()
+
+    @app.get("/invoice/{invoice_id}", response_class=HTMLResponse)
+    def one_invoice(invoice_id: int) -> HTMLResponse:
+        conn = connect()
+        try:
+            invoice = sales_store.invoice(conn, invoice_id)
+            if invoice is None:
+                return HTMLResponse("<h1>Not found</h1>", status_code=404)
+            return HTMLResponse(money_view.invoice_page(
+                invoice, sales_store.invoice_lines(conn, invoice_id),
+                sales_store.services(conn), issuer=settings.issuer,
+                territory=settings.territory.describe(),
+            ))
+        finally:
+            conn.close()
+
+    @app.post("/invoice/{invoice_id}/lines")
+    def add_bill_line(
+        invoice_id: int, service_id: str = Form(""), label: str = Form(""),
+        quantity: str = Form("1"), unit_price: str = Form("0"),
+    ) -> RedirectResponse:
+        conn = connect()
+        try:
+            name = label.strip()
+            if service_id and not name:
+                found = sales_store.service(conn, int(service_id))
+                name = found["name"] if found else ""
+            if name:
+                sales_store.add_invoice_line(conn, invoice_id, {
+                    "service_id": int(service_id) if service_id else None,
+                    "label": name, "quantity": quantity or 1,
+                    "unit_price": unit_price or 0,
+                })
+                sales_store.recompute_invoice(conn, invoice_id, vat_rate=_vat_for(conn))
+                conn.commit()
+        except ValueError:
+            conn.rollback()
+        finally:
+            conn.close()
+        return RedirectResponse(f"/invoice/{invoice_id}", status_code=303)
+
+    @app.post("/invoice-line/{line_id}/delete")
+    def drop_bill_line(line_id: int) -> RedirectResponse:
+        conn = connect()
+        try:
+            row = conn.execute(
+                "SELECT invoice_id FROM commercial.invoice_line WHERE id = %s",
+                (line_id,)
+            ).fetchone()
+            if row is None:
+                return RedirectResponse("/clients", status_code=303)
+            conn.execute("DELETE FROM commercial.invoice_line WHERE id = %s", (line_id,))
+            sales_store.recompute_invoice(conn, int(row["invoice_id"]),
+                                          vat_rate=_vat_for(conn))
+            conn.commit()
+            return RedirectResponse(f"/invoice/{row['invoice_id']}", status_code=303)
+        finally:
+            conn.close()
+
+    @app.post("/invoice/{invoice_id}/issue")
+    def issue(invoice_id: int) -> RedirectResponse:
+        conn = connect()
+        try:
+            sales_store.recompute_invoice(conn, invoice_id, vat_rate=_vat_for(conn))
+            sales_store.issue_invoice(
+                conn, invoice_id, days=settings.issuer.payment_days,
+                qr_iban=settings.issuer.iban, by="console",
+            )
+            conn.commit()
+        except ValueError:
+            conn.rollback()
+        finally:
+            conn.close()
+        return RedirectResponse(f"/invoice/{invoice_id}", status_code=303)
+
+    @app.post("/invoice/{invoice_id}/payment")
+    def pay(invoice_id: int, amount: str = Form(...)) -> RedirectResponse:
+        conn = connect()
+        try:
+            sales_store.record_payment(conn, invoice_id, amount=amount, by="console")
+            conn.commit()
+        finally:
+            conn.close()
+        return RedirectResponse(f"/invoice/{invoice_id}", status_code=303)
+
+    @app.post("/invoice/{invoice_id}/credit")
+    def credit(invoice_id: int, reason: str = Form("")) -> RedirectResponse:
+        conn = connect()
+        try:
+            note_id = sales_store.credit_invoice(conn, invoice_id, reason=reason,
+                                                 by="console")
+            conn.commit()
+            return RedirectResponse(f"/invoice/{note_id}", status_code=303)
+        except ValueError:
+            conn.rollback()
+            return RedirectResponse(f"/invoice/{invoice_id}", status_code=303)
+        finally:
+            conn.close()
+
+    @app.get("/invoice/{invoice_id}/print", response_class=HTMLResponse)
+    def print_invoice(invoice_id: int) -> HTMLResponse:
+        """The document, with a payment part when one can honestly be made.
+
+        A QR-bill that is malformed prints perfectly and is refused at the
+        bank, which is the worst failure available here because it is invisible
+        until a client tries to pay. So the payload is built inside a try and a
+        refusal becomes words on the page rather than a payment part nobody can
+        use.
+        """
+        conn = connect()
+        try:
+            invoice = sales_store.invoice(conn, invoice_id)
+            if invoice is None:
+                return HTMLResponse("<h1>Not found</h1>", status_code=404)
+            client = clients_store.client(conn, int(invoice["client_id"]))
+            address = _address_of(conn, int(client["company_id"]))
+            issuer = settings.issuer
+            qr, problem = "", ""
+            if invoice["status"] == "draft":
+                problem = ("A draft has no number and no payment reference. "
+                           "Issue it to produce a payment part.")
+            elif not issuer.can_bill:
+                problem = ("[issuer] in arpenteur.toml needs a name and an "
+                           "IBAN before a payment part can be produced.")
+            else:
+                try:
+                    payload = money_lib.qr_payload(
+                        iban=invoice["qr_iban"] or issuer.iban,
+                        creditor=money_lib.Party(
+                            name=issuer.name, street=issuer.street,
+                            building=issuer.building, postcode=issuer.postcode,
+                            town=issuer.town, country=issuer.country,
+                        ),
+                        amount=invoice["gross_total"],
+                        currency=invoice["currency"],
+                        debtor=money_lib.Party(
+                            name=invoice["company_name"],
+                            street=str((address or {}).get("street", "") or ""),
+                            building=str((address or {}).get("houseNumber", "") or ""),
+                            postcode=str((address or {}).get("swissZipCode", "") or ""),
+                            town=str((address or {}).get("town", "") or ""),
+                        ),
+                        reference=invoice["qr_reference"] or "",
+                        message=f"Invoice {invoice['number']}",
+                    )
+                    qr = money_view.qr_bill(
+                        invoice, address, issuer=issuer,
+                        svg=money_lib.qr_svg(payload),
+                    )
+                except money_lib.MoneyError as exc:
+                    problem = str(exc)
+            return HTMLResponse(money_view.invoice_print(
+                invoice, sales_store.invoice_lines(conn, invoice_id), address,
+                issuer=issuer, qr=qr, payload_error=problem,
+            ))
+        finally:
+            conn.close()
+
     @app.get("/clients", response_class=HTMLResponse)
     def portfolio() -> HTMLResponse:
         conn = connect()
@@ -891,6 +1257,14 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                     ),
                     sites=geo_store.establishments_for(conn, client["company_id"]),
                     moves=scout_store.history_for_company(conn, client["company_id"]),
+                    money=(
+                        money_view.quotes_panel(
+                            sales_store.quotes_for(conn, client_id), client_id
+                        )
+                        + money_view.invoices_panel(
+                            sales_store.invoices_for(conn, client_id), client_id
+                        )
+                    ),
                     note=request.query_params.get("note", ""),
                 )
             )
