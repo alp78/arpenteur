@@ -500,12 +500,29 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                         cantons=scout_store.cantons_present(conn),
                         segments=sorted(settings.segments),
                         states=list(db.PROSPECT_STATES),
-                        attribution_notice=attribution.notice(["zefix", "geoadmin"]),
+                        attribution_notice=attribution.notice(
+                            ["zefix", "geoadmin", "swissboundaries"]
+                        ),
+                        regions=len(geo_store.regions(conn, "canton")),
                         **chosen,
                     ),
                     settings.territory.describe(),
                 )
             )
+        finally:
+            conn.close()
+
+    @app.get("/map/regions.geojson")
+    def map_regions() -> Any:
+        """The cantonal outlines, simplified for drawing.
+
+        Separate from the points so the browser can start drawing markers
+        without waiting for a megabyte of boundary, and so a boundary that has
+        not been fetched is an absent layer rather than a failed page.
+        """
+        conn = connect()
+        try:
+            return geo_store.region_outlines(conn)
         finally:
             conn.close()
 

@@ -38,6 +38,7 @@ ORIGIN = {
     "site": "Site web de l'entreprise",
     "published": "Site web de l'entreprise",
     "geoadmin": "Géocodage : swisstopo, api3.geo.admin.ch",
+    "swissboundaries3d": "Limites cantonales : swissBOUNDARIES3D, swisstopo",
     "manual": "Saisi à la main",
 }
 
@@ -45,7 +46,8 @@ ORIGIN = {
 # data, free to use including commercially, on the single condition that the
 # source is named. Anything showing a map or a coordinate carries this.
 SWISSTOPO_NOTICE = (
-    "Fond de carte et géocodage : © swisstopo (geo.admin.ch). "
+    "Fond de carte, géocodage et limites cantonales : © swisstopo "
+    "(geo.admin.ch, swissBOUNDARIES3D). "
     "Coordonnées obtenues par géocodage automatique d'une adresse postale ; "
     "un point peut être faux là où l'adresse est juste."
 )
@@ -91,7 +93,12 @@ def notice(methods: object = ()) -> str:
     lines = [SOURCE_NOTICE, NO_WARRANTY_NOTICE]
     if any(name in DERIVED for name in names):
         lines.append(MODIFIED_NOTICE)
-    if "geoadmin" in names:
+    # The boundaries come from the same office under the same terms, and the
+    # condition attached to them is the same one: name the source. Folded into
+    # the geocoding notice rather than given its own line, because two
+    # sentences crediting swisstopo twice reads as boilerplate and stops being
+    # read at all.
+    if "geoadmin" in names or "swissboundaries" in names:
         lines.append(SWISSTOPO_NOTICE)
     return "\n".join(lines)
 

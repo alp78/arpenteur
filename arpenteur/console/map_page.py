@@ -111,6 +111,7 @@ def map_page(
     *, count: int, placed: int, with_address: int, canton: str = "",
     segment: str = "", band: str = "", state: str = "", cantons: list[str],
     segments: list[str], states: list[str], attribution_notice: str = "",
+    regions: int = 0,
 ) -> str:
     query = {k: v for k, v in (
         ("canton", canton), ("segment", segment), ("band", band), ("state", state)
@@ -174,11 +175,53 @@ def map_page(
         + '<div id="map"></div>'
         + legend
         + f'<p class="dim small" style="white-space:pre-line">{esc(attribution_notice)}</p>'
-        + _script(source_url)
+        + (f'<p class="dim small">{regions} cantonal boundary(ies) drawn from '
+           "swissBOUNDARIES3D. Without them the territory is a text comparison "
+           'on a column.</p>' if regions else
+           '<p class="dim small">No cantonal boundaries held. Run '
+           '<a href="/pipeline">regions</a>, which is free and one request per '
+           "canton.</p>")
+        + _script(source_url, "/map/regions.geojson" if regions else "")
     )
 
 
-def _script(source_url: str) -> str:
+# Built only when there are boundaries to draw. Emitting it behind a runtime
+# guard on an empty URL would leave a page carrying JavaScript that can never
+# run, which is the kind of thing a reader has to prove harmless before they
+# can change anything near it.
+REGIONS_BLOCK = """
+    // The cantonal outlines first, so the markers sit on top of them rather
+    // than under. Drawn from the boundary the Confederation publishes, not
+    // from the canton column: a survey scoped to six cantons was deciding
+    // what was inside it by comparing text.
+    fetch('%s').then(r => r.json()).then(function (shapes) {
+      map.addSource('regions', {type: 'geojson', data: shapes});
+      map.addLayer({
+        id: 'regions-fill', type: 'fill', source: 'regions',
+        paint: {'fill-color': '#7a1f1f', 'fill-opacity': 0.05}
+      });
+      map.addLayer({
+        id: 'regions-line', type: 'line', source: 'regions',
+        paint: {'line-color': '#7a1f1f', 'line-width': 1.2, 'line-opacity': 0.55}
+      });
+      map.addLayer({
+        id: 'regions-label', type: 'symbol', source: 'regions',
+        layout: {
+          'text-field': ['get', 'name'],
+          'text-size': 12,
+          'text-transform': 'uppercase',
+          'text-letter-spacing': 0.12
+        },
+        paint: {
+          'text-color': '#7a1f1f', 'text-opacity': 0.7,
+          'text-halo-color': '#ffffff', 'text-halo-width': 1.5
+        }
+      });
+    });
+"""
+
+
+def _script(source_url: str, regions_url: str = "") -> str:
     """MapLibre, the swisstopo base layer, and one circle layer over it.
 
     Circles from the data rather than DOM markers. Five thousand
@@ -186,6 +229,7 @@ def _script(source_url: str) -> str:
     elements the browser repositions on every frame of a pan; a circle layer is
     drawn on the GPU and stays smooth at the size this survey reaches.
     """
+    regions_block = REGIONS_BLOCK % regions_url if regions_url else ""
     return f"""
 <link href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css" rel="stylesheet">
 <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
@@ -212,6 +256,7 @@ def _script(source_url: str) -> str:
   map.addControl(new maplibregl.ScaleControl({{unit: 'metric'}}));
 
   map.on('load', function () {{
+{regions_block}
     fetch('{source_url}').then(r => r.json()).then(function (data) {{
       map.addSource('sites', {{type: 'geojson', data: data}});
       map.addLayer({{

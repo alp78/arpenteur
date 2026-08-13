@@ -14,6 +14,7 @@ good address is the ordinary case, and one row could not tell them apart.
 
 from __future__ import annotations
 
+import json
 from typing import Any
 
 from ...kernel.db import Connection, Row, now
@@ -360,4 +361,87 @@ def regions(conn: Connection, kind: str = "canton") -> list[Row]:
         "SELECT id, code, name, kind, ST_AsGeoJSON(shape) AS geojson"
         " FROM geo.region WHERE kind = %s ORDER BY code",
         (kind,),
+    ).fetchall()
+
+
+def region_outlines(
+    conn: Connection, kind: str = "canton", *, tolerance: float = 0.001
+) -> dict[str, Any]:
+    """The boundaries as one GeoJSON collection, simplified for drawing.
+
+    Simplified at the read and never in the column. Vaud is 11'847 points,
+    which is right for asking whether a point falls inside and absurd for a
+    line three hundred pixels long: the five cantons together are about a
+    megabyte the browser has to parse before it can draw anything.
+
+    The default tolerance is roughly a hundred metres of longitude at this
+    latitude, which is invisible at any zoom where a whole canton is on screen
+    and cuts the point count by an order of magnitude. `ST_SimplifyPreserveTopology`
+    rather than `ST_Simplify` so a shared border does not develop gaps between
+    two cantons simplified independently, which is exactly what happens when
+    the cheaper function is used on adjacent polygons.
+    """
+    rows = conn.execute(
+        "SELECT code, name,"
+        "       ST_AsGeoJSON(ST_SimplifyPreserveTopology(shape, %s)) AS geojson"
+        "  FROM geo.region WHERE kind = %s AND shape IS NOT NULL"
+        " ORDER BY code",
+        (tolerance, kind),
+    ).fetchall()
+    return {
+        "type": "FeatureCollection",
+        "features": [
+            {
+                "type": "Feature",
+                "properties": {"code": row["code"], "name": row["name"]},
+                "geometry": json.loads(row["geojson"]),
+            }
+            for row in rows
+        ],
+    }
+
+
+def region_of(conn: Connection, lat: float, lon: float, kind: str = "canton") -> Row | None:
+    """Which region a point falls in, or None.
+
+    The question the outlines were fetched for. A survey scoped to six cantons
+    was deciding what was inside it by comparing a text column, which is what
+    the register happens to say rather than where the company actually is.
+    """
+    return conn.execute(
+        "SELECT code, name FROM geo.region"
+        " WHERE kind = %s AND shape IS NOT NULL"
+        "   AND ST_Contains(shape, ST_SetSRID(ST_MakePoint(%s, %s), 4326))"
+        " LIMIT 1",
+        (kind, lon, lat),
+    ).fetchone()
+
+
+def placed_outside_their_canton(conn: Connection, *, limit: int = 200) -> list[Row]:
+    """Companies whose geocoded seat is not in the canton the register names.
+
+    Only answerable once the outlines are held, and worth asking because each
+    row is one of three things and all three are worth knowing: a geocoder that
+    put the marker in the wrong place, a register entry whose seat is stale, or
+    a company that genuinely moved and told the register but not its website.
+
+    A point on a boundary belongs to both by `ST_Contains` and to neither by
+    strict interior tests; the join below takes the first containing region, so
+    a company on the line is not reported as displaced.
+    """
+    return conn.execute(
+        "SELECT c.id AS company_id, c.uid, c.name, c.canton AS register_canton,"
+        "       r.code AS placed_in, e.precision"
+        "  FROM geo.establishment e"
+        "  JOIN core.company c ON c.id = e.company_id"
+        "  LEFT JOIN LATERAL ("
+        "      SELECT code FROM geo.region"
+        "       WHERE kind = 'canton' AND shape IS NOT NULL"
+        "         AND ST_Contains(shape, e.point::geometry) LIMIT 1"
+        "  ) r ON TRUE"
+        " WHERE e.point IS NOT NULL AND e.is_seat"
+        "   AND c.canton IS NOT NULL"
+        "   AND (r.code IS NULL OR r.code <> c.canton)"
+        " ORDER BY c.name LIMIT %s",
+        (limit,),
     ).fetchall()

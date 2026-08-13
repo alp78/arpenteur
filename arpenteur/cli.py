@@ -27,6 +27,7 @@ from .stages import (
     match,
     people,
     prep,
+    boundaries,
     profile,
     reach,
     resolve,
@@ -573,6 +574,38 @@ def cmd_report(args: argparse.Namespace) -> int:
             str(row[c] if row[c] is not None else "").ljust(widths[c])
             for c in columns
         ))
+    conn.close()
+    return 0
+
+
+def cmd_boundaries(args: argparse.Namespace) -> int:
+    """Fetch the cantonal outlines. Free, one request each, one-off.
+
+    Not `cmd_regions`, which already exists and prints the territories named
+    in arpenteur.toml. Two different things, and the first version of this
+    shadowed the other one silently: a function defined later in a module
+    simply replaces the earlier one, and argparse only complained because the
+    subcommand name collided too.
+    """
+    settings = load_settings()
+    conn = db.open_db(settings.database_url)
+    run_id = db.start_run(conn, "boundaries", vars(args))
+    try:
+        stats = boundaries.run(
+            settings, conn,
+            cantons=_split(args.canton) or None,
+            refresh=args.refresh,
+            dry_run=args.dry_run,
+        )
+    except Exception as exc:
+        db.finish_run(conn, run_id, error=str(exc))
+        print(f"error: {exc}", file=sys.stderr)
+        return 1
+    db.finish_run(conn, run_id, stats)
+    print(
+        f"{stats['stored']} boundary(ies) stored, {stats['held']} already held, "
+        f"{stats['failed']} failed"
+    )
     conn.close()
     return 0
 
@@ -1364,6 +1397,20 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--limit", type=int, default=200, help="rows to print")
     p.add_argument("--csv", action="store_true", help="write CSV to stdout")
     p.set_defaults(func=cmd_report)
+
+    p = sub.add_parser(
+        "boundaries",
+        help="fetch the cantonal outlines from swisstopo (free, one-off)",
+    )
+    p.add_argument(
+        "--canton",
+        help="comma separated cantons; blank takes the configured territory",
+    )
+    p.add_argument(
+        "--refresh", action="store_true", help="take boundaries already held again"
+    )
+    p.add_argument("--dry-run", action="store_true", help="say what would be fetched")
+    p.set_defaults(func=cmd_boundaries)
 
     p = sub.add_parser(
         "note", help="notes on a client, written in Markdown"

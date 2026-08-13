@@ -34,8 +34,8 @@ from .. import db
 from ..config import Settings
 from ..kernel.db import Connection, Row
 from ..stages import (
-    enrich, geocode, mail, match, people, profile, reach, resolve, source,
-    sync,
+    boundaries, enrich, geocode, mail, match, people, profile, reach,
+    resolve, source, sync,
 )
 
 
@@ -440,6 +440,40 @@ STAGES: dict[str, Stage] = {
         done_label="placed",
         module="geo",
     ),
+    "boundaries": Stage(
+        name="boundaries",
+        title="Draw the cantons",
+        what="Fetch the cantonal boundaries from swisstopo's own "
+             "swissBOUNDARIES3D, so the map shows the territory and a point "
+             "can be asked which canton it is actually in.",
+        call=boundaries.run,
+        fields=(
+            Field("canton", "Cantons", "select", source="cantons_multi",
+                  param="cantons", multi=True,
+                  help="Leave nothing selected to take the configured "
+                       "territory. There is no use fetching Appenzell's "
+                       "outline for a survey of Romandie."),
+            Field("refresh", "Take them again", "bool",
+                  help="Boundaries change when a commune merges, which is a "
+                       "few times a year and never on the outer cantonal "
+                       "ring. Held ones are skipped unless this is ticked."),
+            DRY,
+        ),
+        needs="Nothing. It reads a public federal layer and no company data.",
+        produces="One outline per canton, and the map draws the territory "
+                 "instead of implying it.",
+        cost="Free. One request per canton to a public swisstopo layer, and "
+             "the answer is cached on disk.",
+        button="Fetch boundaries",
+        button_does="Asks swisstopo for each canton's outline and checks the "
+                    "abbreviation in the reply against the one asked for, so "
+                    "a wrong number cannot file one canton under another.",
+        done_sql="SELECT COUNT(*) FROM geo.region WHERE kind = 'canton'"
+                 " AND shape IS NOT NULL",
+        done_label="drawn",
+        waiting_label="to fetch",
+        module="geo",
+    ),
     "mail": Stage(
         name="mail",
         title="Read the mailbox",
@@ -480,7 +514,7 @@ STAGES: dict[str, Stage] = {
 
 # The order the operations page shows them in, which is the order they run in.
 ORDER = ("source", "sync", "hydrate", "people", "resolve", "profile", "enrich",
-         "match", "reach", "geocode", "mail")
+         "match", "reach", "geocode", "boundaries", "mail")
 
 # Sizes offered instead of a free number box. "No limit" is last and named
 # rather than blank, so choosing it is a decision rather than an oversight.
