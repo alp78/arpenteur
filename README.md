@@ -34,26 +34,76 @@ Pipeline stages, each a standalone command:
    auto-sent *(planned)*
 
 Then the other half, for the companies that say yes: **clients**, their
-**projects**, one auditable **record** of every exchange, and a
-**calendar** *(built)*.
+**projects**, one auditable **record** of every exchange, a **calendar**,
+a sourced **dossier**, an AI-suggested **approach** priced from your own
+rate card, and **interview preparation** *(built)*.
 
 And a **console** over all of it: `arpenteur console`.
 
-Storage is SQLite. Secrets live in `.env` (never committed). Outreach
-volume stays low by design: Swiss law (LCD art. 3 al. 1 let. o) draws
-the line at mass advertising email, and this tool is built to stay on
-the research side of it.
+Secrets live in `.env` (never committed). Outreach volume stays low by
+design: Swiss law (LCD art. 3 al. 1 let. o) draws the line at mass
+advertising email, and this tool is built to stay on the research side
+of it.
+
+## Modules
+
+Arpenteur is composed rather than written as one program. Four modules,
+each owning one Postgres schema and its own numbered migrations:
+
+| module | schema | what |
+|---|---|---|
+| `scout` | `core`, `intel` | the survey: sweep, detail, officers, segments, website research, scoring |
+| `geo` | `geo` | establishments with coordinates, cantonal boundaries, the map |
+| `clients` | `crm` | clients, projects, the interaction log, dossier, approach, prep |
+| `sales` | `commercial` | services, rate cards, quotes, invoices, time entries |
+
+```bash
+uv run arpenteur modules list          # what is installed and how far its schema has got
+uv run arpenteur modules drop sales --yes
+```
+
+Three rules keep them separable, and the third is what makes the first
+two hold.
+
+**Dependencies point one way.** `commercial` → `crm` → `core`; `geo` →
+`core`; `intel` → `core`. Nothing points back, so dropping a downstream
+schema cannot orphan an upstream row.
+
+**Modules meet at named slots, never by import.** A page declares a slot
+(`company.panels`, `client.panels`, `nav.primary`); a module fills it. An
+unfilled slot renders nothing, which is exactly what "that module is not
+installed" should look like.
+
+**Both rules are tests.** `tests/test_modules.py` walks the import graph
+and reads Postgres's constraint catalogue. Architecture that is only
+documented decays.
 
 ## Getting started
 
-Requires Python 3.13 and [uv](https://docs.astral.sh/uv/).
+Requires Python 3.13, [uv](https://docs.astral.sh/uv/) and Docker.
 
 ```bash
+docker compose up -d      # PostgreSQL 16 + PostGIS, on 127.0.0.1:5433
 uv sync --dev
 cp .env.example .env      # then fill it in, see below
 uv run arpenteur init-db
 uv run arpenteur stats
 ```
+
+The database is bound to loopback deliberately: the console has no
+authentication because it is not meant to be reachable, and a database
+listening on every interface would quietly undo that. `DATABASE_URL`
+overrides the default for a real deployment.
+
+Coming from the SQLite version:
+
+```bash
+uv run python scripts/import_sqlite.py data/arpenteur.sqlite3
+```
+
+It keeps every id, converts the columns SQLite could not type, and
+prints both row counts side by side, because the only useful check on a
+copy is that the two databases agree afterwards.
 
 ### Credentials
 
@@ -168,9 +218,10 @@ uv run arpenteur source zefix --fixture
 uv run arpenteur stats --fixture
 ```
 
-The fixture source defaults to its small VD/Sàrl sample. It writes to
-`data/arpenteur.fixture.sqlite3`, never the live survey database, and marks
-every row with a `fixture://zefix/...` provenance URL. To run its passes
+The fixture source defaults to its small VD/Sàrl sample. It writes to a
+separate `arpenteur_fixture` database on the same server, created on
+demand and never the live survey, and marks every row with a
+`fixture://zefix/...` provenance URL. To run its passes
 separately, use `source zefix --fixture --no-hydrate` followed by
 `hydrate --fixture`.
 
