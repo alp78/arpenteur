@@ -807,8 +807,51 @@ def publications_for(conn: Connection, company_id: int) -> list[Row]:
     ).fetchall()
 
 
+def prune_people(
+    conn: Connection, company_id: int, keep: list[tuple[str, str | None]]
+) -> int:
+    """Drop parsed officers this company's notices no longer yield.
+
+    The people stage was written on the principle that the parser will improve
+    and stored notices can be reparsed for free. That only holds if a reparse
+    can also take a row *away*, and an upsert cannot: it refreshes what it
+    finds and leaves everything else untouched, so a name the parser should
+    never have produced survives every correction.
+
+    It cost something to discover. A regex was reading the domicile in "Aslan
+    Arzu, de Turquie, à Carouge GE" as a second officer, and `Carouge GE`
+    accumulated across the survey onto twenty-three boards: the exact shape of
+    a well-connected person, and the most valuable node in any relationship
+    graph built on it. Fixing the regex left every one of those rows in place.
+
+    Only rows the parser owns. `method` says where a row came from, and a
+    correction made by a person is not the parser's to remove.
+    """
+    # Two parallel arrays rather than a list of tuples. A list of tuples is the
+    # obvious way to write it and Postgres refuses it: "input of anonymous
+    # composite types is not implemented". Unnested side by side they are the
+    # same comparison in one statement, instead of one DELETE per officer.
+    cur = conn.execute(
+        """
+        DELETE FROM core.person
+         WHERE company_id = %s AND method = 'shab'
+           AND NOT EXISTS (
+               SELECT 1 FROM unnest(%s::text[], %s::text[]) AS kept(name, role)
+                WHERE kept.name = person.full_name
+                  AND kept.role = COALESCE(person.role, ''))
+        """,
+        (
+            company_id,
+            [name for name, _role in keep],
+            [role or "" for _name, role in keep],
+        ),
+    )
+    return cur.rowcount
+
+
 def save_people(
-    conn: Connection, company_id: int, people: list[dict[str, Any]]
+    conn: Connection, company_id: int, people: list[dict[str, Any]],
+    *, authoritative: bool = False,
 ) -> int:
     """Store officers parsed from notices.
 
@@ -816,20 +859,38 @@ def save_people(
     attributes rather than duplicating a person. Attributes are overwritten only
     when the incoming row carries them, so a notice naming someone without
     repeating their origin cannot blank it.
+
+    `authoritative` turns that off, and a reparse sets it. The merge rule is
+    right for one notice arriving and wrong for a corrected parser: a regex was
+    giving one officer the *next* officer's origin, and because the fixed
+    parser answers NULL where it used to answer wrongly, COALESCE kept the
+    wrong value for ever. A reparse reads every notice a company has and merges
+    them itself, so its answer is the whole answer and may overwrite.
     """
+    merge = (
+        """
+            origin = excluded.origin,
+            domicile = excluded.domicile,
+            signature = excluded.signature,
+        """
+        if authoritative
+        else """
+            origin = COALESCE(excluded.origin, person.origin),
+            domicile = COALESCE(excluded.domicile, person.domicile),
+            signature = COALESCE(excluded.signature, person.signature),
+        """
+    )
     stamp = now()
     written = 0
     for item in people:
         conn.execute(
-            """
+            f"""
             INSERT INTO core.person (company_id, full_name, role, origin, domicile,
                                      signature, last_seen_date, source_url, method,
                                      fetched_at)
             VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             ON CONFLICT (company_id, full_name, role) DO UPDATE SET
-                origin = COALESCE(excluded.origin, person.origin),
-                domicile = COALESCE(excluded.domicile, person.domicile),
-                signature = COALESCE(excluded.signature, person.signature),
+                {merge}
                 last_seen_date = GREATEST(excluded.last_seen_date,
                                           person.last_seen_date),
                 source_url = COALESCE(excluded.source_url, person.source_url),

@@ -277,6 +277,8 @@ def cmd_people(args: argparse.Namespace) -> int:
     print(
         f"{stats['people']} officers across {stats['with_people']} companies "
         f"(of {stats['considered']} with publications)"
+        + (f", {stats['pruned']} withdrawn by the improved parser"
+           if stats.get("pruned") else "")
         + (" (dry run, nothing written)" if args.dry_run else "")
     )
     conn.close()

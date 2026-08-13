@@ -98,10 +98,22 @@ SIGNATURE = re.compile(
     re.IGNORECASE,
 )
 
-# "de France, à Genève" / "de et à Genève" / "de Carouge (GE), à Lancy"
+# "de France, à Genève" / "de et à Genève" / "de Carouge (GE), à Lancy" /
+# "d'Arabie Saoudite, à Genève".
+#
+# `_PLACE_END` is where a place name stops, and it is not only punctuation.
+# The register writes "à Carouge GE avec signature individuelle" without a
+# comma, and a pattern that only stopped at one swallowed the signature into
+# the domicile. It also has to stop a place before "pour 20 parts".
+_PLACE = r"[A-ZÀ-Ý][\wÀ-ÿ'’ ()-]{1,40}?"
+_PLACE_END = r"(?=[,.;]|\s+(?:avec|pour|qui|dont|qu[ie]|en\s+qualit[ée])\b|$)"
+
 ORIGIN_DOMICILE = re.compile(
-    r"\bde\s+et\s+à\s+([A-ZÀ-Ý][\wÀ-ÿ'’ ()-]{1,40}?)(?=[,.]|$)"
-    r"|\bd[eu]\s+([A-ZÀ-Ý][\wÀ-ÿ'’ ()-]{1,40}?)\s*,\s*à\s+([A-ZÀ-Ý][\wÀ-ÿ'’ ()-]{1,40}?)(?=[,.]|$)",
+    rf"\bde\s+et\s+à\s+({_PLACE}){_PLACE_END}"
+    # The elided article is ordinary French and half the countries take it:
+    # "d'Ethiopie", "d'Arabie Saoudite", "d'Italie". Without it the origin was
+    # missed and the country was then read as a person's name.
+    rf"|\bd(?:[eu]\s+|['’]\s*)({_PLACE})\s*,\s*à\s+({_PLACE}){_PLACE_END}",
     re.IGNORECASE,
 )
 
@@ -329,14 +341,54 @@ def officers(message: str) -> list[Officer]:
             else None
         )
 
+        # Where the clause states someone's origin and domicile, so those
+        # places are not read as further people. "Aslan Arzu, de Turquie, à
+        # Carouge GE" names one officer, and the name pattern matched two:
+        # `Carouge GE` is a capitalised run of two words like any surname and
+        # first name. Left alone it accumulated across the survey into an
+        # officer sitting on twenty-three boards, which is exactly the shape
+        # of a well-connected person and would have become the most valuable
+        # node in a relationship graph built on nothing.
+        taken = [
+            span
+            for match in ORIGIN_DOMICILE.finditer(clause)
+            for span in (match.span(1), match.span(2), match.span(3))
+            if span[0] >= 0
+        ]
+
+        # The people this clause names, in the order it names them. Collected
+        # before any place is read, because where one person's description
+        # stops is where the next one's name starts and that cannot be known
+        # while still scanning.
+        named = []
         for name_match in NAME.finditer(clause):
             candidate = name_match.group(1).strip(" ,;")
             if not _looks_like_name(candidate):
                 continue
+            start, end = name_match.span(1)
+            if any(start < place_end and place_start < end
+                   for place_start, place_end in taken):
+                continue
+            named.append((name_match, candidate))
+
+        for index, (name_match, candidate) in enumerate(named):
             if fold(candidate) in gone:
                 continue
             origin = domicile = None
-            tail = clause[name_match.end() : name_match.end() + 120]
+            # Bounded by the next person named, not by a fixed window. The
+            # register introduces someone once and afterwards refers to them
+            # without repeating their place: "Gérants: l'associé Boccard
+            # Christian, président et Serodino Christophe, d'Onsernone, à
+            # Thônex". Reading 120 characters past the first name gave Boccard
+            # the second man's origin and domicile, and party resolution keyed
+            # on those would then have split one person into two, or worse,
+            # merged two into one.
+            stop = (
+                named[index + 1][0].start(1) if index + 1 < len(named)
+                else len(clause)
+            )
+            after = name_match.end(1)
+            tail = clause[after : min(stop, after + 120)]
             place = ORIGIN_DOMICILE.search(tail)
             if place:
                 if place.group(1):  # "de et à Genève"

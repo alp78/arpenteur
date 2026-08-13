@@ -92,6 +92,7 @@ prospect_for = _scout.prospect_for
 save_publications = _scout.save_publications
 publications_for = _scout.publications_for
 save_people = _scout.save_people
+prune_people = _scout.prune_people
 people_for = _scout.people_for
 save_site = _scout.save_site
 site_for = _scout.site_for

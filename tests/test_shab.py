@@ -291,3 +291,58 @@ def test_every_role_is_in_the_known_vocabulary(corpus: list[dict]) -> None:
     }
     seen = {o.role for company in corpus for o in parse(company)}
     assert seen <= known, f"unrecognised roles: {seen - known}"
+
+
+# --- places are not people ----------------------------------------------------
+#
+# Both of these were found while building party resolution on top of this
+# parser, which is the point at which a wrong officer stops being a cosmetic
+# error: a relationship graph is only as good as the edges under it, and both
+# of these produced edges that looked exactly like the valuable kind.
+
+
+def test_a_domicile_is_not_a_second_officer() -> None:
+    """`Carouge GE` is a capitalised run of two words, like any surname and
+    first name. Read as a person it accumulated across the survey onto
+    twenty-three boards: the shape of a well-connected director, and it would
+    have been the most valuable node in the graph."""
+    found = shab.officers(
+        "Associée-gérante: Aslan Arzu, de Turquie, à Carouge GE, "
+        "pour 20 parts de CHF 1'000, avec signature individuelle."
+    )
+    assert [o.full_name for o in found] == ["Aslan Arzu"]
+    assert found[0].origin == "Turquie" and found[0].domicile == "Carouge GE"
+
+
+def test_a_country_with_an_elided_article_is_an_origin() -> None:
+    """Half the countries take one: d'Ethiopie, d'Arabie Saoudite, d'Italie.
+    Unmatched as an origin, the country was read as a person's name."""
+    found = shab.officers(
+        "Gérant: Almaiman Abdulaziz Fahad, d'Arabie Saoudite, à Jeddah, "
+        "avec signature individuelle."
+    )
+    assert [o.full_name for o in found] == ["Almaiman Abdulaziz Fahad"]
+    assert found[0].origin == "Arabie Saoudite" and found[0].domicile == "Jeddah"
+
+
+def test_a_place_belongs_to_the_person_it_follows() -> None:
+    """The register introduces someone once and then refers to them without
+    repeating their place. Reading a fixed window past a name gave the first
+    man the second man's origin and domicile, and identity resolution keyed on
+    those would split one person in two or merge two into one."""
+    found = shab.officers(
+        "Gérants: l'associé Boccard Christian, président et Serodino "
+        "Christophe, d'Onsernone, à Thônex, tous deux avec signature "
+        "individuelle."
+    )
+    by_name = {o.full_name: o for o in found}
+    assert by_name["Boccard Christian"].domicile is None
+    assert by_name["Serodino Christophe"].domicile == "Thônex"
+
+
+def test_a_domicile_ends_before_the_signature() -> None:
+    """Written without a comma: "à Carouge GE avec signature individuelle"."""
+    found = shab.officers(
+        "Gérant: Moussa Farid, de Genève, à Carouge GE avec signature individuelle."
+    )
+    assert found[0].domicile == "Carouge GE"

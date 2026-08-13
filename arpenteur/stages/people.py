@@ -53,6 +53,7 @@ def run(
         "considered": len(companies),
         "with_people": 0,
         "people": 0,
+        "pruned": 0,
     }
     if not companies:
         log("No stored publications to parse. Run hydrate first.")
@@ -99,7 +100,15 @@ def run(
                     f" {officer.signature or ''}"
                 )
         else:
-            db.save_people(conn, company["id"], people)
+            db.save_people(conn, company["id"], people, authoritative=reparse)
+            if reparse:
+                # A reparse states the whole answer for this company, so what
+                # the improved parser no longer produces goes. Without this a
+                # fixed regex leaves its mistakes in the table for ever.
+                stats["pruned"] += db.prune_people(
+                    conn, company["id"],
+                    [(p["full_name"], p["role"]) for p in people],
+                )
 
         stats["with_people"] += 1
         stats["people"] += len(people)
