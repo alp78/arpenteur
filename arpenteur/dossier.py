@@ -21,6 +21,7 @@ being on the form.
 from __future__ import annotations
 
 from dataclasses import dataclass
+from typing import Any
 
 
 @dataclass(frozen=True)
@@ -208,8 +209,49 @@ SECTIONS: tuple[Section, ...] = (
 BY_NAME: dict[str, Section] = {section.name: section for section in SECTIONS}
 
 
-def group_sections(group: str) -> list[Section]:
-    return [section for section in SECTIONS if section.group == group]
+# The vocabulary's own order, used wherever nothing has been reordered.
+_AT: dict[str, int] = {section.name: index for index, section in enumerate(SECTIONS)}
+
+
+def _rank(section: Section, rows: dict[str, dict[str, Any]] | None) -> tuple[int, int]:
+    """Where a section sits: what was chosen, then what the vocabulary says.
+
+    A section nobody has moved has no row or a default position, and falls back
+    to the order it is written in this file, which is the order the questions
+    are meant to be asked in.
+    """
+    entry = (rows or {}).get(section.name) or {}
+    position = entry.get("position")
+    try:
+        return (int(position), _AT[section.name])
+    except (TypeError, ValueError):
+        return (100, _AT[section.name])
+
+
+def group_sections(
+    group: str, rows: dict[str, dict[str, Any]] | None = None
+) -> list[Section]:
+    """One group's sections, in the order this client's dossier puts them.
+
+    Ordering is within the group and never across it. The three groups are a
+    teaching device: each has a paragraph saying why it is asked, and a section
+    dragged out of the group it is explained by would be a section nobody can
+    tell why they are answering. The board refuses drops across a swimlane for
+    the same reason.
+    """
+    return sorted(
+        (s for s in SECTIONS if s.group == group), key=lambda s: _rank(s, rows)
+    )
+
+
+def ordered_sections(
+    rows: dict[str, dict[str, Any]] | None = None
+) -> list[Section]:
+    """Every section, groups in their fixed order, sections in the chosen one."""
+    out: list[Section] = []
+    for name, _title, _why in GROUPS:
+        out.extend(group_sections(name, rows))
+    return out
 
 
 def as_text(rows: dict[str, dict[str, str]]) -> str:
@@ -222,7 +264,7 @@ def as_text(rows: dict[str, dict[str, str]]) -> str:
     first.
     """
     out: list[str] = []
-    for section in SECTIONS:
+    for section in ordered_sections(rows):
         entry = rows.get(section.name) or {}
         body = (entry.get("body") or "").strip()
         source = (entry.get("source") or "").strip()

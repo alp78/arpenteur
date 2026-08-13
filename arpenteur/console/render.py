@@ -206,12 +206,29 @@ STYLESHEET = """
   .sort-item.carried { opacity:.5; outline:2px dashed var(--accent);
                        outline-offset:-3px; }
   .sort-body { flex:1; min-width:0; }
-  .sort-ctl { display:flex; flex-direction:column; gap:2px; flex:0 0 auto; }
+  /* Visible to a screen reader and to nobody else. A column of handles needs
+     a header, and the word "Order" above them would be noise on the page. */
+  .vh { position:absolute; width:1px; height:1px; overflow:hidden;
+        clip-path:inset(50%); white-space:nowrap; }
+  .sort-cell { width:1%; white-space:nowrap; padding-right:0; }
+  tr.sort-item { cursor:default; }
+  tr.sort-item.carried { opacity:.5; outline:2px dashed var(--accent);
+                         outline-offset:-2px; }
+  .sort-ctl { display:flex; gap:2px; flex:0 0 auto; align-items:center; }
+  .sort-list > .sort-item > .sort-ctl,
+  li.sort-item > .sort-ctl { flex-direction:column; }
   .sort-ctl .grip { cursor:grab; padding:0 .2rem; line-height:1;
                     letter-spacing:-.2em; color:var(--dim); border-color:transparent;
                     background:transparent; }
   .sort-ctl .nudge { padding:0 .3rem; font-size:var(--t-xs); line-height:1.3; }
   .sort-say { font-size:var(--t-xs); color:var(--accent); min-height:1.1em; }
+  /* A row that is already a card does not want a second box drawn round it.
+     The handle floats against the card's own edge instead. */
+  .sortable-sections .sort-item { border:0; background:transparent; padding:0;
+                                  gap:0; position:relative; }
+  .sortable-sections .sort-ctl { position:absolute; right:.5rem; top:.55rem;
+                                 flex-direction:row; z-index:1; }
+  .sortable-sections .sort-body { width:100%; }
 
   /* --- dropping files --- */
   .dropzone { border:1px dashed var(--line); background:var(--paper);

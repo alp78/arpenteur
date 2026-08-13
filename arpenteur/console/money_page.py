@@ -327,25 +327,71 @@ def invoices_panel(invoices: list[Row], client_id: int) -> str:
     )
 
 
-def _line_rows(lines: list[Row], *, editable: bool, delete_to: str = "") -> str:
-    out = []
-    for line in lines:
-        detail = (f'<div class="basis">{esc(line["detail"])}</div>'
-                  if line["detail"] else "")
-        basis = (f'<div class="basis">from the card: {esc(line["basis"])}</div>'
-                 if line["basis"] else "")
-        remove = ""
-        if editable and delete_to:
-            remove = (f'<td><form method="post" action="{delete_to}/{line["id"]}/delete">'
-                      '<button type="submit">Remove</button></form></td>')
-        out.append(
-            f'<tr><td>{esc(line["label"])}{detail}{basis}</td>'
-            f'<td class="num">{line["quantity"]}</td>'
-            f'<td class="small">{esc(line["unit"])}</td>'
-            f'<td class="num">{_num(line["unit_price"])}</td>'
-            f'<td class="num">{_num(line["amount"])}</td>{remove}</tr>'
-        )
-    return "".join(out)
+def _line_cells(line: Row, *, editable: bool, delete_to: str = "") -> str:
+    detail = (f'<div class="basis">{esc(line["detail"])}</div>'
+              if line["detail"] else "")
+    basis = (f'<div class="basis">from the card: {esc(line["basis"])}</div>'
+             if line["basis"] else "")
+    remove = ""
+    if editable and delete_to:
+        remove = (f'<td><form method="post" action="{delete_to}/{line["id"]}/delete">'
+                  '<button type="submit">Remove</button></form></td>')
+    return (
+        f'<td>{esc(line["label"])}{detail}{basis}</td>'
+        f'<td class="num">{line["quantity"]}</td>'
+        f'<td class="small">{esc(line["unit"])}</td>'
+        f'<td class="num">{_num(line["unit_price"])}</td>'
+        f'<td class="num">{_num(line["amount"])}</td>{remove}'
+    )
+
+
+def lines_table(
+    lines: list[Row], totals: Row, *, editable: bool, delete_to: str,
+    reorder_to: str, id: str, frozen_because: str = "",
+) -> str:
+    """The lines, in the order they will be read, and movable while they can be.
+
+    A quote is a document somebody reads top to bottom, and the order is part
+    of what it says: the survey before the plan before the travel, not the
+    order they were entered in at half past six. There was no ordering control
+    at all, and `position` had been in the schema since the first migration.
+
+    Reordering is refused exactly where editing is, for the same reason and
+    with the same sentence. A sent version and an issued invoice are documents
+    somebody else holds a copy of.
+    """
+    frozen = frozen_because if not editable else ""
+    body = ui.sortable_body(
+        [(line["id"], _line_cells(line, editable=editable, delete_to=delete_to))
+         for line in lines],
+        endpoint=reorder_to, id=id, label="line", frozen=frozen,
+    )
+    # The handle, the label, qty, unit, price, amount. The Remove column is
+    # deliberately not counted, exactly as before: the totals span the columns
+    # that carry the document, so the amount lands under Amount rather than
+    # under a button.
+    columns = 6
+    head = (
+        '<tr><th class="sort-cell"><span class="vh">Order</span></th>'
+        '<th>Line</th><th class="num">Qty</th><th>Unit</th>'
+        '<th class="num">Price</th><th class="num">Amount</th>'
+        + ("<th>&nbsp;</th>" if editable and delete_to else "")
+        + "</tr>"
+    )
+    # The reason goes under the table rather than inside it: a `<tbody>` has
+    # nowhere to put a sentence, and "why can I not move these" is asked at the
+    # lines, not at the banner three paragraphs above them.
+    if frozen:
+        hint = f'<p class="hint">{esc(frozen)}</p>'
+    elif len(lines) > 1:
+        hint = f'<p class="hint">{esc(ui.HOW_TO_SORT)}</p>'
+    else:
+        hint = ""
+    return (
+        f'<table class="lines"><thead>{head}</thead>{body}'
+        f'<tfoot>{_totals_rows(totals, columns=columns)}</tfoot></table>'
+        + ui.sort_say(f"{id}-say") + hint
+    )
 
 
 def _totals_rows(row: Row, *, columns: int) -> str:
@@ -401,14 +447,13 @@ def quote_page(
             "saying what it said. Open a new version to revise it.</p>"
         )
 
-    remove_column = "<th></th>" if not frozen else ""
-    body.append(
-        '<table class="lines"><thead><tr><th>Line</th><th class="num">Qty</th>'
-        f'<th>Unit</th><th class="num">Price</th><th class="num">Amount</th>'
-        f"{remove_column}</tr></thead>"
-        f'<tbody>{_line_rows(lines, editable=not frozen, delete_to="/quote-line")}</tbody>'
-        f"<tfoot>{_totals_rows(shown, columns=5)}</tfoot></table>"
-    )
+    body.append(lines_table(
+        lines, shown, editable=not frozen, delete_to="/quote-line",
+        reorder_to=f'/quote-version/{shown["id"]}/order',
+        id=f'quote-lines-{shown["id"]}',
+        frozen_because="This version was sent, so its lines keep the order the "
+                       "client received them in.",
+    ))
 
     if not frozen:
         options = "".join(
@@ -491,14 +536,13 @@ def invoice_page(
             "note, because the client and their accounts hold the document as "
             "it was sent.</p>"
         )
-    remove_column = "<th></th>" if draft else ""
-    body.append(
-        '<table class="lines"><thead><tr><th>Line</th><th class="num">Qty</th>'
-        f'<th>Unit</th><th class="num">Price</th><th class="num">Amount</th>'
-        f"{remove_column}</tr></thead>"
-        f'<tbody>{_line_rows(lines, editable=draft, delete_to="/invoice-line")}</tbody>'
-        f"<tfoot>{_totals_rows(invoice, columns=5)}</tfoot></table>"
-    )
+    body.append(lines_table(
+        lines, invoice, editable=draft, delete_to="/invoice-line",
+        reorder_to=f'/invoice/{invoice["id"]}/order',
+        id=f'invoice-lines-{invoice["id"]}',
+        frozen_because="This invoice was issued, so its lines keep the order "
+                       "the client received them in.",
+    ))
     if draft:
         options = "".join(
             f'<option value="{s["id"]}">{esc(s["code"])} &middot; {esc(s["name"])}</option>'

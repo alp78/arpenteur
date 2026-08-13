@@ -73,10 +73,17 @@ CONSOLE_JS = r"""
   // optional and are not hidden behind a disclosure.
 
   function list(node) { return node.closest('.sort-list[data-sortable]'); }
-  function rows(ol) { return Array.prototype.slice.call(ol.children); }
+  function rows(ol) {
+    return Array.prototype.filter.call(ol.children, function (n) {
+      return n.classList.contains('sort-item');
+    });
+  }
 
+  // The live region is found by id rather than by position, because a sortable
+  // <tbody> cannot hold a <div> beside it and a parser would move one out of
+  // the table before this ever ran.
   function announce(ol, message) {
-    var say = ol.parentElement.querySelector('.sort-say');
+    var say = ol.dataset.sortSay && document.getElementById(ol.dataset.sortSay);
     if (say) say.textContent = message;
   }
 
@@ -213,11 +220,22 @@ CONSOLE_JS = r"""
 
   // --- dropping files ---------------------------------------------------------
 
+  // The form's own fields go up with the files. What a document is and which
+  // project it belongs to are chosen in the same box you drop onto, and a
+  // control the drop did not read would be a control that silently did nothing.
   function upload(zone, files) {
     if (!files || !files.length) return;
     var progress = zone.querySelector('.drop-progress');
+    var form = zone.querySelector('form');
+    var input = zone.querySelector('input[type=file]');
+    var field = (input && input.name) || 'file';
     var body = new FormData();
-    Array.prototype.forEach.call(files, function (f) { body.append('file', f); });
+    if (form) {
+      new FormData(form).forEach(function (value, key) {
+        if (key !== field) body.append(key, value);
+      });
+    }
+    Array.prototype.forEach.call(files, function (f) { body.append(field, f); });
     zone.classList.add('busy');
     if (progress) {
       progress.textContent = files.length === 1

@@ -16,7 +16,7 @@ from __future__ import annotations
 
 import re
 import unicodedata
-from typing import Any
+from typing import Any, Sequence
 
 from ...kernel.db import Connection, Row, json_param, now
 # The clients module requires the scout, so it may reach for it. This is the
@@ -678,12 +678,52 @@ def save_dossier_section(
 
 
 def dossier_for(conn: Connection, client_id: int) -> dict[str, dict[str, Any]]:
+    """The sections, keyed by name, in the order they should be read.
+
+    Ordered explicitly. Without an ORDER BY this came back in whatever order a
+    heap scan produced, which is roughly insertion order until somebody edits a
+    row, at which point the narrative silently rearranged itself because a typo
+    was corrected. Python dictionaries keep insertion order, so the caller gets
+    the sequence without having to sort it again.
+    """
     return {
         row["section"]: row
         for row in conn.execute(
-            "SELECT * FROM crm.dossier WHERE client_id = %s", (client_id,)
+            "SELECT * FROM crm.dossier WHERE client_id = %s"
+            " ORDER BY position, id",
+            (client_id,),
         )
     }
+
+
+def reorder_dossier(
+    conn: Connection, client_id: int, names: Sequence[str], *, known: Sequence[str],
+) -> int:
+    """Put this client's sections in the order given. Returns how many moved.
+
+    Keyed by section name rather than by row id, because a section that has
+    never been filled in has no row and is still on the page and still
+    draggable. So this upserts: the position is a fact about the dossier, not
+    about whether anybody has written in it yet, and a row carrying only a
+    position is empty by every test that asks (`filled` reads the body).
+
+    `known` is the section vocabulary. A name that is not in it is dropped
+    rather than stored, so a forged request cannot fill the table with rows for
+    sections that do not exist and that nothing will ever render or clean up.
+    """
+    allowed = set(known)
+    moved = 0
+    for index, name in enumerate(names, 1):
+        if name not in allowed:
+            continue
+        conn.execute(
+            "INSERT INTO crm.dossier (client_id, section, position, updated_at)"
+            " VALUES (%s, %s, %s, %s)"
+            " ON CONFLICT (client_id, section) DO UPDATE SET position = %s",
+            (client_id, name, index, now(), index),
+        )
+        moved += 1
+    return moved
 
 
 # --- the suggested approach ---------------------------------------------------

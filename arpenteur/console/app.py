@@ -29,6 +29,7 @@ from typing import Any
 from urllib.parse import quote
 
 from fastapi import FastAPI, File, Form, Request, UploadFile
+from fastapi import Response
 from fastapi.responses import (
     HTMLResponse, JSONResponse, PlainTextResponse, RedirectResponse,
 )
@@ -1024,6 +1025,58 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         finally:
             conn.close()
 
+    @app.post("/quote-version/{version_id}/order")
+    def order_quote_lines(
+        version_id: int, order: list[str] = Form(default=[]),
+    ) -> JSONResponse:
+        """The lines in the order somebody put them in.
+
+        Answers with a status rather than a page, because all three ways of
+        moving a line have already moved it on screen: the list waits for
+        nothing, and a page swapped in behind a drag would fight the drag.
+
+        A sent version is refused here and not only in the interface. The
+        buttons are absent and the rows are not draggable, but a refusal that
+        exists only in the markup is a refusal anybody can post around.
+        """
+        conn = connect()
+        try:
+            held = sales_store.version(conn, version_id)
+            if held is None:
+                return JSONResponse({"error": "no such version"}, status_code=404)
+            if held["sent_at"]:
+                return JSONResponse(
+                    {"error": "This version was sent. What the client is "
+                              "holding has to go on saying what it said."},
+                    status_code=409,
+                )
+            sales_store.reorder_lines(conn, version_id, order)
+            conn.commit()
+            return JSONResponse({"ok": True, "lines": len(order)})
+        finally:
+            conn.close()
+
+    @app.post("/invoice/{invoice_id}/order")
+    def order_invoice_lines(
+        invoice_id: int, order: list[str] = Form(default=[]),
+    ) -> JSONResponse:
+        conn = connect()
+        try:
+            held = sales_store.invoice(conn, invoice_id)
+            if held is None:
+                return JSONResponse({"error": "no such invoice"}, status_code=404)
+            if held["status"] != "draft":
+                return JSONResponse(
+                    {"error": "An issued invoice is never edited. A correction "
+                              "is a credit note."},
+                    status_code=409,
+                )
+            sales_store.reorder_invoice_lines(conn, invoice_id, order)
+            conn.commit()
+            return JSONResponse({"ok": True, "lines": len(order)})
+        finally:
+            conn.close()
+
     @app.post("/quote-version/{version_id}/sent")
     def mark_quote_sent(version_id: int, to: str = Form("")) -> RedirectResponse:
         conn = connect()
@@ -1750,7 +1803,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                     db.dossier_for(conn, client_id),
                     history[0] if history else None,
                     history[1:],
-                    db.attachments_for(conn, client_id),
+                    clients_store.attachments_for(conn, client_id),
                     conn.execute(
                         "SELECT * FROM crm.project WHERE client_id = %s ORDER BY code",
                         (client_id,),
@@ -1827,73 +1880,115 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         finally:
             conn.close()
 
+    @app.post("/dossier/{client_id}/order")
+    def order_dossier(
+        client_id: int, order: list[str] = Form(default=[]),
+    ) -> JSONResponse:
+        """The sections of one group, in the order somebody put them in.
+
+        The order changes more than where a box sits: `dossier.as_text` reads
+        the sections this way too, so the advice stage and the CLI dump both
+        see the dossier the way its author arranged it.
+
+        The vocabulary is passed in as the allowed set rather than trusted from
+        the request, so a name that is not a section stores nothing.
+        """
+        conn = connect()
+        try:
+            moved = clients_store.reorder_dossier(
+                conn, client_id, order, known=[s.name for s in dossier.SECTIONS]
+            )
+            conn.commit()
+            return JSONResponse({"ok": True, "sections": moved})
+        finally:
+            conn.close()
+
     @app.post("/dossier/{client_id}/documents")
-    async def upload_document(
+    async def upload_documents(
         client_id: int,
-        file: UploadFile = File(...),
+        request: Request,
+        file: list[UploadFile] = File(default=[]),
         kind: str = Form(""),
         note: str = Form(""),
         project_id: str = Form(""),
-    ) -> RedirectResponse:
-        """Store a document the client sent, and extract its text.
+    ) -> Response:
+        """Store what the client sent, and extract the text.
+
+        Takes several files, because dropping a folder of them is the ordinary
+        case and uploading them one at a time was the interface deciding how
+        somebody organises their week.
+
+        Which means the answer changed shape. One file has one outcome and a
+        redirect carrying a note could report it; four files have four, and
+        three of them being fine is not a thing a single banner can say. So
+        this reports one line per file and, when the browser asked with htmx,
+        answers with the documents panel redrawn rather than a whole page.
 
         Extraction happens here rather than at read time so that a file nothing
         can open is a recorded state on the row instead of a silent absence
         every time an agent asks for it.
         """
-        content = await file.read()
         back = f"/client/{client_id}/dossier"
+        said: list[str] = []
         conn = connect()
         try:
-            try:
-                stored = att.store(settings.data_dir, content, file.filename or "file")
-            except ValueError as exc:
-                return RedirectResponse(f"{back}?note={quote(str(exc))}", status_code=303)
-            text, error = att.extract(
-                content, file.filename or "", file.content_type or ""
-            )
-            _id, existed = db.add_attachment(
-                conn,
-                client_id,
-                {
-                    "filename": file.filename or stored.sha256,
-                    "media_type": file.content_type or "",
-                    "bytes": stored.bytes,
-                    "sha256": stored.sha256,
-                    "kind": kind or None,
-                    "note": note.strip() or None,
-                    "project_id": int(project_id) if project_id.strip() else None,
-                    "text": text,
-                    "extract_error": error,
-                },
-            )
-            if not existed:
+            for item in file:
+                content = await item.read()
+                name = item.filename or "file"
+                if not content:
+                    continue
+                try:
+                    stored = att.store(settings.data_dir, content, name)
+                except ValueError as exc:
+                    said.append(f"{name}: {exc}")
+                    continue
+                text, error = att.extract(content, name, item.content_type or "")
+                _id, existed = db.add_attachment(
+                    conn,
+                    client_id,
+                    {
+                        "filename": name,
+                        "media_type": item.content_type or "",
+                        "bytes": stored.bytes,
+                        "sha256": stored.sha256,
+                        "kind": kind or None,
+                        "note": note.strip() or None,
+                        "project_id": int(project_id) if project_id.strip() else None,
+                        "text": text,
+                        "extract_error": error,
+                    },
+                )
+                if existed:
+                    said.append(
+                        f"{name} is byte for byte a document already held, so "
+                        "the label and note were updated rather than a second "
+                        "copy stored."
+                    )
+                    continue
                 # A document arriving is part of the record. The timeline
                 # should be able to answer "when did we get the accounts"
                 # without anyone remembering to write a note saying so.
                 db.record_event(
                     conn, client_id, kind="document", occurred_at=db.now(),
-                    subject=f"Document received: {file.filename}",
+                    subject=f"Document received: {name}",
                     body=note.strip() or None,
                     project_id=int(project_id) if project_id.strip() else None,
                     author="console",
                 )
+                said.append(
+                    f"{name}: stored, but not readable. {error}" if error
+                    else f"{name}: stored and read."
+                )
             conn.commit()
-            if existed:
-                return RedirectResponse(
-                    f"{back}?note=" + quote(
-                        f"{file.filename} is byte for byte a document already "
-                        "held, so the label and note were updated rather than a "
-                        "second copy stored."
-                    ),
-                    status_code=303,
-                )
-            if error:
-                return RedirectResponse(
-                    f"{back}?note=" + quote(f"Stored, but not readable. {error}"),
-                    status_code=303,
-                )
-            return RedirectResponse(back, status_code=303)
+            if not said:
+                said.append("Nothing was sent, so nothing was stored.")
+            if request.headers.get("HX-Request"):
+                return HTMLResponse(dossier_view.documents_panel(
+                    clients_store.attachments_for(conn, client_id), note=" ".join(said)
+                ))
+            return RedirectResponse(
+                f"{back}?note=" + quote(" ".join(said)), status_code=303
+            )
         finally:
             conn.close()
 

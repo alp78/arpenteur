@@ -403,6 +403,51 @@ def table(
 # difference to what is being said.
 
 
+HOW_TO_SORT = (
+    "Drag, or use the arrow buttons. With a keyboard: focus a handle, press "
+    "space to pick it up, the arrows to move it, space again to put it down."
+)
+
+
+def sort_handle(index: int, count: int, *, label: str = "row") -> str:
+    """The three controls, which are three separate ways to move one row.
+
+    The grip is focusable and carries the keyboard behaviour. The two arrows
+    are the single-pointer path, and they are what SC 2.5.7 is actually asking
+    for: somebody on a touch screen who cannot drag has no keyboard either.
+    """
+    return (
+        '<span class="sort-ctl">'
+        '<button type="button" class="grip" data-sort-grip '
+        f'aria-label="Reorder this {esc(label)}. Press space to pick it up, '
+        'then the arrow keys.">&#8942;&#8942;</button>'
+        '<button type="button" class="nudge" data-sort-up '
+        f'aria-label="Move this {esc(label)} up"'
+        + (" disabled" if index == 0 else "")
+        + ">&uarr;</button>"
+        '<button type="button" class="nudge" data-sort-down '
+        f'aria-label="Move this {esc(label)} down"'
+        + (" disabled" if index == count - 1 else "")
+        + ">&darr;</button></span>"
+    )
+
+
+def sort_say(id: str) -> str:
+    """Where a move is announced, for anybody not watching it happen.
+
+    Separate from the list so it can sit outside a `<table>`, where a `<div>`
+    between `<tbody>` elements is not markup a parser will keep.
+    """
+    return f'<div class="sort-say" id="{esc(id)}" role="status" aria-live="polite"></div>'
+
+
+def _sort_list_attrs(endpoint: str, target: str, say: str) -> str:
+    return attrs(
+        data_sortable="true", data_sort_post=endpoint, data_sort_target=target,
+        data_sort_say=say,
+    )
+
+
 def sortable(
     items: Sequence[tuple[Any, str]], *, endpoint: str, id: str = "",
     label: str = "row", target: str = "", css: str = "", frozen: str = "",
@@ -416,67 +461,87 @@ def sortable(
     """
     if not items:
         return ""
+    say = f"{id or 'sort'}-say"
     rows = []
     for index, (item_id, inner) in enumerate(items):
-        if frozen:
-            controls = ""
-        else:
-            controls = (
-                '<div class="sort-ctl">'
-                f'<button type="button" class="grip" data-sort-grip '
-                f'aria-label="Reorder this {esc(label)}. '
-                'Press space to pick it up, then the arrow keys." '
-                'tabindex="0">&#8942;&#8942;</button>'
-                '<button type="button" class="nudge" data-sort-up '
-                f'aria-label="Move this {esc(label)} up"'
-                + (" disabled" if index == 0 else "")
-                + ">&uarr;</button>"
-                '<button type="button" class="nudge" data-sort-down '
-                f'aria-label="Move this {esc(label)} down"'
-                + (" disabled" if index == len(items) - 1 else "")
-                + ">&darr;</button></div>"
-            )
+        controls = "" if frozen else sort_handle(index, len(items), label=label)
         rows.append(
             f'<li class="sort-item" data-sort-id="{esc(item_id)}"'
-            f'{attrs(draggable="true" if not frozen else "")}>'
+            f'{attrs(draggable=None if frozen else "true")}>'
             f'{controls}<div class="sort-body">{inner}</div></li>'
         )
-    note = (
-        f'<p class="hint">{esc(frozen)}</p>' if frozen
-        else '<p class="hint">Drag, or use the arrow buttons. With a keyboard: '
-             "focus a handle, press space to pick it up, arrows to move it, "
-             "space again to put it down.</p>"
-    )
+    note = esc(frozen) if frozen else esc(HOW_TO_SORT)
     return (
         f'<div{classes("sortable", css)}>'
         f'<ol class="sort-list"{attrs(id=id)}'
-        + ("" if frozen else attrs(
-            data_sortable="true", data_sort_post=endpoint, data_sort_target=target))
+        + ("" if frozen else _sort_list_attrs(endpoint, target, say))
         + f'>{"".join(rows)}</ol>'
-        f'<div class="sort-say" role="status" aria-live="polite"></div>'
-        f"{note}</div>"
+        + sort_say(say)
+        + f'<p class="hint">{note}</p></div>'
+    )
+
+
+def sortable_body(
+    items: Sequence[tuple[Any, str]], *, endpoint: str, id: str,
+    label: str = "row", target: str = "", frozen: str = "",
+) -> str:
+    """The same thing as a `<tbody>`, for the lists that are genuinely tables.
+
+    A quote's lines have columns: what, how many, at what price, for how much.
+    Rendering them as a stack of boxes to make them draggable would be the
+    interaction deciding the layout, which is the wrong way round. The script
+    keys off `data-sortable` and the row class rather than off a tag name, so
+    the same three paths work here with no second implementation.
+
+    `items` are (id, the row's `<td>` cells) pairs. The handle cell is added
+    here so the column count is the caller's business and the control is not.
+    """
+    say = f"{id}-say"
+    rows = []
+    for index, (item_id, cells) in enumerate(items):
+        handle = (
+            '<td class="sort-cell"></td>' if frozen
+            else f'<td class="sort-cell">{sort_handle(index, len(items), label=label)}</td>'
+        )
+        rows.append(
+            f'<tr class="sort-item" data-sort-id="{esc(item_id)}"'
+            f'{attrs(draggable=None if frozen else "true")}>{handle}{cells}</tr>'
+        )
+    return (
+        f'<tbody class="sort-list" id="{esc(id)}"'
+        + ("" if frozen else _sort_list_attrs(endpoint, target, say))
+        + f'>{"".join(rows)}</tbody>'
     )
 
 
 def dropzone(
     action: str, *, label: str = "Drop files here", hint: str = "",
     accept: str = "", name: str = "file", target: str = "", id: str = "",
+    fields: str = "", submit: str = "Upload", css: str = "",
 ) -> str:
     """Files by dropping, and the same files by choosing.
 
     The button is not a fallback grudgingly kept. A drop zone with no visible
     control is unusable by anyone who cannot drag, and unfindable by anyone who
-    has not been told it is there, which on a first visit is everybody.
+    has not been told it is there, which on a first visit is everybody. It is
+    also the path that works with no JavaScript at all: the form posts.
+
+    `fields` are the controls that describe what is being uploaded. They are
+    inside the form rather than beside it because a dropped file is sent with
+    whatever they say at that moment, and a control the drop did not read would
+    be a control that silently did nothing.
     """
     ident = id or "drop"
     return (
-        f'<div class="dropzone" data-dropzone data-drop-post="{esc(action)}"'
+        f'<div{classes("dropzone", css)} data-dropzone'
+        f' data-drop-post="{esc(action)}"'
         f'{attrs(data_drop_target=target, id=ident)}>'
         f'<form method="post" action="{esc(action)}" enctype="multipart/form-data">'
+        f"{fields}"
         f'<p class="drop-say">{esc(label)}</p>'
         f'<input type="file" name="{esc(name)}" multiple{attrs(accept=accept)}'
         f' id="{esc(ident)}-input">'
-        f'<button class="primary" type="submit">Upload</button>'
+        f'<button class="primary" type="submit">{esc(submit)}</button>'
         + (f'<p class="hint">{esc(hint)}</p>' if hint else "")
         + '<div class="drop-progress" role="status" aria-live="polite"></div>'
         "</form></div>"

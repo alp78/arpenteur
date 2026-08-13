@@ -26,6 +26,7 @@ from .. import dossier as vocab
 from ..attachments import KINDS as ATTACHMENT_KINDS
 from ..attachments import KIND_LABELS
 from .clients import STYLES as CLIENT_STYLES
+from . import ui
 from .render import esc, page
 
 STYLES = """
@@ -143,15 +144,30 @@ def section_block(section: vocab.Section, row: dict[str, Any] | None) -> str:
 
 
 def dossier_form(client_id: int, sections: dict[str, dict[str, Any]]) -> str:
+    """The questionnaire, in the order this client's dossier puts it.
+
+    Each group is a sortable list of its own. Order is chosen within a group
+    and never across one: the three groups each carry a paragraph saying why
+    they are asked, and a section dragged out from under its explanation is a
+    section nobody can tell why they are answering. It is the same rule the
+    board applies to swimlanes, for the same reason.
+
+    What the order actually changes is not only where a box sits on the page.
+    `dossier.as_text` reads the sections in this order too, so the advice stage
+    and the CLI dump both see the dossier the way its author arranged it.
+    """
     out = []
     for name, title, why in vocab.GROUPS:
-        blocks = "".join(
-            section_block(section, sections.get(section.name))
-            for section in vocab.group_sections(name)
-        )
+        ordered = vocab.group_sections(name, sections)
         out.append(
-            f'<div class="grp"><h2>{esc(title)}</h2><p>{esc(why)}</p></div>{blocks}'
+            f'<div class="grp"><h2>{esc(title)}</h2><p>{esc(why)}</p></div>'
         )
+        out.append(ui.sortable(
+            [(section.name, section_block(section, sections.get(section.name)))
+             for section in ordered],
+            endpoint=f"/dossier/{client_id}/order?group={name}",
+            id=f"sect-{name}", label="section", css="sortable-sections",
+        ))
     return "".join(out).replace("{cid}", str(client_id))
 
 
@@ -326,37 +342,52 @@ def upload_form(client_id: int, projects: list[Row]) -> str:
         f'<option value="{p["id"]}">{esc(p["code"])} &mdash; {esc(p["name"])}</option>'
         for p in projects
     )
-    return (
-        '<form class="drop" method="post" enctype="multipart/form-data" '
-        f'action="/dossier/{client_id}/documents">'
+    fields = (
         "<div class='two'>"
-        "<div><label class='small' for='file'><b>File</b></label><br>"
-        "<input id='file' type='file' name='file' required>"
-        "<p class='hint'>PDF, Word and plain text are read into searchable "
-        "text automatically. Anything else is stored and can be opened by "
-        "hand. Spreadsheets read far better if exported as CSV first, and a "
-        "scanned page holds no text at all: ask for the file it was printed "
-        "from. Up to 25 MB.</p></div>"
         f"<div><label class='small' for='kind'><b>What it is</b></label><br>"
         f"<select id='kind' name='kind'>{kinds}</select>"
         "<p class='hint'>Used when the document is put in front of the model: "
         "a contract and a brochure carry very different weight in a proposal, "
-        "and it should not have to guess which it is holding.</p>"
-        f"<label class='small' for='pid'><b>Project</b></label><br>"
+        "and it should not have to guess which it is holding.</p></div>"
+        f"<div><label class='small' for='pid'><b>Project</b></label><br>"
         f"<select id='pid' name='project_id'>"
         f"<option value=''>The relationship, not a project</option>{options}</select>"
-        "</div></div>"
+        "<p class='hint'>Applied to everything sent in one go, so drop a batch "
+        "that belongs together.</p></div></div>"
         "<label class='small' for='dnote'><b>Note</b></label><br>"
         "<input id='dnote' name='note' style='width:100%' "
-        "placeholder='Sent by the director 14.08.2026 after the kickoff. Pages 8-11 are the IT budget.'>"
+        "placeholder='Sent by the director 14.08.2026 after the kickoff. "
+        "Pages 8-11 are the IT budget.'>"
         "<p class='hint'>Where it came from and what to look at. Shown to the "
         "model alongside the document.</p>"
-        "<p><button class='primary'>Store and read it</button> "
-        "<span class='hint'>Stores the file under its own content digest, so "
-        "the same document sent twice is one entry rather than two, extracts "
-        "the text, and makes it available to the approach above.</span></p>"
-        "</form>"
     )
+    return ui.dropzone(
+        f"/dossier/{client_id}/documents",
+        fields=fields,
+        label="Drop the client's documents here, or choose them",
+        submit="Store and read them",
+        target="#papers",
+        id="papers-drop",
+        css="drop",
+        hint="PDF, Word and plain text are read into searchable text "
+             "automatically. Anything else is stored and can be opened by "
+             "hand. Spreadsheets read far better if exported as CSV first, and "
+             "a scanned page holds no text at all: ask for the file it was "
+             "printed from. Up to 25 MB each. Each file is stored under its "
+             "own content digest, so the same document sent twice is one entry "
+             "rather than two.",
+    )
+
+
+def documents_panel(rows: list[Row], *, note: str = "") -> str:
+    """The papers held, wrapped in the element a drop replaces.
+
+    One element, named once. Dropping four files has four outcomes and a
+    redirect can report one, so the answer to an upload is this panel
+    redrawn with a line per file rather than a page with a banner.
+    """
+    said = f'<div class="banner banner-note">{note}</div>' if note else ""
+    return f'<div id="papers">{said}{documents_table(rows)}</div>'
 
 
 def documents_table(rows: list[Row]) -> str:
@@ -454,7 +485,7 @@ def dossier_page(
         + approach_block(approach, rate_card)
         + history
         + "<h2>documents from the client</h2>"
-        + documents_table(papers)
+        + documents_panel(papers)
         + upload_form(client["id"], projects)
         + "<h2>the dossier</h2>"
         + dossier_form(client["id"], sections)

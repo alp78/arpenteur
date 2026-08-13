@@ -255,6 +255,82 @@ def test_the_same_document_uploaded_twice_is_one_row(web, conn, client_id) -> No
     assert rows[0]["note"] == "second"
 
 
+def test_several_documents_can_arrive_at_once(web, conn, client_id) -> None:
+    """Dropping a folder is the ordinary case.
+
+    Uploading one at a time was the interface deciding how somebody organises
+    their week: a client sends the accounts, the policy and two contracts in
+    one mail, and they arrive together or not at all.
+    """
+    reply = web.post(
+        f"/dossier/{client_id}/documents",
+        files=[
+            ("file", ("comptes.txt", b"Comptes 2025", "text/plain")),
+            ("file", ("politique.txt", b"Politique de securite", "text/plain")),
+            ("file", ("contrat.txt", b"Contrat cadre", "text/plain")),
+        ],
+        data={"kind": "policy"},
+        follow_redirects=False,
+    )
+    assert reply.status_code == 303
+    rows = db.attachments_for(conn, client_id)
+    assert sorted(r["filename"] for r in rows) == [
+        "comptes.txt", "contrat.txt", "politique.txt",
+    ]
+    assert {r["kind"] for r in rows} == {"policy"}
+
+
+def test_four_files_get_four_answers_not_one(web, conn, client_id) -> None:
+    """Three being fine is not something a single banner can say.
+
+    One file had one outcome and a redirect carrying a note could report it.
+    Several have several, and one of them being a duplicate while another is
+    unreadable is exactly the case somebody needs told.
+    """
+    web.post(
+        f"/dossier/{client_id}/documents",
+        files=[("file", ("deja.txt", b"already here", "text/plain"))],
+        follow_redirects=False,
+    )
+    reply = web.post(
+        f"/dossier/{client_id}/documents",
+        files=[
+            ("file", ("deja.txt", b"already here", "text/plain")),
+            ("file", ("neuf.txt", b"Something new", "text/plain")),
+        ],
+        headers={"HX-Request": "true"},
+    )
+    assert reply.status_code == 200
+    assert "<header>" not in reply.text          # the panel, not a whole page
+    assert 'id="papers"' in reply.text
+    assert "deja.txt is byte for byte a document already held" in reply.text
+    assert "neuf.txt: stored and read." in reply.text
+
+
+def test_an_upload_with_no_files_says_so_rather_than_failing(web, client_id) -> None:
+    reply = web.post(
+        f"/dossier/{client_id}/documents", files=[],
+        headers={"HX-Request": "true"},
+    )
+    assert reply.status_code == 200
+    assert "Nothing was sent" in reply.text
+
+
+def test_the_documents_panel_can_still_be_uploaded_to_without_javascript(
+    web, client_id
+) -> None:
+    """The drop zone is not the only way in.
+
+    A zone with no visible control is unusable by anyone who cannot drag and
+    unfindable by anyone who has not been told it is there, which on a first
+    visit is everybody.
+    """
+    page = web.get(f"/client/{client_id}/dossier").text
+    assert 'enctype="multipart/form-data"' in page
+    assert 'type="file"' in page
+    assert "data-dropzone" in page
+
+
 def test_the_extracted_text_has_a_stable_url_for_an_agent(
     web, conn, client_id
 ) -> None:

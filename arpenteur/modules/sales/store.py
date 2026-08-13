@@ -28,7 +28,7 @@ from __future__ import annotations
 
 from datetime import date
 from decimal import Decimal
-from typing import Any
+from typing import Any, Sequence
 
 from ...kernel.db import Connection, Row, now
 from ..scout.store import record_state_change
@@ -387,6 +387,49 @@ def lines_for(conn: Connection, version_id: int) -> list[Row]:
         " ORDER BY position, id",
         (version_id,),
     ).fetchall()
+
+
+def reorder_lines(conn: Connection, version_id: int, ids: Sequence[Any]) -> int:
+    """Put a version's lines in the order given. Returns how many moved.
+
+    A quote is read top to bottom and the order is part of what it says: the
+    survey before the plan before the travel, not whatever order somebody
+    happened to add them in at half past six.
+
+    Scoped to the version in the statement rather than checked beforehand, so
+    an id belonging to another quote renumbers nothing instead of relying on a
+    guard somebody remembers to write. Refusing a sent version is the caller's
+    job, because that refusal has to be explained to a person and this cannot
+    do that.
+    """
+    return _reorder(conn, "commercial.quote_line", "quote_version_id",
+                    version_id, ids)
+
+
+def reorder_invoice_lines(conn: Connection, invoice_id: int, ids: Sequence[Any]) -> int:
+    return _reorder(conn, "commercial.invoice_line", "invoice_id", invoice_id, ids)
+
+
+def _reorder(
+    conn: Connection, table: str, parent: str, parent_id: int, ids: Sequence[Any],
+) -> int:
+    """Dense positions from 1, in the order given.
+
+    The table and column names are literals from the two callers above and
+    never touch anything a request supplied, which is the only reason they can
+    be interpolated. The ids, which do come from a request, are parameters.
+    """
+    moved = 0
+    for index, item in enumerate(ids, 1):
+        try:
+            row_id = int(item)
+        except (TypeError, ValueError):
+            continue
+        moved += conn.execute(
+            f"UPDATE {table} SET position = %s WHERE id = %s AND {parent} = %s",
+            (index, row_id, parent_id),
+        ).rowcount
+    return moved
 
 
 def delete_line(conn: Connection, line_id: int) -> None:
