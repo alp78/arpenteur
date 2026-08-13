@@ -22,6 +22,6 @@ MODULE = Module(
         "researches their websites and scores them against a campaign brief."
     ),
     requires=(),
-    schemas=("core", "intel"),
+    schemas=("core", "intel", "audit"),
     removable=False,
 )

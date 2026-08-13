@@ -296,6 +296,12 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                             conn, [int(r["id"]) for r in rows]
                         ),
                         today=today,
+                        # When each card last moved, so a column can say how
+                        # long something has been sitting in it. One query for
+                        # the whole board.
+                        moved=scout_store.time_in_state(
+                            conn, "prospect", [int(r["id"]) for r in rows]
+                        ),
                         lane=args.get("lane", ""),
                         q=args.get("q", ""), canton=args.get("canton", ""),
                         segment=args.get("segment", ""), band=args.get("band", ""),
@@ -769,7 +775,13 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             return client_shell(
                 clients_view.client_page(
                     client, company, projects,
-                    db.timeline(conn, client_id),
+                    clients_view.merge_timeline(
+                        db.timeline(conn, client_id),
+                        # The notes written while this was still a prospect.
+                        # They are the file the engagement started from and
+                        # they used to be left on the survey side.
+                        scout_store.notes_for(conn, client["company_id"]),
+                    ),
                     scout_store.contacts_for(conn, client["company_id"]),
                     officers,
                     attribution.notice(methods),
@@ -785,6 +797,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                         )), None),
                     ),
                     sites=geo_store.establishments_for(conn, client["company_id"]),
+                    moves=scout_store.history_for_company(conn, client["company_id"]),
                     note=request.query_params.get("note", ""),
                 )
             )

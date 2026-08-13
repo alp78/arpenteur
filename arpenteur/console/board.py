@@ -98,6 +98,8 @@ STYLES = """
 .kard details summary::-webkit-details-marker { display:none; }
 .kard details form { display:flex; gap:.25rem; margin-top:.25rem; }
 .kard details select { flex:1; font-size:.75rem; padding:.1rem; }
+.kard .sat { color:var(--dim); font-variant-numeric:tabular-nums; }
+.kard .sat.long { color:#8a3a2c; font-weight:600; }
 .kard .chip { background:var(--ink); color:#fff; border-radius:2px;
               padding:0 .3rem; text-decoration:none; font-weight:600;
               font-size:.7rem; letter-spacing:.02em; }
@@ -158,7 +160,32 @@ def _lane_order(lane: str, keys: Iterable[str]) -> list[str]:
 # --- one card -----------------------------------------------------------------
 
 
-def card(row: Row, states: list[str], client: Row | None, today: date, back: str) -> str:
+def _sitting(since: str | None, today: date) -> str:
+    """How long this card has been where it is.
+
+    The question a column of eight cards provokes, and the one a status column
+    could never answer because a change to it was an overwrite. Five days and
+    five months look identical on a board that does not say.
+    """
+    if not since:
+        return ""
+    try:
+        moved = date.fromisoformat((since or "")[:10])
+    except ValueError:
+        return ""
+    days = (today - moved).days
+    if days <= 0:
+        return '<span class="sat">today</span>'
+    weeks = days // 7
+    label = f"{days}d" if days < 14 else f"{weeks}w"
+    late = " long" if days >= 21 else ""
+    return f'<span class="sat{late}" title="In this column since {since[:10]}">{label}</span>'
+
+
+def card(
+    row: Row, states: list[str], client: Row | None, today: date, back: str,
+    since: str | None = None,
+) -> str:
     """One company, as much of it as fits, and the two ways to move it.
 
     Dragging is the fast one. The `move` fold underneath is the one that works
@@ -173,6 +200,9 @@ def card(row: Row, states: list[str], client: Row | None, today: date, back: str
         if row["score"] is not None
         else '<span class="dim">unscored</span>'
     ]
+    sat = _sitting(since, today)
+    if sat:
+        marks.append(sat)
     if row["reachable"]:
         marks.append('<span class="dim" title="A usable email address is held">@</span>')
     if row["url"]:
@@ -227,9 +257,14 @@ def card(row: Row, states: list[str], client: Row | None, today: date, back: str
 
 def _column(
     state: str, rows: list[Row], states: list[str], clients: dict[int, Row],
-    today: date, back: str, lane_key: str,
+    today: date, back: str, lane_key: str, moved: dict[int, str] | None = None,
 ) -> str:
-    cards = "".join(card(r, states, clients.get(int(r["id"])), today, back) for r in rows)
+    moved = moved or {}
+    cards = "".join(
+        card(r, states, clients.get(int(r["id"])), today, back,
+             since=moved.get(int(r["id"])))
+        for r in rows
+    )
     return (
         f'<section class="col"><h3 title="{esc(STATE_NOTES.get(state, ""))}">'
         f'{esc(state)}<b data-count>{len(rows)}</b></h3>'
@@ -245,6 +280,7 @@ def board_page(
     states: list[str],
     clients: dict[int, Row],
     today: date,
+    moved: dict[int, str] | None = None,
     lane: str = "",
     q: str = "",
     canton: str = "",
@@ -271,7 +307,7 @@ def board_page(
     for key in _lane_order(lane, grouped):
         columns = "".join(
             _column(state, grouped[key].get(state, []), states, clients, today,
-                    back, key)
+                    back, key, moved)
             for state in states
         )
         total = sum(len(v) for v in grouped[key].values())

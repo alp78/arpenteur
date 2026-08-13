@@ -592,7 +592,7 @@ PROSPECT_STATES = (
 def set_prospect(
     conn: Connection, company_id: int, *, state: str | None = None,
     owner: str | None = None, next_action: str | None = None,
-    next_at: str | None = None,
+    next_at: str | None = None, by: str | None = None,
 ) -> None:
     """Create or update where a company stands.
 
@@ -607,11 +607,27 @@ def set_prospect(
     deliberate reset, moving a company at "meeting" back to the start.
     """
     stamp = now()
+    before = conn.execute(
+        "SELECT state FROM intel.prospect WHERE company_id = %s", (company_id,)
+    ).fetchone()
     conn.execute(
         "INSERT INTO intel.prospect (company_id, state, created_at, updated_at)"
         " VALUES (%s, %s, %s, %s) ON CONFLICT (company_id) DO NOTHING",
         (company_id, state or "new", stamp, stamp),
     )
+    # Arriving on the board is itself a transition. Without this the first
+    # state a company is ever given has no date, and "how long has it been
+    # sitting in new" is unanswerable for exactly the cards it is asked of.
+    if before is None:
+        record_state_change(
+            conn, entity="prospect", entity_id=company_id, company_id=company_id,
+            from_state=None, to_state=state or "new", by=by,
+        )
+    elif state is not None:
+        record_state_change(
+            conn, entity="prospect", entity_id=company_id, company_id=company_id,
+            from_state=before["state"], to_state=state, by=by,
+        )
     sets, params = [], []
     for column, value in (
         ("state", state), ("owner", owner),
@@ -634,6 +650,79 @@ def prospect_for(conn: Connection, company_id: int) -> Row | None:
     return conn.execute(
         "SELECT * FROM intel.prospect WHERE company_id = %s", (company_id,)
     ).fetchone()
+
+
+# --- what moved, and when -----------------------------------------------------
+#
+# A status is a column, and a change to it is an overwrite. These functions are
+# the record of the overwriting. See migrations/0007_audit.sql for why the
+# table names its subject as text and holds no foreign key.
+
+
+def record_state_change(
+    conn: Connection, *, entity: str, entity_id: int, to_state: str,
+    from_state: str | None = None, company_id: int | None = None,
+    by: str | None = None, reason: str | None = None,
+) -> None:
+    """Note that something moved. Nothing is recorded when nothing moved.
+
+    The guard matters more than it looks: a form that posts every field on
+    every save re-sends the state it already had, and without this the history
+    would fill with transitions from `contacted` to `contacted` and the one
+    real move would be unfindable among them.
+    """
+    if from_state is not None and from_state == to_state:
+        return
+    conn.execute(
+        "INSERT INTO audit.state_change (entity, entity_id, company_id,"
+        " from_state, to_state, by, reason, at)"
+        " VALUES (%s, %s, %s, %s, %s, %s, %s, %s)",
+        (entity, entity_id, company_id, from_state, to_state, by, reason, now()),
+    )
+
+
+def state_history(
+    conn: Connection, entity: str, entity_id: int, *, limit: int = 50
+) -> list[Row]:
+    return conn.execute(
+        "SELECT * FROM audit.state_change WHERE entity = %s AND entity_id = %s"
+        " ORDER BY at DESC, id DESC LIMIT %s",
+        (entity, entity_id, limit),
+    ).fetchall()
+
+
+def history_for_company(conn: Connection, company_id: int, *, limit: int = 50) -> list[Row]:
+    """Everything that moved for one company, whatever table it moved in.
+
+    The reason `company_id` is on the audit row at all: a company's history
+    crosses the prospect, the client and the project tables, and reading it
+    should not require knowing which of them it passed through.
+    """
+    return conn.execute(
+        "SELECT * FROM audit.state_change WHERE company_id = %s"
+        " ORDER BY at DESC, id DESC LIMIT %s",
+        (company_id, limit),
+    ).fetchall()
+
+
+def time_in_state(conn: Connection, entity: str, entity_ids: list[int]) -> dict[int, str]:
+    """When each of these last moved, so a page can say how long it has sat.
+
+    One query for a whole board. Asking per card is how a column of forty
+    becomes forty round trips, and the number is only worth showing because it
+    is cheap.
+    """
+    if not entity_ids:
+        return {}
+    return {
+        int(row["entity_id"]): row["at"]
+        for row in conn.execute(
+            "SELECT DISTINCT ON (entity_id) entity_id, at FROM audit.state_change"
+            " WHERE entity = %s AND entity_id = ANY(%s)"
+            " ORDER BY entity_id, at DESC",
+            (entity, list(entity_ids)),
+        )
+    }
 
 
 # --- the board ----------------------------------------------------------------

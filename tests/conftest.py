@@ -159,7 +159,10 @@ def db_path(pg_url: str) -> str:
             f'"{row["table_schema"]}"."{row["table_name"]}"'
             for row in conn.execute(
                 "SELECT table_schema, table_name FROM information_schema.tables"
-                " WHERE table_schema IN ('core','intel','crm','commercial','geo')"
+                # Every schema any module owns. A new one missing from this list does
+                # not fail: it silently keeps its rows across tests, and the
+                # test that notices is the one that counts them.
+                " WHERE table_schema IN ('core','intel','audit','crm','commercial','geo')"
                 "   AND table_type = 'BASE TABLE'"
             )
         ]

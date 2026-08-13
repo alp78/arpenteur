@@ -22,9 +22,8 @@ from __future__ import annotations
 
 import calendar as calmod
 from datetime import date, timedelta
-from typing import Any
 
-from ..kernel.db import Connection, Row
+from ..kernel.db import Row
 from .render import esc, page
 
 # What each kind of event looks like in a list. The mark is deliberately a
@@ -70,6 +69,8 @@ STYLES = """
                display:flex; align-items:center; justify-content:center; color:var(--dim); }
 .ev.planned::before { border-color:var(--accent); color:var(--accent); }
 .ev.cancelled { opacity:.5; text-decoration:line-through; }
+.ev.survey::before { border-style:dashed; }
+.ev.survey .body { color:var(--dim); }
 .ev .when { font-size:.78rem; color:var(--dim); }
 .ev .subj { font-weight:600; }
 .ev .body { white-space:pre-wrap; font-size:.88rem; margin-top:.2rem;
@@ -114,6 +115,8 @@ details.del form { display:flex; gap:.4rem; align-items:center; flex-wrap:wrap;
                    border:1px solid #d9bdb6; }
 details.del input { min-width:20rem; }
 details.del .hint { flex-basis:100%; }
+.move { padding:.12rem 0; border-bottom:1px dotted var(--line); }
+.move:last-child { border-bottom:0; }
 """
 
 
@@ -216,6 +219,7 @@ def client_page(
     sites: list[Row] | None = None,
     note: str = "",
     notes: str = "",
+    moves: list[Row] | None = None,
 ) -> str:
     head = (
         f'<p class="crumbs"><a href="/clients">Clients</a> / {esc(client["code"])}</p>'
@@ -279,8 +283,9 @@ def client_page(
         + "</div><aside>"
         + _log_form(client["id"], projects)
         + _client_brief(client)
+        + _moves(moves or [])
         + who
-        + f'<p class="dim small" style="white-space:pre-line;margin-top:1rem">'
+        + '<p class="dim small" style="white-space:pre-line;margin-top:1rem">'
         + esc(attribution_notice)
         + "</p></aside></div>"
     )
@@ -311,6 +316,29 @@ def _dossier_strip(
         "the documents they sent, and what to propose. None of it is in the "
         "register.</span></div>"
     )
+
+
+def _moves(rows: list[Row]) -> str:
+    """How this company got to where it is, across every table it passed
+    through.
+
+    A status column says where something is and never how it got there. These
+    are the transitions, in one list, because a company's history crosses the
+    prospect, the client and the project tables and reading it should not
+    require knowing which.
+    """
+    if not rows:
+        return ""
+    items = "".join(
+        f'<div class="move"><span class="dim small">{esc((r["at"] or "")[:10])}</span> '
+        f'{esc(r["entity"])} '
+        + (f'{esc(r["from_state"])} &rarr; ' if r["from_state"] else "")
+        + f'<b>{esc(r["to_state"])}</b>'
+        + (f' <span class="dim small">{esc(r["by"])}</span>' if r["by"] else "")
+        + "</div>"
+        for r in rows[:12]
+    )
+    return f'<h2>how it moved</h2><div class="card small">{items}</div>'
 
 
 def _client_brief(client: Row) -> str:
@@ -503,6 +531,46 @@ def _log_form(client_id: int, projects: list[Row]) -> str:
     )
 
 
+def merge_timeline(interactions: list[Row], notes: list[Row]) -> list[Row]:
+    """One record, out of the two tables that hold it.
+
+    The client timeline lives in `crm.interaction` and the notes written while
+    a company was still a prospect live in `intel.note`, on the survey side.
+    Promoting a company to a client used to leave those behind: the page that
+    is supposed to carry the whole file opened empty, on the very engagement
+    the notes were written for. That is the handoff gap this product is built
+    against, still present in the one place nobody had looked.
+
+    Merged at the read rather than by moving the rows. The alternative the plan
+    called for was one table with both a `company_id` and a `client_id`, which
+    would put a `crm` column in the survey's path and make the scout depend on
+    the client module for its own notes. A survey licensed on its own would
+    lose them. The console knows about both modules and is the right place to
+    join them; the two stores stay ignorant of each other.
+
+    The notes come back marked, read-only, and linked to the company page,
+    because they belong to the survey and correcting them there is where the
+    correction has to be made.
+    """
+    carried = [
+        {
+            **dict(note),
+            "kind": note["kind"] or "note",
+            "state": "done",
+            "subject": None,
+            "project_id": None,
+            "project_code": None,
+            "direction": None,
+            "with_whom": None,
+            "origin": "survey",
+        }
+        for note in notes
+    ]
+    both = [{**dict(row), "origin": row.get("origin", "client")}
+            for row in interactions] + carried
+    return sorted(both, key=lambda row: (row["occurred_at"] or "", row["id"]), reverse=True)
+
+
 def _timeline(events: list[Row]) -> str:
     if not events:
         return (
@@ -528,6 +596,21 @@ def _timeline(events: list[Row]) -> str:
             if e["body"]
             else ""
         )
+        # A note carried over from the survey is shown and not edited here.
+        # It belongs to the company, which outlives this engagement, and the
+        # place to correct it is the page that owns it.
+        if e.get("origin") == "survey":
+            out.append(
+                f'<li class="ev survey" data-mark="{esc(mark)}">'
+                f'<div class="when">{esc((e["occurred_at"] or "")[:16].replace("T", " "))}'
+                f' &middot; {esc(label)} &middot; from the survey'
+                f'{" &middot; " + esc(e["author"]) if e["author"] else ""}</div>'
+                f'<div class="body">{esc(e["body"])}</div>'
+                f'<div class="small"><a href="/company/{e["company_id"]}">'
+                "on the company record</a></div></li>"
+            )
+            continue
+
         actions = ""
         if e["state"] == "planned":
             actions = (

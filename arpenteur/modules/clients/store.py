@@ -19,6 +19,10 @@ import unicodedata
 from typing import Any
 
 from ...kernel.db import Connection, Row, json_param, now
+# The clients module requires the scout, so it may reach for it. This is the
+# only thing it takes: the audit table, which points at nothing and is written
+# to by every module that has a status to overwrite.
+from ..scout.store import record_state_change
 
 CLIENT_STATES = ("active", "prospect", "dormant", "former")
 PROJECT_STATES = ("proposed", "active", "paused", "delivered", "cancelled")
@@ -96,6 +100,12 @@ def promote_to_client(
         (company_id, code or make_code(company["name"], taken),
          now()[:10], owner, now()),
     ).fetchone()
+    # Becoming a client is the transition the whole survey is pointed at, and
+    # it belongs in the same history as every other one.
+    record_state_change(
+        conn, entity="client", entity_id=int(row["id"]), company_id=company_id,
+        from_state=None, to_state="active", by=owner,
+    )
     return int(row["id"])
 
 
@@ -104,6 +114,17 @@ def update_client(conn: Connection, client_id: int, **fields: Any) -> None:
     sets = {k: v for k, v in fields.items() if k in allowed and v is not None}
     if not sets:
         return
+    if "status" in sets:
+        before = conn.execute(
+            "SELECT status, company_id FROM crm.client WHERE id = %s", (client_id,)
+        ).fetchone()
+        if before is not None:
+            record_state_change(
+                conn, entity="client", entity_id=client_id,
+                company_id=int(before["company_id"]),
+                from_state=before["status"], to_state=sets["status"],
+                by=fields.get("by"),
+            )
     assignments = ", ".join(f"{k} = %({k})s" for k in sets)
     conn.execute(
         f"UPDATE crm.client SET {assignments}, updated_at = %(now)s WHERE id = %(id)s",
@@ -208,6 +229,19 @@ def update_project(conn: Connection, project_id: int, **fields: Any) -> None:
     sets = {k: v for k, v in fields.items() if k in allowed and v is not None}
     if not sets:
         return
+    if "status" in sets:
+        before = conn.execute(
+            "SELECT p.status, c.company_id FROM crm.project p"
+            " JOIN crm.client c ON c.id = p.client_id WHERE p.id = %s",
+            (project_id,),
+        ).fetchone()
+        if before is not None:
+            record_state_change(
+                conn, entity="project", entity_id=project_id,
+                company_id=int(before["company_id"]),
+                from_state=before["status"], to_state=sets["status"],
+                by=fields.get("by"),
+            )
     # Closing a project stamps the date if the caller did not, so a delivered
     # project always says when rather than only that.
     if sets.get("status") in ("delivered", "cancelled") and "closed_at" not in sets:
@@ -278,13 +312,26 @@ def record_interaction(
     return int(row["id"])
 
 
-def set_interaction_state(conn: Connection, interaction_id: int, state: str) -> None:
+def set_interaction_state(
+    conn: Connection, interaction_id: int, state: str, *, by: str | None = None
+) -> None:
     """A planned meeting becomes done, or cancelled."""
     if state not in INTERACTION_STATES:
         raise ValueError(f"unknown interaction state {state!r}")
+    before = conn.execute(
+        "SELECT i.state, c.company_id FROM crm.interaction i"
+        " JOIN crm.client c ON c.id = i.client_id WHERE i.id = %s",
+        (interaction_id,),
+    ).fetchone()
     conn.execute(
         "UPDATE crm.interaction SET state = %s WHERE id = %s", (state, interaction_id)
     )
+    if before is not None:
+        record_state_change(
+            conn, entity="interaction", entity_id=interaction_id,
+            company_id=int(before["company_id"]),
+            from_state=before["state"], to_state=state, by=by,
+        )
 
 
 def interaction(conn: Connection, interaction_id: int) -> Row | None:

@@ -56,7 +56,7 @@ each owning one Postgres schema and its own numbered migrations:
 
 | module | schema | what |
 |---|---|---|
-| `scout` | `core`, `intel` | the survey: sweep, detail, officers, segments, website research, scoring |
+| `scout` | `core`, `intel`, `audit` | the survey: sweep, detail, officers, segments, website research, scoring, and the record of every state change |
 | `geo` | `geo` | the geocode stage, establishments with coordinates, the map |
 | `clients` | `crm` | clients, projects, the interaction log, notes, dossier, approach, prep |
 | `sales` | `commercial` | services, rate cards, quotes, invoices, time entries |
@@ -402,6 +402,36 @@ and keeps its row; *delete* says it was never true, removes the row, and leaves
 a tombstone naming what went and why. Events, projects and documents can all go
 this way. Deleting a project detaches its events rather than destroying them,
 because correspondence that happened is still correspondence that happened.
+
+**A status is a column, and a change to it used to be an overwrite.** The
+board made that visible the moment it drew columns: the question eight cards in
+a column provoke is "how long has that one been sitting there", and the answer
+was nowhere. Every transition now goes into `audit.state_change` — a prospect
+moving, a company becoming a client, a project going active, a meeting
+cancelled — so a card can say `4w`, and a client page can show how it got where
+it is across the three tables it passed through.
+
+That table names its subject as text and holds no foreign key, deliberately. An
+audit row about a project that has since been deleted is exactly the row worth
+having, and a foreign key would take it away at the moment it became
+interesting. The same absence is what lets it live in the scout without
+coupling anything: every module requires the scout, so every module may write
+to it, and because it points at nothing, nothing points back.
+
+**One timeline, across the handoff.** The client timeline lives in
+`crm.interaction` and the notes written while a company was still a prospect
+live in `intel.note`, on the survey side. Promoting a company used to leave
+those behind: the page that carries the whole file opened empty, on the very
+engagement the notes were written for. That is the handoff gap this product is
+built against, still present in the one place nobody had looked. The two are
+merged at the read, marked by origin, with the survey notes read-only and
+linked back to the company that owns them.
+
+The plan called for one table with both a `company_id` and a `client_id`. That
+would put a `crm` column in the survey's path and make the scout depend on the
+client module for its own notes, so a survey licensed on its own would lose
+them. The console knows about both modules and is the right place to join them;
+the two stores stay ignorant of each other.
 
 **Correspondence carries its Message-ID.** Paste it with the email and the same
 message can never be recorded twice. Every tool surveyed loses this and
