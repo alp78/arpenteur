@@ -140,6 +140,71 @@ def test_the_diary_and_the_timeline_are_the_same_rows(conn) -> None:
     assert in_file == in_diary == ["Réunion de cadrage"]
 
 
+def test_the_diary_holds_the_appointments_and_the_file_holds_the_rest(conn) -> None:
+    """One table, two readings, and they are not the same set.
+
+    A calendar answers "where do I have to be"; a timeline answers "what has
+    happened with this client". Every update to a prospect landing in the month
+    grid buries the one meeting of that week under entries nobody attends.
+    """
+    client_id = db.promote_to_client(conn, 1)
+    for kind, subject in (
+        ("meeting", "Réunion de cadrage"),
+        ("email", "Devis envoyé"),
+        ("document", "Organigramme reçu"),
+        ("note", "Ils réfléchissent"),
+    ):
+        db.record_event(
+            conn, client_id, kind=kind, occurred_at="2026-08-20T14:00:00",
+            subject=subject,
+        )
+    conn.commit()
+
+    in_file = {e["subject"] for e in db.timeline(conn, client_id)}
+    in_diary = [e["subject"] for e in db.diary(conn, since="2026-08-01", until="2026-08-31")]
+    assert len(in_file) == 4
+    assert in_diary == ["Réunion de cadrage"]
+
+
+def test_anything_planned_is_in_the_diary_whatever_its_kind(conn) -> None:
+    """Something committed to on a stated date is what a diary is for, and an
+    offer promised for Friday is as much an appointment as a meeting is."""
+    client_id = db.promote_to_client(conn, 1)
+    db.record_event(
+        conn, client_id, kind="email", state="planned",
+        occurred_at="2026-08-21T09:00:00", subject="Envoyer l'offre",
+    )
+    conn.commit()
+    assert [e["subject"] for e in db.diary(conn, since="2026-08-01", until="2026-08-31")] == [
+        "Envoyer l'offre"
+    ]
+
+
+def test_a_project_carries_its_own_dates_into_the_calendar(conn) -> None:
+    """Derived from the project, not logged once when the record was created.
+
+    A "project starts" row written on the day someone typed it says what was
+    true that morning and then goes stale. Moving the deadline has to move the
+    calendar, and that only holds if the calendar reads the project.
+    """
+    client_id = db.promote_to_client(conn, 1)
+    project_id = db.add_project(
+        conn, client_id, "Diagnostic",
+        started_at="2026-09-01", due_at="2026-09-30",
+    )
+    conn.commit()
+    assert [
+        e["subject"] for e in db.diary(conn, since="2026-09-01", until="2026-09-30")
+    ] == ["Starts: Diagnostic", "Due: Diagnostic"]
+
+    db.update_project(conn, project_id, due_at="2026-10-15")
+    conn.commit()
+    september = [e["subject"] for e in db.diary(conn, since="2026-09-01", until="2026-09-30")]
+    october = [e["subject"] for e in db.diary(conn, since="2026-10-01", until="2026-10-31")]
+    assert september == ["Starts: Diagnostic"]
+    assert october == ["Due: Diagnostic"]
+
+
 def test_a_planned_meeting_becomes_one_that_happened(conn) -> None:
     client_id = db.promote_to_client(conn, 1)
     event_id = db.record_event(
@@ -267,6 +332,30 @@ def test_the_calendar_shows_what_is_planned(client, conn) -> None:
               "occurred_at": "2026-08-20T14:00", "subject": "Réunion de cadrage"},
     )
     assert "Réunion de cadrage" in client.get("/calendar?month=2026-08").text
+
+
+def test_the_calendar_leaves_the_running_record_alone(client, conn) -> None:
+    """Opening a project is part of the record and is not an appointment.
+
+    The project's own start date is, and it appears without anyone logging it.
+    """
+    client.post("/company/1/client")
+    client.post(
+        "/client/1/projects",
+        data={"name": "Diagnostic", "started_at": "2026-09-01"},
+    )
+    client.post(
+        "/client/1/events",
+        data={"kind": "email", "occurred_at": "2026-09-02T09:00",
+              "subject": "Devis envoyé"},
+    )
+    page = client.get("/calendar?month=2026-09").text
+    assert "Starts: Diagnostic" in page
+    assert "Project opened" not in page and "Devis envoyé" not in page
+    # Both are still on the client's own timeline, which is where they belong.
+    assert {"Project opened: Diagnostic", "Devis envoyé"} <= {
+        e["subject"] for e in db.timeline(conn, 1)
+    }
 
 
 def test_a_bad_uid_says_what_one_looks_like(client) -> None:

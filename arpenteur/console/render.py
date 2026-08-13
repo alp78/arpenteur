@@ -129,6 +129,7 @@ pre.log {{ background:#fff; border:1px solid var(--line); padding:.8rem 1rem; ma
   <a href="/calendar">Calendar</a>
   <span class="sep">|</span>
   <a href="/">Survey</a>
+  <a href="/board">Board</a>
   <a href="/pipeline">Operations</a>
   <a href="/runs">History</a>
   <a href="/settings">Settings</a>
@@ -523,7 +524,10 @@ def _prospect_card(company_id: int, prospect: Row | None, states: list[str]) -> 
         f'value="{esc(prospect["next_action"] if prospect else "")}"></label>'
         f'<label>when<br><input name="next_at" type="date" '
         f'value="{esc((prospect["next_at"] or "")[:10] if prospect else "")}"></label>'
-        '<button class="primary">save</button></form></div>'
+        '<button class="primary">save</button></form>'
+        '<p class="dim small" style="margin:.5rem 0 0">Saving a state puts this '
+        'company on the <a href="/board">board</a>, where it can be moved from '
+        "column to column against everything else being worked.</p></div>"
     )
 
 

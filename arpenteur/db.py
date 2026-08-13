@@ -120,6 +120,7 @@ CLIENT_STATES = _clients.CLIENT_STATES
 PROJECT_STATES = _clients.PROJECT_STATES
 EVENT_KINDS = _clients.INTERACTION_KINDS
 EVENT_STATES = _clients.INTERACTION_STATES
+APPOINTMENT_KINDS = _clients.APPOINTMENT_KINDS
 
 make_code = _clients.make_code
 promote_to_client = _clients.promote_to_client

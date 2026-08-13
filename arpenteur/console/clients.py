@@ -34,10 +34,19 @@ KINDS: dict[str, tuple[str, str]] = {
     "email": ("@", "Email"),
     "call": ("T", "Call"),
     "meeting": ("M", "Meeting"),
+    "deadline": ("!", "Deadline"),
     "note": ("N", "Note"),
     "milestone": ("*", "Milestone"),
     "document": ("D", "Document"),
-    "decision": ("!", "Decision"),
+    "decision": ("=", "Decision"),
+}
+
+# Rows the calendar derives from a project's own dates rather than from the
+# log. Not offered in the "record something" form: you set them by editing the
+# project, which is the point of deriving them.
+PROJECT_MARKS: dict[str, tuple[str, str]] = {
+    "project-start": (">", "Project starts"),
+    "project-due": ("<", "Project due"),
 }
 
 STYLES = """
@@ -74,6 +83,7 @@ STYLES = """
               background:var(--bg); border-left:2px solid var(--accent);
               overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .cal .slot.done { border-left-color:var(--line); color:var(--dim); }
+.cal .slot.derived { background:#fff; border-left-style:dashed; }
 .split { display:grid; grid-template-columns:1fr 20rem; gap:1.4rem; align-items:start; }
 @media (max-width:900px) { .split { grid-template-columns:1fr; } }
 .stack { display:flex; flex-direction:column; gap:.45rem; }
@@ -115,6 +125,12 @@ def shell(title: str, body: str, territory: str = "") -> str:
 def _badge(value: str | None) -> str:
     value = value or ""
     return f'<span class="badge {esc(value)}">{esc(value or "—")}</span>'
+
+
+def _kind(kind: str | None) -> tuple[str, str]:
+    """The mark and the label for a kind, whether logged or derived."""
+    name = kind or ""
+    return KINDS.get(name) or PROJECT_MARKS.get(name) or ("·", name or "—")
 
 
 def _when(row: Row) -> str:
@@ -375,7 +391,9 @@ def _log_form(client_id: int, projects: list[Row]) -> str:
         "<div><label for='state'>State</label><select id='state' name='state'>"
         "<option value='done'>Happened</option>"
         "<option value='planned'>Planned</option></select>"
-        "<span class='hint'>Planned puts it in the calendar.</span></div></div>"
+        "<span class='hint'>Planned puts it in the calendar, whatever it is. "
+        "Once it has happened only meetings and deadlines stay there; "
+        "everything else lives here, in the record.</span></div></div>"
         "<div class='row2'>"
         "<div><label for='at'>When</label>"
         "<input id='at' name='occurred_at' type='datetime-local' required></div>"
@@ -409,7 +427,7 @@ def _timeline(events: list[Row]) -> str:
         )
     out = []
     for e in events:
-        mark, label = KINDS.get(e["kind"], ("·", e["kind"]))
+        mark, label = _kind(e["kind"])
         keys = set(e.keys())
         project = (
             f'<a href="/project/{e["project_id"]}" class="code soft">'
@@ -555,14 +573,32 @@ def _project_form(project: Row) -> str:
 # --- the calendar -------------------------------------------------------------
 
 
+def _slot_link(row: Row) -> str:
+    """Where a calendar entry goes when it is clicked.
+
+    A project's start or due date belongs to the project; everything else was
+    logged against the relationship and belongs on the client's page.
+    """
+    if row["kind"] in PROJECT_MARKS and row["project_id"]:
+        return f"/project/{row['project_id']}"
+    return f"/client/{row['client_id']}"
+
+
 def calendar_page(
     year: int, month: int, events: list[Row], today: date
 ) -> str:
-    """A month, and what is in it.
+    """A month, and what has to be attended in it.
 
-    Reads the same `event` rows as the client timelines, filtered by date.
-    That is the whole reason a meeting cannot be in the diary and missing
-    from the file: there is one row, seen from two pages.
+    Not the record. The record is on the client's page, one line per thing that
+    happened, and it is the right place for it: an email received, a document
+    filed, a status changed. None of those is something to turn up to, and a
+    month grid that carries them buries the two appointments of that week under
+    forty entries that need nothing from anyone.
+
+    So this reads the same rows as the timeline, filtered to the appointments —
+    see `APPOINTMENT_KINDS` in the clients store — plus each project's own
+    start and due dates, derived from the project so that rescheduling the work
+    reschedules the calendar.
     """
     by_day: dict[str, list[Row]] = {}
     for row in events:
@@ -583,31 +619,45 @@ def calendar_page(
                 classes.append("out")
             if day == today:
                 classes.append("today")
-            slots = "".join(
-                f'<a class="slot {"done" if e["state"] == "done" else ""}" '
-                f'href="/client/{e["client_id"]}" '
-                f'title="{esc(e["company_name"])} — {esc(e["subject"] or e["kind"])}">'
-                f'{esc((e["occurred_at"] or "")[11:16])} '
-                f'{esc(e["subject"] or KINDS.get(e["kind"], ("", e["kind"]))[1])}</a>'
-                for e in by_day.get(key, [])[:4]
-            )
+            slots = []
+            for e in by_day.get(key, [])[:4]:
+                mark, label = _kind(e["kind"])
+                derived = " derived" if e["kind"] in PROJECT_MARKS else ""
+                # A derived marker has no clock time to show; it is a day, not
+                # an hour, and "00:00" would be a fact nobody asserted.
+                clock = "" if derived else (e["occurred_at"] or "")[11:16] + " "
+                slots.append(
+                    f'<a class="slot{" done" if e["state"] == "done" else ""}{derived}" '
+                    f'href="{_slot_link(e)}" '
+                    f'title="{esc(e["company_name"])} — {esc(label)}'
+                    f'{" — " + esc(e["subject"]) if e["subject"] else ""}">'
+                    f'{esc(clock)}{esc(e["subject"] or label)}</a>'
+                )
             more = len(by_day.get(key, []))
             if more > 4:
-                slots += f'<span class="slot dim">+{more - 4} more</span>'
+                slots.append(f'<span class="slot dim">+{more - 4} more</span>')
             cells.append(
                 f'<td class="{" ".join(classes)}">'
-                f'<div class="day">{day.day}</div>{slots}</td>'
+                f'<div class="day">{day.day}</div>{"".join(slots)}</td>'
             )
         body.append(f"<tr>{''.join(cells)}</tr>")
 
-    upcoming = [e for e in events if e["state"] == "planned"]
+    # The grid is drawn with a week of spill either side, so that the cells
+    # belonging to the neighbouring months are not blank. The agenda below it
+    # says "this month" and has to mean it.
+    stamp = f"{year:04d}-{month:02d}"
+    ahead = [
+        e for e in events
+        if e["state"] == "planned" and (e["occurred_at"] or "").startswith(stamp)
+    ]
     agenda = "".join(
         f'<tr><td class="small">{_when(e)}</td>'
         f'<td><a href="/client/{e["client_id"]}">{esc(e["company_name"])}</a></td>'
         f'<td class="small">{esc(e["project_code"] or "")}</td>'
-        f'<td>{esc(e["subject"] or KINDS.get(e["kind"], ("", e["kind"]))[1])}</td>'
+        f'<td><a href="{_slot_link(e)}">'
+        f'{esc(e["subject"] or _kind(e["kind"])[1])}</a></td>'
         f'<td class="small">{esc(e["with_whom"] or "")}</td></tr>'
-        for e in upcoming
+        for e in ahead
     )
     return (
         f'<div class="ident"><h1 style="margin:0">'
@@ -615,9 +665,12 @@ def calendar_page(
         f'<a href="/calendar?month={prev}">&larr; previous</a>'
         f'<a href="/calendar">today</a>'
         f'<a href="/calendar?month={nxt}">next &rarr;</a></div>'
-        "<p class='dim small'>Everything planned or recorded against a client. "
-        "The same rows the client record shows, which is why a meeting cannot "
-        "be in the diary and missing from the file.</p>"
+        "<p class='dim small' style='max-width:70ch'>Meetings, interviews, "
+        "deadlines and the start and end of each project. Not the running "
+        "record: an email, a document or a change of status goes on the "
+        "client's own timeline, where it can be read in order, and a diary "
+        "carrying all of it would hide the two appointments of the week among "
+        "forty entries nobody has to attend.</p>"
         '<table class="cal"><thead><tr>'
         + "".join(f"<th>{d}</th>" for d in
                   ("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"))
@@ -627,6 +680,6 @@ def calendar_page(
             "<table><thead><tr><th>when</th><th>client</th><th>project</th>"
             f"<th>what</th><th>with</th></tr></thead><tbody>{agenda}</tbody></table>"
             if agenda
-            else ""
+            else "<p class='dim small'>Nothing is scheduled in this month.</p>"
         )
     )

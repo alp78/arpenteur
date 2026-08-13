@@ -38,6 +38,7 @@ from ..modules.clients import store as clients_store
 from ..modules.scout import store as scout_store
 from ..config import Settings, load_settings
 from ..stages import advise, match, prep, source
+from . import board as board_view
 from . import clients as clients_view
 from . import dossier_page as dossier_view
 from . import prep_page as prep_view
@@ -247,6 +248,104 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             row = scout_store.toggle_suppressed(conn, contact_id)
             conn.commit()
             return HTMLResponse(render.contact_row(row))
+        finally:
+            conn.close()
+
+    # --- the board ------------------------------------------------------------
+    #
+    # The survey list answers "what is out there". The board answers "what is
+    # moving", which the list cannot: a company contacted in June looks exactly
+    # like one contacted yesterday when both are rows sorted by score.
+    #
+    # It is a scout page reading `intel.prospect`, and it stays one. The client
+    # chip on a won card is looked up here and passed in, because the console is
+    # allowed to know about both modules and `modules/scout` is not.
+
+    @app.get("/board", response_class=HTMLResponse)
+    def board(request: Request) -> HTMLResponse:
+        args = request.query_params
+        conn = connect()
+        try:
+            rows = scout_store.board(
+                conn, canton=args.get("canton", ""), segment=args.get("segment", ""),
+                band=args.get("band", ""), owner=args.get("owner", ""),
+                q=args.get("q", ""),
+            )
+            today = date.fromisoformat(
+                conn.execute("SELECT current_date AS d").fetchone()["d"]
+            )
+            return HTMLResponse(
+                board_view.shell(
+                    board_view.board_page(
+                        rows,
+                        states=list(db.PROSPECT_STATES),
+                        clients=clients_store.clients_by_company(
+                            conn, [int(r["id"]) for r in rows]
+                        ),
+                        today=today,
+                        lane=args.get("lane", ""),
+                        q=args.get("q", ""), canton=args.get("canton", ""),
+                        segment=args.get("segment", ""), band=args.get("band", ""),
+                        owner=args.get("owner", ""),
+                        cantons=scout_store.cantons_present(conn),
+                        segments=sorted(settings.segments),
+                        owners=scout_store.prospect_owners(conn),
+                        back=str(request.url.query or ""),
+                        note=args.get("note", ""),
+                    ),
+                    settings.territory.describe(),
+                )
+            )
+        finally:
+            conn.close()
+
+    @app.post("/board/move")
+    def move_card(
+        company_id: int = Form(...), state: str = Form(...), back: str = Form("")
+    ) -> Any:
+        """Where a card lands. Called by the drag, and by the fold under it.
+
+        The drag wants an answer, not a page: it has already moved the card and
+        only needs to know whether to keep it there. The fold has no
+        JavaScript to interpret one, so it says where it came from and gets a
+        redirect. Same route, because they are the same change.
+        """
+        if state not in db.PROSPECT_STATES:
+            return PlainTextResponse(f"unknown state {state!r}", status_code=400)
+        conn = connect()
+        try:
+            scout_store.set_prospect(conn, company_id, state=state)
+            conn.commit()
+            return (
+                RedirectResponse(f"/board?{back}", status_code=303)
+                if back
+                else PlainTextResponse("ok")
+            )
+        finally:
+            conn.close()
+
+    @app.post("/board/bring-in")
+    def bring_in(
+        band: str = Form("high"), segment: str = Form(""), canton: str = Form(""),
+        limit: str = Form("25"),
+    ) -> RedirectResponse:
+        conn = connect()
+        try:
+            try:
+                how_many = max(1, min(200, int(limit)))
+            except ValueError:
+                how_many = 25
+            added = scout_store.bring_in(
+                conn, band=band, segment=segment, canton=canton, limit=how_many
+            )
+            conn.commit()
+            note = (
+                f"{added} companies put in new."
+                if added
+                else "Nothing to bring in: every company matching that is "
+                     "already on the board, or none has been scored in that band."
+            )
+            return RedirectResponse(f"/board?note={quote(note)}", status_code=303)
         finally:
             conn.close()
 

@@ -633,6 +633,137 @@ def prospect_for(conn: Connection, company_id: int) -> Row | None:
     ).fetchone()
 
 
+# --- the board ----------------------------------------------------------------
+#
+# The working set, as opposed to the survey. 184'939 companies is a register;
+# the few dozen being worked are a pipeline, and they are exactly the ones with
+# a row in `intel.prospect`. Nothing arrives on the board by being scored well:
+# it arrives because somebody put it there, which is what makes the column
+# counts mean anything.
+
+
+def board(
+    conn: Connection, *, canton: str = "", segment: str = "", band: str = "",
+    owner: str = "", q: str = "", limit: int = 500,
+) -> list[Row]:
+    """Every company in the campaign, with what a card has to show.
+
+    One query rather than one per card. A board of forty cards each fetching
+    its own segments and its own address is forty round trips to draw one page,
+    and it is the classic way a kanban view becomes the slowest screen in a
+    CRM.
+    """
+    where = ["TRUE"]
+    params: list[Any] = []
+    if canton:
+        where.append("c.canton = %s")
+        params.append(canton)
+    if segment:
+        where.append(
+            "EXISTS (SELECT 1 FROM intel.segment s"
+            " WHERE s.company_id = c.id AND s.segment = %s)"
+        )
+        params.append(segment)
+    if band:
+        where.append("f.band = %s")
+        params.append(band)
+    if owner:
+        where.append("p.owner = %s")
+        params.append(owner)
+    if q:
+        # A substring match, where the survey list uses trigram similarity.
+        # The difference is the size of what is being searched: the survey
+        # scans 184'939 rows and an `unaccent(...) LIKE` branch there measured
+        # just over a second because no index can serve it. The board searches
+        # the few dozen companies actually being worked, so it can afford the
+        # match that finds "Bois" inside "Fondation Bois-Gentil" — which
+        # similarity, over a long name, does not.
+        where.append("unaccent(c.name) ILIKE unaccent(%s)")
+        params.append(f"%{q}%")
+    return conn.execute(
+        f"""
+        SELECT c.id, c.name, c.uid, c.canton, c.legal_form_label, c.status,
+               p.state, p.owner, p.next_action, p.next_at, p.updated_at,
+               f.score, f.band, w.url,
+               (SELECT array_agg(s.segment ORDER BY s.segment)
+                  FROM intel.segment s WHERE s.company_id = c.id) AS segments,
+               EXISTS (SELECT 1 FROM core.contact ct
+                        WHERE ct.company_id = c.id AND ct.kind = 'email'
+                          AND NOT ct.suppressed) AS reachable
+          FROM intel.prospect p
+          JOIN core.company c ON c.id = p.company_id
+          LEFT JOIN intel.fit f ON f.company_id = c.id
+          LEFT JOIN intel.site w ON w.company_id = c.id
+         WHERE {' AND '.join(where)}
+         ORDER BY p.next_at NULLS LAST, f.score DESC NULLS LAST, c.name
+         LIMIT %s
+        """,
+        params + [limit],
+    ).fetchall()
+
+
+def prospect_owners(conn: Connection) -> list[str]:
+    return [
+        row["owner"]
+        for row in conn.execute(
+            "SELECT DISTINCT owner FROM intel.prospect"
+            " WHERE owner IS NOT NULL AND owner <> '' ORDER BY owner"
+        )
+    ]
+
+
+def bring_in(
+    conn: Connection, *, band: str = "high", segment: str = "", canton: str = "",
+    limit: int = 25,
+) -> int:
+    """Put the best-scoring companies not yet on the board into `new`.
+
+    The step between a scored survey and a pipeline, done in bulk because doing
+    it one company at a time is the reason shortlists sit unworked.
+
+    It only ever inserts. A company already on the board keeps whatever state
+    it has reached, so running this again after another sweep cannot walk
+    something at "meeting" back to the start.
+    """
+    where = ["f.band = %s", "c.status = 'ACTIVE'",
+             "NOT EXISTS (SELECT 1 FROM intel.prospect p WHERE p.company_id = c.id)"]
+    params: list[Any] = [band]
+    if segment:
+        where.append(
+            "EXISTS (SELECT 1 FROM intel.segment s"
+            " WHERE s.company_id = c.id AND s.segment = %s)"
+        )
+        params.append(segment)
+    if canton:
+        where.append("c.canton = %s")
+        params.append(canton)
+    stamp = now()
+    cur = conn.execute(
+        f"""
+        INSERT INTO intel.prospect (company_id, state, created_at, updated_at)
+        SELECT c.id, 'new', %s, %s
+          FROM core.company c
+          JOIN intel.fit f ON f.company_id = c.id
+         WHERE {' AND '.join(where)}
+         ORDER BY f.score DESC NULLS LAST
+         LIMIT %s
+        ON CONFLICT (company_id) DO NOTHING
+        """,
+        [stamp, stamp] + params + [limit],
+    )
+    return cur.rowcount
+
+
+def remove_from_board(conn: Connection, company_id: int) -> None:
+    """Take a company off the board without touching what is known about it.
+
+    A prospect row is a working state, not a finding: the score, the research
+    and the notes stay exactly where they are, and the company goes back to
+    being one of the 184'939 in the register.
+    """
+    conn.execute("DELETE FROM intel.prospect WHERE company_id = %s", (company_id,))
+
+
 # --- notices and officers -----------------------------------------------------
 
 

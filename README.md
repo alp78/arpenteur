@@ -352,21 +352,40 @@ you last spoke and what is next. **A client card** carries the register entry,
 the officers, the research already done, the projects, and the record.
 **A project** has its own reference (`BOIS-GENTIL-01`), because it outlives the
 conversation that created it and has to be nameable in a contract, an invoice
-and a file. **Calendar** is the month.
+and a file. **Calendar** is the month: meetings, interviews, deadlines and the
+start and end of each project, and nothing else.
 
-Four decisions, each taken against how the established professional-services
+Five decisions, each taken against how the established professional-services
 tools do it.
 
 **One event log, not two.** The comparisons make the same point repeatedly: the
 compliance audit trail and the narrative client timeline are the same stream of
 events rendered for two audiences, and tools that build them separately drift.
-The drift is always discovered during the audit. So there is one `event` table,
-written once and projected differently: the client page reads it as a story, the
-calendar reads it as a diary, an export reads it as a record. A meeting cannot
-be in the diary and missing from the file, because they are one row.
+The drift is always discovered during the audit. So there is one
+`crm.interaction` table, written once and projected differently: the client page
+reads it as a story, the calendar reads it as a diary, an export reads it as a
+record. A meeting cannot be in the diary and missing from the file, because
+they are one row.
 
 **A planned event is an event.** A meeting next Tuesday and one last Tuesday
 differ by a date and a state, not by their nature.
+
+**One table, two readings, and they are not the same set.** A calendar answers
+"where do I have to be, and what falls due"; a timeline answers "what has
+happened with this client". An email logged at 09:20, a document arriving, a
+status changing and a note typed after a call are all the record moving, and
+none of them is an appointment: a month grid carrying every update buries the
+one meeting of that week under forty entries nobody has to attend. So the
+calendar holds what is still `planned`, whatever its kind, because something
+committed to on a stated date is what a diary is for — plus meetings and
+deadlines after the fact, because "when did we actually meet them" is a
+question asked of a calendar. Everything else stays on the client's timeline,
+where it can be read in order.
+
+**A project carries its own dates into the calendar.** Its start and its due
+date are read from the project rather than logged once as events, so moving a
+deadline moves the calendar. A "project starts" row written on the day someone
+typed it says what was true that morning and then goes quietly stale.
 
 **Cancelling and deleting are different corrections, and the record needs
 both.** This started out as "nothing is ever deleted", on the grounds that an
@@ -548,10 +567,11 @@ under their own name. Swiss law (LCD art. 3 al. 1 let. o) draws the line at
 *mass* advertising email without prior consent, and the defence against ever
 crossing it is that the software has no mechanism, which a test asserts.
 
-**It runs the stages, and shows the work.** Three views: **Companies**, the
+**It runs the stages, and shows the work.** Four views: **Companies**, the
 survey with a progress stamp per company and a filter for where each one has
-got to; **Operations**, every stage with how much it has done, how much is
-queued for it, and the control to advance it; **History**, what has been run.
+got to; **Board**, where each company being worked stands; **Operations**,
+every stage with how much it has done, how much is queued for it, and the
+control to advance it; **History**, what has been run.
 
 Operations is one page rather than a form page and a counts page, because the
 number that makes a button meaningful is how much work is waiting for it.
@@ -560,6 +580,46 @@ Each card states what the stage does, what must have happened first, what it
 produces, what it costs, and exactly what pressing the button will do. Any
 field with a knowable set of values is a list to pick from; anything that must
 be typed carries an example and says where to get it.
+
+### The board
+
+The survey list answers "what is out there" and sorts 184'939 rows by score.
+That is the wrong shape for the question asked every morning, which is "what is
+moving and what has stalled". A list cannot show it: a company contacted in
+June looks exactly like one contacted yesterday, and the eight waiting on a
+reply are scattered through nine hundred nobody has touched.
+
+So the board is one column per state — `new`, `researching`, `contacted`,
+`replied`, `meeting`, `won`, `lost`, `parked` — and one card per company, moved
+by dragging. The count in a column head is the number that matters: five
+contacted and nothing replied is a different instruction from five replied and
+no meetings booked.
+
+**Only what somebody put there is on it.** A company is on the board because it
+has a state, not because it scored well. Were a good score enough, the counts
+would describe the scorer rather than the work. *Bring in a shortlist* is the
+step between the two: it takes the best-scoring companies of a band that are
+not already there and puts them in `new`. It only ever inserts, so running it
+again after another sweep cannot walk a company at `meeting` back to the start.
+
+**Swimlanes** cut the board horizontally by something a state change does not
+alter: how overdue the next action is, fit band, canton, or owner. The first is
+the one the option exists for — overdue at the top, because a board is read
+downwards and the thing that has slipped should not sit below the thing that
+has not. Grouping by segment is deliberately not offered: a company carries
+several segments, its card would appear in several lanes, and a card you can
+drag in one lane while a stale copy sits in another is worse than no grouping.
+Segment stays a filter, where one company is one row.
+
+Dragging is the fast way to move a card and not the only one: each card has a
+plain form under it that posts the same change, so the board works from a
+keyboard, without JavaScript, and on a phone. A card in `won` offers the
+handoff — opening a client record that keeps the file rather than copying the
+name.
+
+The board is a scout view. It reads `intel.prospect` and knows nothing about
+`crm`; the client chip on a won card is looked up by the console, which is
+allowed to know about both modules where `modules/scout` is not.
 
 A company page carries the same actions for that one company, since having
 opened it and decided it is interesting, the alternative is going back and

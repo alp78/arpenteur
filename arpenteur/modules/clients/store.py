@@ -23,9 +23,26 @@ from ...kernel.db import Connection, Row, json_param, now
 CLIENT_STATES = ("active", "prospect", "dormant", "former")
 PROJECT_STATES = ("proposed", "active", "paused", "delivered", "cancelled")
 INTERACTION_KINDS = (
-    "email", "call", "meeting", "note", "milestone", "document", "decision",
+    "email", "call", "meeting", "deadline", "note", "milestone", "document",
+    "decision",
 )
 INTERACTION_STATES = ("planned", "done", "cancelled")
+
+# What belongs in the diary, as opposed to what belongs only in the file.
+#
+# These are two readings of one table and they are not the same set. A calendar
+# answers "where do I have to be, and what falls due"; a timeline answers "what
+# has happened with this client". An email logged at 09:20, a document
+# arriving, a project status changing and a note typed after a call are all the
+# record moving, and none of them is an appointment. Putting them in a month
+# grid buries the one meeting that week under forty entries nobody has to turn
+# up to, which is the failure this list exists to prevent.
+#
+# Anything still `planned` is in the diary whatever its kind, because something
+# you have committed to on a stated date is exactly what a diary is for. A
+# meeting or a deadline stays in it afterwards too, because "when did we
+# actually meet them" is a question asked of a calendar.
+APPOINTMENT_KINDS = ("meeting", "deadline")
 
 
 # --- the client ---------------------------------------------------------------
@@ -104,6 +121,26 @@ def client_for_company(conn: Connection, company_id: int) -> Row | None:
     return conn.execute(
         "SELECT * FROM crm.client WHERE company_id = %s", (company_id,)
     ).fetchone()
+
+
+def clients_by_company(conn: Connection, company_ids: list[int]) -> dict[int, Row]:
+    """Which of these companies are already clients, in one query.
+
+    For pages that draw many companies at once and want to say so. Asking per
+    company is how a board of forty cards becomes forty round trips, and the
+    board is a scout page: it cannot import this module, so the console passes
+    the answer in.
+    """
+    if not company_ids:
+        return {}
+    return {
+        int(row["company_id"]): row
+        for row in conn.execute(
+            "SELECT id, code, status, company_id FROM crm.client"
+            " WHERE company_id = ANY(%s)",
+            (list(company_ids),),
+        )
+    }
 
 
 def clients(conn: Connection, *, status: str = "") -> list[Row]:
@@ -276,32 +313,71 @@ def timeline(
 
 
 def diary(conn: Connection, *, since: str, until: str) -> list[Row]:
-    """Everything in the calendar between two dates, across every client.
+    """What is in the calendar between two dates, across every client.
 
-    The same table as the timeline. A meeting cannot be in the diary and
-    missing from the file, because they are one row read two ways.
+    Still the same table as the timeline: a meeting cannot be in the diary and
+    missing from the file, because they are one row read two ways. But only the
+    appointments, per `APPOINTMENT_KINDS` above. Every update to a client goes
+    on that client's timeline; only the things somebody has to attend, deliver
+    or be ready for come here.
+
+    Project dates are the second half of that, and they are read from the
+    project rather than from a logged event. A project's start and due dates
+    are fields that get corrected as the work is scheduled; a "project starts"
+    row written once on the day the record was created says what was true in
+    the morning it was typed and then goes quietly stale. Deriving them means
+    moving a deadline moves the calendar.
     """
     return conn.execute(
-        """SELECT e.*, c.code AS client_code, p.code AS project_code,
-                  co.name AS company_name
-             FROM crm.interaction e
-             JOIN crm.client c ON c.id = e.client_id
-             JOIN core.company co ON co.id = c.company_id
-             LEFT JOIN crm.project p ON p.id = e.project_id
-            WHERE e.state <> 'cancelled'
-              AND e.occurred_at::date BETWEEN %s::date AND %s::date
-            ORDER BY e.occurred_at, e.id""",
-        (since, until),
+        """
+        SELECT * FROM (
+            SELECT e.id, e.client_id, e.project_id, e.kind, e.state,
+                   e.occurred_at, e.ends_at, e.subject, e.with_whom,
+                   c.code AS client_code, p.code AS project_code,
+                   co.name AS company_name
+              FROM crm.interaction e
+              JOIN crm.client c ON c.id = e.client_id
+              JOIN core.company co ON co.id = c.company_id
+              LEFT JOIN crm.project p ON p.id = e.project_id
+             WHERE e.state <> 'cancelled'
+               AND (e.state = 'planned' OR e.kind = ANY(%s))
+               AND e.occurred_at::date BETWEEN %s::date AND %s::date
+            UNION ALL
+            SELECT NULL::bigint, p.client_id, p.id, m.kind,
+                   CASE WHEN m.at < current_date THEN 'done' ELSE 'planned' END,
+                   m.at::timestamptz, NULL::timestamptz, m.label || p.name, NULL,
+                   c.code, p.code, co.name
+              FROM crm.project p
+              JOIN crm.client c ON c.id = p.client_id
+              JOIN core.company co ON co.id = c.company_id
+              CROSS JOIN LATERAL (VALUES
+                  ('project-start', p.started_at, 'Starts: '),
+                  ('project-due',   p.due_at,     'Due: ')
+              ) AS m(kind, at, label)
+             WHERE p.status <> 'cancelled'
+               AND m.at BETWEEN %s::date AND %s::date
+        ) d
+        ORDER BY occurred_at, id NULLS FIRST
+        """,
+        (list(APPOINTMENT_KINDS), since, until, since, until),
     ).fetchall()
 
 
 def upcoming(conn: Connection, days: int = 30) -> int:
-    return conn.execute(
-        "SELECT COUNT(*) AS n FROM crm.interaction WHERE state = 'planned'"
-        " AND occurred_at::date BETWEEN current_date"
-        " AND current_date + %s::integer",
-        (days,),
-    ).fetchone()["n"]
+    """How many appointments are ahead. Counted through `diary`, deliberately.
+
+    The portfolio tile says "in the diary", and a separate COUNT over planned
+    interactions would have drifted from what the calendar draws the moment
+    project dates joined it. One definition, asked twice.
+    """
+    window = conn.execute(
+        "SELECT current_date AS a, current_date + %s::integer AS b", (days,)
+    ).fetchone()
+    return sum(
+        1
+        for row in diary(conn, since=window["a"], until=window["b"])
+        if row["state"] == "planned"
+    )
 
 
 # --- removing what is not true ------------------------------------------------
