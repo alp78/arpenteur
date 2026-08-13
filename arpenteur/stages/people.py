@@ -18,17 +18,17 @@ gets for free covers roughly half of companies.
 
 from __future__ import annotations
 
-import sqlite3
 from typing import Any, Callable
 
 from .. import db
 from ..config import Settings
+from ..kernel.db import Connection, Row
 from ..sources import shab
 
 
 def run(
     settings: Settings,
-    conn: sqlite3.Connection,
+    conn: Connection,
     *,
     limit: int | None = None,
     reparse: bool = False,
@@ -41,10 +41,10 @@ def run(
     to use after improving the parser. Without it only companies with notices
     and no people yet are considered, so a re-run is cheap.
     """
-    where = "WHERE EXISTS (SELECT 1 FROM publication p WHERE p.company_id = c.id)"
+    where = "WHERE EXISTS (SELECT 1 FROM core.publication p WHERE p.company_id = c.id)"
     if not reparse:
-        where += " AND c.id NOT IN (SELECT DISTINCT company_id FROM person)"
-    sql = f"SELECT c.id, c.uid, c.name FROM company c {where} ORDER BY c.id"
+        where += " AND c.id NOT IN (SELECT DISTINCT company_id FROM core.person)"
+    sql = f"SELECT c.id, c.uid, c.name FROM core.company c {where} ORDER BY c.id"
     if limit:
         sql += f" LIMIT {int(limit)}"
     companies = conn.execute(sql).fetchall()
@@ -62,7 +62,7 @@ def run(
         publications = conn.execute(
             """
             SELECT sogc_id, sogc_date, message, source_url
-            FROM publication WHERE company_id = ? ORDER BY sogc_date DESC
+            FROM core.publication WHERE company_id = %s ORDER BY sogc_date DESC
             """,
             (company["id"],),
         ).fetchall()

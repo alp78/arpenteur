@@ -1,7 +1,7 @@
 """HTML, written as functions rather than templates.
 
 No Jinja. The console is a handful of pages, the markup is generated from
-sqlite3.Row objects, and a template language would add a directory, a loader
+Row objects, and a template language would add a directory, a loader
 and a second syntax to learn for no gain at this size. If the console grows
 past a dozen views this is the first thing to reconsider.
 
@@ -14,7 +14,6 @@ from __future__ import annotations
 
 import html
 import json
-import sqlite3
 from typing import Any, Iterable
 
 # HTMX from a CDN, and about sixty lines of CSS. No build step, no bundler, no
@@ -166,7 +165,12 @@ def page(title: str, body: str, territory: str = "", css: str = "") -> str:
 
 
 def as_list(value: Any) -> list[str]:
-    """JSON columns come back as text, and a half-written row as None."""
+    """A jsonb column, and a half-written row as None.
+
+    psycopg parses jsonb on the way out, so the list branch is now the ordinary
+    path rather than the exception. The string branch stays for values written
+    before the column was jsonb and for anything handed in by a test.
+    """
     if not value:
         return []
     if isinstance(value, list):
@@ -186,7 +190,7 @@ def pills(items: Iterable[str], manual: Iterable[str] = ()) -> str:
     )
 
 
-def band(row: sqlite3.Row | None) -> str:
+def band(row: Row | None) -> str:
     if row is None or row["score"] is None:
         return '<span class="dim">&mdash;</span>'
     name = row["band"] or "low"
@@ -209,7 +213,7 @@ PROGRESS = (
 )
 
 
-def progress(row: sqlite3.Row) -> str:
+def progress(row: Row) -> str:
     """The five stamps for one company."""
     keys = set(row.keys())
     out = []
@@ -223,7 +227,7 @@ def progress(row: sqlite3.Row) -> str:
     return "".join(out)
 
 
-def company_rows(rows: list[sqlite3.Row]) -> str:
+def company_rows(rows: list[Row]) -> str:
     if not rows:
         return (
             '<tr><td colspan="7" class="dim">Nothing matches. Widen the filter, '
@@ -252,7 +256,7 @@ def company_rows(rows: list[sqlite3.Row]) -> str:
     return "".join(out)
 
 
-def company_table(rows: list[sqlite3.Row], total: int) -> str:
+def company_table(rows: list[Row], total: int) -> str:
     legend = " &middot; ".join(
         f"<b>{esc(letter)}</b> {esc(title.lower())}" for letter, _key, title in PROGRESS
     )
@@ -339,7 +343,7 @@ def _act(uid: str, stage: str, label: str, note: str, busy: int | None) -> str:
     )
 
 
-def _client_action(company: sqlite3.Row, client: sqlite3.Row | None) -> str:
+def _client_action(company: Row, client: Row | None) -> str:
     """Promote to client, or the link to the client this already is.
 
     A reference rather than a copy. The surveyed tools call the alternative
@@ -365,8 +369,8 @@ def _client_action(company: sqlite3.Row, client: sqlite3.Row | None) -> str:
 
 
 def _actions(
-    company: sqlite3.Row, site: sqlite3.Row | None, fit: sqlite3.Row | None,
-    busy: int | None, client: sqlite3.Row | None = None,
+    company: Row, site: Row | None, fit: Row | None,
+    busy: int | None, client: Row | None = None,
 ) -> str:
     """What can be done to this one company, right here.
 
@@ -402,20 +406,20 @@ def _actions(
 
 
 def company_page(
-    company: sqlite3.Row,
-    segments: list[sqlite3.Row],
-    officers: list[sqlite3.Row],
-    site: sqlite3.Row | None,
-    fit: sqlite3.Row | None,
-    contacts: list[sqlite3.Row],
-    notes: list[sqlite3.Row],
-    prospect: sqlite3.Row | None,
-    publications: list[sqlite3.Row],
+    company: Row,
+    segments: list[Row],
+    officers: list[Row],
+    site: Row | None,
+    fit: Row | None,
+    contacts: list[Row],
+    notes: list[Row],
+    prospect: Row | None,
+    publications: list[Row],
     vocabulary: list[str],
     states: list[str],
     attribution: str,
     busy: int | None = None,
-    client: sqlite3.Row | None = None,
+    client: Row | None = None,
 ) -> str:
     out = [
         f"<h1>{esc(company['name'])}</h1>",
@@ -470,7 +474,7 @@ def company_page(
     return "".join(out)
 
 
-def _fit_card(fit: sqlite3.Row | None) -> str:
+def _fit_card(fit: Row | None) -> str:
     if fit is None:
         return (
             '<h2>fit</h2><div class="card dim">Not scored yet. '
@@ -503,7 +507,7 @@ def _fit_card(fit: sqlite3.Row | None) -> str:
     return f'<h2>fit</h2><div class="card">{"".join(body)}</div>'
 
 
-def _prospect_card(company_id: int, prospect: sqlite3.Row | None, states: list[str]) -> str:
+def _prospect_card(company_id: int, prospect: Row | None, states: list[str]) -> str:
     current = prospect["state"] if prospect else "new"
     options = "".join(
         f'<option value="{esc(s)}"{" selected" if s == current else ""}>{esc(s)}</option>'
@@ -524,7 +528,7 @@ def _prospect_card(company_id: int, prospect: sqlite3.Row | None, states: list[s
 
 
 def _segments_card(
-    company_id: int, segments: list[sqlite3.Row], vocabulary: list[str]
+    company_id: int, segments: list[Row], vocabulary: list[str]
 ) -> str:
     held = {row["segment"]: row for row in segments}
     boxes = []
@@ -551,7 +555,7 @@ def _segments_card(
     )
 
 
-def _site_card(site: sqlite3.Row | None) -> str:
+def _site_card(site: Row | None) -> str:
     if site is None:
         return (
             '<h2>web research</h2><div class="card dim">Not researched. '
@@ -582,7 +586,7 @@ def _site_card(site: sqlite3.Row | None) -> str:
     return f'<h2>web research</h2><div class="card">{"".join(body)}</div>'
 
 
-def contact_row(c: sqlite3.Row) -> str:
+def contact_row(c: Row) -> str:
     """One contact, as the page draws it and as the suppress route redraws it.
 
     One function rather than two matching string literals: the route swaps
@@ -611,14 +615,14 @@ def contact_row(c: sqlite3.Row) -> str:
     )
 
 
-def _contacts_card(contacts: list[sqlite3.Row]) -> str:
+def _contacts_card(contacts: list[Row]) -> str:
     if not contacts:
         return ""
     rows = "".join(contact_row(c) for c in contacts)
     return f"<h2>contacts</h2><table><tbody>{rows}</tbody></table>"
 
 
-def _notes_card(company_id: int, notes: list[sqlite3.Row]) -> str:
+def _notes_card(company_id: int, notes: list[Row]) -> str:
     items = "".join(
         f'<div class="note"><div class="dim small">{esc(n["occurred_at"][:10])} '
         f'&middot; {esc(n["kind"])}{" &middot; " + esc(n["author"]) if n["author"] else ""}</div>'
@@ -643,7 +647,16 @@ def _notes_card(company_id: int, notes: list[sqlite3.Row]) -> str:
 # --- runs ---------------------------------------------------------------------
 
 
-def runs_table(rows: list[sqlite3.Row]) -> str:
+def _compact(value: Any) -> str:
+    """A jsonb column as one short line, for a table cell."""
+    if not value:
+        return ""
+    if isinstance(value, str):
+        return value
+    return json.dumps(value, ensure_ascii=False, separators=(", ", ": "))
+
+
+def runs_table(rows: list[Row]) -> str:
     """The table alone, which is what the poll replaces.
 
     Separate from the page so the refresh swaps exactly this element. It
@@ -652,7 +665,11 @@ def runs_table(rows: list[sqlite3.Row]) -> str:
     out = []
     for row in rows:
         state = "error" if row["error"] else ("done" if row["finished_at"] else "running")
-        detail = row["error"] or row["stats_json"] or ""
+        # stats_json is a parsed dict now, not the text SQLite stored, so it
+        # is rendered rather than sliced. `detail[:160]` on a dict raises a
+        # KeyError naming a slice object, which is a memorable way to discover
+        # that a column changed type.
+        detail = row["error"] or _compact(row["stats_json"])
         out.append(
             f"<tr><td class='small'>{esc(row['started_at'][:19])}</td>"
             f"<td><a href='/runs/{row['id']}'>{esc(row['stage'])}</a></td>"
@@ -671,7 +688,7 @@ def runs_table(rows: list[sqlite3.Row]) -> str:
     )
 
 
-def runs_page(rows: list[sqlite3.Row]) -> str:
+def runs_page(rows: list[Row]) -> str:
     return (
         "<h1>Runs</h1>"
         "<p class='dim small'>Every stage records what it did. This view refreshes "
@@ -819,7 +836,7 @@ def pipeline_page(
 # --- watching one run ---------------------------------------------------------
 
 
-def run_log(rows: list[sqlite3.Row], run_id: int, done: bool, after: int) -> str:
+def run_log(rows: list[Row], run_id: int, done: bool, after: int) -> str:
     """The lines, followed by the element that asks for the ones after them.
 
     The tail replaces itself, carrying the sequence number it has reached, so
@@ -843,16 +860,16 @@ def run_log(rows: list[sqlite3.Row], run_id: int, done: bool, after: int) -> str
     return f"{lines}<span id='tail'{poll}></span>"
 
 
-def run_page(run: sqlite3.Row, rows: list[sqlite3.Row], after: int) -> str:
+def run_page(run: Row, rows: list[Row], after: int) -> str:
     done = bool(run["finished_at"])
     state = "error" if run["error"] else ("done" if done else "running")
-    detail = run["error"] or run["stats_json"] or ""
+    detail = run["error"] or _compact(run["stats_json"])
     header = (
         f"<h1>{esc(run['stage'])} <span class='dim small'>run {run['id']}</span></h1>"
         f"<div class='card small'>"
         f"<div>started {esc(run['started_at'][:19])} by {esc(run['started_by'] or '?')}"
         f" &middot; <span class='state-{state}'>{esc(state)}</span></div>"
-        f"<div class='dim'>{esc(run['args_json'] or '')}</div>"
+        f"<div class='dim'>{esc(_compact(run['args_json']))}</div>"
         f"<div>{esc(detail)}</div></div>"
     )
     return header + f"<pre id='log' class='log'>{run_log(rows, run['id'], done, after)}</pre>"

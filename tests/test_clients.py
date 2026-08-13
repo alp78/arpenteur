@@ -16,7 +16,6 @@ otherwise quietly rot back into the common shape:
 
 from __future__ import annotations
 
-import sqlite3
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -24,22 +23,23 @@ import pytest
 from fastapi.testclient import TestClient
 
 from arpenteur import db
+from arpenteur.kernel.db import Connection, Row
 from arpenteur.config import Territory
 from arpenteur.console.app import create_app
 
 
 @pytest.fixture
-def settings(tmp_path: Path) -> SimpleNamespace:
+def settings(db_path: str) -> SimpleNamespace:
     return SimpleNamespace(
-        db_path=tmp_path / "clients.sqlite3",
+        database_url=db_path,
         territory=Territory(cantons=("VD",), legal_forms=("0110",), name="vaud"),
         segments={"sme-owner": "A small owner-run business."},
     )
 
 
 @pytest.fixture
-def conn(settings) -> sqlite3.Connection:
-    connection = db.open_db(settings.db_path)
+def conn(settings) -> Connection:
+    connection = db.open_db(settings.database_url)
     db.upsert_company(
         connection,
         {"uid": "CHE103895771", "name": "Fondation Bois-Gentil", "canton": "VD",
@@ -64,7 +64,7 @@ def test_a_client_gets_a_quotable_reference(conn) -> None:
     an operator types into a blank required field."""
     client_id = db.promote_to_client(conn, 1)
     assert conn.execute(
-        "SELECT code FROM client WHERE id = ?", (client_id,)
+        "SELECT code FROM crm.client WHERE id = %s", (client_id,)
     ).fetchone()[0] == "BOIS-GENTIL"
 
 
@@ -76,7 +76,7 @@ def test_codes_do_not_collide(conn) -> None:
     second = db.promote_to_client(conn, 2)
     codes = {
         row[0] for row in conn.execute(
-            "SELECT code FROM client WHERE id IN (?, ?)", (first, second)
+            "SELECT code FROM crm.client WHERE id IN (%s, %s)", (first, second)
         )
     }
     assert codes == {"BOIS-GENTIL", "BOIS-GENTIL-2"}
@@ -89,7 +89,7 @@ def test_a_project_is_numbered_within_its_client(conn) -> None:
     first = db.add_project(conn, client_id, "Diagnostic")
     second = db.add_project(conn, client_id, "Migration")
     codes = [
-        conn.execute("SELECT code FROM project WHERE id = ?", (pid,)).fetchone()[0]
+        conn.execute("SELECT code FROM crm.project WHERE id = %s", (pid,)).fetchone()[0]
         for pid in (first, second)
     ]
     assert codes == ["BOIS-GENTIL-01", "BOIS-GENTIL-02"]
@@ -108,10 +108,10 @@ def test_promoting_keeps_the_file_rather_than_copying_the_name(conn) -> None:
     conn.commit()
     client_id = db.promote_to_client(conn, 1)
     row = conn.execute(
-        """SELECT co.purpose, w.url FROM client c
-             JOIN company co ON co.id = c.company_id
-             LEFT JOIN site w ON w.company_id = co.id
-            WHERE c.id = ?""",
+        """SELECT co.purpose, w.url FROM crm.client c
+             JOIN core.company co ON co.id = c.company_id
+             LEFT JOIN intel.site w ON w.company_id = co.id
+            WHERE c.id = %s""",
         (client_id,),
     ).fetchone()
     assert row["purpose"] and row["url"] == "https://bois-gentil.ch"
@@ -149,7 +149,7 @@ def test_a_planned_meeting_becomes_one_that_happened(conn) -> None:
     db.set_event_state(conn, event_id, "done")
     conn.commit()
     assert conn.execute(
-        "SELECT state FROM event WHERE id = ?", (event_id,)
+        "SELECT state FROM crm.interaction WHERE id = %s", (event_id,)
     ).fetchone()[0] == "done"
 
 
@@ -162,7 +162,7 @@ def test_a_cancelled_meeting_keeps_its_row(conn) -> None:
     )
     db.set_event_state(conn, event_id, "cancelled")
     conn.commit()
-    assert conn.execute("SELECT COUNT(*) FROM event").fetchone()[0] == 1
+    assert conn.execute("SELECT COUNT(*) AS n FROM crm.interaction").fetchone()[0] == 1
     # Gone from the diary, still in the record. Both are correct.
     assert db.diary(conn, since="2026-08-01", until="2026-08-31") == []
     assert len(db.timeline(conn, client_id)) == 1
@@ -173,7 +173,7 @@ def test_an_unknown_state_is_refused(conn) -> None:
     event_id = db.record_event(
         conn, client_id, kind="note", occurred_at="2026-08-20T14:00:00"
     )
-    with pytest.raises(ValueError, match="unknown event state"):
+    with pytest.raises(ValueError, match="unknown interaction state"):
         db.set_event_state(conn, event_id, "deleted")
 
 
@@ -196,7 +196,7 @@ def test_the_same_email_is_never_recorded_twice(conn) -> None:
     )
     conn.commit()
     assert first == second
-    assert conn.execute("SELECT COUNT(*) FROM event").fetchone()[0] == 1
+    assert conn.execute("SELECT COUNT(*) AS n FROM crm.interaction").fetchone()[0] == 1
 
 
 def test_two_notes_without_a_message_id_are_two_notes(conn) -> None:
@@ -205,7 +205,7 @@ def test_two_notes_without_a_message_id_are_two_notes(conn) -> None:
     db.record_event(conn, client_id, kind="note", occurred_at="2026-08-11T09:00:00")
     db.record_event(conn, client_id, kind="note", occurred_at="2026-08-11T09:00:00")
     conn.commit()
-    assert conn.execute("SELECT COUNT(*) FROM event").fetchone()[0] == 2
+    assert conn.execute("SELECT COUNT(*) AS n FROM crm.interaction").fetchone()[0] == 2
 
 
 # --- through the console ------------------------------------------------------
@@ -239,7 +239,7 @@ def test_closing_a_project_stamps_the_date(client, conn) -> None:
     client.post("/company/1/client")
     client.post("/client/1/projects", data={"name": "Diagnostic"})
     client.post("/project/1", data={"status": "delivered"})
-    assert conn.execute("SELECT closed_at FROM project WHERE id = 1").fetchone()[0]
+    assert conn.execute("SELECT closed_at FROM crm.project WHERE id = 1").fetchone()[0]
 
 
 def test_a_typed_time_sorts_against_a_recorded_one(client, conn) -> None:

@@ -25,12 +25,12 @@ from __future__ import annotations
 
 import hashlib
 import json
-import sqlite3
 from pathlib import Path
 from typing import Any, Callable
 
 from .. import db
 from ..config import Settings
+from ..kernel.db import Connection, Row
 from ..llm import get_provider
 
 SYSTEM = """You judge how well a company fits a campaign, for someone deciding \
@@ -100,9 +100,9 @@ def brief_digest(brief: str) -> str:
 
 
 def build_prompt(
-    company: sqlite3.Row,
-    segments: list[sqlite3.Row],
-    officers: list[sqlite3.Row],
+    company: Row,
+    segments: list[Row],
+    officers: list[Row],
     site: dict[str, Any] | None,
 ) -> str:
     """The company's whole file, minus anything unquotable.
@@ -167,7 +167,7 @@ def build_prompt(
 
 
 def _select(
-    conn: sqlite3.Connection,
+    conn: Connection,
     *,
     settings: Settings,
     uids: list[str] | None,
@@ -176,11 +176,11 @@ def _select(
     limit: int | None,
     rescore: bool,
     brief_hash: str | None,
-) -> list[sqlite3.Row]:
+) -> list[Row]:
     where = ["c.hydrated_at IS NOT NULL"]
     params: list[Any] = []
     if uids:
-        where.append(f"c.uid IN ({','.join('?' * len(uids))})")
+        where.append(f"c.uid IN ({','.join(['%s'] * len(uids))})")
         params.extend(uids)
     else:
         clause, values = settings.status_clause()
@@ -189,11 +189,11 @@ def _select(
             params.extend(values)
     if segment:
         where.append(
-            "EXISTS (SELECT 1 FROM segment s WHERE s.company_id = c.id AND s.segment = ?)"
+            "EXISTS (SELECT 1 FROM intel.segment s WHERE s.company_id = c.id AND s.segment = %s)"
         )
         params.append(segment)
     if researched_only:
-        where.append("EXISTS (SELECT 1 FROM site w WHERE w.company_id = c.id)")
+        where.append("EXISTS (SELECT 1 FROM intel.site w WHERE w.company_id = c.id)")
     if not rescore:
         # A score is stale when either input has moved: the brief it was taken
         # against, or the web research it read. Both are compared, so
@@ -202,17 +202,17 @@ def _select(
         # is never stale, because a person is not an input that expired.
         where.append(
             """c.id NOT IN (
-                SELECT f.company_id FROM fit f
+                SELECT f.company_id FROM intel.fit f
                  WHERE f.source = 'manual'
-                    OR (f.brief_hash IS ?
-                        AND f.site_hash IS (
-                             SELECT w.content_hash FROM site w
+                    OR (f.brief_hash IS NOT DISTINCT FROM %s
+                        AND f.site_hash IS NOT DISTINCT FROM (
+                             SELECT w.content_hash FROM intel.site w
                               WHERE w.company_id = f.company_id
                         ))
             )"""
         )
         params.append(brief_hash)
-    sql = f"SELECT c.* FROM company c WHERE {' AND '.join(where)} ORDER BY c.id"
+    sql = f"SELECT c.* FROM core.company c WHERE {' AND '.join(where)} ORDER BY c.id"
     if limit:
         sql += f" LIMIT {int(limit)}"
     return conn.execute(sql, params).fetchall()
@@ -220,7 +220,7 @@ def _select(
 
 def run(
     settings: Settings,
-    conn: sqlite3.Connection,
+    conn: Connection,
     *,
     uids: list[str] | None = None,
     segment: str | None = None,
@@ -266,11 +266,11 @@ def run(
 
     for index, company in enumerate(companies, 1):
         segments = conn.execute(
-            "SELECT segment, source FROM segment WHERE company_id = ?",
+            "SELECT segment, source FROM intel.segment WHERE company_id = %s",
             (company["id"],),
         ).fetchall()
         officers = conn.execute(
-            "SELECT full_name, role FROM person WHERE company_id = ? ORDER BY role",
+            "SELECT full_name, role FROM core.person WHERE company_id = %s ORDER BY role",
             (company["id"],),
         ).fetchall()
         site = db.site_for_draft(conn, company["id"])

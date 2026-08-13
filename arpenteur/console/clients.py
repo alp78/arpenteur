@@ -21,10 +21,10 @@ the diary, the story and the record cannot disagree.
 from __future__ import annotations
 
 import calendar as calmod
-import sqlite3
 from datetime import date, timedelta
 from typing import Any
 
+from ..kernel.db import Connection, Row
 from .render import esc, page
 
 # What each kind of event looks like in a list. The mark is deliberately a
@@ -117,7 +117,7 @@ def _badge(value: str | None) -> str:
     return f'<span class="badge {esc(value)}">{esc(value or "—")}</span>'
 
 
-def _when(row: sqlite3.Row) -> str:
+def _when(row: Row) -> str:
     stamp = (row["occurred_at"] or "")[:16].replace("T", " ")
     if row["ends_at"]:
         return f'{stamp} &rarr; {esc((row["ends_at"] or "")[11:16])}'
@@ -127,7 +127,7 @@ def _when(row: sqlite3.Row) -> str:
 # --- the portfolio ------------------------------------------------------------
 
 
-def portfolio(rows: list[sqlite3.Row], total_projects: int, upcoming: int) -> str:
+def portfolio(rows: list[Row], total_projects: int, upcoming: int) -> str:
     if not rows:
         body = (
             '<div class="card"><p>No clients yet.</p>'
@@ -186,12 +186,12 @@ def portfolio(rows: list[sqlite3.Row], total_projects: int, upcoming: int) -> st
 
 
 def client_page(
-    client: sqlite3.Row,
-    company: sqlite3.Row,
-    projects: list[sqlite3.Row],
-    events: list[sqlite3.Row],
-    contacts: list[sqlite3.Row],
-    officers: list[sqlite3.Row],
+    client: Row,
+    company: Row,
+    projects: list[Row],
+    events: list[Row],
+    contacts: list[Row],
+    officers: list[Row],
     attribution_notice: str,
     dossier_filled: int = 0,
     dossier_total: int = 0,
@@ -289,7 +289,7 @@ def _dossier_strip(
     )
 
 
-def _client_brief(client: sqlite3.Row) -> str:
+def _client_brief(client: Row) -> str:
     """Standing context, as distinct from something that happened.
 
     An event is what occurred on a date. This is what remains true: who
@@ -352,7 +352,7 @@ def _new_project_form(client_id: int) -> str:
     )
 
 
-def _log_form(client_id: int, projects: list[sqlite3.Row]) -> str:
+def _log_form(client_id: int, projects: list[Row]) -> str:
     """Record something that happened, or is going to.
 
     One form for the whole record. The surveyed tools split correspondence,
@@ -401,7 +401,7 @@ def _log_form(client_id: int, projects: list[sqlite3.Row]) -> str:
     )
 
 
-def _timeline(events: list[sqlite3.Row]) -> str:
+def _timeline(events: list[Row]) -> str:
     if not events:
         return (
             '<p class="dim small">Nothing recorded yet. Everything logged here '
@@ -465,10 +465,10 @@ def _timeline(events: list[sqlite3.Row]) -> str:
 
 
 def project_page(
-    project: sqlite3.Row,
-    client: sqlite3.Row,
-    company: sqlite3.Row,
-    events: list[sqlite3.Row],
+    project: Row,
+    client: Row,
+    company: Row,
+    events: list[Row],
 ) -> str:
     money = (
         f'{project["budget"]:,.0f} {esc(project["currency"] or "CHF")}'
@@ -503,7 +503,7 @@ def project_page(
     )
 
 
-def _project_form(project: sqlite3.Row) -> str:
+def _project_form(project: Row) -> str:
     states = "".join(
         f'<option value="{esc(s)}"'
         + (" selected" if s == project["status"] else "")
@@ -556,7 +556,7 @@ def _project_form(project: sqlite3.Row) -> str:
 
 
 def calendar_page(
-    year: int, month: int, events: list[sqlite3.Row], today: date
+    year: int, month: int, events: list[Row], today: date
 ) -> str:
     """A month, and what is in it.
 
@@ -564,7 +564,7 @@ def calendar_page(
     That is the whole reason a meeting cannot be in the diary and missing
     from the file: there is one row, seen from two pages.
     """
-    by_day: dict[str, list[sqlite3.Row]] = {}
+    by_day: dict[str, list[Row]] = {}
     for row in events:
         by_day.setdefault((row["occurred_at"] or "")[:10], []).append(row)
 

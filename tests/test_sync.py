@@ -11,7 +11,6 @@ duplicates is trivial to write by never writing; these tests pin both edges.
 
 from __future__ import annotations
 
-import sqlite3
 from datetime import date as Date
 from pathlib import Path
 from types import SimpleNamespace
@@ -19,6 +18,7 @@ from types import SimpleNamespace
 import pytest
 
 from arpenteur import db
+from arpenteur.kernel.db import Connection, Row
 from arpenteur.config import Territory
 from arpenteur.sources.zefix import Company, Mutation
 from arpenteur.stages import sync
@@ -66,7 +66,7 @@ def settings(tmp_path: Path) -> SimpleNamespace:
 
 
 @pytest.fixture
-def conn(db_path: Path) -> sqlite3.Connection:
+def conn(db_path: Path) -> Connection:
     connection = db.open_db(db_path)
     db.upsert_company(
         connection,
@@ -99,8 +99,8 @@ class _NullClient:
 
 def counts(conn) -> dict[str, int]:
     return {
-        table: conn.execute(f"SELECT COUNT(*) FROM {table}").fetchone()[0]
-        for table in ("company", "publication", "sync_day")
+        table: conn.execute(f"SELECT COUNT(*) AS n FROM {table}").fetchone()[0]
+        for table in ("core.company", "core.publication", "intel.sync_day")
     }
 
 
@@ -135,7 +135,7 @@ def test_re_reading_a_day_never_duplicates_its_notices(monkeypatch, settings, co
     for _ in range(3):
         sync_with(monkeypatch, fake, settings, conn, since="2026-08-05",
                   until="2026-08-05", resume=False)
-    assert conn.execute("SELECT COUNT(*) FROM publication").fetchone()[0] == 1
+    assert conn.execute("SELECT COUNT(*) AS n FROM core.publication").fetchone()[0] == 1
     assert len(fake.calls) == 3, "resume=False should really re-fetch"
 
 
@@ -167,7 +167,7 @@ def test_two_notices_in_one_day_are_one_company_not_two(
     assert stats["notices"] == 2
     assert stats["tracked"] == 1
     assert (stats["unchanged"], stats["updated"]) == (1, 0)
-    assert conn.execute("SELECT COUNT(*) FROM publication").fetchone()[0] == 2
+    assert conn.execute("SELECT COUNT(*) AS n FROM core.publication").fetchone()[0] == 2
 
 
 def test_notices_that_disagree_within_a_day_settle_once(
@@ -182,7 +182,7 @@ def test_notices_that_disagree_within_a_day_settle_once(
     stats = sync_with(monkeypatch, FakeZefix(feed), settings, conn,
                       since="2026-08-05", until="2026-08-05")
     assert (stats["updated"], stats["unchanged"]) == (1, 0)
-    assert conn.execute("SELECT name FROM company").fetchone()[0] == "Second Name Sàrl"
+    assert conn.execute("SELECT name FROM core.company").fetchone()[0] == "Second Name Sàrl"
 
 
 # --- and that changes are actually seen ---------------------------------------
@@ -198,7 +198,7 @@ def test_a_rename_is_applied_from_the_feed_alone(monkeypatch, settings, conn) ->
     stats = sync_with(monkeypatch, FakeZefix(feed), settings, conn,
                       since="2026-08-05", until="2026-08-05")
     assert stats["updated"] == 1
-    assert conn.execute("SELECT name FROM company").fetchone()[0] == "Renamed Sàrl"
+    assert conn.execute("SELECT name FROM core.company").fetchone()[0] == "Renamed Sàrl"
 
 
 def test_a_striking_off_is_a_status_not_a_deletion(monkeypatch, settings, conn) -> None:
@@ -211,7 +211,7 @@ def test_a_striking_off_is_a_status_not_a_deletion(monkeypatch, settings, conn) 
     stats = sync_with(monkeypatch, FakeZefix(feed), settings, conn,
                       since="2026-08-05", until="2026-08-05")
     assert stats["deletions"] == 1
-    row = conn.execute("SELECT status FROM company WHERE uid = 'CHE111'").fetchone()
+    row = conn.execute("SELECT status FROM core.company WHERE uid = 'CHE111'").fetchone()
     assert row["status"] == "CANCELLED"
 
 
@@ -221,7 +221,7 @@ def test_a_touched_company_is_queued_for_re_hydration(monkeypatch, settings, con
     feed = {"2026-08-05": [mutation("CHE111", "Known Sàrl", day="2026-08-05", sogc_id=1)]}
     sync_with(monkeypatch, FakeZefix(feed), settings, conn,
               since="2026-08-05", until="2026-08-05")
-    row = conn.execute("SELECT stale_since, last_mutation_date FROM company").fetchone()
+    row = conn.execute("SELECT stale_since, last_mutation_date FROM core.company").fetchone()
     assert row["stale_since"] is not None
     assert row["last_mutation_date"] == "2026-08-05"
 
@@ -237,10 +237,10 @@ def test_several_notices_for_one_company_are_one_piece_of_work(
     sync_with(monkeypatch, FakeZefix(feed), settings, conn,
               since="2026-08-05", until="2026-08-06")
     rows = conn.execute(
-        "SELECT COUNT(*) FROM company WHERE stale_since IS NOT NULL"
+        "SELECT COUNT(*) AS n FROM core.company WHERE stale_since IS NOT NULL"
     ).fetchone()[0]
     assert rows == 1
-    assert conn.execute("SELECT last_mutation_date FROM company").fetchone()[0] == "2026-08-06"
+    assert conn.execute("SELECT last_mutation_date FROM core.company").fetchone()[0] == "2026-08-06"
 
 
 # --- territory ----------------------------------------------------------------
@@ -258,7 +258,7 @@ def test_a_company_outside_the_territory_is_counted_not_stored(
     stats = sync_with(monkeypatch, FakeZefix(feed), settings, conn,
                       since="2026-08-05", until="2026-08-05")
     assert stats["notices"] == 1 and stats["tracked"] == 0
-    assert conn.execute("SELECT COUNT(*) FROM company").fetchone()[0] == 1
+    assert conn.execute("SELECT COUNT(*) AS n FROM core.company").fetchone()[0] == 1
 
 
 def test_a_legal_form_outside_the_territory_is_excluded_too(
@@ -282,7 +282,7 @@ def test_a_new_company_inside_the_territory_is_admitted(
     stats = sync_with(monkeypatch, FakeZefix(feed), settings, conn,
                       since="2026-08-05", until="2026-08-05")
     assert stats["inserted"] == 1
-    assert conn.execute("SELECT COUNT(*) FROM company").fetchone()[0] == 2
+    assert conn.execute("SELECT COUNT(*) AS n FROM core.company").fetchone()[0] == 2
 
 
 def test_a_survey_can_refuse_to_grow(monkeypatch, settings, conn) -> None:
@@ -297,7 +297,7 @@ def test_a_survey_can_refuse_to_grow(monkeypatch, settings, conn) -> None:
                       since="2026-08-05", until="2026-08-05")
     assert stats["inserted"] == 0
     assert stats["tracked"] == 1, "known companies must still be updated"
-    assert conn.execute("SELECT COUNT(*) FROM company").fetchone()[0] == 1
+    assert conn.execute("SELECT COUNT(*) AS n FROM core.company").fetchone()[0] == 1
 
 
 def test_a_known_company_is_updated_even_from_outside_the_territory(
@@ -315,7 +315,7 @@ def test_a_known_company_is_updated_even_from_outside_the_territory(
     stats = sync_with(monkeypatch, FakeZefix(feed), settings, conn,
                       since="2026-08-05", until="2026-08-05")
     assert stats["tracked"] == 1
-    assert conn.execute("SELECT name FROM company").fetchone()[0] == "Moved Sàrl"
+    assert conn.execute("SELECT name FROM core.company").fetchone()[0] == "Moved Sàrl"
 
 
 # --- caching ------------------------------------------------------------------

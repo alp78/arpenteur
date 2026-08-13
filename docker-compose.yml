@@ -1,0 +1,37 @@
+# The system of record.
+#
+# PostGIS rather than plain Postgres because the geo module needs real geometry
+# and the image is the official Postgres one with the extension already built:
+# installing PostGIS afterwards means compiling against the server headers,
+# which is a build step this project does not otherwise have.
+#
+# Bound to 127.0.0.1 on purpose. The console has no authentication because it
+# is not meant to be reachable, and a database listening on every interface
+# would quietly undo that. It holds client data from the health sector.
+services:
+  db:
+    image: postgis/postgis:16-3.4
+    container_name: arpenteur-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: arpenteur
+      POSTGRES_USER: arpenteur
+      # Local development only, and the port is not exposed beyond loopback.
+      # A deployment sets this from the environment instead.
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-arpenteur}
+      # Deterministic collation. Company names carry accents, and a database
+      # created under a different locale sorts "Zürich" somewhere else, which
+      # turns an ORDER BY into something that changes between machines.
+      POSTGRES_INITDB_ARGS: "--locale=C.UTF-8 --encoding=UTF8"
+    ports:
+      - "127.0.0.1:5433:5432"
+    volumes:
+      - arpenteur-pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U arpenteur -d arpenteur"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+volumes:
+  arpenteur-pgdata:

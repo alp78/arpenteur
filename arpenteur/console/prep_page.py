@@ -13,11 +13,11 @@ makes the ticking worth doing.
 from __future__ import annotations
 
 import json
-import sqlite3
 from typing import Any
 
 from ..stages.prep import CATEGORIES, CATEGORY_LABELS
 from .clients import STYLES as CLIENT_STYLES
+from ..kernel.db import Connection, Row
 from .render import esc, page
 
 STYLES = """
@@ -64,11 +64,11 @@ def shell(body: str, territory: str = "") -> str:
     return page("arpenteur", body, territory, css=CLIENT_STYLES + STYLES)
 
 
-def _agenda(row: sqlite3.Row | None) -> str:
+def _agenda(row: Row | None) -> str:
     if row is None:
         return ""
     try:
-        items = json.loads(row["agenda_json"] or "[]")
+        items = row["agenda_json"] or []
     except (TypeError, ValueError):
         items = []
     if not items:
@@ -87,7 +87,7 @@ def _agenda(row: sqlite3.Row | None) -> str:
     )
 
 
-def _term(row: sqlite3.Row) -> str:
+def _term(row: Row) -> str:
     priority = row["priority"] or "nice"
     facts = []
     for label, key, css in (
@@ -156,10 +156,10 @@ def generate_form(client_id: int, filled: int, model: str, effort: str) -> str:
 
 
 def prep_page(
-    client: sqlite3.Row,
-    company: sqlite3.Row,
-    terms: list[sqlite3.Row],
-    briefing: sqlite3.Row | None,
+    client: Row,
+    company: Row,
+    terms: list[Row],
+    briefing: Row | None,
     filled: int,
     model: str,
     effort: str,

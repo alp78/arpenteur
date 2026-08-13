@@ -19,3 +19,9 @@ data/
 
 # uv
 uv.lock
+
+# The SQLite database this was ported away from. Kept locally as the source
+# for scripts/import_sqlite.py and as a fallback until Postgres has proved
+# itself in daily use; not carried in the repository.
+*.sqlite3-wal
+*.sqlite3-shm

@@ -17,7 +17,6 @@ a public register, notes are typed by hand, and neither is trustworthy.
 
 from __future__ import annotations
 
-import sqlite3
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -25,6 +24,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from arpenteur import db
+from arpenteur.kernel.db import Connection, Row
 from arpenteur.config import Territory
 from arpenteur.console import create_app
 
@@ -35,17 +35,17 @@ SEGMENTS = {
 
 
 @pytest.fixture
-def settings(tmp_path: Path) -> SimpleNamespace:
+def settings(db_path: str) -> SimpleNamespace:
     return SimpleNamespace(
-        db_path=tmp_path / "console.sqlite3",
+        database_url=db_path,
         territory=Territory(cantons=("GE",), legal_forms=("0107",), name="geneve"),
         segments=SEGMENTS,
     )
 
 
 @pytest.fixture
-def conn(settings) -> sqlite3.Connection:
-    connection = db.open_db(settings.db_path)
+def conn(settings) -> Connection:
+    connection = db.open_db(settings.database_url)
     db.upsert_company(
         connection,
         {"uid": "CHE1", "name": "Fiduciaire Sàrl", "canton": "GE",
@@ -119,7 +119,7 @@ def test_a_label_set_here_survives_re_classification(client, conn) -> None:
     )
     conn.commit()
     row = conn.execute(
-        "SELECT source, confidence FROM segment WHERE segment = 'data-driven'"
+        "SELECT source, confidence FROM intel.segment WHERE segment = 'data-driven'"
     ).fetchone()
     assert row["source"] == "manual" and row["confidence"] == 1.0
 
@@ -127,14 +127,14 @@ def test_a_label_set_here_survives_re_classification(client, conn) -> None:
 def test_unchecking_a_label_removes_it(client, conn) -> None:
     """The false positive case, which is most of why the console exists."""
     client.post("/company/1/segments", data={"segment": []})
-    assert conn.execute("SELECT COUNT(*) FROM segment").fetchone()[0] == 0
+    assert conn.execute("SELECT COUNT(*) AS n FROM intel.segment").fetchone()[0] == 0
 
 
 def test_pipeline_state_and_notes_are_written(client, conn) -> None:
     client.post("/company/1/prospect", data={"state": "meeting", "owner": "alex"})
     client.post("/company/1/notes", data={"body": "Called, spoke to the owner.",
                                           "kind": "call"})
-    assert conn.execute("SELECT state FROM prospect").fetchone()[0] == "meeting"
+    assert conn.execute("SELECT state FROM intel.prospect").fetchone()[0] == "meeting"
     assert len(db.notes_for(conn, 1)) == 1
 
 
@@ -147,12 +147,12 @@ def test_suppressing_a_contact_toggles_and_persists(client, conn) -> None:
     """A person said do not write here. Honoured before any draft is made."""
     db.save_contact(conn, company_id=1, kind="email", value="a@f.ch", method="site")
     conn.commit()
-    contact_id = conn.execute("SELECT id FROM contact").fetchone()[0]
+    contact_id = conn.execute("SELECT id AS id FROM core.contact").fetchone()[0]
 
     client.post(f"/contact/{contact_id}/suppress")
-    assert conn.execute("SELECT suppressed FROM contact").fetchone()[0] == 1
+    assert conn.execute("SELECT suppressed FROM core.contact").fetchone()[0] == 1
     client.post(f"/contact/{contact_id}/suppress")
-    assert conn.execute("SELECT suppressed FROM contact").fetchone()[0] == 0
+    assert conn.execute("SELECT suppressed FROM core.contact").fetchone()[0] == 0
 
 
 def test_an_address_says_which_page_published_it(client, conn) -> None:
@@ -174,7 +174,7 @@ def test_suppressing_redraws_the_same_row_the_page_drew(client, conn) -> None:
         source_url="https://f.ch/contact",
     )
     conn.commit()
-    contact_id = conn.execute("SELECT id FROM contact").fetchone()[0]
+    contact_id = conn.execute("SELECT id AS id FROM core.contact").fetchone()[0]
     swapped = client.post(f"/contact/{contact_id}/suppress").text
     assert "https://f.ch/contact" in swapped
     assert swapped.count("<td>") + swapped.count("<td class") == 4

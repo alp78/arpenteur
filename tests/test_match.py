@@ -16,7 +16,6 @@ writer not to know them.
 from __future__ import annotations
 
 import json
-import sqlite3
 from pathlib import Path
 from types import SimpleNamespace
 from typing import Any
@@ -24,6 +23,7 @@ from typing import Any
 import pytest
 
 from arpenteur import db
+from arpenteur.kernel.db import Connection, Row
 from arpenteur.config import Settings
 from arpenteur.stages import match
 
@@ -76,7 +76,7 @@ def settings(tmp_path: Path, brief: Path) -> SimpleNamespace:
 
 
 @pytest.fixture
-def conn(db_path: Path) -> sqlite3.Connection:
+def conn(db_path: Path) -> Connection:
     connection = db.open_db(db_path)
     db.upsert_company(
         connection,
@@ -166,12 +166,12 @@ def test_a_score_is_stored_with_its_reasoning_and_advice(
     monkeypatch, settings, conn
 ) -> None:
     match_with(monkeypatch, FakeProvider(), settings, conn)
-    row = conn.execute("SELECT * FROM fit").fetchone()
+    row = conn.execute("SELECT * FROM intel.fit").fetchone()
     assert (row["score"], row["band"]) == (78, "high")
     assert "aucun partenaire" in row["reasoning"]
     assert row["advice"].startswith("Bonjour")
-    assert json.loads(row["matched"])
-    assert json.loads(row["against"]), "reservations must survive a high score"
+    assert row["matched"]
+    assert row["against"], "reservations must survive a high score"
     assert row["source"] == "model" and row["brief_hash"]
 
 
@@ -182,7 +182,7 @@ def test_a_manual_score_survives_re_scoring(monkeypatch, settings, conn) -> None
     conn.commit()
 
     match_with(monkeypatch, FakeProvider(), settings, conn, rescore=True)
-    row = conn.execute("SELECT * FROM fit").fetchone()
+    row = conn.execute("SELECT * FROM intel.fit").fetchone()
     assert (row["score"], row["source"]) == (10, "manual")
 
 

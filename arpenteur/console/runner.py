@@ -24,7 +24,7 @@ progress view reads.
 
 from __future__ import annotations
 
-import sqlite3
+import psycopg
 import threading
 import traceback
 from dataclasses import dataclass, field
@@ -32,6 +32,7 @@ from typing import Any, Callable
 
 from .. import db
 from ..config import Settings
+from ..kernel.db import Connection, Row
 from ..stages import enrich, match, people, profile, reach, source, sync
 
 
@@ -193,7 +194,7 @@ STAGES: dict[str, Stage] = {
         button_does="Walks the alphabet for each canton and legal form chosen, "
                     "storing every company it finds. Safe to re-run: it skips "
                     "what it has already covered.",
-        done_sql="SELECT COUNT(*) FROM company",
+        done_sql="SELECT COUNT(*) FROM core.company",
         waiting_sql="SELECT 0",
         done_label="companies found",
         waiting_label="",
@@ -218,14 +219,14 @@ STAGES: dict[str, Stage] = {
         button="Read the gazette",
         button_does="Fetches each day's notices and flags the companies they mention. "
                     "It does not re-fetch the companies themselves; that is Fetch detail.",
-        done_sql="SELECT COUNT(*) FROM sync_day",
+        done_sql="SELECT COUNT(*) FROM intel.sync_day",
         # Days of gazette not yet read, which is what being behind means here.
         # The count of companies marked as changed belongs to Fetch detail,
         # and showing it against this stage said the gazette was behind when
         # what was behind was the re-reading.
-        waiting_sql="SELECT MAX(0, CAST(julianday('now') "
-                    "- julianday(COALESCE((SELECT MAX(sogc_date) FROM sync_day), "
-                    "date('now'))) AS INTEGER))",
+        waiting_sql="SELECT GREATEST(0, current_date "
+                    "- COALESCE((SELECT MAX(sogc_date) FROM intel.sync_day), "
+                    "current_date))",
         done_label="days read",
         waiting_label="days behind",
     ),
@@ -249,8 +250,8 @@ STAGES: dict[str, Stage] = {
         button="Fetch detail",
         button_does="Works through the companies that have no detail yet, plus any the "
                     "gazette marked as changed, starting with the changed ones.",
-        done_sql="SELECT COUNT(*) FROM company WHERE hydrated_at IS NOT NULL",
-        waiting_sql="SELECT COUNT(*) FROM company "
+        done_sql="SELECT COUNT(*) FROM core.company WHERE hydrated_at IS NOT NULL",
+        waiting_sql="SELECT COUNT(*) FROM core.company "
                     "WHERE hydrated_at IS NULL OR stale_since IS NOT NULL",
         result_key="hydrated",
     ),
@@ -272,10 +273,10 @@ STAGES: dict[str, Stage] = {
         cost="Nothing at all. No network, no model: it re-reads text already stored.",
         button="Extract officers",
         button_does="Parses stored notices into officer records. Safe to run any time.",
-        done_sql="SELECT COUNT(DISTINCT company_id) FROM person",
-        waiting_sql="SELECT COUNT(*) FROM company c WHERE EXISTS "
-                    "(SELECT 1 FROM publication p WHERE p.company_id = c.id) "
-                    "AND NOT EXISTS (SELECT 1 FROM person r WHERE r.company_id = c.id)",
+        done_sql="SELECT COUNT(DISTINCT company_id) FROM core.person",
+        waiting_sql="SELECT COUNT(*) FROM core.company c WHERE EXISTS "
+                    "(SELECT 1 FROM core.publication p WHERE p.company_id = c.id) "
+                    "AND NOT EXISTS (SELECT 1 FROM core.person r WHERE r.company_id = c.id)",
     ),
     "profile": Stage(
         name="profile",
@@ -297,10 +298,10 @@ STAGES: dict[str, Stage] = {
         button="Sort into segments",
         button_does="Labels companies that have a purpose and no labels yet. "
                     "Companies in liquidation are skipped.",
-        done_sql="SELECT COUNT(DISTINCT company_id) FROM segment",
-        waiting_sql="SELECT COUNT(*) FROM company c WHERE c.purpose IS NOT NULL "
+        done_sql="SELECT COUNT(DISTINCT company_id) FROM intel.segment",
+        waiting_sql="SELECT COUNT(*) FROM core.company c WHERE c.purpose IS NOT NULL "
                     "AND c.status = 'ACTIVE' AND NOT EXISTS "
-                    "(SELECT 1 FROM segment s WHERE s.company_id = c.id)",
+                    "(SELECT 1 FROM intel.segment s WHERE s.company_id = c.id)",
     ),
     "enrich": Stage(
         name="enrich",
@@ -326,10 +327,10 @@ STAGES: dict[str, Stage] = {
         button="Research websites",
         button_does="Searches the web for each company, opens what it finds, and stores "
                     "one reading per company. Will not start without a size or a dry run.",
-        done_sql="SELECT COUNT(*) FROM site",
-        waiting_sql="SELECT COUNT(*) FROM company c WHERE c.status = 'ACTIVE' "
-                    "AND EXISTS (SELECT 1 FROM segment s WHERE s.company_id = c.id) "
-                    "AND NOT EXISTS (SELECT 1 FROM site w WHERE w.company_id = c.id)",
+        done_sql="SELECT COUNT(*) FROM intel.site",
+        waiting_sql="SELECT COUNT(*) FROM core.company c WHERE c.status = 'ACTIVE' "
+                    "AND EXISTS (SELECT 1 FROM intel.segment s WHERE s.company_id = c.id) "
+                    "AND NOT EXISTS (SELECT 1 FROM intel.site w WHERE w.company_id = c.id)",
         needs_limit=True,
     ),
     "match": Stage(
@@ -355,10 +356,10 @@ STAGES: dict[str, Stage] = {
         button="Score companies",
         button_does="Scores companies not yet scored against the current campaign brief. "
                     "Scores you set by hand are never touched.",
-        done_sql="SELECT COUNT(*) FROM fit",
-        waiting_sql="SELECT COUNT(*) FROM site w JOIN company c ON c.id = w.company_id "
+        done_sql="SELECT COUNT(*) FROM intel.fit",
+        waiting_sql="SELECT COUNT(*) FROM intel.site w JOIN core.company c ON c.id = w.company_id "
                     "WHERE c.status = 'ACTIVE' AND NOT EXISTS "
-                    "(SELECT 1 FROM fit f WHERE f.company_id = w.company_id)",
+                    "(SELECT 1 FROM intel.fit f WHERE f.company_id = w.company_id)",
     ),
     "reach": Stage(
         name="reach",
@@ -377,8 +378,8 @@ STAGES: dict[str, Stage] = {
         button="Find addresses",
         button_does="Reads each company's home page and its contact pages, honouring "
                     "robots.txt, and stores any address published there.",
-        done_sql="SELECT COUNT(*) FROM contact WHERE kind = 'email'",
-        waiting_sql="SELECT COUNT(*) FROM site WHERE status = 'found' "
+        done_sql="SELECT COUNT(*) FROM core.contact WHERE kind = 'email'",
+        waiting_sql="SELECT COUNT(*) FROM intel.site WHERE status = 'found' "
                     "AND url IS NOT NULL AND url <> '' AND reached_at IS NULL",
     ),
 }
@@ -408,7 +409,7 @@ BAND_CHOICES: tuple[tuple[str, str], ...] = (
 )
 
 
-def options_for(conn: sqlite3.Connection, settings: Settings) -> dict[str, tuple]:
+def options_for(conn: Connection, settings: Settings) -> dict[str, tuple]:
     """The contents of every dropdown, read from the survey as it stands.
 
     Live rather than hardcoded: a canton list typed into the source drifts the
@@ -418,7 +419,7 @@ def options_for(conn: sqlite3.Connection, settings: Settings) -> dict[str, tuple
     cantons = [
         (row[0], row[0])
         for row in conn.execute(
-            "SELECT DISTINCT canton FROM company WHERE canton IS NOT NULL ORDER BY canton"
+            "SELECT DISTINCT canton FROM core.company WHERE canton IS NOT NULL ORDER BY canton"
         )
     ]
     segments = [(name, name) for name in sorted(settings.segments)]
@@ -451,7 +452,7 @@ def options_for(conn: sqlite3.Connection, settings: Settings) -> dict[str, tuple
     }
 
 
-def status_of(conn: sqlite3.Connection, stage: Stage) -> dict[str, int]:
+def status_of(conn: Connection, stage: Stage) -> dict[str, int]:
     """How much this stage has done and how much is queued for it.
 
     The number that turns a form into an instrument: "3 done, 41'238 waiting"
@@ -461,8 +462,8 @@ def status_of(conn: sqlite3.Connection, stage: Stage) -> dict[str, int]:
         if not sql:
             return 0
         try:
-            return int(conn.execute(sql).fetchone()[0])
-        except sqlite3.Error:
+            return int(next(iter(conn.execute(sql).fetchone().values())))
+        except psycopg.Error:
             return 0
 
     return {"done": count(stage.done_sql), "waiting": count(stage.waiting_sql)}
@@ -528,7 +529,7 @@ def check(stage: Stage, kwargs: dict[str, Any]) -> None:
             )
 
 
-def close_orphans(conn: sqlite3.Connection) -> int:
+def close_orphans(conn: Connection) -> int:
     """Settle console runs whose thread died with the process. Returns how many.
 
     A run is a thread inside the console, so stopping the console kills it
@@ -539,13 +540,7 @@ def close_orphans(conn: sqlite3.Connection) -> int:
     process still working in another terminal, and marking that interrupted
     would be inventing a fact about someone else's job.
     """
-    cur = conn.execute(
-        "UPDATE run SET finished_at = ?, error = ? "
-        "WHERE finished_at IS NULL AND started_by = 'console'",
-        (db.now(), "interrupted: the console stopped while this was running"),
-    )
-    conn.commit()
-    return int(cur.rowcount or 0)
+    return db.close_orphans(conn, "console")
 
 
 @dataclass
@@ -578,7 +573,7 @@ class Runner:
                     f"Run {self.current} is still going. One at a time: two runs of "
                     "the same stage would spend twice and interleave their writes."
                 )
-            conn = db.open_db(self.settings.db_path)
+            conn = db.open_db(self.settings.database_url)
             try:
                 run_id = db.start_run(conn, name, dict(form), started_by=by)
             finally:
@@ -594,7 +589,7 @@ class Runner:
     def _work(self, stage: Stage, run_id: int, kwargs: dict[str, Any]) -> None:
         # Its own connection: sqlite3 objects belong to the thread that made
         # them, and the console must keep answering while this works.
-        conn = db.open_db(self.settings.db_path)
+        conn = db.open_db(self.settings.database_url)
 
         def log(message: str) -> None:
             # Committed line by line. A run that dies at company 4'000 should
@@ -625,7 +620,7 @@ class Runner:
             try:
                 log(f"! {exc}")
                 log(traceback.format_exc().strip().splitlines()[-1])
-            except sqlite3.Error:
+            except psycopg.Error:
                 pass
             db.finish_run(conn, run_id, error=str(exc))
         finally:

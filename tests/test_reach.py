@@ -7,13 +7,13 @@ row that lands can answer where the address came from.
 
 from __future__ import annotations
 
-import sqlite3
 from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
 
 from arpenteur import db
+from arpenteur.kernel.db import Connection, Row
 from arpenteur.config import Settings
 from arpenteur.stages import reach
 
@@ -67,7 +67,7 @@ def settings(tmp_path: Path) -> SimpleNamespace:
 
 
 @pytest.fixture
-def conn(db_path: Path) -> sqlite3.Connection:
+def conn(db_path: Path) -> Connection:
     connection = db.open_db(db_path)
     db.upsert_company(
         connection,
@@ -97,7 +97,7 @@ def test_a_published_address_is_stored_with_the_page_it_was_on(
     or a suppression decision months later cannot be checked against what was
     actually published."""
     reach_with(monkeypatch, FakeClient(PAGES), settings, conn)
-    row = conn.execute("SELECT * FROM contact").fetchone()
+    row = conn.execute("SELECT * FROM core.contact").fetchone()
     assert row["value"] == "info@etude.ch"
     assert row["source_url"] == "https://etude.ch/contact"
     assert row["method"] == "published"
@@ -113,8 +113,8 @@ def test_a_site_publishing_nothing_is_a_finding_not_a_failure(
         settings, conn,
     )
     assert stats["without"] == 1 and stats["for_pattern"] == 1
-    assert conn.execute("SELECT COUNT(*) FROM contact").fetchone()[0] == 0
-    assert conn.execute("SELECT reached_at FROM site").fetchone()[0] is not None
+    assert conn.execute("SELECT COUNT(*) AS n FROM core.contact").fetchone()[0] == 0
+    assert conn.execute("SELECT reached_at FROM intel.site").fetchone()[0] is not None
 
 
 # --- conduct ------------------------------------------------------------------
@@ -136,7 +136,7 @@ def test_a_site_that_asks_us_not_to_is_not_read(monkeypatch, settings, conn) -> 
     stats = reach_with(monkeypatch, client, settings, conn)
     assert stats["blocked"] == 1
     assert client.asked == ["https://etude.ch/robots.txt"]
-    assert conn.execute("SELECT COUNT(*) FROM contact").fetchone()[0] == 0
+    assert conn.execute("SELECT COUNT(*) AS n FROM core.contact").fetchone()[0] == 0
 
 
 def test_a_disallowed_subpage_is_skipped_but_the_home_page_is_not(
@@ -192,7 +192,7 @@ def test_a_site_with_no_links_is_found_through_its_sitemap(
 ) -> None:
     stats = reach_with(monkeypatch, FakeClient(BUILT), settings, conn)
     assert stats["with_address"] == 1
-    row = conn.execute("SELECT * FROM contact").fetchone()
+    row = conn.execute("SELECT * FROM core.contact").fetchone()
     assert row["value"] == "info@etude.ch"
     assert row["source_url"] == "https://etude.ch/mentions-l%C3%A9gales"
 
@@ -248,7 +248,7 @@ def test_refresh_reads_it_again_and_reports_the_address_as_known(
 
     second = reach_with(monkeypatch, FakeClient(PAGES), settings, conn, refresh=True)
     assert (second["addresses"], second["new"]) == (1, 0)
-    assert conn.execute("SELECT COUNT(*) FROM contact").fetchone()[0] == 1
+    assert conn.execute("SELECT COUNT(*) AS n FROM core.contact").fetchone()[0] == 1
 
 
 def test_re_enriching_onto_a_new_url_makes_the_site_worth_reading_again(
@@ -278,10 +278,10 @@ def test_a_suppressed_address_stays_suppressed_when_found_again(
 ) -> None:
     """A human's decision outranks the site continuing to publish it."""
     reach_with(monkeypatch, FakeClient(PAGES), settings, conn)
-    conn.execute("UPDATE contact SET suppressed = 1")
+    conn.execute("UPDATE core.contact SET suppressed = TRUE")
     conn.commit()
     reach_with(monkeypatch, FakeClient(PAGES), settings, conn, refresh=True)
-    assert conn.execute("SELECT suppressed FROM contact").fetchone()[0] == 1
+    assert conn.execute("SELECT suppressed FROM core.contact").fetchone()[0] == 1
 
 
 # --- selection and resilience -------------------------------------------------
@@ -336,4 +336,4 @@ def test_dry_run_fetches_nothing(monkeypatch, settings, conn) -> None:
     client = FakeClient(PAGES)
     stats = reach_with(monkeypatch, client, settings, conn, dry_run=True)
     assert stats["considered"] == 1 and client.asked == []
-    assert conn.execute("SELECT reached_at FROM site").fetchone()[0] is None
+    assert conn.execute("SELECT reached_at FROM intel.site").fetchone()[0] is None

@@ -12,7 +12,6 @@ never been asked for.
 from __future__ import annotations
 
 import json
-import sqlite3
 import tomllib
 from pathlib import Path
 
@@ -20,6 +19,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from arpenteur import db
+from arpenteur.kernel.db import Connection, Row
 from arpenteur.config import load_settings
 from arpenteur.console.app import create_app
 
@@ -56,8 +56,8 @@ def root(tmp_path: Path) -> Path:
 
 
 @pytest.fixture
-def conn(root: Path) -> sqlite3.Connection:
-    return db.open_db(root / "data" / "arpenteur.sqlite3")
+def conn(root: Path, db_path: str) -> Connection:
+    return db.open_db(db_path)
 
 
 @pytest.fixture
@@ -115,9 +115,19 @@ def test_a_region_in_the_file_does_not_narrow_a_chosen_canton_list(
     assert load_settings(root).territory.cantons == ("ZH",)
 
 
-def test_a_missing_database_is_not_a_startup_failure(tmp_path: Path) -> None:
-    """Configuration must never be the reason the tool will not start."""
+def test_an_unreachable_database_is_not_a_startup_failure(
+    tmp_path: Path, monkeypatch
+) -> None:
+    """Configuration must never be the reason the tool will not start.
+
+    Under SQLite this meant a file that was not there. It now means a server
+    that is not running, which is the ordinary state of a laptop that has not
+    started the container, and the shipped defaults have to carry it.
+    """
     (tmp_path / "arpenteur.toml").write_text(TOML, encoding="utf-8")
+    monkeypatch.setenv(
+        "DATABASE_URL", "postgresql://nobody@127.0.0.1:1/nowhere"
+    )
     assert load_settings(tmp_path).territory.cantons == ("GE",)
 
 

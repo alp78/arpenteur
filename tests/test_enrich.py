@@ -14,7 +14,6 @@ rules that stop bad web data reaching a draft:
 from __future__ import annotations
 
 import json
-import sqlite3
 from pathlib import Path
 from types import SimpleNamespace
 from typing import Any
@@ -22,6 +21,7 @@ from typing import Any
 import pytest
 
 from arpenteur import db
+from arpenteur.kernel.db import Connection, Row
 from arpenteur.config import Settings
 from arpenteur.llm import Research
 from arpenteur.stages import enrich
@@ -82,7 +82,7 @@ def settings(tmp_path: Path) -> SimpleNamespace:
 
 
 @pytest.fixture
-def conn(db_path: Path) -> sqlite3.Connection:
+def conn(db_path: Path) -> Connection:
     connection = db.open_db(db_path)
     db.upsert_company(
         connection,
@@ -169,11 +169,11 @@ def test_dry_run_needs_no_credential(monkeypatch, settings, conn) -> None:
 
 def test_a_found_site_is_stored_with_its_lists(monkeypatch, settings, conn) -> None:
     enrich_with(monkeypatch, FakeProvider(), settings, conn)
-    row = conn.execute("SELECT * FROM site").fetchone()
+    row = conn.execute("SELECT * FROM intel.site").fetchone()
     assert row["status"] == "found"
     assert row["url"] == "https://example-fiduciaire.ch"
-    assert json.loads(row["offerings"])[0] == "comptabilité"
-    assert json.loads(row["signals"])
+    assert row["offerings"][0] == "comptabilité"
+    assert row["signals"]
     # Provenance, as every outside fact in this schema carries.
     assert row["method"] == "web-search"
     assert row["fetched_at"]
@@ -186,7 +186,7 @@ def test_a_published_email_becomes_a_contact_lowercased(
     monkeypatch, settings, conn
 ) -> None:
     enrich_with(monkeypatch, FakeProvider(), settings, conn)
-    row = conn.execute("SELECT * FROM contact").fetchone()
+    row = conn.execute("SELECT * FROM core.contact").fetchone()
     # Stored folded: the same address in two cases is one address, and the
     # unique constraint is what stops a company being written to twice.
     assert row["value"] == "info@example-fiduciaire.ch"
@@ -205,18 +205,18 @@ def test_an_uncertain_site_contributes_no_email(monkeypatch, settings, conn) -> 
     reply = dict(REPLY, status="ambiguous", confidence=0.4)
     enrich_with(monkeypatch, FakeProvider(reply), settings, conn)
 
-    assert conn.execute("SELECT COUNT(*) FROM site").fetchone()[0] == 1
-    assert conn.execute("SELECT COUNT(*) FROM contact").fetchone()[0] == 0
+    assert conn.execute("SELECT COUNT(*) AS n FROM intel.site").fetchone()[0] == 1
+    assert conn.execute("SELECT COUNT(*) AS n FROM core.contact").fetchone()[0] == 0
 
 
 def test_suppression_survives_re_enrichment(monkeypatch, settings, conn) -> None:
     """A human said do not write here. Finding the address again must not undo that."""
     enrich_with(monkeypatch, FakeProvider(), settings, conn)
-    conn.execute("UPDATE contact SET suppressed = 1")
+    conn.execute("UPDATE core.contact SET suppressed = TRUE")
     conn.commit()
 
     enrich_with(monkeypatch, FakeProvider(), settings, conn, refresh=True)
-    assert conn.execute("SELECT suppressed FROM contact").fetchone()[0] == 1
+    assert conn.execute("SELECT suppressed FROM core.contact").fetchone()[0] == 1
 
 
 # --- resilience --------------------------------------------------------------
@@ -232,7 +232,7 @@ def test_one_failure_does_not_end_the_run(monkeypatch, settings, conn) -> None:
     conn.commit()
     stats = enrich_with(monkeypatch, FakeProvider(fail=True), settings, conn)
     assert stats["failed"] == 2
-    assert conn.execute("SELECT COUNT(*) FROM site").fetchone()[0] == 0
+    assert conn.execute("SELECT COUNT(*) AS n FROM intel.site").fetchone()[0] == 0
 
 
 def test_re_running_skips_companies_already_done(monkeypatch, settings, conn) -> None:
@@ -252,7 +252,7 @@ def test_officers_are_offered_to_disambiguate_namesakes(
     monkeypatch, settings, conn
 ) -> None:
     """A director's name is the fastest way to tell two same-named companies apart."""
-    company_id = conn.execute("SELECT id FROM company").fetchone()[0]
+    company_id = conn.execute("SELECT id AS id FROM core.company").fetchone()[0]
     db.save_people(
         conn,
         company_id,

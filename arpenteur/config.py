@@ -10,7 +10,6 @@ from __future__ import annotations
 
 import json
 import os
-import sqlite3
 import tomllib
 from dataclasses import dataclass, field, replace
 from pathlib import Path
@@ -200,6 +199,9 @@ class Settings:
     # becomes a commitment. Empty is a legitimate state, and the advice then
     # comes back with the work identified and no prices on it.
     rate_card: str = ""
+    # Which modules this deployment runs, in the order they were listed. The
+    # registry resolves dependencies; this is only what was asked for.
+    modules: tuple[str, ...] = ()
     data_dir: Path = field(init=False)
 
     def __post_init__(self) -> None:
@@ -227,7 +229,7 @@ class Settings:
         """
         if not self.statuses:
             return "", []
-        marks = ",".join("?" * len(self.statuses))
+        marks = ",".join(["%s"] * len(self.statuses))
         return f"{column} IN ({marks})", list(self.statuses)
 
     def scoped(
@@ -259,8 +261,17 @@ class Settings:
         return replace(self, territory=narrowed)
 
     @property
-    def db_path(self) -> Path:
-        return self.data_dir / "arpenteur.sqlite3"
+    def database_url(self) -> str:
+        """Where the system of record lives.
+
+        DATABASE_URL wins, so a deployment names its own server without
+        editing a committed file; otherwise the local development container
+        from docker-compose.yml. Never a path: the store is PostgreSQL, and a
+        setting called db_path outlived the file it used to point at.
+        """
+        return os.environ.get("DATABASE_URL") or (
+            "postgresql://arpenteur:arpenteur@127.0.0.1:5433/arpenteur"
+        )
 
     @property
     def cache_dir(self) -> Path:
@@ -325,31 +336,31 @@ def _auth_mode(value: object) -> str:
     return mode
 
 
-def _overlay(db_path: Path) -> dict[str, Any]:
-    """Operator settings, or nothing at all if there is no database yet.
+def _overlay(url: str) -> dict[str, Any]:
+    """Operator settings, or nothing at all if the database is not reachable.
 
     Deliberately silent on every failure. Configuration must not become the
-    reason the tool will not start: a missing file, a database from before the
-    table existed, or a half-written value should all leave the shipped
-    defaults in place rather than raise.
+    reason the tool will not start: no server running, a database from before
+    the table existed, or a half-written value should all leave the shipped
+    defaults in place rather than raise. This is called at startup by every
+    command, including on a machine where the container is simply not up.
+
+    Its own short-lived connection rather than one borrowed from the store,
+    because it runs before the store has been set up and must not depend on it.
     """
-    if not db_path.is_file():
-        return {}
     try:
-        conn = sqlite3.connect(f"file:{db_path}?mode=ro", uri=True)
-        try:
-            rows = conn.execute("SELECT key, value_json FROM setting").fetchall()
-        finally:
-            conn.close()
-    except sqlite3.Error:
+        import psycopg
+
+        with psycopg.connect(url, connect_timeout=3) as conn:
+            rows = conn.execute("SELECT key, value_json FROM intel.setting").fetchall()
+    except Exception:  # noqa: BLE001 - see the docstring
         return {}
-    out: dict[str, Any] = {}
-    for key, value in rows:
-        try:
-            out[key] = json.loads(value)
-        except (TypeError, ValueError):
-            continue
-    return out
+    # jsonb comes back already decoded, so there is nothing to parse. Trying to
+    # anyway is worse than useless: `json.loads` on the decoded string value of
+    # a JSON string raises, and a guard that skipped the key on failure made
+    # every text setting — the signal brief, the rate card — silently vanish
+    # while the numbers and the lists went through.
+    return dict(rows)
 
 
 def load_settings(root: Path | None = None) -> Settings:
@@ -372,7 +383,10 @@ def load_settings(root: Path | None = None) -> Settings:
         raw = tomllib.load(handle)
 
     survey = dict(raw.get("survey", {}))
-    overlay = _overlay(base / "data" / "arpenteur.sqlite3")
+    overlay = _overlay(
+        os.environ.get("DATABASE_URL")
+        or "postgresql://arpenteur:arpenteur@127.0.0.1:5433/arpenteur"
+    )
     for key in ("cantons", "legal_forms", "statuses", "admit_new"):
         if key in overlay:
             survey[key] = overlay[key]
@@ -417,6 +431,13 @@ def load_settings(root: Path | None = None) -> Settings:
         # Not collapsed, unlike the signal brief: this is a rate card and its
         # line structure is the whole of its meaning.
         rate_card=str((raw.get("rates") or {}).get("card", "")).strip(),
+        modules=tuple(
+            str(name).strip()
+            for name in (raw.get("modules") or {}).get(
+                "enabled", ("scout", "geo", "clients", "sales")
+            )
+            if str(name).strip()
+        ),
         zefix=ZefixConfig(
             base_url=zefix_raw.get("base_url", ""),
             rate_limit=float(zefix_raw.get("rate_limit", 2.0)),

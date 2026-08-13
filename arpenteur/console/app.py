@@ -24,7 +24,6 @@ refusal is untouched and still applies.
 
 from __future__ import annotations
 
-import sqlite3
 from datetime import date, timedelta
 from typing import Any
 from urllib.parse import quote
@@ -34,6 +33,9 @@ from fastapi.responses import HTMLResponse, PlainTextResponse, RedirectResponse
 
 from .. import attachments as att
 from .. import attribution, db, dossier
+from ..kernel.db import Connection, Row
+from ..modules.clients import store as clients_store
+from ..modules.scout import store as scout_store
 from ..config import Settings, load_settings
 from ..stages import advise, match, prep, source
 from . import clients as clients_view
@@ -58,17 +60,17 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     # A run is a thread inside this process, so a previous console that was
     # stopped mid-run left a row claiming to be running. Settled at startup,
     # before any page can show it or poll it.
-    _startup = db.open_db(settings.db_path)
+    _startup = db.open_db(settings.database_url)
     try:
         close_orphans(_startup)
     finally:
         _startup.close()
 
-    def connect() -> sqlite3.Connection:
+    def connect() -> Connection:
         # One connection per request. SQLite in WAL mode handles concurrent
         # readers, and a long-lived shared connection would serialise the
         # console behind whatever a stage is writing.
-        return db.open_db(settings.db_path)
+        return db.open_db(settings.database_url)
 
     def shell(body: str) -> HTMLResponse:
         return HTMLResponse(
@@ -77,96 +79,17 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     # --- the company list -----------------------------------------------------
 
-    # "Where has this company got to" as a filter, so the list can answer the
-    # question the operations page raises: which companies are the 41'238
-    # waiting for research, and which are the ones already scored.
-    STAGE_FILTERS = {
-        "": "",
-        "no-detail": "c.hydrated_at IS NULL",
-        "detail": "c.hydrated_at IS NOT NULL",
-        "changed": "c.stale_since IS NOT NULL",
-        "unclassified": "c.hydrated_at IS NOT NULL AND NOT EXISTS "
-                        "(SELECT 1 FROM segment s WHERE s.company_id = c.id)",
-        "classified": "EXISTS (SELECT 1 FROM segment s WHERE s.company_id = c.id)",
-        "unresearched": "EXISTS (SELECT 1 FROM segment s WHERE s.company_id = c.id) "
-                        "AND w.company_id IS NULL",
-        "researched": "w.company_id IS NOT NULL",
-        "unscored": "w.company_id IS NOT NULL AND f.company_id IS NULL",
-        "scored": "f.company_id IS NOT NULL",
-        "with-address": "EXISTS (SELECT 1 FROM contact ct WHERE ct.company_id = c.id "
-                        "AND ct.kind = 'email' AND ct.suppressed = 0)",
-    }
-
-    def _query(
-        conn: sqlite3.Connection, *, q: str, canton: str, segment: str,
-        band: str, state: str, stage: str = "", limit: int = 200,
-    ) -> tuple[list[sqlite3.Row], int]:
-        where = ["1=1"]
-        params: list[Any] = []
-        clause_stage = STAGE_FILTERS.get(stage, "")
-        if clause_stage:
-            where.append(clause_stage)
-        if q:
-            where.append("(c.name LIKE ? OR c.uid LIKE ?)")
-            params += [f"%{q}%", f"%{q}%"]
-        if canton:
-            where.append("c.canton = ?")
-            params.append(canton)
-        if segment:
-            where.append(
-                "EXISTS (SELECT 1 FROM segment s WHERE s.company_id = c.id AND s.segment = ?)"
-            )
-            params.append(segment)
-        if band:
-            where.append("f.band = ?")
-            params.append(band)
-        if state:
-            where.append("p.state = ?")
-            params.append(state)
-        clause = " AND ".join(where)
-        joins = (
-            "FROM company c "
-            "LEFT JOIN fit f ON f.company_id = c.id "
-            "LEFT JOIN site w ON w.company_id = c.id "
-            "LEFT JOIN prospect p ON p.company_id = c.id"
-        )
-        sql = f"""
-            SELECT c.id, c.uid, c.name, c.canton,
-                   (SELECT json_group_array(s.segment) FROM segment s
-                     WHERE s.company_id = c.id) AS segments,
-                   f.score, f.band, f.source, w.url, p.state,
-                   -- The progress stamps, as five booleans rather than five
-                   -- round trips: this list is 200 rows and a per-row query
-                   -- each would be a thousand.
-                   c.hydrated_at IS NOT NULL AS hydrated,
-                   EXISTS (SELECT 1 FROM segment s WHERE s.company_id = c.id) AS classified,
-                   w.company_id IS NOT NULL AS researched,
-                   f.company_id IS NOT NULL AS scored,
-                   w.reached_at IS NOT NULL AS reached
-              {joins}
-             WHERE {clause}
-             ORDER BY f.score DESC NULLS LAST, c.name
-             LIMIT ?
-        """
-        rows = conn.execute(sql, params + [limit]).fetchall()
-        total = conn.execute(
-            f"SELECT COUNT(*) {joins} WHERE {clause}", params
-        ).fetchone()[0]
-        return rows, total
-
     @app.get("/", response_class=HTMLResponse)
     def index(request: Request) -> HTMLResponse:
         conn = connect()
         try:
             args = request.query_params
-            rows, total = _query(
+            rows, total = scout_store.search_companies(
                 conn, q=args.get("q", ""), canton=args.get("canton", ""),
                 segment=args.get("segment", ""), band=args.get("band", ""),
                 state=args.get("state", ""), stage=args.get("stage", ""),
             )
-            cantons = [r[0] for r in conn.execute(
-                "SELECT DISTINCT canton FROM company WHERE canton IS NOT NULL ORDER BY canton"
-            )]
+            cantons = scout_store.cantons_present(conn)
             body = (
                 "<h1>Companies</h1>"
                 + render.filter_form(
@@ -188,7 +111,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         conn = connect()
         try:
             args = request.query_params
-            rows, total = _query(
+            rows, total = scout_store.search_companies(
                 conn, q=args.get("q", ""), canton=args.get("canton", ""),
                 segment=args.get("segment", ""), band=args.get("band", ""),
                 state=args.get("state", ""), stage=args.get("stage", ""),
@@ -205,44 +128,26 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     def company(company_id: int) -> HTMLResponse:
         conn = connect()
         try:
-            row = conn.execute(
-                "SELECT * FROM company WHERE id = ?", (company_id,)
-            ).fetchone()
+            row = scout_store.company(conn, company_id)
             if row is None:
                 return HTMLResponse("<h1>Not found</h1>", status_code=404)
-            site = conn.execute(
-                "SELECT * FROM site WHERE company_id = ?", (company_id,)
-            ).fetchone()
+            site = scout_store.site_for(conn, company_id)
             methods = ["zefix"]
             if site is not None:
                 methods.append("web-search")
-            people = conn.execute(
-                "SELECT * FROM person WHERE company_id = ? ORDER BY role", (company_id,)
-            ).fetchall()
+            people = scout_store.people_for(conn, company_id)
             if people:
                 methods.append("shab")
             body = render.company_page(
                 row,
-                conn.execute(
-                    "SELECT * FROM segment WHERE company_id = ? ORDER BY segment",
-                    (company_id,),
-                ).fetchall(),
+                scout_store.segments_for(conn, company_id),
                 people,
                 site,
-                conn.execute(
-                    "SELECT * FROM fit WHERE company_id = ?", (company_id,)
-                ).fetchone(),
-                conn.execute(
-                    "SELECT * FROM contact WHERE company_id = ? ORDER BY id", (company_id,)
-                ).fetchall(),
+                scout_store.fit_for(conn, company_id),
+                scout_store.contacts_for(conn, company_id),
                 db.notes_for(conn, company_id),
-                conn.execute(
-                    "SELECT * FROM prospect WHERE company_id = ?", (company_id,)
-                ).fetchone(),
-                conn.execute(
-                    "SELECT * FROM publication WHERE company_id = ? ORDER BY sogc_date DESC",
-                    (company_id,),
-                ).fetchall(),
+                scout_store.prospect_for(conn, company_id),
+                scout_store.publications_for(conn, company_id),
                 sorted(settings.segments),
                 list(db.PROSPECT_STATES),
                 # Zefix grants access on condition that origin is stated and
@@ -250,9 +155,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                 # decide which notices apply.
                 attribution.notice(methods),
                 runner.running(),
-                conn.execute(
-                    "SELECT * FROM client WHERE company_id = ?", (company_id,)
-                ).fetchone(),
+                clients_store.client_for_company(conn, company_id),
             )
             return shell(body)
         finally:
@@ -275,10 +178,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             return HTMLResponse(
                 render._segments_card(
                     company_id,
-                    conn.execute(
-                        "SELECT * FROM segment WHERE company_id = ? ORDER BY segment",
-                        (company_id,),
-                    ).fetchall(),
+                    scout_store.segments_for(conn, company_id),
                     sorted(settings.segments),
                 )
             )
@@ -304,9 +204,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             return HTMLResponse(
                 render._prospect_card(
                     company_id,
-                    conn.execute(
-                        "SELECT * FROM prospect WHERE company_id = ?", (company_id,)
-                    ).fetchone(),
+                    scout_store.prospect_for(conn, company_id),
                     list(db.PROSPECT_STATES),
                 )
             )
@@ -346,14 +244,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         """
         conn = connect()
         try:
-            conn.execute(
-                "UPDATE contact SET suppressed = 1 - suppressed WHERE id = ?",
-                (contact_id,),
-            )
+            row = scout_store.toggle_suppressed(conn, contact_id)
             conn.commit()
-            row = conn.execute(
-                "SELECT * FROM contact WHERE id = ?", (contact_id,)
-            ).fetchone()
             return HTMLResponse(render.contact_row(row))
         finally:
             conn.close()
@@ -364,10 +256,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     def runs() -> HTMLResponse:
         conn = connect()
         try:
-            rows = conn.execute(
-                "SELECT * FROM run ORDER BY id DESC LIMIT 40"
-            ).fetchall()
-            return shell(render.runs_page(rows))
+            return shell(render.runs_page(db.runs(conn)))
         finally:
             conn.close()
 
@@ -382,10 +271,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         """
         conn = connect()
         try:
-            rows = conn.execute(
-                "SELECT * FROM run ORDER BY id DESC LIMIT 40"
-            ).fetchall()
-            return HTMLResponse(render.runs_table(rows))
+            return HTMLResponse(render.runs_table(db.runs(conn)))
         finally:
             conn.close()
 
@@ -394,7 +280,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         """One run, read line by line as it happens."""
         conn = connect()
         try:
-            run = conn.execute("SELECT * FROM run WHERE id = ?", (run_id,)).fetchone()
+            run = db.run(conn, run_id)
             if run is None:
                 return HTMLResponse("<h1>Not found</h1>", status_code=404)
             rows = db.lines_after(conn, run_id, 0)
@@ -412,9 +298,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         """
         conn = connect()
         try:
-            run = conn.execute(
-                "SELECT finished_at FROM run WHERE id = ?", (run_id,)
-            ).fetchone()
+            run = db.run(conn, run_id)
             rows = db.lines_after(conn, run_id, after)
             reached = rows[-1]["seq"] if rows else after
             # Finished is read after the lines, never before: a run that ended
@@ -498,11 +382,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         conn = connect()
         try:
             rows = db.clients(conn)
-            projects = conn.execute("SELECT COUNT(*) FROM project").fetchone()[0]
-            upcoming = conn.execute(
-                "SELECT COUNT(*) FROM event WHERE state = 'planned' "
-                "AND date(occurred_at) BETWEEN date('now') AND date('now','+30 day')"
-            ).fetchone()[0]
+            projects = clients_store.project_count(conn)
+            upcoming = db.upcoming(conn, 30)
             return client_shell(clients_view.portfolio(rows, projects, upcoming))
         finally:
             conn.close()
@@ -547,16 +428,11 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         finally:
             conn.close()
 
-    def _client_rows(conn: sqlite3.Connection, client_id: int):
-        client = conn.execute(
-            "SELECT * FROM client WHERE id = ?", (client_id,)
-        ).fetchone()
+    def _client_rows(conn: Connection, client_id: int):
+        client = clients_store.client(conn, client_id)
         if client is None:
             return None, None
-        company = conn.execute(
-            "SELECT * FROM company WHERE id = ?", (client["company_id"],)
-        ).fetchone()
-        return client, company
+        return client, scout_store.company(conn, client["company_id"])
 
     @app.get("/client/{client_id}", response_class=HTMLResponse)
     def client_card(client_id: int) -> HTMLResponse:
@@ -565,37 +441,21 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             client, company = _client_rows(conn, client_id)
             if client is None:
                 return HTMLResponse("<h1>Not found</h1>", status_code=404)
-            projects = conn.execute(
-                "SELECT * FROM project WHERE client_id = ? ORDER BY code", (client_id,)
-            ).fetchall()
-            officers = conn.execute(
-                "SELECT * FROM person WHERE company_id = ? ORDER BY role",
-                (client["company_id"],),
-            ).fetchall()
+            projects = clients_store.projects_for(conn, client_id)
+            officers = scout_store.people_for(conn, client["company_id"])
             methods = ["zefix"] + (["shab"] if officers else [])
             sections = db.dossier_for(conn, client_id)
             return client_shell(
                 clients_view.client_page(
                     client, company, projects,
                     db.timeline(conn, client_id),
-                    conn.execute(
-                        "SELECT * FROM contact WHERE company_id = ? ORDER BY id",
-                        (client["company_id"],),
-                    ).fetchall(),
+                    scout_store.contacts_for(conn, client["company_id"]),
                     officers,
                     attribution.notice(methods),
                     dossier_filled=len(dossier.filled(sections)),
                     dossier_total=len(dossier.SECTIONS),
-                    documents=conn.execute(
-                        "SELECT COUNT(*) FROM attachment WHERE client_id = ?",
-                        (client_id,),
-                    ).fetchone()[0],
-                    has_approach=bool(
-                        conn.execute(
-                            "SELECT 1 FROM approach WHERE client_id = ? LIMIT 1",
-                            (client_id,),
-                        ).fetchone()
-                    ),
+                    documents=clients_store.attachment_count(conn, client_id),
+                    has_approach=clients_store.has_approach(conn, client_id),
                 )
             )
         finally:
@@ -654,9 +514,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     def project_space(project_id: int) -> HTMLResponse:
         conn = connect()
         try:
-            project = conn.execute(
-                "SELECT * FROM project WHERE id = ?", (project_id,)
-            ).fetchone()
+            project = clients_store.project(conn, project_id)
             if project is None:
                 return HTMLResponse("<h1>Not found</h1>", status_code=404)
             client, company = _client_rows(conn, project["client_id"])
@@ -681,9 +539,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     ) -> RedirectResponse:
         conn = connect()
         try:
-            before = conn.execute(
-                "SELECT client_id, status FROM project WHERE id = ?", (project_id,)
-            ).fetchone()
+            before = clients_store.project(conn, project_id)
             db.update_project(
                 conn, project_id, name=name or None, status=status or None,
                 billing=billing, budget=float(budget) if budget.strip() else None,
@@ -735,9 +591,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         audit trail with a delete button is a diary."""
         conn = connect()
         try:
-            row = conn.execute(
-                "SELECT client_id FROM event WHERE id = ?", (event_id,)
-            ).fetchone()
+            row = db.event(conn, event_id)
             db.set_event_state(conn, event_id, state)
             conn.commit()
             target = f"/client/{row['client_id']}" if row else "/clients"
@@ -772,7 +626,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                     history[1:],
                     db.attachments_for(conn, client_id),
                     conn.execute(
-                        "SELECT * FROM project WHERE client_id = ? ORDER BY code",
+                        "SELECT * FROM crm.project WHERE client_id = %s ORDER BY code",
                         (client_id,),
                     ).fetchall(),
                     bool(_fresh().rate_card.strip()),
@@ -839,9 +693,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     def accept_approach(approach_id: int) -> RedirectResponse:
         conn = connect()
         try:
-            row = conn.execute(
-                "SELECT client_id FROM approach WHERE id = ?", (approach_id,)
-            ).fetchone()
+            row = clients_store.approach(conn, approach_id)
             db.accept_approach(conn, approach_id)
             conn.commit()
             target = f"/client/{row['client_id']}/dossier" if row else "/clients"
@@ -929,10 +781,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         """
         conn = connect()
         try:
-            row = conn.execute(
-                "SELECT filename, text, extract_error FROM attachment WHERE id = ?",
-                (attachment_id,),
-            ).fetchone()
+            row = clients_store.attachment(conn, attachment_id)
             if row is None:
                 return PlainTextResponse("Not found", status_code=404)
             if not row["text"]:
@@ -1008,13 +857,11 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         """
         conn = connect()
         try:
-            row = conn.execute(
-                "SELECT client_id FROM glossary WHERE id = ?", (term_id,)
-            ).fetchone()
+            owner = db.term_owner(conn, term_id)
             db.set_term_known(conn, term_id, known=known == "1")
             conn.commit()
             return RedirectResponse(
-                f"/client/{row['client_id']}/prep#terms" if row else "/clients",
+                f"/client/{owner}/prep#terms" if owner else "/clients",
                 status_code=303,
             )
         finally:
@@ -1038,9 +885,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     def remove_event(event_id: int, reason: str = Form("")) -> RedirectResponse:
         conn = connect()
         try:
-            row = conn.execute(
-                "SELECT client_id FROM event WHERE id = ?", (event_id,)
-            ).fetchone()
+            row = db.event(conn, event_id)
             db.delete_event(conn, event_id, reason=reason)
             conn.commit()
             return RedirectResponse(
@@ -1127,13 +972,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         conn = connect()
         try:
             live = _fresh()
-            counts = {
-                str(r["legal_form_uid"]): r["n"]
-                for r in conn.execute(
-                    "SELECT legal_form_uid, COUNT(*) n FROM company "
-                    "WHERE legal_form_uid IS NOT NULL GROUP BY 1"
-                )
-            }
+            counts = scout_store.counts_by_legal_form(conn)
             brief_path = live.root / "campaign.md"
             text = brief_path.read_text(encoding="utf-8") if brief_path.is_file() else ""
             return HTMLResponse(
@@ -1147,7 +986,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                         signal_brief=live.signal_brief,
                         campaign=text,
                         campaign_digest=match.brief_digest(text.strip()) if text.strip() else "—",
-                        scored=conn.execute("SELECT COUNT(*) FROM fit").fetchone()[0],
+                        scored=scout_store.scored_count(conn),
                         campaign_path="campaign.md",
                         history=db.setting_history(conn),
                         rate_card=live.rate_card,

@@ -40,12 +40,12 @@ from __future__ import annotations
 
 import hashlib
 import json
-import sqlite3
 from typing import Any, Callable
 
 from .. import attachments as att
 from .. import db, dossier
 from ..config import Settings
+from ..kernel.db import Connection, Row
 from ..llm import get_provider
 
 SYSTEM = """You advise an independent consultant preparing to meet a client. \
@@ -189,12 +189,12 @@ def inputs_digest(parts: list[str]) -> str:
 
 
 def build_prompt(
-    company: sqlite3.Row,
-    client: sqlite3.Row,
+    company: Row,
+    client: Row,
     sections: dict[str, dict[str, Any]],
-    projects: list[sqlite3.Row],
-    papers: list[sqlite3.Row],
-    officers: list[sqlite3.Row],
+    projects: list[Row],
+    papers: list[Row],
+    officers: list[Row],
     rate_card: str,
 ) -> tuple[str, dict[str, Any]]:
     """The whole file, and a record of what went into it.
@@ -290,35 +290,25 @@ def build_prompt(
 
 
 def gather(
-    conn: sqlite3.Connection, client_id: int
-) -> tuple[sqlite3.Row, sqlite3.Row, dict[str, Any], list[sqlite3.Row],
-           list[sqlite3.Row], list[sqlite3.Row]]:
-    client = conn.execute(
-        "SELECT * FROM client WHERE id = ?", (client_id,)
-    ).fetchone()
+    conn: Connection, client_id: int
+) -> tuple[Row, Row, dict[str, Any], list[Row],
+           list[Row], list[Row]]:
+    client = db.client(conn, client_id)
     if client is None:
         raise RuntimeError(f"No client {client_id}.")
-    company = conn.execute(
-        "SELECT * FROM company WHERE id = ?", (client["company_id"],)
-    ).fetchone()
     return (
         client,
-        company,
+        db.company(conn, client["company_id"]),
         db.dossier_for(conn, client_id),
-        conn.execute(
-            "SELECT * FROM project WHERE client_id = ? ORDER BY code", (client_id,)
-        ).fetchall(),
+        db.projects_for(conn, client_id),
         db.attachments_for(conn, client_id, with_text=True),
-        conn.execute(
-            "SELECT * FROM person WHERE company_id = ? ORDER BY role",
-            (client["company_id"],),
-        ).fetchall(),
+        db.people_for(conn, client["company_id"]),
     )
 
 
 def run(
     settings: Settings,
-    conn: sqlite3.Connection,
+    conn: Connection,
     *,
     client_id: int,
     dry_run: bool = False,

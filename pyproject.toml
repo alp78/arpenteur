@@ -17,6 +17,7 @@ dependencies = [
     # no build step, which is the whole reason it is this one: the alternatives
     # want poppler or MuPDF on the machine.
     "pypdf>=5.1",
+    "psycopg[binary,pool]>=3.2",
 ]
 
 [project.scripts]

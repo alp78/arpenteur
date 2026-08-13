@@ -2,6 +2,24 @@
 # rather than in code: the territory, the legal forms worth sweeping, and the
 # segments the profile stage sorts companies into.
 
+# Which modules this deployment runs. Each owns its own Postgres schema and
+# its own migrations, and nothing upstream holds a foreign key into anything
+# downstream, so removing one cannot orphan a row in another.
+#
+#   scout    the survey: register sweep, detail, officers, segments, website
+#            research, scoring. Owns core and intel. Cannot be disabled;
+#            everything else is downstream of it.
+#   geo      establishments with coordinates, cantonal boundaries, the map.
+#   clients  client records, projects, the interaction log, the dossier, the
+#            suggested approach, interview preparation.
+#   sales    service catalogue, rate cards, quotes, invoices, time entries.
+#            Requires clients.
+#
+# Removing a name here stops the module loading. `arpenteur modules drop <name>`
+# also deletes its schema, which is not reversible without a backup.
+[modules]
+enabled = ["scout", "geo", "clients", "sales"]
+
 [survey]
 # The territory. Name a region from [regions] below, or set `cantons`
 # directly; `cantons` wins if both are given, and --region or --canton on the

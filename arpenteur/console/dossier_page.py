@@ -19,9 +19,9 @@ actually proposed. Disagree with one and generate another; both stay.
 from __future__ import annotations
 
 import json
-import sqlite3
 from typing import Any
 
+from ..kernel.db import Connection, Row
 from .. import dossier as vocab
 from ..attachments import KINDS as ATTACHMENT_KINDS
 from ..attachments import KIND_LABELS
@@ -158,7 +158,7 @@ def dossier_form(client_id: int, sections: dict[str, dict[str, Any]]) -> str:
 # --- the suggested approach ---------------------------------------------------
 
 
-def approach_block(row: sqlite3.Row | None, rate_card: bool) -> str:
+def approach_block(row: Row | None, rate_card: bool) -> str:
     if row is None:
         return (
             '<div class="card"><p>No approach suggested yet.</p>'
@@ -170,7 +170,7 @@ def approach_block(row: sqlite3.Row | None, rate_card: bool) -> str:
 
     read = {}
     try:
-        read = json.loads(row["read_json"] or "{}")
+        read = row["read_json"] or {}
     except (TypeError, ValueError):
         pass
     documents = read.get("documents") or []
@@ -317,7 +317,7 @@ def generate_form(client_id: int, filled: int, docs: int, rate_card: bool) -> st
 # --- the client's papers ------------------------------------------------------
 
 
-def upload_form(client_id: int, projects: list[sqlite3.Row]) -> str:
+def upload_form(client_id: int, projects: list[Row]) -> str:
     kinds = "".join(
         f'<option value="{esc(value)}">{esc(label)}</option>'
         for value, label in ATTACHMENT_KINDS
@@ -359,7 +359,7 @@ def upload_form(client_id: int, projects: list[sqlite3.Row]) -> str:
     )
 
 
-def documents_table(rows: list[sqlite3.Row]) -> str:
+def documents_table(rows: list[Row]) -> str:
     if not rows:
         return (
             "<p class='dim small'>No documents yet. Anything the client sends "
@@ -408,13 +408,13 @@ def documents_table(rows: list[sqlite3.Row]) -> str:
 
 
 def dossier_page(
-    client: sqlite3.Row,
-    company: sqlite3.Row,
+    client: Row,
+    company: Row,
     sections: dict[str, dict[str, Any]],
-    approach: sqlite3.Row | None,
-    older: list[sqlite3.Row],
-    papers: list[sqlite3.Row],
-    projects: list[sqlite3.Row],
+    approach: Row | None,
+    older: list[Row],
+    papers: list[Row],
+    projects: list[Row],
     rate_card: bool,
     note: str = "",
 ) -> str:

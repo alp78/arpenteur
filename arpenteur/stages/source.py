@@ -9,11 +9,11 @@ one, and a re-sweep months later only hydrates what is genuinely new.
 
 from __future__ import annotations
 
-import sqlite3
 from typing import Any, Callable
 
 from .. import db
 from ..config import Settings
+from ..kernel.db import Connection, Row
 from ..http import PoliteClient
 from ..sources.zefix import ZefixClient, walk_prefixes
 from ..sources.zefix_fixture import (
@@ -55,7 +55,7 @@ def _client(settings: Settings) -> PoliteClient:
 
 def run_zefix(
     settings: Settings,
-    conn: sqlite3.Connection,
+    conn: Connection,
     *,
     cantons: list[str] | None = None,
     legal_forms: list[str] | None = None,
@@ -103,7 +103,7 @@ def run_zefix(
 
 def _run_zefix(
     settings: Settings,
-    conn: sqlite3.Connection,
+    conn: Connection,
     *,
     zefix: ZefixClient | FixtureZefixClient,
     cantons: list[str],
@@ -182,7 +182,7 @@ def _run_zefix(
 
 def hydrate_pending(
     settings: Settings,
-    conn: sqlite3.Connection,
+    conn: Connection,
     *,
     zefix: ZefixClient | FixtureZefixClient | None = None,
     cantons: list[str] | None = None,
@@ -207,13 +207,13 @@ def hydrate_pending(
     where = ["(hydrated_at IS NULL OR stale_since IS NOT NULL)"]
     params: list[Any] = []
     if cantons:
-        where.append(f"canton IN ({','.join('?' * len(cantons))})")
+        where.append(f"canton IN ({','.join(['%s'] * len(cantons))})")
         params.extend(cantons)
     if legal_forms:
-        where.append(f"legal_form_uid IN ({','.join('?' * len(legal_forms))})")
+        where.append(f"legal_form_uid IN ({','.join(['%s'] * len(legal_forms))})")
         params.extend(legal_forms)
     sql = (
-        f"SELECT uid, stale_since FROM company WHERE {' AND '.join(where)} "
+        f"SELECT uid, stale_since FROM core.company WHERE {' AND '.join(where)} "
         "ORDER BY stale_since IS NULL, last_mutation_date DESC, id"
     )
     if limit:
@@ -269,7 +269,7 @@ def hydrate_pending(
 
 def import_company(
     settings: Settings,
-    conn: sqlite3.Connection,
+    conn: Connection,
     uid: str,
     *,
     log: Callable[[str], None] = print,

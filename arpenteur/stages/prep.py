@@ -35,11 +35,11 @@ expensive for no gain, so the two stages carry their own model and effort in
 
 from __future__ import annotations
 
-import sqlite3
 from typing import Any, Callable
 
 from .. import db
 from ..config import Settings
+from ..kernel.db import Connection, Row
 from ..llm import get_provider
 from . import advise
 
@@ -152,7 +152,7 @@ SCHEMA: dict[str, Any] = {
 
 
 def build_prompt(
-    conn: sqlite3.Connection, client_id: int, settings: Settings
+    conn: Connection, client_id: int, settings: Settings
 ) -> tuple[str, dict[str, Any]]:
     """The same file the advise stage reads, minus the rate card.
 
@@ -169,10 +169,7 @@ def build_prompt(
         company, client, sections, projects, papers, officers, ""
     )
     read.pop("rate_card", None)
-    known = conn.execute(
-        "SELECT term FROM glossary WHERE client_id = ? AND known = 1 ORDER BY term",
-        (client_id,),
-    ).fetchall()
+    known = db.known_terms(conn, client_id)
     if known:
         # Told rather than hidden: a term already marked as revised should
         # still appear in the glossary, because the entry is what gets read
@@ -183,15 +180,15 @@ def build_prompt(
             "The consultant has marked these as known. Still return them as "
             "terms, but do not put them in the agenda unless something in the "
             "material has changed what they mean here:\n"
-            + ", ".join(row["term"] for row in known)
+            + ", ".join(known)
         )
-        read["already_known"] = [row["term"] for row in known]
+        read["already_known"] = list(known)
     return prompt, read
 
 
 def run(
     settings: Settings,
-    conn: sqlite3.Connection,
+    conn: Connection,
     *,
     client_id: int,
     dry_run: bool = False,

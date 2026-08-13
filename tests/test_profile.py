@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-import sqlite3
 
+from arpenteur.kernel.db import Record
 from arpenteur.llm import extract_json
 from arpenteur.stages.profile import build_prompt, parse_reply
 
@@ -12,14 +12,9 @@ SEGMENTS = {
 }
 
 
-def row(**kwargs) -> sqlite3.Row:
-    conn = sqlite3.connect(":memory:")
-    conn.row_factory = sqlite3.Row
-    keys = ", ".join(kwargs)
-    marks = ", ".join("?" for _ in kwargs)
-    conn.execute(f"CREATE TABLE t ({keys})")
-    conn.execute(f"INSERT INTO t ({keys}) VALUES ({marks})", tuple(kwargs.values()))
-    return conn.execute("SELECT * FROM t").fetchone()
+def row(**kwargs) -> Record:
+    """A stand-in row. build_prompt only reads keys, so it needs no database."""
+    return Record(kwargs)
 
 
 def test_extract_json_survives_prose_and_fences() -> None:

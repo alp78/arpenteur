@@ -31,13 +31,14 @@ drop.
 
 from __future__ import annotations
 
-import sqlite3
 from datetime import date as Date
 from datetime import timedelta
 from typing import Any, Callable
 
 from .. import db
-from ..config import Settings, Territory
+from ..config import Settings
+from ..config import Territory
+from ..kernel.db import Connection, Row
 from ..sources.zefix import ZefixClient
 from .source import _client
 
@@ -62,7 +63,7 @@ def _days(start: Date, end: Date) -> list[str]:
     return [(start + timedelta(days=offset)).isoformat() for offset in range(span + 1)]
 
 
-def _start_date(conn: sqlite3.Connection, since: str | None, today: Date) -> Date:
+def _start_date(conn: Connection, since: str | None, today: Date) -> Date:
     if since:
         return Date.fromisoformat(since)
     last = db.last_synced_day(conn)
@@ -74,7 +75,7 @@ def _start_date(conn: sqlite3.Connection, since: str | None, today: Date) -> Dat
 
 def run(
     settings: Settings,
-    conn: sqlite3.Connection,
+    conn: Connection,
     *,
     since: str | None = None,
     until: str | None = None,
@@ -156,13 +157,13 @@ def run(
                 )
 
     stats["stale"] = conn.execute(
-        "SELECT COUNT(*) FROM company WHERE stale_since IS NOT NULL"
+        "SELECT COUNT(*) FROM core.company WHERE stale_since IS NOT NULL"
     ).fetchone()[0]
     return stats
 
 
 def _sync_day(
-    conn: sqlite3.Connection,
+    conn: Connection,
     zefix: ZefixClient,
     day: str,
     *,
@@ -189,7 +190,7 @@ def _sync_day(
     for mutation in mutations:
         uid = mutation.company.uid
         known = conn.execute(
-            "SELECT id, content_hash FROM company WHERE uid = ?", (uid,)
+            "SELECT id, content_hash FROM core.company WHERE uid = %s", (uid,)
         ).fetchone()
         if known is None:
             # The canton comes off the notice: the short record names the
@@ -226,7 +227,7 @@ def _sync_day(
 
     for company_id, was in before.values():
         after = conn.execute(
-            "SELECT content_hash FROM company WHERE id = ?", (company_id,)
+            "SELECT content_hash FROM core.company WHERE id = %s", (company_id,)
         ).fetchone()[0]
         verdict = (
             "inserted" if was is None else "updated" if was != after else "unchanged"

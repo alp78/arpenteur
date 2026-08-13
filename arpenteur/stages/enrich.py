@@ -33,11 +33,11 @@ from __future__ import annotations
 
 import copy
 import json
-import sqlite3
 from typing import Any, Callable
 
 from .. import db
 from ..config import Settings
+from ..kernel.db import Connection, Row
 from ..llm import get_provider
 
 SYSTEM = """You research a Swiss company on the open web and report what you \
@@ -154,12 +154,12 @@ def schema_for(signal_brief: str) -> dict[str, Any]:
     return schema
 
 
-def build_prompt(company: sqlite3.Row, officers: list[sqlite3.Row]) -> str:
+def build_prompt(company: Row, officers: list[Row]) -> str:
     """Everything known about a company, as the brief for the search."""
     address = {}
     if company["address_json"]:
         try:
-            address = json.loads(company["address_json"])
+            address = company["address_json"] or {}
         except (TypeError, ValueError):
             address = {}
 
@@ -198,7 +198,7 @@ def build_prompt(company: sqlite3.Row, officers: list[sqlite3.Row]) -> str:
 
 
 def _select(
-    conn: sqlite3.Connection,
+    conn: Connection,
     *,
     settings: Settings,
     uids: list[str] | None,
@@ -206,7 +206,7 @@ def _select(
     segment: str | None,
     limit: int | None,
     refresh: bool,
-) -> list[sqlite3.Row]:
+) -> list[Row]:
     where = ["c.hydrated_at IS NOT NULL"]
     params: list[Any] = []
     # Not for a company in liquidation. This stage bills per company, so the
@@ -219,17 +219,17 @@ def _select(
             where.append(clause)
             params.extend(values)
     if uids:
-        where.append(f"c.uid IN ({','.join('?' * len(uids))})")
+        where.append(f"c.uid IN ({','.join(['%s'] * len(uids))})")
         params.extend(uids)
     if canton:
-        where.append("c.canton = ?")
+        where.append("c.canton = %s")
         params.append(canton)
     if segment:
-        where.append("EXISTS (SELECT 1 FROM segment s WHERE s.company_id = c.id AND s.segment = ?)")
+        where.append("EXISTS (SELECT 1 FROM intel.segment s WHERE s.company_id = c.id AND s.segment = %s)")
         params.append(segment)
     if not refresh:
-        where.append("c.id NOT IN (SELECT company_id FROM site)")
-    sql = f"SELECT c.* FROM company c WHERE {' AND '.join(where)} ORDER BY c.id"
+        where.append("c.id NOT IN (SELECT company_id FROM intel.site)")
+    sql = f"SELECT c.* FROM core.company c WHERE {' AND '.join(where)} ORDER BY c.id"
     if limit:
         sql += f" LIMIT {int(limit)}"
     return conn.execute(sql, params).fetchall()
@@ -237,7 +237,7 @@ def _select(
 
 def run(
     settings: Settings,
-    conn: sqlite3.Connection,
+    conn: Connection,
     *,
     uids: list[str] | None = None,
     canton: str | None = None,
@@ -304,7 +304,7 @@ def run(
 
     for index, company in enumerate(companies, 1):
         officers = conn.execute(
-            "SELECT full_name, role FROM person WHERE company_id = ? ORDER BY role",
+            "SELECT full_name, role FROM core.person WHERE company_id = %s ORDER BY role",
             (company["id"],),
         ).fetchall()
 

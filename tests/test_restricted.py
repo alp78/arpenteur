@@ -14,17 +14,17 @@ losing the containment would put it in a stranger's inbox.
 from __future__ import annotations
 
 import json
-import sqlite3
 from pathlib import Path
 
 import pytest
 
 from arpenteur import db
+from arpenteur.kernel.db import Connection, Row
 from arpenteur.stages import enrich
 
 
 @pytest.fixture
-def conn(db_path: Path) -> sqlite3.Connection:
+def conn(db_path: Path) -> Connection:
     connection = db.open_db(db_path)
     db.upsert_company(
         connection, {"uid": "CHE1", "name": "Solo Sàrl", "method": "zefix"}
@@ -47,8 +47,8 @@ def conn(db_path: Path) -> sqlite3.Connection:
 
 def test_the_finding_is_kept(conn) -> None:
     """Collected, because it changes whether a company is worth approaching."""
-    stored = conn.execute("SELECT restricted FROM site").fetchone()[0]
-    assert "poursuite" in json.loads(stored)[0]
+    stored = conn.execute("SELECT restricted FROM intel.site").fetchone()[0]
+    assert "poursuite" in stored[0]
 
 
 def test_the_draft_view_cannot_see_it(conn) -> None:
@@ -64,7 +64,7 @@ def test_the_draft_view_still_carries_what_drafting_needs(conn) -> None:
     view = db.site_for_draft(conn, 1)
     assert view["url"] == "https://solo.ch"
     assert "finance" in view["summary"]
-    assert json.loads(view["signals"]) == ["site sans HTTPS"]
+    assert view["signals"] == ["site sans HTTPS"]
 
 
 def test_a_company_with_no_research_yields_nothing_rather_than_raising(conn) -> None:

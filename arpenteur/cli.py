@@ -33,20 +33,27 @@ def _split(value: str | None) -> list[str] | None:
     return [part.strip() for part in value.split(",") if part.strip()]
 
 
-def _db_path(settings: Any, fixture: bool) -> Any:
-    """Keep recorded rows out of the database that will hold live registry data."""
-    if fixture:
-        return settings.data_dir / "arpenteur.fixture.sqlite3"
-    return settings.db_path
+def _database_url(settings: Any, fixture: bool) -> str:
+    """Keep recorded rows out of the database that holds live registry data.
+
+    A separate database on the same server, created on demand. Under SQLite
+    this was a second file beside the first; the guarantee is unchanged.
+    """
+    if not fixture:
+        return settings.database_url
+    from .kernel.db import ensure_database, sibling
+
+    return ensure_database(sibling(settings.database_url, "_fixture"))
 
 
 def cmd_init_db(args: argparse.Namespace) -> int:
     settings = load_settings()
-    path = _db_path(settings, args.fixture)
-    conn = db.connect(path)
-    version = db.migrate(conn)
+    url = _database_url(settings, args.fixture)
+    conn = db.open_db(url)
+    print(f"{url} ready: " + ", ".join(
+        f"{module} v{version}" for module, version in db.versions(conn).items()
+    ))
     conn.close()
-    print(f"{path} ready, schema version {version}")
     return 0
 
 
@@ -65,7 +72,7 @@ def _scoped(args: argparse.Namespace):
 
 def cmd_source(args: argparse.Namespace) -> int:
     settings = _scoped(args)
-    conn = db.open_db(_db_path(settings, args.fixture))
+    conn = db.open_db(_database_url(settings, args.fixture))
     stage = f"source:{args.provider}" + (":fixture" if args.fixture else "")
     run_id = db.start_run(conn, stage, vars(args))
     # The fixture set is its own small territory, so announcing the configured
@@ -100,7 +107,7 @@ def cmd_source(args: argparse.Namespace) -> int:
 
 def cmd_hydrate(args: argparse.Namespace) -> int:
     settings = _scoped(args)
-    conn = db.open_db(_db_path(settings, args.fixture))
+    conn = db.open_db(_database_url(settings, args.fixture))
     run_id = db.start_run(conn, "hydrate" + (":fixture" if args.fixture else ""), vars(args))
     try:
         count = source.hydrate_pending(
@@ -127,7 +134,7 @@ def cmd_hydrate(args: argparse.Namespace) -> int:
 
 def cmd_sync(args: argparse.Namespace) -> int:
     settings = _scoped(args)
-    conn = db.open_db(settings.db_path)
+    conn = db.open_db(settings.database_url)
     run_id = db.start_run(conn, "sync", vars(args))
     print(f"territory: {settings.territory.describe()}")
     try:
@@ -226,7 +233,7 @@ def cmd_regions(args: argparse.Namespace) -> int:
 
 def cmd_profile(args: argparse.Namespace) -> int:
     settings = load_settings()
-    conn = db.open_db(_db_path(settings, args.fixture))
+    conn = db.open_db(_database_url(settings, args.fixture))
     run_id = db.start_run(conn, "profile" + (":fixture" if args.fixture else ""), vars(args))
     try:
         stats = profile.run(
@@ -251,7 +258,7 @@ def cmd_profile(args: argparse.Namespace) -> int:
 
 def cmd_people(args: argparse.Namespace) -> int:
     settings = load_settings()
-    conn = db.open_db(settings.db_path)
+    conn = db.open_db(settings.database_url)
     run_id = db.start_run(conn, "people", vars(args))
     try:
         stats = people.run(
@@ -277,7 +284,7 @@ def cmd_people(args: argparse.Namespace) -> int:
 
 def cmd_enrich(args: argparse.Namespace) -> int:
     settings = load_settings()
-    conn = db.open_db(settings.db_path)
+    conn = db.open_db(settings.database_url)
     run_id = db.start_run(conn, "enrich", vars(args))
     try:
         stats = enrich.run(
@@ -309,7 +316,7 @@ def cmd_enrich(args: argparse.Namespace) -> int:
 
 def cmd_match(args: argparse.Namespace) -> int:
     settings = load_settings()
-    conn = db.open_db(settings.db_path)
+    conn = db.open_db(settings.database_url)
     run_id = db.start_run(conn, "match", vars(args))
     try:
         stats = match.run(
@@ -338,7 +345,7 @@ def cmd_match(args: argparse.Namespace) -> int:
 
 def cmd_reach(args: argparse.Namespace) -> int:
     settings = load_settings()
-    conn = db.open_db(settings.db_path)
+    conn = db.open_db(settings.database_url)
     run_id = db.start_run(conn, "reach", vars(args))
     try:
         stats = reach.run(
@@ -374,7 +381,7 @@ def cmd_import(args: argparse.Namespace) -> int:
     and requiring one to be would let the survey dictate who may be a client.
     """
     settings = load_settings()
-    conn = db.open_db(settings.db_path)
+    conn = db.open_db(settings.database_url)
     run_id = db.start_run(conn, "import", vars(args))
     try:
         found = source.import_company(settings, conn, args.uid)
@@ -382,7 +389,7 @@ def cmd_import(args: argparse.Namespace) -> int:
             client_id = db.promote_to_client(conn, found["company_id"])
             conn.commit()
             code = conn.execute(
-                "SELECT code FROM client WHERE id = ?", (client_id,)
+                "SELECT code FROM crm.client WHERE id = %s", (client_id,)
             ).fetchone()[0]
             print(f"client {code} created")
     except Exception as exc:
@@ -396,17 +403,17 @@ def cmd_import(args: argparse.Namespace) -> int:
 
 def cmd_stats(args: argparse.Namespace) -> int:
     settings = load_settings()
-    conn = db.open_db(_db_path(settings, args.fixture))
+    conn = db.open_db(_database_url(settings, args.fixture))
 
-    total = conn.execute("SELECT COUNT(*) FROM company").fetchone()[0]
+    total = conn.execute("SELECT COUNT(*) FROM core.company").fetchone()[0]
     hydrated = conn.execute(
-        "SELECT COUNT(*) FROM company WHERE hydrated_at IS NOT NULL"
+        "SELECT COUNT(*) FROM core.company WHERE hydrated_at IS NOT NULL"
     ).fetchone()[0]
     print(f"companies: {total} ({hydrated} hydrated)")
 
     rows = conn.execute(
         """
-        SELECT canton, COUNT(*) AS n FROM company
+        SELECT canton, COUNT(*) AS n FROM core.company
         WHERE canton IS NOT NULL GROUP BY canton ORDER BY n DESC
         """
     ).fetchall()
@@ -417,9 +424,9 @@ def cmd_stats(args: argparse.Namespace) -> int:
 
     rows = conn.execute(
         """
-        SELECT COALESCE(legal_form_label, legal_form_uid, '?') AS form,
+        SELECT COALESCE(legal_form_label, legal_form_uid, '%s') AS form,
                COUNT(*) AS n
-        FROM company GROUP BY form ORDER BY n DESC LIMIT 10
+        FROM core.company GROUP BY form ORDER BY n DESC LIMIT 10
         """
     ).fetchall()
     if rows:
@@ -427,38 +434,38 @@ def cmd_stats(args: argparse.Namespace) -> int:
         for row in rows:
             print(f"  {row['form'][:28]:30} {row['n']:>7}")
 
-    publications = conn.execute("SELECT COUNT(*) FROM publication").fetchone()[0]
+    publications = conn.execute("SELECT COUNT(*) FROM core.publication").fetchone()[0]
     if publications:
-        officers = conn.execute("SELECT COUNT(*) FROM person").fetchone()[0]
+        officers = conn.execute("SELECT COUNT(*) FROM core.person").fetchone()[0]
         companies_with = conn.execute(
-            "SELECT COUNT(DISTINCT company_id) FROM person"
+            "SELECT COUNT(DISTINCT company_id) FROM core.person"
         ).fetchone()[0]
         print(f"\npublications: {publications}")
         print(f"officers: {officers} across {companies_with} companies")
         rows = conn.execute(
-            "SELECT role, COUNT(*) AS n FROM person GROUP BY role ORDER BY n DESC LIMIT 8"
+            "SELECT role, COUNT(*) AS n FROM core.person GROUP BY role ORDER BY n DESC LIMIT 8"
         ).fetchall()
         for row in rows:
             print(f"  {row['role'] or '?':20} {row['n']:>7}")
 
-    sites = conn.execute("SELECT COUNT(*) FROM site").fetchone()[0]
+    sites = conn.execute("SELECT COUNT(*) FROM intel.site").fetchone()[0]
     if sites:
         print("\nweb research")
         for row in conn.execute(
-            "SELECT status, COUNT(*) AS n FROM site GROUP BY status ORDER BY n DESC"
+            "SELECT status, COUNT(*) AS n FROM intel.site GROUP BY status ORDER BY n DESC"
         ):
             print(f"  {row['status']:20} {row['n']:>7}")
         spend = conn.execute(
-            "SELECT COALESCE(SUM(searches), 0) s, COALESCE(SUM(fetches), 0) f FROM site"
+            "SELECT COALESCE(SUM(searches), 0) s, COALESCE(SUM(fetches), 0) f FROM intel.site"
         ).fetchone()
         print(f"  {'searches / fetches':20} {spend['s']:>7} / {spend['f']}")
         emails = conn.execute(
-            "SELECT COUNT(*) FROM contact WHERE kind = 'email' AND suppressed = 0"
+            "SELECT COUNT(*) FROM core.contact WHERE kind = 'email' AND suppressed = 0"
         ).fetchone()[0]
         print(f"  {'usable emails':20} {emails:>7}")
 
     rows = conn.execute(
-        "SELECT segment, COUNT(*) AS n FROM segment GROUP BY segment ORDER BY n DESC"
+        "SELECT segment, COUNT(*) AS n FROM intel.segment GROUP BY segment ORDER BY n DESC"
     ).fetchall()
     if rows:
         print("\nby segment")
@@ -470,7 +477,7 @@ def cmd_stats(args: argparse.Namespace) -> int:
     rows = conn.execute(
         """
         SELECT stage, started_at, finished_at, stats_json, error
-        FROM run ORDER BY id DESC LIMIT 5
+        FROM intel.run ORDER BY id DESC LIMIT 5
         """
     ).fetchall()
     if rows:
@@ -487,10 +494,10 @@ def _find_client(conn: Any, reference: str) -> Any:
     """A client by its code, its UID or its name. Any of the three."""
     wanted = reference.strip()
     row = conn.execute(
-        """SELECT c.*, co.name, co.uid FROM client c
-             JOIN company co ON co.id = c.company_id
-            WHERE c.code = ? OR co.uid = ? OR REPLACE(co.uid,'-','') = ?
-               OR co.name LIKE ?
+        """SELECT c.*, co.name, co.uid FROM crm.client c
+             JOIN core.company co ON co.id = c.company_id
+            WHERE c.code = %s OR co.uid = %s OR REPLACE(co.uid,'-','') = %s
+               OR co.name LIKE %s
             ORDER BY c.id LIMIT 2""",
         (wanted.upper(), wanted, wanted.replace("-", "").replace(".", ""), f"%{wanted}%"),
     ).fetchall()
@@ -501,7 +508,7 @@ def _find_client(conn: Any, reference: str) -> Any:
 
 def cmd_clients(args: argparse.Namespace) -> int:
     settings = load_settings()
-    conn = db.open_db(settings.db_path)
+    conn = db.open_db(settings.database_url)
     for row in db.clients(conn):
         print(f"{row['code']:<18} {row['status']:<9} {row['name']}")
     conn.close()
@@ -519,14 +526,14 @@ def cmd_dossier(args: argparse.Namespace) -> int:
     something an agent can actually do.
     """
     settings = load_settings()
-    conn = db.open_db(settings.db_path)
+    conn = db.open_db(settings.database_url)
     try:
         client = _find_client(conn, args.client)
     except RuntimeError as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 1
     company = conn.execute(
-        "SELECT * FROM company WHERE id = ?", (client["company_id"],)
+        "SELECT * FROM core.company WHERE id = %s", (client["company_id"],)
     ).fetchone()
     sections = db.dossier_for(conn, client["id"])
     papers = db.attachments_for(conn, client["id"], with_text=args.documents)
@@ -569,7 +576,7 @@ def cmd_dossier(args: argparse.Namespace) -> int:
             import json as _json
 
             try:
-                items = _json.loads(row[column] or "[]")
+                items = row[column] or []
             except ValueError:
                 continue
             if not items:
@@ -588,7 +595,7 @@ def cmd_dossier(args: argparse.Namespace) -> int:
 
 def cmd_advise(args: argparse.Namespace) -> int:
     settings = load_settings()
-    conn = db.open_db(settings.db_path)
+    conn = db.open_db(settings.database_url)
     try:
         client = _find_client(conn, args.client)
     except RuntimeError as exc:
@@ -615,7 +622,7 @@ def cmd_advise(args: argparse.Namespace) -> int:
 
 def cmd_prep(args: argparse.Namespace) -> int:
     settings = load_settings()
-    conn = db.open_db(settings.db_path)
+    conn = db.open_db(settings.database_url)
     try:
         client = _find_client(conn, args.client)
     except RuntimeError as exc:
@@ -649,6 +656,66 @@ def cmd_prep(args: argparse.Namespace) -> int:
         print(f"error: {exc}", file=sys.stderr)
         return 1
     db.finish_run(conn, run_id, stats)
+    conn.close()
+    return 0
+
+
+def cmd_modules(args: argparse.Namespace) -> int:
+    """What is installed, what it owns, and how far its schema has got.
+
+    `drop` is the only destructive command in this tool, and it says so twice
+    before doing anything: modules are removable by design, but removing one
+    deletes its data and nothing here can bring that back.
+    """
+    from .kernel import db as kernel
+    from .kernel import modules as registry
+
+    settings = load_settings()
+    if args.action == "list":
+        conn = db.open_db(settings.database_url)
+        versions = kernel.versions(conn)
+        enabled = set(settings.modules)
+        print(f"{'module':<10} {'state':<10} {'schema':<18} version  what")
+        for name in registry.AVAILABLE:
+            module = getattr(
+                __import__(f"arpenteur.modules.{name}", fromlist=["MODULE"]), "MODULE"
+            )
+            state = "enabled" if name in enabled else "off"
+            schemas = ", ".join(module.schemas)
+            version = versions.get(name, "-")
+            print(f"{name:<10} {state:<10} {schemas:<18} {str(version):>7}  {module.what[:60]}")
+        print("\nEdit [modules] enabled in arpenteur.toml to change what loads.")
+        conn.close()
+        return 0
+
+    module = registry.load(registry.AVAILABLE).by_name.get(args.name)
+    if module is None:
+        print(f"error: unknown module {args.name!r}", file=sys.stderr)
+        return 1
+    if not module.removable:
+        print(
+            f"error: {module.name} cannot be dropped. It owns the company "
+            "table and every other module is downstream of it.",
+            file=sys.stderr,
+        )
+        return 1
+    conn = db.open_db(settings.database_url)
+    held = {
+        schema: conn.execute(
+            "SELECT COUNT(*) AS n FROM information_schema.tables"
+            " WHERE table_schema = %s", (schema,)
+        ).fetchone()["n"]
+        for schema in module.schemas
+    }
+    print(f"This deletes {module.name}: schema " + ", ".join(
+        f"{s} ({n} tables)" for s, n in held.items()
+    ))
+    print("Every row in them goes. There is no undo without a backup.")
+    if not args.yes:
+        print("Re-run with --yes to proceed.", file=sys.stderr)
+        return 1
+    kernel.drop_module(conn, module.name, module.schemas)
+    print(f"dropped {module.name}. Remove it from [modules] enabled in arpenteur.toml too.")
     conn.close()
     return 0
 
@@ -843,6 +910,18 @@ def build_parser() -> argparse.ArgumentParser:
         help="report what would be read and its size, spend nothing",
     )
     p.set_defaults(func=cmd_prep)
+
+    p = sub.add_parser("modules", help="what is installed, and what it owns")
+    msub = p.add_subparsers(dest="action", required=True)
+    msub.add_parser("list", help="every module, its schema and its version")
+    drop = msub.add_parser(
+        "drop", help="delete a module's schema and all of its data"
+    )
+    drop.add_argument("name")
+    drop.add_argument(
+        "--yes", action="store_true", help="required: this cannot be undone"
+    )
+    p.set_defaults(func=cmd_modules)
 
     p = sub.add_parser("console", help="serve the browser console on localhost")
     p.add_argument("--host", default="127.0.0.1")

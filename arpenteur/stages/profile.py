@@ -12,11 +12,11 @@ more interesting half.
 
 from __future__ import annotations
 
-import sqlite3
 from typing import Any, Callable
 
 from .. import db
 from ..config import Settings
+from ..kernel.db import Connection, Row
 from ..llm import extract_json, get_provider
 
 SYSTEM = """You classify Swiss companies into market segments from their \
@@ -34,7 +34,7 @@ Reply with JSON only: a list with one object per input company,
 "rationale": "..."}]}]"""
 
 
-def build_prompt(segments: dict[str, str], companies: list[sqlite3.Row]) -> str:
+def build_prompt(segments: dict[str, str], companies: list[Row]) -> str:
     lines = ["Segments:"]
     for name, definition in segments.items():
         lines.append(f"- {name}: {definition}")
@@ -92,7 +92,7 @@ def parse_reply(text: str, valid: set[str]) -> dict[str, list[dict[str, Any]]]:
 
 def run(
     settings: Settings,
-    conn: sqlite3.Connection,
+    conn: Connection,
     *,
     limit: int | None = None,
     reclassify: bool = False,
@@ -112,8 +112,8 @@ def run(
     if not reclassify:
         # Left join rather than NOT IN: a company classified into zero
         # segments still has no segment rows, and must not be re-asked.
-        where += " AND c.id NOT IN (SELECT DISTINCT company_id FROM segment)"
-    sql = f"SELECT c.* FROM company c {where} ORDER BY c.id"
+        where += " AND c.id NOT IN (SELECT DISTINCT company_id FROM intel.segment)"
+    sql = f"SELECT c.* FROM core.company c {where} ORDER BY c.id"
     if limit:
         sql += f" LIMIT {int(limit)}"
     rows = conn.execute(sql, params).fetchall()

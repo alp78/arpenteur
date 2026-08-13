@@ -5,24 +5,51 @@ from pathlib import Path
 from arpenteur import db
 
 
-def test_migrate_is_idempotent(db_path: Path) -> None:
+def test_migrate_is_idempotent(db_path: str) -> None:
+    """Every command calls it, so a second run must be a no-op rather than an
+    error. Each module keeps its own version now, because a deployment that
+    never enabled sales has no opinion about how far sales has got."""
+    from arpenteur.kernel import db as kernel, modules
+
     conn = db.connect(db_path)
-    version = db.migrate(conn)
-    # Asserted as "the latest migration on disk" rather than a literal, so
-    # adding a migration does not fail a test about idempotence.
-    assert version == db.latest_version()
-    # Running again must be a no-op rather than an error: every command calls it.
-    assert db.migrate(conn) == version
+    dirs = modules.load(modules.AVAILABLE).migration_dirs()
+    before = kernel.versions(conn)
+    assert kernel.migrate(conn, dirs) == []
+    assert kernel.versions(conn) == before
+    assert before["scout"] >= 3
+
     tables = {
-        row[0]
+        f'{row["table_schema"]}.{row["table_name"]}'
         for row in conn.execute(
-            "SELECT name FROM sqlite_master WHERE type = 'table'"
-        ).fetchall()
+            "SELECT table_schema, table_name FROM information_schema.tables"
+            " WHERE table_schema IN ('core','intel','crm','commercial','geo')"
+        )
     }
     assert {
-        "company", "segment", "sweep", "run", "person", "contact", "draft",
-        "publication",
+        "core.company", "core.person", "core.contact", "core.publication",
+        "intel.segment", "intel.sweep", "intel.run", "intel.draft",
     } <= tables
+    conn.close()
+
+
+def test_an_edited_migration_is_caught_rather_than_skipped(db_path: str) -> None:
+    """Two deployments claiming the same version with different schemas is the
+    classic way a migration sequence goes wrong. The digest is what makes it an
+    error instead of a silent divergence."""
+    import pytest
+
+    from arpenteur.kernel import db as kernel
+
+    conn = db.connect(db_path)
+    conn.execute(
+        "UPDATE kernel.migration SET digest = 'tampered'"
+        " WHERE module = 'scout' AND version = 1"
+    )
+    conn.commit()
+    from arpenteur.kernel import modules
+
+    with pytest.raises(RuntimeError, match="has changed since it was applied"):
+        kernel.migrate(conn, modules.load(("scout",)).migration_dirs())
     conn.close()
 
 
@@ -33,7 +60,7 @@ def test_upsert_preserves_first_seen_and_purpose(db_path: Path) -> None:
         conn, {"uid": "CHE-1", "name": "Atelier Sàrl", "canton": "VD"}
     )
     first_seen = conn.execute(
-        "SELECT first_seen FROM company WHERE id = ?", (company_id,)
+        "SELECT first_seen FROM core.company WHERE id = %s", (company_id,)
     ).fetchone()[0]
 
     # A hydration pass adds the purpose.
@@ -44,11 +71,11 @@ def test_upsert_preserves_first_seen_and_purpose(db_path: Path) -> None:
     # A later cheap sweep sees the company again with no purpose in the payload.
     db.upsert_company(conn, {"uid": "CHE-1", "name": "Atelier Sàrl", "canton": "VD"})
 
-    row = conn.execute("SELECT * FROM company WHERE id = ?", (company_id,)).fetchone()
+    row = conn.execute("SELECT * FROM core.company WHERE id = %s", (company_id,)).fetchone()
     assert row["first_seen"] == first_seen, "first_seen must never be overwritten"
     assert row["purpose"] == "Menuiserie", "a sweep must not blank a hydrated field"
     assert row["hydrated_at"] is not None
-    assert conn.execute("SELECT COUNT(*) FROM company").fetchone()[0] == 1
+    assert conn.execute("SELECT COUNT(*) AS n FROM core.company").fetchone()[0] == 1
     conn.close()
 
 
@@ -74,7 +101,7 @@ def test_save_segments_replaces_on_reclassify(db_path: Path) -> None:
         [{"segment": "data-driven", "confidence": 0.9, "rationale": "laboratory"}],
         "m2",
     )
-    rows = conn.execute("SELECT * FROM segment WHERE company_id = ?", (company_id,)).fetchall()
+    rows = conn.execute("SELECT * FROM intel.segment WHERE company_id = %s", (company_id,)).fetchall()
     assert len(rows) == 1
     assert rows[0]["confidence"] == 0.9
     assert rows[0]["model"] == "m2"

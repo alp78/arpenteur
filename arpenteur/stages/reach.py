@@ -38,7 +38,6 @@ marginally more addresses and would be a different kind of program.
 
 from __future__ import annotations
 
-import sqlite3
 import urllib.robotparser
 from dataclasses import dataclass
 from typing import Any, Callable
@@ -46,6 +45,7 @@ from urllib.parse import urlsplit, urlunsplit
 
 from .. import db
 from ..config import Settings
+from ..kernel.db import Connection, Row
 from ..http import PoliteClient
 from ..sources import web
 
@@ -222,7 +222,7 @@ def published(
 
 
 def _select(
-    conn: sqlite3.Connection,
+    conn: Connection,
     *,
     settings: Settings,
     uids: list[str] | None,
@@ -230,11 +230,11 @@ def _select(
     band: str | None,
     limit: int | None,
     refresh: bool,
-) -> list[sqlite3.Row]:
+) -> list[Row]:
     where = ["w.url IS NOT NULL", "w.url <> ''", "w.status = 'found'"]
     params: list[Any] = []
     if uids:
-        where.append(f"c.uid IN ({','.join('?' * len(uids))})")
+        where.append(f"c.uid IN ({','.join(['%s'] * len(uids))})")
         params.extend(uids)
     else:
         clause, values = settings.status_clause()
@@ -243,17 +243,17 @@ def _select(
             params.extend(values)
     if segment:
         where.append(
-            "EXISTS (SELECT 1 FROM segment s WHERE s.company_id = c.id AND s.segment = ?)"
+            "EXISTS (SELECT 1 FROM intel.segment s WHERE s.company_id = c.id AND s.segment = %s)"
         )
         params.append(segment)
     if band:
-        where.append("EXISTS (SELECT 1 FROM fit f WHERE f.company_id = c.id AND f.band = ?)")
+        where.append("EXISTS (SELECT 1 FROM intel.fit f WHERE f.company_id = c.id AND f.band = %s)")
         params.append(band)
     if not refresh:
         where.append("w.reached_at IS NULL")
     sql = (
-        "SELECT c.id, c.uid, c.name, w.url FROM company c "
-        "JOIN site w ON w.company_id = c.id "
+        "SELECT c.id, c.uid, c.name, w.url FROM core.company c "
+        "JOIN intel.site w ON w.company_id = c.id "
         f"WHERE {' AND '.join(where)} ORDER BY c.id"
     )
     if limit:
@@ -263,7 +263,7 @@ def _select(
 
 def run(
     settings: Settings,
-    conn: sqlite3.Connection,
+    conn: Connection,
     *,
     uids: list[str] | None = None,
     segment: str | None = None,
@@ -282,7 +282,7 @@ def run(
     # found" and "no site to look at" are different answers and only the
     # second is a job for the later tiers.
     siteless = conn.execute(
-        "SELECT COUNT(*) FROM site WHERE status <> 'found' OR url IS NULL OR url = ''"
+        "SELECT COUNT(*) FROM intel.site WHERE status <> 'found' OR url IS NULL OR url = ''"
     ).fetchone()[0]
 
     stats: dict[str, Any] = {

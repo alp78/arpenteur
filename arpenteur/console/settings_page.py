@@ -16,9 +16,9 @@ for legal forms rather than a code typed from memory.
 
 from __future__ import annotations
 
-import sqlite3
 from typing import Any
 
+from ..kernel.db import Connection, Row
 from .render import esc, page
 
 STYLES = """
@@ -233,7 +233,7 @@ def settings_page(
     cantons: list[str], forms: list[str], catalogue: list[dict[str, Any]],
     counts: dict[str, int], segments: dict[str, str], signal_brief: str,
     campaign: str, campaign_digest: str, scored: int, campaign_path: str,
-    history: list[sqlite3.Row], rate_card: str = "", note: str = "",
+    history: list[Row], rate_card: str = "", note: str = "",
 ) -> str:
     when = {row["key"]: (row["updated_at"] or "")[:10] for row in history}
 

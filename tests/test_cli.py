@@ -9,8 +9,9 @@ def test_fixture_source_uses_its_own_database(tmp_path, monkeypatch, build_setti
     args = cli.build_parser().parse_args(["source", "zefix", "--fixture"])
 
     assert cli.cmd_source(args) == 0
-    assert not config.db_path.exists()
-    assert (config.data_dir / "arpenteur.fixture.sqlite3").is_file()
+    # A separate database on the same server, not the live one.
+    assert "_fixture" in cli._database_url(config, True)
+    assert cli._database_url(config, False) == config.database_url
 
 
 def test_fixture_flags_are_available_to_follow_up_commands() -> None:

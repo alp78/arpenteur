@@ -14,18 +14,18 @@ hence a guard that fails closed and a test that keeps it failing closed.
 
 from __future__ import annotations
 
-import sqlite3
 from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
 
 from arpenteur import db
+from arpenteur.kernel.db import Connection, Row
 from arpenteur.stages import source
 
 
 @pytest.fixture
-def conn(db_path: Path) -> sqlite3.Connection:
+def conn(db_path: Path) -> Connection:
     connection = db.open_db(db_path)
     for index in range(source.POLITE_HYDRATION_LIMIT + 5):
         db.upsert_company(

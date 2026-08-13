@@ -15,7 +15,6 @@ from __future__ import annotations
 
 import io
 import json
-import sqlite3
 import zipfile
 from pathlib import Path
 
@@ -23,6 +22,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from arpenteur import attachments as att
+from arpenteur.kernel.db import Connection, Row
 from arpenteur import db, dossier
 from arpenteur.config import load_settings
 from arpenteur.console.app import create_app
@@ -62,10 +62,10 @@ def root(tmp_path: Path) -> Path:
 
 
 @pytest.fixture
-def conn(root: Path) -> sqlite3.Connection:
-    connection = db.open_db(root / "data" / "arpenteur.sqlite3")
+def conn(root: Path, db_path: str) -> Connection:
+    connection = db.open_db(db_path)
     connection.execute(
-        "INSERT INTO company (uid, name, canton, legal_form_uid, legal_form_label,"
+        "INSERT INTO core.company (uid, name, canton, legal_form_uid, legal_form_label,"
         " legal_seat, status, purpose, source_url, method, fetched_at, first_seen,"
         " hydrated_at)"
         " VALUES ('CHE103895771', 'Fondation Bois-Gentil', 'VD', '0110',"
@@ -77,8 +77,8 @@ def conn(root: Path) -> sqlite3.Connection:
 
 
 @pytest.fixture
-def client_id(conn: sqlite3.Connection) -> int:
-    company_id = conn.execute("SELECT id FROM company").fetchone()[0]
+def client_id(conn: Connection) -> int:
+    company_id = conn.execute("SELECT id AS id FROM core.company").fetchone()[0]
     new_id = db.promote_to_client(conn, company_id)
     conn.commit()
     return new_id
@@ -113,7 +113,7 @@ def test_saving_a_section_twice_replaces_it_rather_than_duplicating(
     db.save_dossier_section(conn, client_id, "people", "Corrected reading.")
     conn.commit()
     rows = conn.execute(
-        "SELECT * FROM dossier WHERE client_id = ? AND section = 'people'",
+        "SELECT * FROM crm.dossier WHERE client_id = %s AND section = 'people'",
         (client_id,),
     ).fetchall()
     assert len(rows) == 1
@@ -390,7 +390,7 @@ def test_a_long_document_is_truncated_and_says_so(root, conn, client_id, fake) -
     conn.commit()
     advise.run(load_settings(root), conn, client_id=client_id, log=lambda _m: None)
     assert "truncated" in fake.seen[0]
-    read = json.loads(db.approaches_for(conn, client_id)[0]["read_json"])
+    read = db.approaches_for(conn, client_id)[0]["read_json"]
     assert read["documents"][0]["truncated"] is True
 
 
@@ -419,7 +419,7 @@ def test_an_approach_records_what_it_read(root, conn, client_id, fake) -> None:
     conn.commit()
     advise.run(load_settings(root), conn, client_id=client_id, log=lambda _m: None)
     row = db.approaches_for(conn, client_id)[0]
-    read = json.loads(row["read_json"])
+    read = row["read_json"]
     assert set(read["sections"]) == {"situation", "people"}
     assert read["rate_card"] is True
     assert row["inputs_hash"]
@@ -457,11 +457,11 @@ def test_accepting_an_approach_is_recorded_once(conn, client_id) -> None:
     approach_id = db.save_approach(conn, client_id, {"situation": "x"})
     db.accept_approach(conn, approach_id)
     first = conn.execute(
-        "SELECT accepted_at FROM approach WHERE id = ?", (approach_id,)
+        "SELECT accepted_at FROM crm.approach WHERE id = %s", (approach_id,)
     ).fetchone()[0]
     db.accept_approach(conn, approach_id)
     assert conn.execute(
-        "SELECT accepted_at FROM approach WHERE id = ?", (approach_id,)
+        "SELECT accepted_at FROM crm.approach WHERE id = %s", (approach_id,)
     ).fetchone()[0] == first
 
 
@@ -577,8 +577,8 @@ def test_deleting_a_project_keeps_what_was_logged_against_it(
     )
     db.delete_project(conn, project_id, reason="Never proposed.")
     conn.commit()
-    assert conn.execute("SELECT COUNT(*) FROM project").fetchone()[0] == 0
-    row = conn.execute("SELECT * FROM event WHERE id = ?", (kept,)).fetchone()
+    assert conn.execute("SELECT COUNT(*) AS n FROM crm.project").fetchone()[0] == 0
+    row = conn.execute("SELECT * FROM crm.interaction WHERE id = %s", (kept,)).fetchone()
     assert row["subject"] == "Un vrai message"
     assert row["project_id"] is None
 
@@ -604,9 +604,9 @@ def test_a_document_two_clients_hold_is_not_erased_from_under_the_other(
     """Storage is content-addressed, so two clients may legitimately hold the
     same standard contract and unlinking would take theirs too."""
     other_company = conn.execute(
-        "INSERT INTO company (uid, name, canton, source_url, method, fetched_at,"
-        " first_seen) VALUES ('CHE999', 'Autre SA', 'VD', 'x', 'zefix', 'now', 'now')"
-    ).lastrowid
+        "INSERT INTO core.company (uid, name, canton, source_url, method)"
+        " VALUES ('CHE999', 'Autre SA', 'VD', 'x', 'zefix') RETURNING id"
+    ).fetchone()["id"]
     other = db.promote_to_client(conn, other_company)
     for owner in (client_id, other):
         db.add_attachment(

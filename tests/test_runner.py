@@ -13,7 +13,6 @@ everything on a page reload is a toy.
 
 from __future__ import annotations
 
-import sqlite3
 import threading
 import time
 from pathlib import Path
@@ -23,6 +22,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from arpenteur import db
+from arpenteur.kernel.db import Connection, Row
 from arpenteur.config import Territory
 from arpenteur.console import runner as runner_module
 from arpenteur.console.app import create_app
@@ -32,17 +32,17 @@ SEGMENTS = {"sme-owner": "A small owner-run business."}
 
 
 @pytest.fixture
-def settings(tmp_path: Path) -> SimpleNamespace:
+def settings(db_path: str) -> SimpleNamespace:
     return SimpleNamespace(
-        db_path=tmp_path / "console.sqlite3",
+        database_url=db_path,
         territory=Territory(cantons=("GE",), legal_forms=("0107",), name="geneve"),
         segments=SEGMENTS,
     )
 
 
 @pytest.fixture
-def conn(settings) -> sqlite3.Connection:
-    connection = db.open_db(settings.db_path)
+def conn(settings) -> Connection:
+    connection = db.open_db(settings.database_url)
     db.upsert_company(
         connection,
         {"uid": "CHE1", "name": "Fiduciaire Sàrl", "canton": "GE", "status": "ACTIVE",
@@ -185,7 +185,7 @@ def test_the_log_records_what_the_stage_said(settings, conn) -> None:
         lines = [r["text"] for r in db.lines_after(conn, run_id, 0)]
         assert "company 0" in lines and "company 2" in lines
         assert lines[-1] == "done: done=3"
-        row = conn.execute("SELECT * FROM run WHERE id = ?", (run_id,)).fetchone()
+        row = conn.execute("SELECT * FROM intel.run WHERE id = %s", (run_id,)).fetchone()
         assert row["finished_at"] and row["error"] is None
         assert row["started_by"] == "console"
     finally:
@@ -204,8 +204,9 @@ def test_a_stage_returning_a_bare_count_still_reports_it(settings, conn) -> None
     try:
         run_id = runner.start("_count", {})
         assert wait_for(lambda: runner.running() is None)
-        row = conn.execute("SELECT stats_json FROM run WHERE id = ?", (run_id,)).fetchone()
-        assert '"hydrated": 5' in row["stats_json"]
+        row = conn.execute("SELECT stats_json FROM intel.run WHERE id = %s", (run_id,)).fetchone()
+        # jsonb comes back parsed rather than as text.
+        assert row["stats_json"]["hydrated"] == 5
         assert db.lines_after(conn, run_id, 0)[-1]["text"] == "done: hydrated=5"
     finally:
         runner_module.STAGES.pop("_count", None)
@@ -226,7 +227,7 @@ def test_a_stage_that_fails_leaves_the_lines_it_got_to(settings, conn) -> None:
         lines = [r["text"] for r in db.lines_after(conn, run_id, 0)]
         assert "company 0" in lines
         assert any("the registry said no" in line for line in lines)
-        row = conn.execute("SELECT * FROM run WHERE id = ?", (run_id,)).fetchone()
+        row = conn.execute("SELECT * FROM intel.run WHERE id = %s", (run_id,)).fetchone()
         assert row["error"] == "the registry said no" and row["finished_at"]
     finally:
         runner_module.STAGES.pop("_doomed", None)
@@ -290,7 +291,7 @@ def test_a_run_orphaned_by_a_restart_is_settled(settings, conn) -> None:
     conn.commit()
 
     create_app(settings)  # a fresh console over the same database
-    row = conn.execute("SELECT * FROM run WHERE id = ?", (orphan,)).fetchone()
+    row = conn.execute("SELECT * FROM intel.run WHERE id = %s", (orphan,)).fetchone()
     assert row["finished_at"] and "interrupted" in row["error"]
 
 
@@ -301,7 +302,7 @@ def test_a_command_line_run_is_left_alone(settings, conn) -> None:
     conn.commit()
 
     create_app(settings)
-    row = conn.execute("SELECT * FROM run WHERE id = ?", (live,)).fetchone()
+    row = conn.execute("SELECT * FROM intel.run WHERE id = %s", (live,)).fetchone()
     assert row["finished_at"] is None and row["error"] is None
 
 
@@ -411,4 +412,4 @@ def test_the_console_still_cannot_send(client, conn) -> None:
     routes = {getattr(r, "path", "") for r in client.app.routes}
     assert not [p for p in routes if "send" in p or "mail" in p]
     assert "draft" not in runner_module.STAGES
-    assert conn.execute("SELECT COUNT(*) FROM draft WHERE sent_at IS NOT NULL").fetchone()[0] == 0
+    assert conn.execute("SELECT COUNT(*) AS n FROM intel.draft WHERE sent_at IS NOT NULL").fetchone()[0] == 0

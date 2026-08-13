@@ -14,13 +14,13 @@ does not need it while the job that does gets a light one.
 
 from __future__ import annotations
 
-import sqlite3
 from pathlib import Path
 
 import pytest
 from fastapi.testclient import TestClient
 
 from arpenteur import db
+from arpenteur.kernel.db import Connection, Row
 from arpenteur.config import EFFORTS, load_settings
 from arpenteur.console.app import create_app
 from arpenteur.stages import advise, prep
@@ -62,10 +62,10 @@ def root(tmp_path: Path) -> Path:
 
 
 @pytest.fixture
-def conn(root: Path) -> sqlite3.Connection:
-    connection = db.open_db(root / "data" / "arpenteur.sqlite3")
+def conn(root: Path, db_path: str) -> Connection:
+    connection = db.open_db(db_path)
     connection.execute(
-        "INSERT INTO company (uid, name, canton, legal_form_uid, legal_form_label,"
+        "INSERT INTO core.company (uid, name, canton, legal_form_uid, legal_form_label,"
         " legal_seat, status, source_url, method, fetched_at, first_seen, hydrated_at)"
         " VALUES ('CHE103895771', 'Fondation Bois-Gentil', 'VD', '0110',"
         " 'Fondation', 'Lausanne', 'ACTIVE', 'https://example.test', 'zefix',"
@@ -76,8 +76,8 @@ def conn(root: Path) -> sqlite3.Connection:
 
 
 @pytest.fixture
-def client_id(conn: sqlite3.Connection) -> int:
-    company_id = conn.execute("SELECT id FROM company").fetchone()[0]
+def client_id(conn: Connection) -> int:
+    company_id = conn.execute("SELECT id AS id FROM core.company").fetchone()[0]
     new_id = db.promote_to_client(conn, company_id)
     db.save_dossier_section(
         conn, new_id, "estate", "Aucun DMARC. SPF de sept expéditeurs.",
@@ -100,14 +100,14 @@ REPLY = {
          "what_it_is": "Une politique publiée dans le DNS.",
          "why_here": "_dmarc.fbg.ch répond NXDOMAIN.",
          "must_know": "Sans DMARC, personne ne reçoit de rapport.",
-         "question": "Qui reçoit les rapports aujourd'hui?",
+         "question": "Qui reçoit les rapports aujourd'hui%s",
          "reference": "RFC 7489", "priority": "must"},
         {"term": "nLPD", "category": "regulatory",
          "expansion": "nouvelle Loi fédérale sur la protection des données",
          "what_it_is": "La loi suisse révisée.",
          "why_here": "Données de santé.",
          "must_know": "Art. 5 let. c: donnée sensible.",
-         "question": "Existe-t-il un registre des traitements?",
+         "question": "Existe-t-il un registre des traitements%s",
          "reference": "nLPD art. 5 let. c", "priority": "must"},
     ],
     "agenda": [{"revise": "DMARC", "why": "C'est l'ouverture."}],
@@ -282,9 +282,9 @@ def test_the_glossary_reads_the_same_file_the_approach_does(
 
 def test_an_empty_dossier_is_refused_rather_than_guessed_at(root, conn) -> None:
     company_id = conn.execute(
-        "INSERT INTO company (uid, name, canton, source_url, method, fetched_at,"
-        " first_seen) VALUES ('CHE1', 'Vide SA', 'VD', 'x', 'zefix', 'n', 'n')"
-    ).lastrowid
+        "INSERT INTO core.company (uid, name, canton, source_url, method)"
+        " VALUES ('CHE1', 'Vide SA', 'VD', 'x', 'zefix') RETURNING id"
+    ).fetchone()["id"]
     empty = db.promote_to_client(conn, company_id)
     conn.commit()
     with pytest.raises(RuntimeError, match="no vocabulary to extract"):
@@ -312,7 +312,7 @@ def test_ticking_a_term_is_the_only_writable_field(web, root, conn, client_id, f
     web.post(f"/term/{term['id']}/known", data={"known": "1"},
              follow_redirects=False)
     assert conn.execute(
-        "SELECT known FROM glossary WHERE id = ?", (term["id"],)
+        "SELECT known FROM crm.glossary WHERE id = %s", (term["id"],)
     ).fetchone()[0] == 1
 
 
