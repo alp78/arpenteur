@@ -32,6 +32,7 @@ from datetime import date
 from typing import Any, Iterable
 
 from ..kernel.db import Row
+from . import ui
 from .render import esc, page
 
 # What each column means, written for someone deciding where to drop a card.
@@ -341,33 +342,19 @@ def _filters(
     lane: str, q: str, canton: str, segment: str, band: str, owner: str,
     cantons: list[str], segments: list[str], owners: list[str],
 ) -> str:
-    def select(name: str, label: str, values: list[str], chosen: str, any_label: str) -> str:
-        options = f'<option value="">{esc(any_label)}</option>' + "".join(
-            f'<option value="{esc(v)}"{" selected" if v == chosen else ""}>{esc(v)}</option>'
-            for v in values
-        )
-        return (
-            f'<div class="ctl"><label>{esc(label)}</label>'
-            f'<select name="{name}">{options}</select></div>'
-        )
-
-    lanes = "".join(
-        f'<option value="{esc(value)}"{" selected" if value == lane else ""}>'
-        f"{esc(label)}</option>"
-        for value, label in LANES
-    )
-    return (
-        '<form class="filters" method="get" action="/board">'
-        f'<div class="ctl"><label>Search</label>'
-        f'<input name="q" value="{esc(q)}" placeholder="Name"></div>'
-        + select("canton", "Canton", cantons, canton, "All cantons")
-        + select("segment", "Segment", segments, segment, "All segments")
-        + select("band", "Fit band", ["high", "medium", "low", "excluded"], band, "Any band")
-        + select("owner", "Owner", owners, owner, "Anyone")
-        + f'<div class="ctl ctl-wide"><label>Swimlanes</label>'
-        f'<select name="lane">{lanes}</select></div>'
-        '<div class="ctl"><label>&nbsp;</label><button class="primary">Show</button></div>'
-        "</form>"
+    return ui.toolbar(
+        ui.text_field("q", "Search", value=q, placeholder="Name")
+        + ui.select_field("canton", "Canton", cantons, chosen=canton,
+                          blank="All cantons")
+        + ui.select_field("segment", "Segment", segments, chosen=segment,
+                          blank="All segments")
+        + ui.select_field("band", "Fit band",
+                          ["high", "medium", "low", "excluded"],
+                          chosen=band, blank="Any band")
+        + ui.select_field("owner", "Owner", owners, chosen=owner,
+                          blank="Anyone")
+        + ui.select_field("lane", "Swimlanes", LANES, chosen=lane, wide=True),
+        action="/board", css="filters",
     )
 
 
@@ -379,34 +366,24 @@ def _bring_in(band: str, segment: str, canton: str,
     what it does is put named companies in front of a person, and the number of
     them is the only thing that makes it a decision rather than a reflex.
     """
-    def options(values: list[str], chosen: str, any_label: str) -> str:
-        return f'<option value="">{esc(any_label)}</option>' + "".join(
-            f'<option value="{esc(v)}"{" selected" if v == chosen else ""}>{esc(v)}</option>'
-            for v in values
-        )
-
-    bands = "".join(
-        f'<option value="{esc(b)}"{" selected" if b == band else ""}>{esc(b)}</option>'
-        for b in ("high", "medium", "low")
-    )
     return (
         "<h2>bring in a shortlist</h2>"
-        '<form class="card bring" method="post" action="/board/bring-in">'
-        f'<div class="ctl"><label>Fit band</label><select name="band">{bands}</select></div>'
-        '<div class="ctl"><label>Segment</label>'
-        f'<select name="segment">{options(segments, segment, "Any segment")}</select></div>'
-        '<div class="ctl"><label>Canton</label>'
-        f'<select name="canton">{options(cantons, canton, "All cantons")}</select></div>'
-        '<div class="ctl"><label>How many</label>'
-        '<input name="limit" type="number" value="25" min="1" max="200"></div>'
-        '<div class="ctl"><label>&nbsp;</label>'
-        '<button class="primary">Put them in new</button></div>'
-        "<span class='hint' style='flex-basis:100%'>Takes the best-scoring "
-        "companies that are not already on the board and puts them in the first "
-        "column. Nothing already here is touched, so running it again after "
-        "another sweep cannot walk a company at "
-        "&quot;meeting&quot; back to the start.</span>"
-        "</form>"
+        + ui.toolbar(
+            ui.select_field("band", "Fit band", ["high", "medium", "low"],
+                            chosen=band or "high")
+            + ui.select_field("segment", "Segment", segments, chosen=segment,
+                              blank="Any segment")
+            + ui.select_field("canton", "Canton", cantons, chosen=canton,
+                              blank="All cantons")
+            + ui.text_field("limit", "How many", value="25", kind="number")
+            + "<span class='hint' style='flex-basis:100%'>Takes the "
+              "best-scoring companies that are not already on the board and "
+              "puts them in the first column. Nothing already here is touched, "
+              "so running it again after another sweep cannot walk a company "
+              "at &quot;meeting&quot; back to the start.</span>",
+            action="/board/bring-in", method="post",
+            submit="Put them in new", css="card bring",
+        )
     )
 
 

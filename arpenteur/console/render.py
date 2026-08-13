@@ -64,10 +64,42 @@ STYLESHEET = """
     --caution-bg:#fdf3e6; --caution-line:#d9b483; --caution-ink:#8a5a1f;
     --late-bg:#fdf6f4; --late-line:#c9a29b;
     --muted-bg:#f4f2ee; --ink-soft:#3a352e;
+    --shadow:rgb(28 26 23 / .35);
+    /* Not colours, and deliberately outside the scheme below: a spacing scale
+       does not change when the lights go out. */
     --s1:.25rem; --s2:.45rem; --s3:.7rem; --s4:1rem; --s5:1.4rem; --s6:2rem;
     --r:3px; --r-pill:1rem;
     --t-xs:.72rem; --t-sm:.85rem; --t-lg:1.35rem;
     --ui: -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+  }
+
+  /* The same console after dark.
+
+     One block, and it works only because nothing else spells a colour: a test
+     refuses a page stylesheet containing a hex literal, so every surface in
+     the console follows these nine lines. Written the day the last `#fff` was
+     removed and not before, because a dark shell under fourteen pages
+     hardcoding white would have been white cards on a black page.
+
+     The palette is warmed rather than inverted. Parchment inverted is a flat
+     charcoal and the whole thing stops looking like the same tool; these are
+     the same hues at low lightness. The accent has to lift rather than deepen,
+     because a dark red on a dark ground is a colour nobody can see.
+
+     Two things deliberately do not follow. The printed document keeps ink on
+     paper, because a page coming out of a printer is not a screen. The map's
+     tiles are photographs of a country, and a country is lit the way it is. */
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --paper:#1a1815; --bg:#131110; --ink:#ece7de; --dim:#9a9385;
+      --line:#3a352e; --accent:#d98d8d; --soft:#211e1a; --tint:#221f1b;
+      --past:#1d1a17;
+      --good:#7fc08c; --caution:#d9b46b; --bad:#e58b72; --late:#e0937f;
+      --good-bg:#1c2a1e; --bad-bg:#2a1d1a; --good-line:#3f6a45;
+      --caution-bg:#2b2318; --caution-line:#6a5730; --caution-ink:#d9b46b;
+      --late-bg:#2a1d1a; --late-line:#6a4038;
+      --muted-bg:#1d1a17; --ink-soft:#c9c2b6; --shadow:rgb(0 0 0 / .6);
+    }
   }
 }
 
@@ -152,8 +184,8 @@ STYLESHEET = """
                        align-items:end; margin-bottom:var(--s4); }
   .ctl { display:flex; flex-direction:column; gap:.2rem; max-width:19rem; }
   .ctl.ctl-wide { max-width:26rem; }
-  .ctl > label { font-size:.74rem; text-transform:uppercase; letter-spacing:.05em;
-                 color:var(--dim); font-weight:600; }
+  .ctl > label, .ctl > .spacer { font-size:.74rem; text-transform:uppercase;
+                 letter-spacing:.05em; color:var(--dim); font-weight:600; }
   .ctl input[type=text] { width:17rem; }
   label.check { display:flex; gap:var(--s2); align-items:flex-start; }
   label.check input { margin:.25rem 0 0; }
@@ -316,8 +348,16 @@ STYLESHEET = """
             font-size:.82rem; line-height:1.5; white-space:pre-wrap;
             word-break:break-word; }
 
+  .scroller { overflow-x:auto; }
+  .scroller:focus-visible { outline:2px solid var(--accent); outline-offset:2px; }
+
   /* --- small screens --- */
   @media (max-width:720px) {
+    .board { gap:var(--s2); }
+    .col { flex-basis:13rem; }
+    .toolbar .ctl, .filters .ctl { flex:1 1 9rem; }
+    .acts, .controls { gap:var(--s3); }
+    .sort-ctl { flex-direction:row; }
     header { gap:var(--s3); padding:var(--s2) var(--s3); }
     header .where { margin-left:0; flex-basis:100%; }
     header nav { gap:var(--s3); font-size:var(--t-sm); }
@@ -598,47 +638,39 @@ def filter_form(
     *, q: str, canton: str, segment: str, band_name: str, state: str, stage: str,
     cantons: list[str], segments: list[str], states: list[str],
 ) -> str:
-    def options(values: list[str], chosen: str, label: str) -> str:
-        out = [f'<option value="">{esc(label)}</option>']
-        for value in values:
-            sel = " selected" if value == chosen else ""
-            out.append(f'<option value="{esc(value)}"{sel}>{esc(value)}</option>')
-        return "".join(out)
+    """The six controls that narrow the survey.
 
-    stages = "".join(
-        f'<option value="{esc(value)}"'
-        + (" selected" if value == stage else "")
-        + f">{esc(label)}</option>"
-        for value, label in STAGE_FILTERS
-    )
-    # The address bar used to still say `/` after six controls had been set, so
-    # a filtered list could not be bookmarked, sent to anybody, or returned to
-    # with the back button: the only way to share "the high-fit unresearched
-    # ones in Vaud" was to describe it in words.
-    #
-    # The URL is pushed by the route rather than by `hx-push-url="true"` here.
-    # This form fetches `/companies`, which serves the table alone, and pushing
-    # that would put an address in the bar that answers with a bare fragment
-    # when anybody opens it. The route sends `HX-Push-Url` naming `/` with the
-    # same query, which is the page that renders it whole.
-    return (
-        '<form class="filters" hx-get="/companies" hx-target="#list"'
-        ' hx-trigger="submit, change">'
-        '<div class="ctl"><label>Search</label>'
-        f'<input name="q" value="{esc(q)}" placeholder="Name, or CHE164075515"></div>'
-        f'<div class="ctl"><label>Canton</label><select name="canton">'
-        f'{options(cantons, canton, "All cantons")}</select></div>'
-        f'<div class="ctl"><label>Segment</label><select name="segment">'
-        f'{options(segments, segment, "All segments")}</select></div>'
-        '<div class="ctl"><label>Fit band</label><select name="band">'
-        + options(["high", "medium", "low", "excluded"], band_name, "Any band")
-        + "</select></div>"
-        f'<div class="ctl"><label>Pipeline state</label><select name="state">'
-        f'{options(states, state, "Any state")}</select></div>'
-        f'<div class="ctl ctl-wide"><label>Progress</label>'
-        f'<select name="stage">{stages}</select></div>'
-        '<div class="ctl"><label>&nbsp;</label><button class="primary">Filter</button></div>'
-        "</form>"
+    Built from the components, which is what binds each label to the control it
+    names. They were adjacent and unbound: six words on a page pointing at
+    nothing, which a screen reader reads as six stray words and which do not
+    focus their field when clicked.
+
+    The address bar used to still say `/` after all six had been set, so a
+    filtered list could not be bookmarked, sent to anybody, or returned to with
+    the back button, and the only way to share "the high-fit unresearched ones
+    in Vaud" was to describe it in words.
+
+    The URL is pushed by the route rather than by `hx-push-url="true"` here.
+    This form fetches `/companies`, which serves the table alone, and pushing
+    that would put an address in the bar that answers with a bare fragment when
+    anybody opens it. The route sends `HX-Push-Url` naming `/`, which is the
+    page that renders it whole.
+    """
+    return ui.toolbar(
+        ui.text_field("q", "Search", value=q,
+                      placeholder="Name, or CHE164075515")
+        + ui.select_field("canton", "Canton", cantons, chosen=canton,
+                          blank="All cantons")
+        + ui.select_field("segment", "Segment", segments, chosen=segment,
+                          blank="All segments")
+        + ui.select_field("band", "Fit band",
+                          ["high", "medium", "low", "excluded"],
+                          chosen=band_name, blank="Any band")
+        + ui.select_field("state", "Pipeline state", states, chosen=state,
+                          blank="Any state")
+        + ui.select_field("stage", "Progress", STAGE_FILTERS, chosen=stage,
+                          wide=True),
+        action="/companies", target="#list", submit="Filter", css="filters",
     )
 
 
@@ -1237,7 +1269,19 @@ def run_log(rows: list[Row], run_id: int, done: bool, after: int) -> str:
         else f" hx-get='/runs/{run_id}/lines?after={after}' hx-trigger='every 2s' "
         "hx-swap='outerHTML'"
     )
-    return f"{lines}<span id='tail'{poll}></span>"
+    # The tail also says whether the run is still going, and that sentence is
+    # the live region rather than the log.
+    #
+    # Putting aria-live on the log itself is the obvious thing and would be
+    # cruel: a sweep emits tens of thousands of lines, and a screen reader
+    # would be made to read every one of them aloud as it arrived, with no way
+    # to get ahead of it. What a person actually needs told is that it
+    # finished, so that is what is announced and the log is marked off.
+    said = "The run has finished." if done else "Running."
+    return (
+        f"{lines}<span id='tail'{poll}></span>"
+        f'<span class="vh" role="status" aria-live="polite">{said}</span>'
+    )
 
 
 def run_page(run: Row, rows: list[Row], after: int) -> str:
@@ -1252,4 +1296,8 @@ def run_page(run: Row, rows: list[Row], after: int) -> str:
         f"<div class='dim'>{esc(_compact(run['args_json']))}</div>"
         f"<div>{esc(detail)}</div></div>"
     )
-    return header + f"<pre id='log' class='log'>{run_log(rows, run['id'], done, after)}</pre>"
+    return (
+        header
+        + "<pre id='log' class='log' aria-live='off' aria-label='Run log' "
+          f"tabindex='0'>{run_log(rows, run['id'], done, after)}</pre>"
+    )

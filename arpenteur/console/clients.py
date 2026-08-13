@@ -85,7 +85,9 @@ STYLES = """
               overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .cal .slot.done { border-left-color:var(--line); color:var(--dim); }
 .cal .slot.derived { background:var(--paper); border-left-style:dashed; }
-.split { display:grid; grid-template-columns:1fr 20rem; gap:1.4rem; align-items:start; }
+.split { display:grid; grid-template-columns:1fr 20rem; gap:1.4rem;
+         align-items:start; container-type:inline-size; }
+@container (max-width:44rem) { .split { grid-template-columns:1fr; } }
 @media (max-width:900px) { .split { grid-template-columns:1fr; } }
 .stack { display:flex; flex-direction:column; gap:.45rem; }
 .stack input, .stack select, .stack textarea { width:100%; }

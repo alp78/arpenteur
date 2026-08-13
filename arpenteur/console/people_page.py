@@ -124,14 +124,13 @@ def people_page(rows: list[Row], *, q: str = "", min_boards: int = 1,
         "into the humans behind them. Sorted by how many boards each sits on, "
         "because a name on nine boards is a route into nine companies.</p>"
         + tiles
-        + '<form class="filters" method="get" action="/people">'
-        f'<div class="ctl"><label>Search</label>'
-        f'<input name="q" value="{esc(q)}" placeholder="Surname Firstname"></div>'
-        '<div class="ctl"><label>Sitting on at least</label>'
-        f'<input name="min_boards" type="number" min="1" max="20" '
-        f'value="{min_boards}" style="width:5rem"></div>'
-        '<div class="ctl"><label>&nbsp;</label><button class="primary">Show</button>'
-        "</div></form>"
+        + ui.toolbar(
+            ui.text_field("q", "Search", value=q,
+                          placeholder="Surname Firstname")
+            + ui.text_field("min_boards", "Sitting on at least",
+                            value=str(min_boards), kind="number"),
+            action="/people", css="filters",
+        )
         + table
         + "<p class='dim small' style='max-width:70ch'>Officers are parsed from "
         "FOSC publications and are not registry fields. Identity is a judgement "

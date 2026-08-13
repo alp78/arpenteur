@@ -25,6 +25,7 @@ from typing import Any
 
 from ..kernel.db import Row
 from ..markdown import render
+from . import ui
 from .render import esc, page
 
 STYLES = """
@@ -140,12 +141,12 @@ def notes_page(
 
     return (
         head + banner
-        + '<form class="filters" method="get" '
-        f'action="/client/{client["id"]}/notes">'
-        f'<div class="ctl ctl-wide"><label>Search these notes</label>'
-        f'<input name="q" value="{esc(q)}" placeholder="A word in any of them"></div>'
-        '<div class="ctl"><label>&nbsp;</label><button class="primary">Search</button>'
-        "</div></form>"
+        + ui.toolbar(
+            ui.text_field("q", "Search these notes", value=q,
+                          placeholder="A word in any of them", wide=True),
+            action=f'/client/{client["id"]}/notes', submit="Search",
+            css="filters",
+        )
         + _write_form(client["id"], projects or [])
         + body
     )

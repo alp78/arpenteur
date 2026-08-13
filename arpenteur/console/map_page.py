@@ -121,24 +121,17 @@ def map_page(
         "?" + "&".join(f"{k}={v}" for k, v in query.items()) if query else ""
     )
 
-    def select(name: str, label: str, values: list[str], chosen: str, any_label: str) -> str:
-        options = f'<option value="">{esc(any_label)}</option>' + "".join(
-            f'<option value="{esc(v)}"{" selected" if v == chosen else ""}>{esc(v)}</option>'
-            for v in values
-        )
-        return (
-            f'<div class="ctl"><label>{esc(label)}</label>'
-            f'<select name="{name}">{options}</select></div>'
-        )
-
-    filters = (
-        '<form class="filters" method="get" action="/map">'
-        + select("canton", "Canton", cantons, canton, "All cantons")
-        + select("segment", "Segment", segments, segment, "All segments")
-        + select("band", "Fit band", ["high", "medium", "low", "excluded"], band, "Any band")
-        + select("state", "Pipeline state", states, state, "Any state")
-        + '<div class="ctl"><label>&nbsp;</label><button class="primary">Show</button></div>'
-        "</form>"
+    filters = ui.toolbar(
+        ui.select_field("canton", "Canton", cantons, chosen=canton,
+                        blank="All cantons")
+        + ui.select_field("segment", "Segment", segments, chosen=segment,
+                          blank="All segments")
+        + ui.select_field("band", "Fit band",
+                          ["high", "medium", "low", "excluded"],
+                          chosen=band, blank="Any band")
+        + ui.select_field("state", "Pipeline state", states, chosen=state,
+                          blank="Any state"),
+        action="/map", css="filters",
     )
 
     legend = (

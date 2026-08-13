@@ -70,7 +70,16 @@ def client(root: Path, conn) -> TestClient:
 # --- the overlay --------------------------------------------------------------
 
 
-def test_the_file_is_the_default_when_nothing_was_changed(root) -> None:
+def test_the_file_is_the_default_when_nothing_was_changed(root, conn) -> None:
+    """`conn` is not used here and is not decoration.
+
+    `load_settings` reads the operator overlay out of whatever `DATABASE_URL`
+    names, and the fixture chain is what points that at the test database.
+    Without it this test read the live one, so it passed only when some earlier
+    test in the same process had already set the variable: green in the full
+    suite, red on its own, and red for a reason that had nothing to do with
+    what it was checking.
+    """
     settings = load_settings(root)
     assert settings.territory.cantons == ("GE",)
     assert settings.territory.legal_forms == ("0107",)
@@ -358,3 +367,23 @@ def test_no_page_spells_a_colour_the_shell_already_names(client) -> None:
                 f"{path.name} spells {spelled} rather than using a token. "
                 "If none of the tokens fits, add one in render.py."
             )
+
+
+def test_no_label_in_the_console_names_nothing(client) -> None:
+    """A word above a field is not a label unless it says which field.
+
+    Thirty-three of them across four filter bars named nothing: adjacent to
+    their control, with no `for` and not wrapping it. A screen reader reads
+    those as stray words, and clicking one does not focus the field. They are
+    all built from the components now, which bind the two.
+    """
+    for url, body in _pages(client).items():
+        labels = re.findall(r"<label(?:\s[^>]*)?>", body)
+        unbound = [l for l in labels if "for=" not in l and "class=" not in l]
+        wrapping = len(re.findall(
+            r"<label(?:\s[^>]*)?>(?:(?!</label>).)*?<(?:input|select|textarea)",
+            body, re.S,
+        ))
+        assert len(unbound) - wrapping <= 0, (
+            f"{url}: {len(unbound) - wrapping} label(s) naming no control"
+        )

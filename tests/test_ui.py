@@ -24,6 +24,8 @@ optional. A test is how that survives the next person tidying the markup.
 
 from __future__ import annotations
 
+import re
+
 import pytest
 
 from arpenteur.console import assets, render, ui
@@ -310,3 +312,42 @@ def test_the_script_url_carries_the_hash_of_the_script_it_serves() -> None:
 
 def test_the_title_of_a_page_is_escaped() -> None:
     assert "<script>" not in render.page(EVIL, "")
+
+
+# --- the dark scheme --------------------------------------------------------
+
+
+def _tokens(block: str) -> set[str]:
+    return set(re.findall(r"(--[a-z0-9-]+)\s*:", block))
+
+
+def test_the_dark_scheme_answers_every_colour_the_light_one_names() -> None:
+    """A token the dark block forgets is an element nobody can see.
+
+    It would not fail, and it would not look broken in the light: it would be
+    one card, on one page, that stayed white on a black ground for whoever has
+    their machine set that way, which is nobody who is reading this test.
+    """
+    light, dark = render.STYLESHEET.split("@media (prefers-color-scheme: dark)")
+    light_tokens = _tokens(light.split(":root {")[1].split("\n  }")[0])
+    dark_tokens = _tokens(dark)
+
+    # The scales are shared on purpose: spacing does not change when the lights
+    # go out, and neither does the typeface.
+    shared = {"--s1", "--s2", "--s3", "--s4", "--s5", "--s6", "--r", "--r-pill",
+              "--t-xs", "--t-sm", "--t-lg", "--ui"}
+    missing = light_tokens - dark_tokens - shared
+    assert not missing, f"the dark scheme does not answer {sorted(missing)}"
+
+
+def test_the_dark_scheme_changes_the_paper_rather_than_only_the_text() -> None:
+    dark = render.STYLESHEET.split("@media (prefers-color-scheme: dark)")[1]
+    assert "--paper:#1a1815" in dark
+    assert "--ink:#ece7de" in dark
+
+
+def test_a_table_can_be_scrolled_from_a_keyboard() -> None:
+    """A seven-column table on a phone either pushes the page sideways or has
+    three columns nobody can reach."""
+    html = ui.table(["a", "b"], ["<tr><td>1</td><td>2</td></tr>"])
+    assert '<div class="scroller" tabindex="0">' in html

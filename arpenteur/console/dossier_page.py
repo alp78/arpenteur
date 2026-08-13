@@ -71,7 +71,9 @@ table.price td.none { color:var(--late); font-size:.85rem; }
 .meta { font-size:.78rem; color:var(--dim); }
 .docs td.f { font-weight:600; }
 .drop { border:1px dashed var(--line); background:var(--paper); padding:.9rem 1.1rem; }
-.two { display:grid; grid-template-columns:1fr 1fr; gap:.6rem; }
+.two { display:grid; grid-template-columns:1fr 1fr; gap:.6rem;
+       container-type:inline-size; }
+@container (max-width:34rem) { .two { grid-template-columns:1fr; } }
 @media (max-width:760px) { .two { grid-template-columns:1fr; } }
 """
 

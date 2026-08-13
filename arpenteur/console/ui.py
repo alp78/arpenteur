@@ -161,8 +161,11 @@ def toolbar(
         )
     else:
         wiring = attrs(method=method, action=action)
+    # The blank above the button is a spacer, not a label. It was a `<label>`
+    # with a non-breaking space in it, which is a word a screen reader
+    # announces as naming a control and which names nothing at all.
     go = (
-        '<div class="ctl"><label>&nbsp;</label>'
+        '<div class="ctl"><span class="spacer" aria-hidden="true">&nbsp;</span>'
         f'<button class="primary">{esc(submit)}</button>'
         '<span class="spinner htmx-indicator" aria-hidden="true"></span></div>'
     )
@@ -376,9 +379,13 @@ def table(
         f'<tr><td colspan="{max(len(columns), 1)}" class="dim">{esc(empty_text)}</td></tr>'
     )
     cap = f"<caption>{esc(caption)}</caption>" if caption else ""
+    # Wrapped in something that can scroll, and focusable so it can be scrolled
+    # from a keyboard. A seven-column table on a phone otherwise either pushes
+    # the whole page sideways or has three columns nobody can reach.
     return (
+        '<div class="scroller" tabindex="0">'
         f'<table{classes(css)}{attrs(id=id)}>{cap}'
-        f"<thead><tr>{head}</tr></thead><tbody>{body}</tbody></table>"
+        f"<thead><tr>{head}</tr></thead><tbody>{body}</tbody></table></div>"
     )
 
 
