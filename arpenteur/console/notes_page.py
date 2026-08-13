@@ -28,7 +28,7 @@ from ..markdown import render
 from .render import esc, page
 
 STYLES = """
-.note-doc { background:#fff; border:1px solid var(--line); padding:1.1rem 1.4rem;
+.note-doc { background:var(--paper); border:1px solid var(--line); padding:1.1rem 1.4rem;
             margin:0 0 1rem; }
 .note-doc > :first-child { margin-top:0; }
 .note-doc h1 { font-size:1.25rem; margin:1.2rem 0 .4rem; }
@@ -54,7 +54,7 @@ STYLES = """
 .note-meta { font-size:.78rem; color:var(--dim); }
 .note-meta code { background:var(--bg); padding:.05rem .3rem; }
 .tag { display:inline-block; border:1px solid var(--line); border-radius:1rem;
-       padding:.02rem .5rem; font-size:.74rem; color:var(--dim); background:#fff; }
+       padding:.02rem .5rem; font-size:.74rem; color:var(--dim); background:var(--paper); }
 .pin { color:var(--accent); font-weight:700; }
 .note-acts { display:flex; gap:.5rem; align-items:center; flex-wrap:wrap;
              margin-left:auto; }

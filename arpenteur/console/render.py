@@ -18,6 +18,7 @@ from typing import Any, Iterable
 
 from ..kernel.modules import Nav
 from .assets import CONSOLE_JS_URL
+from . import ui
 from .ui import esc
 
 # htmx, pinned and checked. The console used `unpkg.com/htmx.org@2.0.4` with no
@@ -55,6 +56,14 @@ STYLESHEET = """
        rename the token. */
     --good:#1d6b2f; --caution:#8a6d1f; --bad:#a3341c; --late:#8a3a2c;
     --good-bg:#e8f1e8; --bad-bg:#fff7f0;
+    /* The state tints: a badge, a card whose next action has slipped, a
+       column a card is being dragged over. Each was spelled out wherever it
+       was wanted, so the same tint existed in three slightly different
+       versions and no two pages agreed on which. */
+    --good-line:#9fc0a2;
+    --caution-bg:#fdf3e6; --caution-line:#d9b483; --caution-ink:#8a5a1f;
+    --late-bg:#fdf6f4; --late-line:#c9a29b;
+    --muted-bg:#f4f2ee; --ink-soft:#3a352e;
     --s1:.25rem; --s2:.45rem; --s3:.7rem; --s4:1rem; --s5:1.4rem; --s6:2rem;
     --r:3px; --r-pill:1rem;
     --t-xs:.72rem; --t-sm:.85rem; --t-lg:1.35rem;
@@ -527,11 +536,6 @@ def progress(row: Row) -> str:
 
 
 def company_rows(rows: list[Row]) -> str:
-    if not rows:
-        return (
-            '<tr><td colspan="7" class="dim">Nothing matches. Widen the filter, '
-            'or run a stage on the <a href="/pipeline">operations</a> page.</td></tr>'
-        )
     out = []
     for row in rows:
         segments = pills(as_list(row["segments"]))
@@ -560,11 +564,15 @@ def company_table(rows: list[Row], total: int) -> str:
         f"<b>{esc(letter)}</b> {esc(title.lower())}" for letter, _key, title in PROGRESS
     )
     return (
-        f'<p class="dim small">{total:,} companies match. '
-        f'Progress: {legend}</p>'
-        '<table><thead><tr><th>company</th><th>canton</th><th>progress</th>'
-        '<th>segments</th><th>fit</th><th>website</th><th>state</th></tr></thead>'
-        f"<tbody>{company_rows(rows)}</tbody></table>"
+        f'<p class="dim small">{ui.num(total)} companies match. '
+        f"Progress: {legend}</p>"
+        + ui.table(
+            ["company", "canton", "progress", "segments", "fit", "website", "state"],
+            [company_rows(rows)] if rows else [],
+            caption=f"{ui.num(total)} companies match this filter",
+            empty_text="Nothing matches. Widen the filter, or run a stage on "
+                       "the operations page.",
+        )
     )
 
 
@@ -785,9 +793,14 @@ def company_page(
             for o in parties
         )
         out.append(
-            "<h2>officers</h2><table><tbody>" + rows + "</tbody></table>"
-            '<p class="dim small">Parsed from FOSC publications, not a registry '
-            "field. Verify against the certified excerpt before relying on it.</p>"
+            "<h2>officers</h2>"
+            + ui.table(
+                ["person", "role", "when", "other boards"], [rows],
+                caption="Officers, from the published notices",
+            )
+            + '<p class="dim small">Parsed from FOSC publications, not a '
+              "registry field. Verify against the certified excerpt before "
+              "relying on it.</p>"
         )
     elif officers:
         rows = "".join(
@@ -796,10 +809,14 @@ def company_page(
             for o in officers
         )
         out.append(
-            "<h2>officers</h2><table><tbody>" + rows + "</tbody></table>"
-            '<p class="dim small">Parsed from FOSC publications, and not yet '
-            'resolved into people. Run <a href="/pipeline">resolve</a>, which '
-            "is free, to see what else they sit on.</p>"
+            "<h2>officers</h2>"
+            + ui.table(
+                ["person", "role", "signature"], [rows],
+                caption="Officers, from the published notices",
+            )
+            + '<p class="dim small">Parsed from FOSC publications, and not yet '
+              'resolved into people. Run <a href="/pipeline">resolve</a>, '
+              "which is free, to see what else they sit on.</p>"
         )
 
     if overlap:
@@ -976,8 +993,11 @@ def contact_row(c: Row) -> str:
 def _contacts_card(contacts: list[Row]) -> str:
     if not contacts:
         return ""
-    rows = "".join(contact_row(c) for c in contacts)
-    return f"<h2>contacts</h2><table><tbody>{rows}</tbody></table>"
+    return "<h2>contacts</h2>" + ui.table(
+        ["address", "found by", "state", ""],
+        [contact_row(c) for c in contacts],
+        caption="Addresses published by this company",
+    )
 
 
 def _notes_card(company_id: int, notes: list[Row]) -> str:
@@ -1035,14 +1055,16 @@ def runs_table(rows: list[Row]) -> str:
             f"<td class='small dim'>{esc(row['started_by'] or '')}</td>"
             f"<td class='small dim'>{esc(detail[:160])}</td></tr>"
         )
-    body = "".join(out) or (
-        '<tr><td colspan="5" class="dim">Nothing has been run yet.</td></tr>'
-    )
     return (
-        '<table id="runs" hx-get="/runs/rows" hx-trigger="every 3s" hx-swap="outerHTML">'
-        "<thead><tr><th>started</th><th>stage</th><th>state</th><th>by</th>"
-        "<th>result</th></tr></thead>"
-        f"<tbody>{body}</tbody></table>"
+        '<table id="runs" hx-get="/runs/rows" hx-trigger="every 3s"'
+        ' hx-swap="outerHTML">'
+        "<caption>Every stage this console has run</caption>"
+        "<thead><tr><th scope=\"col\">started</th><th scope=\"col\">stage</th>"
+        "<th scope=\"col\">state</th><th scope=\"col\">by</th>"
+        "<th scope=\"col\">result</th></tr></thead><tbody>"
+        + ("".join(out) or
+           '<tr><td colspan="5" class="dim">Nothing has been run yet.</td></tr>')
+        + "</tbody></table>"
     )
 
 
@@ -1154,9 +1176,9 @@ def stage_card(
         f"<div class='stage-title'><h3>{esc(stage.title)}</h3>"
         f"<p class='what'>{esc(stage.what)}</p></div>"
         f"<div class='stage-count'>"
-        f"<div><b>{done:,}</b><span>{esc(stage.done_label)}</span></div>"
+        f"<div><b>{ui.num(done)}</b><span>{esc(stage.done_label)}</span></div>"
         f"<div class='{'waiting' if waiting else ''}'>"
-        f"<b>{waiting:,}</b><span>{esc(stage.waiting_label)}</span></div>"
+        f"<b>{ui.num(waiting)}</b><span>{esc(stage.waiting_label)}</span></div>"
         f"</div></div>"
         f"<dl class='facts'>"
         f"<dt>Needs first</dt><dd>{esc(stage.needs)}</dd>"

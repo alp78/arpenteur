@@ -25,6 +25,7 @@ from datetime import date, timedelta
 from typing import Any
 
 from ..kernel.db import Row
+from . import ui
 from .render import esc, page
 
 # What each kind of event looks like in a list. The mark is deliberately a
@@ -50,22 +51,20 @@ PROJECT_MARKS: dict[str, tuple[str, str]] = {
 }
 
 STYLES = """
-.crumbs { font-size:.82rem; color:var(--dim); margin:0 0 .5rem; }
-.crumbs a { color:var(--dim); }
 .ident { display:flex; gap:1.4rem; align-items:baseline; flex-wrap:wrap; }
 .code { font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-weight:700;
-         background:var(--ink); color:#fff; padding:.1rem .5rem; border-radius:2px;
+         background:var(--ink); color:var(--paper); padding:.1rem .5rem; border-radius:2px;
          font-size:.82rem; letter-spacing:.03em; }
-.code.soft { background:#fff; color:var(--accent); border:1px solid var(--accent); }
+.code.soft { background:var(--paper); color:var(--accent); border:1px solid var(--accent); }
 .grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(230px,1fr)); gap:1rem; }
-.tile { background:#fff; border:1px solid var(--line); padding:.8rem .95rem; }
+.tile { background:var(--paper); border:1px solid var(--line); padding:.8rem .95rem; }
 .tile h4 { margin:0 0 .3rem; font-size:.72rem; text-transform:uppercase;
             letter-spacing:.06em; color:var(--dim); }
 .tile .big { font-size:1.5rem; font-weight:600; font-variant-numeric:tabular-nums; }
 .timeline { border-left:2px solid var(--line); margin:.6rem 0 0 .7rem; padding:0; }
 .ev { position:relative; padding:.55rem 0 .55rem 1.5rem; }
 .ev::before { content:attr(data-mark); position:absolute; left:-.72rem; top:.6rem;
-               width:1.35rem; height:1.35rem; border-radius:50%; background:#fff;
+               width:1.35rem; height:1.35rem; border-radius:50%; background:var(--paper);
                border:1px solid var(--line); font-size:.7rem; font-weight:700;
                display:flex; align-items:center; justify-content:center; color:var(--dim); }
 .ev.planned::before { border-color:var(--accent); color:var(--accent); }
@@ -75,17 +74,17 @@ STYLES = """
 .ev .when { font-size:.78rem; color:var(--dim); }
 .ev .subj { font-weight:600; }
 .ev .body { white-space:pre-wrap; font-size:.88rem; margin-top:.2rem;
-             border-left:2px solid var(--line); padding-left:.7rem; color:#3a352e; }
+             border-left:2px solid var(--line); padding-left:.7rem; color:var(--ink-soft); }
 .cal { width:100%; table-layout:fixed; }
 .cal td { height:6.2rem; vertical-align:top; padding:.3rem .35rem; }
-.cal td.out { background:#f4f2ee; }
+.cal td.out { background:var(--muted-bg); }
 .cal td.today { outline:2px solid var(--accent); outline-offset:-2px; }
 .cal .day { font-size:.74rem; color:var(--dim); font-variant-numeric:tabular-nums; }
 .cal .slot { display:block; font-size:.74rem; margin-top:.12rem; padding:.05rem .25rem;
               background:var(--bg); border-left:2px solid var(--accent);
               overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .cal .slot.done { border-left-color:var(--line); color:var(--dim); }
-.cal .slot.derived { background:#fff; border-left-style:dashed; }
+.cal .slot.derived { background:var(--paper); border-left-style:dashed; }
 .split { display:grid; grid-template-columns:1fr 20rem; gap:1.4rem; align-items:start; }
 @media (max-width:900px) { .split { grid-template-columns:1fr; } }
 .stack { display:flex; flex-direction:column; gap:.45rem; }
@@ -96,12 +95,12 @@ STYLES = """
 .badge { display:inline-block; padding:.05rem .45rem; border-radius:2px;
           font-size:.72rem; font-weight:600; text-transform:uppercase;
           letter-spacing:.04em; border:1px solid var(--line); }
-.badge.active, .badge.done { background:#e8f1e8; border-color:#9fc0a2; color:#1d6b2f; }
-.badge.proposed, .badge.planned { background:#fdf3e6; border-color:#d9b483; color:#8a5a1f; }
-.badge.paused, .badge.dormant { background:#f1f0ee; color:var(--dim); }
-.badge.cancelled, .badge.former { background:#f6ecea; border-color:#c9a29b; color:#8a3a2c; }
+.badge.active, .badge.done { background:var(--good-bg); border-color:var(--good-line); color:var(--good); }
+.badge.proposed, .badge.planned { background:var(--caution-bg); border-color:var(--caution-line); color:var(--caution-ink); }
+.badge.paused, .badge.dormant { background:var(--muted-bg); color:var(--dim); }
+.badge.cancelled, .badge.former { background:var(--late-bg); border-color:var(--late-line); color:var(--late); }
 .dossier-strip { display:flex; gap:1rem; align-items:center; flex-wrap:wrap;
-                 background:#fff; border:1px solid var(--line);
+                 background:var(--paper); border:1px solid var(--line);
                  border-left:3px solid var(--accent); padding:.6rem .9rem;
                  margin:.9rem 0 0; }
 .dossier-strip .go { font-weight:600; text-decoration:none; }
@@ -110,10 +109,10 @@ details.del { display:inline-block; }
 details.del summary { cursor:pointer; color:var(--dim); font-size:.8rem;
                       list-style:none; }
 details.del summary::-webkit-details-marker { display:none; }
-details.del summary:hover { color:#8a3a2c; }
+details.del summary:hover { color:var(--late); }
 details.del form { display:flex; gap:.4rem; align-items:center; flex-wrap:wrap;
-                   margin-top:.35rem; padding:.5rem .6rem; background:#fdf6f4;
-                   border:1px solid #d9bdb6; }
+                   margin-top:.35rem; padding:.5rem .6rem; background:var(--late-bg);
+                   border:1px solid var(--late-line); }
 details.del input { min-width:20rem; }
 details.del .hint { flex-basis:100%; }
 .move { padding:.12rem 0; border-bottom:1px dotted var(--line); }
@@ -171,10 +170,9 @@ def portfolio(rows: list[Row], total_projects: int, upcoming: int) -> str:
                 f'<td class="small">{esc(last)}</td>'
                 f'<td class="small">{esc(nxt) or "<span class=dim>—</span>"}</td></tr>'
             )
-        body = (
-            '<table><thead><tr><th>client</th><th>code</th><th>status</th>'
-            "<th>projects</th><th>last contact</th><th>next</th></tr></thead>"
-            f"<tbody>{''.join(cells)}</tbody></table>"
+        body = ui.table(
+            ["client", "code", "status", "projects", "last contact", "next"],
+            cells, caption="The portfolio",
         )
 
     tiles = (
@@ -250,10 +248,9 @@ def client_page(
             f'<td class="small">{esc(p["due_at"] or "")}</td></tr>'
             for p in projects
         )
-        project_table = (
-            "<table><thead><tr><th>project</th><th>code</th><th>status</th>"
-            "<th>billing</th><th>due</th></tr></thead>"
-            f"<tbody>{rows}</tbody></table>"
+        project_table = ui.table(
+            ["project", "code", "status", "billing", "due"], [rows],
+            caption="Pieces of work with their own reference",
         )
     else:
         project_table = (
@@ -452,12 +449,11 @@ def _sites(client_id: int, sites: list[Row]) -> str:
             f'action="/establishment/{site["id"]}/delete">'
             "<button>remove</button></form></td></tr>"
         )
-    table = (
-        "<table><thead><tr><th>site</th><th>address</th><th>where</th><th></th>"
-        f"</tr></thead><tbody>{''.join(rows)}</tbody></table>"
-        if rows
-        else '<p class="dim small">No site recorded. The registered address '
-             "arrives with the geocode stage; the other sites are typed here.</p>"
+    table = ui.table(
+        ["site", "address", "where", ""], rows,
+        caption="Where this client actually is",
+        empty_text="No site recorded. The registered address arrives with the "
+                   "geocode stage; the other sites are typed here.",
     )
     return (
         '<h2 id="sites">sites</h2>' + table
@@ -844,14 +840,20 @@ def calendar_page(
         "client's own timeline, where it can be read in order, and a diary "
         "carrying all of it would hide the two appointments of the week among "
         "forty entries nobody has to attend.</p>"
-        '<table class="cal"><thead><tr>'
-        + "".join(f"<th>{d}</th>" for d in
+        # A month grid is a table of days rather than of records, so it is
+        # built here rather than from the component. It still owes a reader the
+        # same two things: what it is, and which axis a header names.
+        f'<table class="cal"><caption>{calmod.month_name[month]} {year}, '
+        "what is in the diary</caption><thead><tr>"
+        + "".join(f'<th scope="col">{d}</th>' for d in
                   ("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"))
         + f"</tr></thead><tbody>{''.join(body)}</tbody></table>"
         + (
             "<h2>still to come this month</h2>"
-            "<table><thead><tr><th>when</th><th>client</th><th>project</th>"
-            f"<th>what</th><th>with</th></tr></thead><tbody>{agenda}</tbody></table>"
+            + ui.table(
+                ["when", "client", "project", "what", "with"], [agenda],
+                caption="The rest of this month",
+            )
             if agenda
             else "<p class='dim small'>Nothing is scheduled in this month.</p>"
         )

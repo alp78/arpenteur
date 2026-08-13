@@ -28,7 +28,7 @@ from .render import esc
 
 STYLES = """
 .parts { display:flex; flex-direction:column; gap:.5rem; margin:.6rem 0 0; }
-.part { border:1px solid var(--line); background:#fff; padding:.55rem .75rem; }
+.part { border:1px solid var(--line); background:var(--paper); padding:.55rem .75rem; }
 .part-head { display:flex; gap:.6rem; align-items:baseline; }
 .part-head b { min-width:7rem; }
 .part-head .n { font-variant-numeric:tabular-nums; font-weight:700;
@@ -36,14 +36,14 @@ STYLES = """
 .part-head .w { color:var(--dim); font-size:.78rem; }
 .origin { border:1px solid var(--line); border-radius:1rem; padding:.02rem .5rem;
           font-size:.7rem; color:var(--dim); }
-.origin.computed { border-color:#1d6b2f; color:#1d6b2f; }
+.origin.computed { border-color:var(--good); color:var(--good); }
 .bar { height:.3rem; background:var(--bg); border:1px solid var(--line);
        margin:.3rem 0 .35rem; }
 .bar span { display:block; height:100%; background:var(--accent); }
 .part .why { font-size:.84rem; color:var(--dim); margin:.1rem 0 .3rem; }
 .ev { font-size:.8rem; margin:.1rem 0 0; padding-left:.9rem; }
 .ev li { margin:.1rem 0; }
-.ev.for li::marker { content:"+ "; color:#1d6b2f; }
+.ev.for li::marker { content:"+ "; color:var(--good); }
 .ev.against li::marker { content:"- "; color:var(--accent); }
 .score-note { font-size:.8rem; color:var(--dim); margin:.5rem 0 0; }
 .selection { font-size:.8rem; color:var(--dim); margin:.4rem 0 0; }

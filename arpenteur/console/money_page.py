@@ -35,9 +35,9 @@ STYLES = """
 .money-head { display:flex; gap:.8rem; align-items:baseline; flex-wrap:wrap; }
 .money-head h1 { margin:0; }
 .state { display:inline-block; border:1px solid var(--line); border-radius:1rem;
-         padding:.05rem .6rem; font-size:.78rem; background:#fff; color:var(--dim); }
+         padding:.05rem .6rem; font-size:.78rem; background:var(--paper); color:var(--dim); }
 .state.sent, .state.issued { border-color:var(--accent); color:var(--accent); }
-.state.accepted, .state.paid { border-color:#1d6b2f; color:#1d6b2f; font-weight:600; }
+.state.accepted, .state.paid { border-color:var(--good); color:var(--good); font-weight:600; }
 .state.declined, .state.cancelled, .state.credited { text-decoration:line-through; }
 .lines { width:100%; }
 .lines td.num, .lines th.num { text-align:right; font-variant-numeric:tabular-nums;
@@ -46,13 +46,13 @@ STYLES = """
 .lines tfoot tr.total td { font-weight:700; border-top:2px solid var(--ink); }
 .lines .basis { font-size:.76rem; color:var(--dim); }
 .versions { display:flex; gap:.5rem; flex-wrap:wrap; margin:.3rem 0 1rem; }
-.versions a { border:1px solid var(--line); padding:.1rem .55rem; background:#fff;
+.versions a { border:1px solid var(--line); padding:.1rem .55rem; background:var(--paper);
               text-decoration:none; font-size:.82rem; }
 .versions a.on { border-color:var(--accent); font-weight:600; }
-.frozen { background:#fff7f0; border-left:3px solid var(--accent); padding:.6rem .9rem;
+.frozen { background:var(--bad-bg); border-left:3px solid var(--accent); padding:.6rem .9rem;
           margin:1rem 0; font-size:.88rem; }
 .addline { display:flex; gap:.6rem; flex-wrap:wrap; align-items:end;
-           background:#fff; border:1px solid var(--line); padding:.8rem .9rem; }
+           background:var(--paper); border:1px solid var(--line); padding:.8rem .9rem; }
 .addline .ctl { display:flex; flex-direction:column; gap:.15rem; }
 .addline label { font-size:.72rem; text-transform:uppercase; letter-spacing:.05em;
                  color:var(--dim); }
@@ -296,11 +296,13 @@ def quotes_panel(quotes: list[Row], client_id: int) -> str:
         )
     return (
         "<section><h2>Quotes</h2>"
-        '<table class="lines"><thead><tr><th>Reference</th><th>State</th>'
-        '<th>Version</th><th class="num">Total</th><th>Opened</th></tr></thead>'
-        f"<tbody>{rows}</tbody></table>"
-        f'<form method="post" action="/client/{client_id}/quotes">'
-        '<button type="submit">Start a quote</button></form></section>'
+        + ui.table(
+            ["reference", "state", "version", "total", "opened"], [rows],
+            caption="What this client has been proposed", numeric=["total"],
+            css="lines",
+        )
+        + f'<form method="post" action="/client/{client_id}/quotes">'
+          '<button type="submit">Start a quote</button></form></section>'
     )
 
 
@@ -319,11 +321,13 @@ def invoices_panel(invoices: list[Row], client_id: int) -> str:
         )
     return (
         "<section><h2>Invoices</h2>"
-        '<table class="lines"><thead><tr><th>Number</th><th>State</th>'
-        '<th>Issued</th><th>Due</th><th class="num">Total</th></tr></thead>'
-        f"<tbody>{rows}</tbody></table>"
-        f'<form method="post" action="/client/{client_id}/invoices">'
-        '<button type="submit">Start an invoice</button></form></section>'
+        + ui.table(
+            ["number", "state", "issued", "due", "total"], [rows],
+            caption="What this client has been billed", numeric=["total"],
+            css="lines",
+        )
+        + f'<form method="post" action="/client/{client_id}/invoices">'
+          '<button type="submit">Start an invoice</button></form></section>'
     )
 
 

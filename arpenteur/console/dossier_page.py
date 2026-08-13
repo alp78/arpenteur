@@ -30,9 +30,9 @@ from . import ui
 from .render import esc, page
 
 STYLES = """
-.sect { background:#fff; border:1px solid var(--line); margin-bottom:.9rem; }
+.sect { background:var(--paper); border:1px solid var(--line); margin-bottom:.9rem; }
 .sect > header { padding:.75rem 1rem .1rem; border:0; position:static;
-                  display:block; background:#fff; }
+                  display:block; background:var(--paper); }
 .sect h3 { margin:0; font-size:1rem; }
 .sect .what { margin:.2rem 0 0; color:var(--dim); max-width:70ch; font-size:.86rem; }
 .sect .inner { padding:.5rem 1rem .9rem; }
@@ -49,10 +49,10 @@ STYLES = """
 .grp h2 { margin:0 0 .15rem; }
 .grp p { margin:0 0 .8rem; color:var(--dim); max-width:70ch; font-size:.88rem; }
 .filled { font-size:.72rem; text-transform:uppercase; letter-spacing:.05em;
-           color:#1d6b2f; font-weight:700; }
-.empty { font-size:.72rem; text-transform:uppercase; letter-spacing:.05em;
+           color:var(--good); font-weight:700; }
+.unfilled { font-size:.72rem; text-transform:uppercase; letter-spacing:.05em;
           color:var(--dim); font-weight:700; }
-.adv { background:#fff; border:1px solid var(--line); padding:1rem 1.2rem;
+.adv { background:var(--paper); border:1px solid var(--line); padding:1rem 1.2rem;
         margin-bottom:1rem; }
 .adv h3 { margin:1.1rem 0 .4rem; font-size:.78rem; text-transform:uppercase;
            letter-spacing:.06em; color:var(--dim); }
@@ -62,15 +62,15 @@ STYLES = """
               padding:.6rem .9rem; white-space:pre-wrap; }
 .pt { border-left:2px solid var(--line); padding:.15rem 0 .5rem .8rem; margin:.6rem 0; }
 .pt b { display:block; }
-.pt .why { color:#3a352e; font-size:.9rem; }
+.pt .why { color:var(--ink-soft); font-size:.9rem; }
 .pt .ask { color:var(--accent); font-size:.9rem; margin-top:.2rem; }
 .pt .ev { color:var(--dim); font-size:.78rem; margin-top:.2rem; }
 table.price td.num { text-align:right; font-variant-numeric:tabular-nums;
                       white-space:nowrap; }
-table.price td.none { color:#8a3a2c; font-size:.85rem; }
+table.price td.none { color:var(--late); font-size:.85rem; }
 .meta { font-size:.78rem; color:var(--dim); }
 .docs td.f { font-weight:600; }
-.drop { border:1px dashed var(--line); background:#fff; padding:.9rem 1.1rem; }
+.drop { border:1px dashed var(--line); background:var(--paper); padding:.9rem 1.1rem; }
 .two { display:grid; grid-template-columns:1fr 1fr; gap:.6rem; }
 @media (max-width:760px) { .two { grid-template-columns:1fr; } }
 """
@@ -121,7 +121,7 @@ def section_block(section: vocab.Section, row: dict[str, Any] | None) -> str:
     state = (
         f'<span class="filled">filled {esc(when)}</span>'
         if body.strip()
-        else '<span class="empty">empty</span>'
+        else '<span class="unfilled">empty</span>'
     )
     return (
         f'<form class="sect" method="post" action="/dossier/{{cid}}/section">'
@@ -242,11 +242,13 @@ def approach_block(row: Row | None, rate_card: bool) -> str:
             f'<td class="small dim">{esc(p.get("basis") or "")}</td></tr>'
         )
     pricing = (
-        '<table class="price"><thead><tr><th>work</th><th colspan="2">range</th>'
-        "<th>unit</th><th>from which rate card line</th></tr></thead>"
+        '<table class="price"><caption>What the work was priced at</caption>'
+        '<thead><tr><th scope="col">work</th><th scope="col" colspan="2">range'
+        '</th><th scope="col">unit</th>'
+        '<th scope="col">from which rate card line</th></tr></thead>'
         f"<tbody>{''.join(price_rows)}</tbody></table>"
         if price_rows
-        else "<p class='dim small'>No prices returned.</p>"
+        else ui.empty("No prices returned.")
     )
     if not read.get("rate_card"):
         pricing = (
@@ -407,7 +409,7 @@ def documents_table(rows: list[Row]) -> str:
             )
         else:
             state = (
-                f'<span class="dim">{row["text_chars"] or 0:,} characters</span> '
+                f'<span class="dim">{ui.num(row["text_chars"] or 0)} characters</span> '
                 f'<a href="/attachment/{row["id"]}/text">read</a>'
             )
         out.append(
@@ -428,10 +430,9 @@ def documents_table(rows: list[Row]) -> str:
             "client holds the same bytes.</span></form></details></td>"
             "</tr>"
         )
-    return (
-        '<table class="docs"><thead><tr><th>document</th><th>what it is</th>'
-        "<th>size</th><th>text</th><th>added</th><th>digest</th><th></th>"
-        f"</tr></thead><tbody>{''.join(out)}</tbody></table>"
+    return ui.table(
+        ["document", "what it is", "size", "text", "added", "digest", ""],
+        out, caption="Documents the client has sent", css="docs",
     )
 
 

@@ -308,3 +308,53 @@ def test_turning_off_a_module_removes_its_pages_from_the_header(
     assert "Quotes" not in labels and "Invoices" not in labels
     assert "Reports" not in labels
     assert "Clients" in labels and "Survey" in labels and "Settings" in labels
+
+
+# --- the furniture, over every page the console serves ------------------------
+
+
+def _pages(client: TestClient) -> dict[str, str]:
+    """Every page reachable from the header, plus the records under them."""
+    header = client.get("/").text.split("<header>")[1].split("</header>")[0]
+    out = {}
+    for href in re.findall(r'<a href="([^"]+)"', header):
+        out[href] = client.get(href).text
+    return out
+
+
+def test_every_table_says_what_it_is_and_scopes_its_headers(client) -> None:
+    """A table of numbers with no title is a table somebody screenshots.
+
+    Fourteen page modules each built their own, and they disagreed about all
+    three of these: some had a caption, none had `scope`, and the empty case
+    was a different colspan guess per site.
+    """
+    for url, body in _pages(client).items():
+        for table in re.findall(r"<table[^>]*>.*?</table>", body, re.S):
+            assert "<caption>" in table, f"{url}: a table with no caption"
+            # `<th...>` and not `<thead>`, which the lazier pattern also matches.
+            for header in re.findall(r"<th(?:\s[^>]*)?>", table):
+                assert "scope=" in header, f"{url}: {header} has no scope"
+
+
+def test_no_page_spells_a_colour_the_shell_already_names(client) -> None:
+    """Thirty-nine hex literals across nine files could not say that a band is
+    not green, it is good.
+
+    Two exceptions, both deliberate. The printed document uses ink black and
+    paper white against a physical page, not the screen palette. The map's
+    layer colours are JSON a mapping library reads as data, not CSS.
+    """
+    from pathlib import Path as P
+
+    console = P(__file__).resolve().parent.parent / "arpenteur" / "console"
+    allowed = {"render.py", "money_page.py", "map_page.py"}
+    for path in sorted(console.glob("*.py")):
+        if path.name in allowed:
+            continue
+        for block in re.findall(r'STYLES\s*=\s*"""(.*?)"""', path.read_text(), re.S):
+            spelled = re.findall(r"#[0-9a-fA-F]{3,8}\b", block)
+            assert not spelled, (
+                f"{path.name} spells {spelled} rather than using a token. "
+                "If none of the tokens fits, add one in render.py."
+            )

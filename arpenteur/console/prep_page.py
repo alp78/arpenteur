@@ -21,18 +21,18 @@ from ..kernel.db import Connection, Row
 from .render import esc, page
 
 STYLES = """
-.agenda { background:#fff; border:1px solid var(--line); border-left:3px solid var(--accent);
+.agenda { background:var(--paper); border:1px solid var(--line); border-left:3px solid var(--accent);
           padding:.9rem 1.2rem; margin-bottom:1.2rem; }
 .agenda ol { margin:.5rem 0 0; padding-left:1.3rem; }
 .agenda li { margin-bottom:.45rem; }
 .agenda li b { display:block; }
 .agenda li span { color:var(--dim); font-size:.9rem; }
-.orient { background:#fff; border:1px solid var(--line); padding:.9rem 1.2rem;
+.orient { background:var(--paper); border:1px solid var(--line); padding:.9rem 1.2rem;
           margin-bottom:1.2rem; line-height:1.6; max-width:78ch; }
 .shelf { margin:1.7rem 0 .5rem; }
 .shelf h2 { margin:0 0 .1rem; }
 .shelf p { margin:0; color:var(--dim); font-size:.86rem; }
-.term { background:#fff; border:1px solid var(--line); margin-bottom:.5rem;
+.term { background:var(--paper); border:1px solid var(--line); margin-bottom:.5rem;
         display:grid; grid-template-columns:auto 1fr; }
 .term.known { opacity:.55; }
 .term .tick { padding:.75rem .5rem .75rem .9rem; }
@@ -50,8 +50,8 @@ STYLES = """
 .prio { font-size:.66rem; font-weight:700; text-transform:uppercase;
         letter-spacing:.05em; padding:.05rem .4rem; border-radius:2px;
         border:1px solid var(--line); color:var(--dim); }
-.prio.must { background:var(--accent); border-color:var(--accent); color:#fff; }
-.prio.should { border-color:#d9b483; color:#8a5a1f; background:#fdf3e6; }
+.prio.must { background:var(--accent); border-color:var(--accent); color:var(--paper); }
+.prio.should { border-color:var(--caution-line); color:var(--caution-ink); background:var(--caution-bg); }
 .counts { display:flex; gap:1.4rem; flex-wrap:wrap; margin-bottom:1rem; }
 .counts div { display:flex; flex-direction:column; }
 .counts b { font-size:1.4rem; font-variant-numeric:tabular-nums; }

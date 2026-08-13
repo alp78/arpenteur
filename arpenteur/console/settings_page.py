@@ -19,12 +19,13 @@ from __future__ import annotations
 from typing import Any
 
 from ..kernel.db import Connection, Row
+from . import ui
 from .render import esc, page
 
 STYLES = """
-.setting { background:#fff; border:1px solid var(--line); margin-bottom:1.2rem; }
+.setting { background:var(--paper); border:1px solid var(--line); margin-bottom:1.2rem; }
 .setting > header { padding:.9rem 1.1rem .2rem; border:0; position:static;
-                     display:block; background:#fff; }
+                     display:block; background:var(--paper); }
 .setting h3 { margin:0; font-size:1.05rem; }
 .setting .what { margin:.25rem 0 0; color:var(--dim); max-width:66ch; }
 .setting .inner { padding:.5rem 1.1rem 1rem; }
@@ -33,7 +34,7 @@ STYLES = """
                    align-items:center; flex-wrap:wrap; }
 .picker { display:flex; flex-wrap:wrap; gap:.3rem .5rem; margin:.4rem 0; }
 .picker label { display:flex; align-items:center; gap:.3rem; border:1px solid var(--line);
-                 padding:.15rem .5rem; background:#fff; font-size:.85rem;
+                 padding:.15rem .5rem; background:var(--paper); font-size:.85rem;
                  cursor:pointer; border-radius:2px; }
 .picker label:has(input:checked) { border-color:var(--accent); color:var(--accent);
                                     font-weight:600; }
@@ -95,7 +96,7 @@ def territory_block(
             + (" checked" if str(f["uid"]) in chosen_forms else "")
             + f'> <span class="code">{esc(f["uid"])}</span> {esc(f.get("label") or "")}'
             + (
-                f' <span class="dim">({counts.get(str(f["uid"]), 0):,} held)</span>'
+                f' <span class="dim">({ui.num(counts.get(str(f["uid"]), 0))} held)</span>'
                 if counts.get(str(f["uid"]))
                 else ""
             )
@@ -220,7 +221,7 @@ def campaign_block(text: str, digest: str, scored: int, path: str) -> str:
         f'style="min-height:22rem">{esc(text)}</textarea>'
         f"<p class='hint'>Stored as <code>{esc(path)}</code>, so it stays in "
         f"version control and a surprising run can be answered with a diff. "
-        f"Current version {esc(digest)}, {scored:,} scores taken against it.</p>",
+        f"Current version {esc(digest)}, {ui.num(scored)} scores taken against it.</p>",
         "Save brief",
         "Every score taken against the previous text becomes stale and the "
         "next scoring run re-takes exactly those. Scores set by hand survive.",

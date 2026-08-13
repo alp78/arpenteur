@@ -23,22 +23,22 @@ from typing import Any
 
 from ..kernel.db import Row
 from ..modules.analytics import store as analytics
+from . import ui
 from .render import esc, page
 
+# What is left after the components: the two boxes that are particular to this
+# page. Everything a report needs of a table, an empty state and a lede is in
+# the components layer now, and the rules for them were the same rules written
+# again with different numbers.
 STYLES = """
 .report { margin:0 0 1.8rem; }
-.report h2 { margin-bottom:.15rem; }
-.report .lede { color:var(--dim); font-size:.84rem; margin:0 0 .5rem; }
 .report table { font-variant-numeric:tabular-nums; }
-.report td.n, .report th.n { text-align:right; white-space:nowrap; }
-.report .empty { color:var(--dim); font-size:.86rem; background:#fff;
-                 border:1px solid var(--line); padding:.6rem .9rem; }
 .refresh-bar { display:flex; gap:.8rem; align-items:center; flex-wrap:wrap;
-               background:#fff; border:1px solid var(--line); padding:.7rem .9rem;
-               margin:0 0 1.4rem; }
+               background:var(--paper); border:1px solid var(--line);
+               padding:.7rem .9rem; margin:0 0 1.4rem; }
 .refresh-bar form { margin:0; }
 .refresh-bar .note { color:var(--dim); font-size:.82rem; max-width:60ch; }
-.duck { background:#fff; border:1px solid var(--line); padding:.8rem 1rem;
+.duck { background:var(--paper); border:1px solid var(--line); padding:.8rem 1rem;
         margin:1.5rem 0 0; font-size:.86rem; }
 .duck pre { background:var(--bg); border:1px solid var(--line); padding:.6rem .8rem;
             overflow:auto; font-size:.8rem; margin:.5rem 0 0; }
@@ -71,19 +71,22 @@ def _cell(column: str, value: Any) -> str:
     return f"<td{css}>{esc(text)}</td>"
 
 
-def table(rows: list[Row]) -> str:
+def table(rows: list[Row], *, caption: str = "") -> str:
+    """Whatever columns the view returned, right-aligned where they are numbers.
+
+    The header, the scope on it and the empty case are the component's; what is
+    left here is the part that is actually particular to a report, which is
+    that the shape is not known until the query has run.
+    """
     if not rows:
         return ""
     columns = list(rows[0].keys())
-    head = "".join(
-        f'<th{" class=\"n\"" if c in NUMERIC else ""}>{esc(c.replace("_", " "))}</th>'
-        for c in columns
+    return ui.table(
+        columns,
+        ["<tr>" + "".join(_cell(c, row[c]) for c in columns) + "</tr>"
+         for row in rows],
+        caption=caption, numeric=NUMERIC,
     )
-    body = "".join(
-        "<tr>" + "".join(_cell(c, row[c]) for c in columns) + "</tr>"
-        for row in rows
-    )
-    return f"<table><thead><tr>{head}</tr></thead><tbody>{body}</tbody></table>"
 
 
 def reports_page(
@@ -110,10 +113,13 @@ def reports_page(
 
     for name, title, rows in sections:
         body.append(f'<section class="report"><h2>{esc(title)}</h2>')
-        body.append(f'<p class="lede"><code>analytics.{esc(name)}</code></p>')
+        # The view's name is the table's caption rather than a paragraph above
+        # it. It is a title for the table, and a caption is where a title for a
+        # table belongs: it travels with the table when somebody copies it out.
         body.append(
-            table(rows) if rows
-            else '<p class="empty">Nothing to report yet.</p>'
+            table(rows, caption=f"analytics.{name}") if rows
+            else f'<p class="lede"><code>analytics.{esc(name)}</code></p>'
+                 + ui.empty("Nothing to report yet.")
         )
         body.append("</section>")
 

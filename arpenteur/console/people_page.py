@@ -24,22 +24,22 @@ from __future__ import annotations
 from typing import Any
 
 from ..kernel.db import Row
+from . import ui
 from .render import band, esc, page
 
 STYLES = """
 .who { display:flex; gap:1rem; align-items:baseline; flex-wrap:wrap; }
 .method { font-size:.72rem; text-transform:uppercase; letter-spacing:.05em;
           border:1px solid var(--line); border-radius:2px; padding:.05rem .4rem;
-          color:var(--dim); background:#fff; }
-.method.weak { border-color:#c9a29b; color:#8a3a2c; background:#fdf6f4; }
+          color:var(--dim); background:var(--paper); }
+.method.weak { border-color:var(--late-line); color:var(--late); background:var(--late-bg); }
 .boards { font-variant-numeric:tabular-nums; }
 .hop { display:inline-block; }
 .hop::after { content:" \\2192 "; color:var(--dim); }
 .hop:last-child::after { content:""; }
-.route { background:#fff; border:1px solid var(--line); padding:.5rem .7rem;
+.route { background:var(--paper); border:1px solid var(--line); padding:.5rem .7rem;
          margin-bottom:.5rem; }
 .route .via { font-size:.8rem; color:var(--dim); margin-top:.2rem; }
-tr.past td { color:var(--dim); background:#f7f5f1; }
 .past-tag { font-size:.7rem; text-transform:uppercase; letter-spacing:.05em;
             color:var(--dim); }
 """
@@ -99,22 +99,21 @@ def people_page(rows: list[Row], *, q: str = "", min_boards: int = 1,
             f'<td class="boards">{row["boards"]}</td>'
             f"<td>{method_tag(row)}</td></tr>"
         )
-    table = (
-        "<table><thead><tr><th>person</th><th>origin</th><th>domicile</th>"
-        "<th>boards</th><th>resolved on</th></tr></thead>"
-        f"<tbody>{''.join(body)}</tbody></table>"
-        if rows
-        else '<p class="dim">Nobody matches. Run <a href="/pipeline">resolve</a> '
-             "if the officer rows have changed.</p>"
+    table = ui.table(
+        ["person", "origin", "domicile", "boards", "resolved on"],
+        body, caption="People resolved from the officer rows",
+        numeric=["boards"],
+        empty_text="Nobody matches. Run resolve, which is free, if the officer "
+                   "rows have changed.",
     )
     tiles = (
         '<div class="grid" style="margin-bottom:1.2rem">'
-        f'<div class="tile"><h4>People</h4><div class="big">{counts.get("parties", 0):,}</div>'
-        f'<div class="dim small">from {counts.get("people", 0):,} officer rows</div></div>'
+        f'<div class="tile"><h4>People</h4><div class="big">{ui.num(counts.get("parties", 0))}</div>'
+        f'<div class="dim small">from {ui.num(counts.get("people", 0))} officer rows</div></div>'
         f'<div class="tile"><h4>On several boards</h4>'
-        f'<div class="big">{counts.get("connectors", 0):,}</div>'
+        f'<div class="big">{ui.num(counts.get("connectors", 0))}</div>'
         '<div class="dim small">the routes into a company</div></div>'
-        f'<div class="tile"><h4>Roles</h4><div class="big">{counts.get("roles", 0):,}</div>'
+        f'<div class="tile"><h4>Roles</h4><div class="big">{ui.num(counts.get("roles", 0))}</div>'
         "</div></div>"
         if counts
         else ""
@@ -176,8 +175,11 @@ def party_page(
     return (
         head
         + "<h2>boards</h2>"
-        + "<table><thead><tr><th>company</th><th>role</th><th>when</th>"
-        f"<th>fit</th><th>pipeline</th></tr></thead><tbody>{rows}</tbody></table>"
+        + ui.table(
+            ["company", "role", "when", "fit", "pipeline"], [rows],
+            caption="Seats held, current and finished",
+            empty_text="No seat is recorded for this person.",
+        )
         + (
             f"<p class='dim small'>{ended} of these has ended. A seat somebody "
             "has left is still a link, and a poor introduction; both are shown "
@@ -236,11 +238,14 @@ def overlap_panel(rows: list[Row], company_id: int) -> str:
     )
     return (
         "<h2>shares an officer with</h2>"
-        "<table><thead><tr><th>company</th><th>through</th><th>fit</th>"
-        f"<th>pipeline</th></tr></thead><tbody>{body}</tbody></table>{more}"
-        "<p class='dim small'>Parsed from published notices, and only as good "
-        "as the identity resolution behind it. Each name links to what else "
-        "it is on.</p>"
+        + ui.table(
+            ["company", "through", "fit", "pipeline"], [body],
+            caption="Companies reachable through a shared officer",
+        )
+        + more
+        + "<p class='dim small'>Parsed from published notices, and only as good "
+          "as the identity resolution behind it. Each name links to what else "
+          "it is on.</p>"
     )
 
 

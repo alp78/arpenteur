@@ -64,7 +64,7 @@ BAND_LANES = ("high", "medium", "low", "excluded", "not scored")
 STYLES = """
 .board { display:flex; gap:.7rem; overflow-x:auto; padding-bottom:.8rem;
          align-items:flex-start; }
-.col { flex:0 0 15.5rem; background:#f2efe9; border:1px solid var(--line);
+.col { flex:0 0 15.5rem; background:var(--soft); border:1px solid var(--line);
        border-radius:3px; display:flex; flex-direction:column; min-height:5rem; }
 .col > h3 { margin:0; padding:.5rem .6rem .3rem; font-size:.74rem;
             text-transform:uppercase; letter-spacing:.06em; color:var(--dim);
@@ -75,13 +75,13 @@ STYLES = """
             line-height:1.35; }
 .drop { padding:.35rem; display:flex; flex-direction:column; gap:.35rem;
         min-height:3.2rem; flex:1; }
-.drop.over { background:#e6efe6; outline:2px dashed #9fc0a2; outline-offset:-3px; }
-.kard { background:#fff; border:1px solid var(--line); border-left:3px solid var(--line);
+.drop.over { background:var(--good-bg); outline:2px dashed var(--good); outline-offset:-3px; }
+.kard { background:var(--paper); border:1px solid var(--line); border-left:3px solid var(--line);
         padding:.45rem .55rem; font-size:.84rem; cursor:grab; }
 .kard.dragging { opacity:.4; }
-.kard.band-high { border-left-color:#1d6b2f; }
-.kard.band-medium { border-left-color:#c39a3a; }
-.kard.overdue { background:#fdf4f2; }
+.kard.band-high { border-left-color:var(--good); }
+.kard.band-medium { border-left-color:var(--caution); }
+.kard.overdue { background:var(--bad-bg); }
 .kard .who { font-weight:600; text-decoration:none; display:block;
              line-height:1.3; }
 .kard .meta { color:var(--dim); font-size:.74rem; }
@@ -91,7 +91,7 @@ STYLES = """
              padding:0 .4rem; color:var(--dim); }
 .kard .next { margin-top:.25rem; font-size:.74rem; border-top:1px dotted var(--line);
               padding-top:.22rem; }
-.kard .next.late { color:#8a3a2c; font-weight:600; }
+.kard .next.late { color:var(--late); font-weight:600; }
 .kard details { margin-top:.25rem; }
 .kard details summary { cursor:pointer; font-size:.72rem; color:var(--dim);
                         list-style:none; }
@@ -99,8 +99,8 @@ STYLES = """
 .kard details form { display:flex; gap:.25rem; margin-top:.25rem; }
 .kard details select { flex:1; font-size:.75rem; padding:.1rem; }
 .kard .sat { color:var(--dim); font-variant-numeric:tabular-nums; }
-.kard .sat.long { color:#8a3a2c; font-weight:600; }
-.kard .chip { background:var(--ink); color:#fff; border-radius:2px;
+.kard .sat.long { color:var(--late); font-weight:600; }
+.kard .chip { background:var(--ink); color:var(--paper); border-radius:2px;
               padding:0 .3rem; text-decoration:none; font-weight:600;
               font-size:.7rem; letter-spacing:.02em; }
 .lane { margin-bottom:.4rem; }

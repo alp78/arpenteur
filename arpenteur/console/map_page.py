@@ -24,6 +24,7 @@ import json
 from typing import Any
 
 from ..kernel.db import Row
+from . import ui
 from .render import esc, page
 
 # swisstopo's raster tiles. `current` rather than a dated release, so the map
@@ -54,12 +55,12 @@ STYLES = """
 .maplibregl-popup-content { font:14px/1.45 -apple-system,BlinkMacSystemFont,
                             "Segoe UI",Roboto,sans-serif; padding:.6rem .7rem; }
 .maplibregl-popup-content h4 { margin:0 0 .2rem; font-size:.95rem; }
-.maplibregl-popup-content .dim { color:#6b665e; font-size:.8rem; }
+.maplibregl-popup-content .dim { color:var(--dim); font-size:.8rem; }
 .legend { display:flex; gap:1rem; flex-wrap:wrap; align-items:center;
           margin:.5rem 0 0; font-size:.8rem; color:var(--dim); }
 .legend b { display:inline-block; width:.75rem; height:.75rem; border-radius:50%;
             margin-right:.25rem; vertical-align:-1px; }
-.legend .hollow { background:#fff; box-shadow:inset 0 0 0 2px #6b665e; }
+.legend .hollow { background:var(--paper); box-shadow:inset 0 0 0 2px var(--dim); }
 """
 
 
@@ -147,18 +148,18 @@ def map_page(
             for name, colour in BAND_COLOURS.items()
         )
         + '<span><b class="hollow"></b>placed on a town, not an address</span>'
-        + f"<span>{count:,} of {placed:,} placed shown</span>"
+        + f"<span>{ui.num(count)} of {ui.num(placed)} placed shown</span>"
         + "</div>"
     )
 
     waiting = with_address - placed
     note = (
-        f'<div class="warn">Nothing is placed yet. {with_address:,} companies '
+        f'<div class="warn">Nothing is placed yet. {ui.num(with_address)} companies '
         "hold a postal address from the register and none has been geocoded. "
         'Run <a href="/pipeline">geocode</a>, which is free.</div>'
         if placed == 0
         else (
-            f'<p class="dim small">{waiting:,} companies hold an address that '
+            f'<p class="dim small">{ui.num(waiting)} companies hold an address that '
             'has not been placed yet. <a href="/pipeline">Geocode</a> is free '
             "and picks up where it left off.</p>"
             if waiting > 0

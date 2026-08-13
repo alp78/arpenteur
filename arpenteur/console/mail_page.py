@@ -27,11 +27,12 @@ from __future__ import annotations
 from typing import Any
 
 from ..kernel.db import Row
+from . import ui
 from .render import esc, page
 
 STYLES = """
 .queue { display:flex; flex-direction:column; gap:.55rem; }
-.msg { background:#fff; border:1px solid var(--line); border-left:3px solid var(--line);
+.msg { background:var(--paper); border:1px solid var(--line); border-left:3px solid var(--line);
        padding:.6rem .8rem; }
 .msg.matched { border-left-color:var(--accent); }
 .msg-head { display:flex; gap:.6rem; align-items:baseline; flex-wrap:wrap; }
@@ -47,13 +48,11 @@ STYLES = """
 .msg-acts button { font-size:.78rem; padding:.15rem .55rem; }
 .msg-acts select { font-size:.78rem; padding:.1rem .3rem; }
 .dir { display:inline-block; border:1px solid var(--line); border-radius:1rem;
-       padding:.02rem .5rem; font-size:.72rem; color:var(--dim); background:#fff; }
+       padding:.02rem .5rem; font-size:.72rem; color:var(--dim); background:var(--paper); }
 .dir.out { border-color:var(--accent); color:var(--accent); }
 .no-body { font-size:.76rem; color:var(--dim); font-style:italic; }
 .excerpt { font-size:.82rem; color:var(--dim); margin:.3rem 0 0;
            max-width:88ch; white-space:pre-wrap; }
-.tabs { display:flex; gap:.9rem; margin:.2rem 0 1rem; font-size:.85rem; }
-.tabs a.on { font-weight:700; color:var(--ink); }
 .counts { color:var(--dim); font-size:.82rem; margin:0 0 .8rem; }
 .links { font-size:.82rem; }
 .links td { padding:.2rem .5rem .2rem 0; }
@@ -162,19 +161,17 @@ def mail_page(
     rows: list[Row], clients: list[Row], counts: dict[str, int], *,
     state: str = "pending", chrome: Any = None, configured: bool = True,
 ) -> str:
-    tabs = " ".join(
-        f'<a href="/mail?state={name}"'
-        + (' class="on"' if name == state else "")
-        + f">{label} ({counts.get(name, 0)})</a>"
-        for name, label in (("pending", "Waiting"), ("filed", "Filed"),
-                            ("ignored", "Ignored"))
-    )
     body = [
         "<h1>Mail</h1>",
         '<p class="counts">Read from the mailbox and held here. Nothing reaches '
         "a client's timeline until you file it, and nothing in the mailbox is "
         "marked read, moved or deleted by this tool.</p>",
-        f'<div class="tabs">{tabs}</div>',
+        ui.tabs(
+            [(f"/mail?state={name}", f"{label} ({counts.get(name, 0)})")
+             for name, label in (("pending", "Waiting"), ("filed", "Filed"),
+                                 ("ignored", "Ignored"))],
+            f"/mail?state={state}",
+        ),
     ]
     if not configured:
         body.append(
@@ -186,10 +183,13 @@ def mail_page(
         )
     elif not rows:
         body.append(
-            '<p class="counts">Nothing here. Run the <a href="/pipeline">mail '
-            "stage</a> to read the mailbox.</p>"
-            if state == "pending" else
-            '<p class="counts">Nothing here yet.</p>'
+            ui.empty(
+                "Nothing is waiting.",
+                action='Run the <a href="/pipeline">mail stage</a> to read the '
+                       "mailbox.",
+            )
+            if state == "pending"
+            else ui.empty(f"Nothing has been {state} yet.")
         )
     decided = state != "pending"
     body.append('<div class="queue">')
