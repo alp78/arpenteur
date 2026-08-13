@@ -48,6 +48,7 @@ from ..config import Settings, load_settings
 from ..sources import geoadmin
 from ..sources import mail as mail_source
 from ..stages import advise, geocode, mail as mail_stage, match, prep, source
+from . import assets
 from . import board as board_view
 from . import clients as clients_view
 from . import mail_page as mail_view
@@ -2181,6 +2182,22 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             )
         (settings.root / "campaign.md").write_text(campaign, encoding="utf-8")
         return RedirectResponse("/settings", status_code=303)
+
+    @app.get("/static/console.{digest}.js")
+    def console_js(digest: str) -> PlainTextResponse:
+        """The one script, under a URL that changes when the script does.
+
+        Served from the application rather than a CDN, because it is thirty
+        lines that belong to this console and a third party able to change what
+        runs on a page holding a client's file is a bad trade for one fewer
+        route. Cached for a year: the digest is in the path, so a change
+        produces a different URL rather than a stale copy nobody can flush.
+        """
+        return PlainTextResponse(
+            assets.CONSOLE_JS,
+            media_type="text/javascript",
+            headers={"Cache-Control": "public, max-age=31536000, immutable"},
+        )
 
     @app.get("/healthz")
     def healthz() -> dict[str, str]:

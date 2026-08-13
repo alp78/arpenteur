@@ -73,10 +73,9 @@ statuses = ["ACTIVE"]
 # Named territories, so a survey can be scoped without editing a canton list
 # by hand. Add your own freely: nothing here is special to the code.
 [regions]
-# The five French-speaking cantons. JU is left out by default: it is small
-# and its economy points north to Basel rather than to the lake.
-romandie = ["GE", "VD", "FR", "NE", "VS"]
-romandie-ju = ["GE", "VD", "FR", "NE", "VS", "JU"]
+# The six French-speaking cantons, JU included (decision of 2026-08-13:
+# the whole Suisse romande is in scope, everywhere cantons are named).
+romandie = ["GE", "VD", "FR", "NE", "VS", "JU"]
 geneve = ["GE"]
 vaud = ["VD"]
 arc-lemanique = ["GE", "VD"]

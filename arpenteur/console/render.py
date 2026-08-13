@@ -12,159 +12,362 @@ register and notes are typed by hand, so neither is trusted: a company called
 
 from __future__ import annotations
 
-import html
 import json
 from typing import Any, Iterable
 
-# HTMX from a CDN, and about sixty lines of CSS. No build step, no bundler, no
-# node_modules. The whole console is server-rendered and the only client-side
-# behaviour is swapping fragments in, which is what HTMX is for.
-HEAD = """<!doctype html>
-<html lang="en"><head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>{title}</title>
-<script src="https://unpkg.com/htmx.org@2.0.4"></script>
-<style>
-:root {{ --line:#d8d4cc; --ink:#1c1a17; --dim:#6b665e; --bg:#faf8f5; --accent:#7a1f1f; }}
-* {{ box-sizing:border-box; }}
-body {{ margin:0; font:15px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
-        color:var(--ink); background:var(--bg); }}
-header {{ border-bottom:1px solid var(--line); padding:.7rem 1.2rem; display:flex;
-          gap:1.2rem; align-items:baseline; background:#fff; position:sticky; top:0; z-index:5; }}
-header a {{ color:var(--dim); text-decoration:none; }}
-header a:hover, header a.on {{ color:var(--accent); }}
-header .brand {{ font-weight:600; color:var(--ink); letter-spacing:.02em; }}
-main {{ padding:1.2rem; max-width:1100px; margin:0 auto; }}
-h1 {{ font-size:1.35rem; margin:0 0 .2rem; }}
-h2 {{ font-size:1rem; margin:1.6rem 0 .5rem; color:var(--dim);
-      text-transform:uppercase; letter-spacing:.06em; font-weight:600; }}
-table {{ border-collapse:collapse; width:100%; background:#fff; }}
-th,td {{ text-align:left; padding:.45rem .6rem; border-bottom:1px solid var(--line);
-         vertical-align:top; }}
-th {{ font-size:.78rem; text-transform:uppercase; letter-spacing:.05em; color:var(--dim); }}
-tr:hover td {{ background:#fffdf8; }}
-a {{ color:var(--accent); }}
-.dim {{ color:var(--dim); }}
-.small {{ font-size:.85rem; }}
-.card {{ background:#fff; border:1px solid var(--line); padding:.9rem 1.1rem; margin-bottom:1rem; }}
-.pill {{ display:inline-block; padding:.05rem .5rem; border:1px solid var(--line);
-         border-radius:1rem; font-size:.78rem; margin:0 .25rem .25rem 0; background:#fff; }}
-.pill.manual {{ border-color:var(--accent); color:var(--accent); }}
-.band-high {{ color:#1d6b2f; font-weight:600; }}
-.band-medium {{ color:#8a6d1f; }}
-.band-low, .band-excluded {{ color:var(--dim); }}
-form.inline {{ display:inline; }}
-input,select,textarea,button {{ font:inherit; padding:.3rem .45rem; border:1px solid var(--line);
-                                background:#fff; color:inherit; }}
-textarea {{ width:100%; min-height:4.5rem; }}
-button {{ cursor:pointer; }}
-button.primary {{ background:var(--accent); color:#fff; border-color:var(--accent); }}
-.filters {{ display:flex; gap:.5rem; flex-wrap:wrap; align-items:end; margin-bottom:1rem; }}
-.note {{ border-left:2px solid var(--line); padding:.15rem 0 .15rem .7rem; margin:.6rem 0; }}
-.warn {{ background:#fff7f0; border-left:3px solid var(--accent); padding:.6rem .9rem;
-         margin:1rem 0; font-size:.9rem; }}
-.lede {{ color:var(--dim); max-width:62ch; margin:.2rem 0 1.4rem; }}
-.stages {{ display:flex; flex-direction:column; gap:1rem; }}
-.stage {{ background:#fff; border:1px solid var(--line); border-radius:3px; }}
-.stage-head {{ display:flex; gap:.9rem; align-items:flex-start; padding:1rem 1.1rem .3rem; }}
-.step {{ flex:0 0 1.6rem; height:1.6rem; border-radius:50%; background:var(--ink);
-         color:#fff; font-size:.8rem; display:flex; align-items:center;
-         justify-content:center; margin-top:.1rem; }}
-.stage-title {{ flex:1; }}
-.stage-title h3 {{ margin:0; font-size:1.05rem; }}
-.what {{ margin:.25rem 0 0; color:var(--dim); max-width:64ch; }}
-.stage-count {{ display:flex; gap:1.1rem; text-align:right; }}
-.stage-count div {{ display:flex; flex-direction:column; }}
-.stage-count b {{ font-size:1.15rem; font-variant-numeric:tabular-nums; }}
-.stage-count span {{ font-size:.7rem; text-transform:uppercase;
-                     letter-spacing:.05em; color:var(--dim); }}
-.stage-count .waiting b {{ color:var(--accent); }}
-dl.facts {{ display:grid; grid-template-columns:9rem 1fr; gap:.15rem .8rem;
-            margin:.8rem 1.1rem; padding:.7rem .9rem; background:var(--bg);
-            border:1px solid var(--line); font-size:.86rem; }}
-dl.facts dt {{ color:var(--dim); text-transform:uppercase; font-size:.7rem;
-               letter-spacing:.05em; padding-top:.18rem; }}
-dl.facts dd {{ margin:0; }}
-dl.facts dd.money {{ color:var(--accent); font-weight:600; }}
-.controls {{ display:flex; gap:1rem 1.3rem; flex-wrap:wrap; align-items:start;
-             margin:0 1.1rem 1rem; }}
-.ctl {{ display:flex; flex-direction:column; gap:.2rem; max-width:19rem; }}
-.ctl.ctl-wide {{ max-width:26rem; }}
-.ctl > label {{ font-size:.74rem; text-transform:uppercase; letter-spacing:.05em;
-                color:var(--dim); font-weight:600; }}
-.ctl input[type=text] {{ width:17rem; }}
-.hint {{ font-size:.79rem; color:var(--dim); line-height:1.4; }}
-label.check {{ display:flex; gap:.45rem; align-items:flex-start; }}
-label.check input {{ margin:.25rem 0 0; }}
-label.check b {{ display:block; font-weight:600; font-size:.9rem; }}
-.action {{ display:flex; gap:.8rem; align-items:center; flex-wrap:wrap;
-           padding:.8rem 1.1rem; border-top:1px solid var(--line); background:var(--bg); }}
-.action button {{ padding:.45rem 1.1rem; font-weight:600; }}
-.action .hint {{ max-width:56ch; }}
-.stamp {{ display:inline-block; width:1.15rem; height:1.15rem; line-height:1.15rem;
-          text-align:center; border-radius:2px; font-size:.66rem; font-weight:700;
-          margin-right:.12rem; border:1px solid var(--line); color:var(--dim);
-          background:#fff; }}
-.stamp.on {{ background:var(--ink); border-color:var(--ink); color:#fff; }}
-.stamp.on.paid {{ background:var(--accent); border-color:var(--accent); }}
-.acts {{ display:flex; gap:.8rem; flex-wrap:wrap; align-items:flex-start;
-         background:#fff; border:1px solid var(--line); padding:.8rem .9rem;
-         margin:0 0 1.2rem; }}
-.act {{ display:flex; flex-direction:column; gap:.2rem; max-width:17rem; }}
-.act button {{ font-weight:600; }}
-.nowrap {{ white-space:nowrap; }}
-header .sep {{ color:var(--line); }}
-details.card summary {{ cursor:pointer; }}
-.state-running {{ color:var(--accent); font-weight:600; }}
-.state-error {{ color:#a3341c; font-weight:600; }}
-.state-done {{ color:var(--dim); }}
-tr.past td {{ color:var(--dim); background:#f7f5f1; }}
-pre.log {{ background:#fff; border:1px solid var(--line); padding:.8rem 1rem; margin:0;
-           max-height:70vh; overflow:auto; font-size:.82rem; line-height:1.5;
-           white-space:pre-wrap; word-break:break-word; }}
-{css}
-</style></head><body>
-<header>
-  <span class="brand">ARPENTEUR</span>
-  <a href="/clients">Clients</a>
-  <a href="/mail">Mail</a>
-  <a href="/calendar">Calendar</a>
-  <span class="sep">|</span>
-  <a href="/">Survey</a>
-  <a href="/board">Board</a>
-  <a href="/people">People</a>
-  <a href="/map">Map</a>
-  <a href="/reports">Reports</a>
-  <a href="/pipeline">Operations</a>
-  <a href="/runs">History</a>
-  <a href="/settings">Settings</a>
-  <span class="dim small" style="margin-left:auto">{territory}</span>
-</header><main>
+from .assets import CONSOLE_JS_URL
+from .ui import esc
+
+# htmx, pinned and checked. The console used `unpkg.com/htmx.org@2.0.4` with no
+# integrity attribute, which is a third party able to change what executes on a
+# page holding a client's file. The version is current stable; htmx 4 is in beta
+# for summer 2026, so 2.x pinned is the right place to stand rather than a
+# floating tag that will move under us.
+HTMX = (
+    '<script src="https://cdn.jsdelivr.net/npm/htmx.org@2.0.10/dist/htmx.min.js" '
+    'integrity="sha384-H5SrcfygHmAuTDZphMHqBJLc3FhssKjG7w/CeCpFReSfwBWDTKpkzPP8c+cLsK+V" '
+    'crossorigin="anonymous"></script>'
+)
+
+# The stylesheet, in four cascade layers declared in priority order.
+#
+# The layers are not tidiness. Every page module carries its own rules and they
+# are appended after these, so before layers the only thing deciding which won
+# was selector specificity: a page writing `.card` would tie with this file and
+# lose or win depending on source order, and a page writing `div.card` would
+# beat it silently. Now `page` is declared last and therefore always wins,
+# whatever it writes, and a component can be styled here in one place without
+# auditing fourteen files for something that happens to be more specific.
+#
+# `tokens` is the palette and the scales. Everything else refers to it, so a
+# dark scheme is one block rather than a search for forty-seven `#fff`.
+STYLESHEET = """
+@layer tokens, base, components, page;
+
+@layer tokens {
+  :root {
+    --paper:#fff; --bg:#faf8f5; --ink:#1c1a17; --dim:#6b665e; --line:#d8d4cc;
+    --accent:#7a1f1f; --soft:#f2efe9; --tint:#fffdf8; --past:#f7f5f1;
+    /* Named for what they mean, not for what colour they are. A band is not
+       "green": it is good, and a theme that made it blue should not have to
+       rename the token. */
+    --good:#1d6b2f; --caution:#8a6d1f; --bad:#a3341c; --late:#8a3a2c;
+    --good-bg:#e8f1e8; --bad-bg:#fff7f0;
+    --s1:.25rem; --s2:.45rem; --s3:.7rem; --s4:1rem; --s5:1.4rem; --s6:2rem;
+    --r:3px; --r-pill:1rem;
+    --t-xs:.72rem; --t-sm:.85rem; --t-lg:1.35rem;
+    --ui: -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+  }
+}
+
+@layer base {
+  * { box-sizing:border-box; }
+  body { margin:0; font:15px/1.55 var(--ui); color:var(--ink); background:var(--bg); }
+  a { color:var(--accent); }
+  h1 { font-size:var(--t-lg); margin:0 0 .2rem; }
+  h2 { font-size:1rem; margin:1.6rem 0 .5rem; color:var(--dim);
+       text-transform:uppercase; letter-spacing:.06em; font-weight:600; }
+  table { border-collapse:collapse; width:100%; background:var(--paper); }
+  caption { text-align:left; font-size:var(--t-xs); text-transform:uppercase;
+            letter-spacing:.05em; color:var(--dim); padding:0 0 var(--s1); }
+  th,td { text-align:left; padding:.45rem .6rem; border-bottom:1px solid var(--line);
+          vertical-align:top; }
+  th { font-size:.78rem; text-transform:uppercase; letter-spacing:.05em;
+       color:var(--dim); font-weight:600; }
+  th.n, td.n { text-align:right; white-space:nowrap;
+               font-variant-numeric:tabular-nums; }
+  tr:hover td { background:var(--tint); }
+  tr.past td { color:var(--dim); background:var(--past); }
+  input,select,textarea,button { font:inherit; padding:.3rem .45rem;
+      border:1px solid var(--line); background:var(--paper); color:inherit; }
+  textarea { width:100%; min-height:4.5rem; }
+  button { cursor:pointer; }
+  button.primary { background:var(--accent); color:var(--paper);
+                   border-color:var(--accent); }
+  button.danger { color:var(--bad); border-color:var(--bad); background:var(--paper); }
+  button[disabled] { cursor:not-allowed; opacity:.55; }
+  /* Focus has to be visible against parchment, and the browser default ring is
+     not. Everything reachable by keyboard says so in the same way. */
+  :focus-visible { outline:2px solid var(--accent); outline-offset:2px; }
+  .dim { color:var(--dim); }
+  .small { font-size:var(--t-sm); }
+  .nowrap { white-space:nowrap; }
+  .lede { color:var(--dim); max-width:62ch; margin:.2rem 0 var(--s5); }
+  .hint { font-size:.79rem; color:var(--dim); line-height:1.4; }
+  form.inline { display:inline; }
+  details.card summary { cursor:pointer; }
+}
+
+@layer components {
+  /* --- the shell --- */
+  .skip { position:absolute; left:-9999px; top:0; background:var(--accent);
+          color:var(--paper); padding:var(--s2) var(--s4); z-index:20; }
+  .skip:focus { left:0; }
+  header { border-bottom:1px solid var(--line); padding:var(--s3) 1.2rem;
+           display:flex; gap:1.2rem; align-items:baseline; background:var(--paper);
+           position:sticky; top:0; z-index:5; flex-wrap:wrap; }
+  header .brand { font-weight:600; color:var(--ink); letter-spacing:.02em; }
+  header nav { display:flex; gap:1.2rem; align-items:baseline; flex-wrap:wrap; }
+  header a { color:var(--dim); text-decoration:none; }
+  header a:hover, header a.on, header a[aria-current] { color:var(--accent); }
+  header a[aria-current] { font-weight:600; }
+  header .sep { color:var(--line); }
+  header .where { margin-left:auto; display:flex; gap:var(--s3);
+                  align-items:baseline; }
+  main { padding:1.2rem; max-width:1100px; margin:0 auto; }
+
+  /* --- containers --- */
+  .card { background:var(--paper); border:1px solid var(--line);
+          padding:.9rem 1.1rem; margin-bottom:var(--s4); }
+  .card-acts { display:flex; gap:var(--s3); justify-content:flex-end;
+               margin:0 0 var(--s2); }
+  .panel { margin:0 0 var(--s5); }
+  .panel > h2 { margin-bottom:var(--s1); }
+  .panel > .lede { margin:0 0 var(--s2); font-size:var(--t-sm); }
+  .note { border-left:2px solid var(--line); padding:.15rem 0 .15rem var(--s3);
+          margin:.6rem 0; }
+  .empty { color:var(--dim); font-size:.86rem; background:var(--paper);
+           border:1px dashed var(--line); padding:.6rem .9rem; margin:0; }
+
+  /* --- things the page needs to say --- */
+  .banner, .warn { border-left:3px solid var(--accent); background:var(--bad-bg);
+                   padding:.6rem .9rem; margin:var(--s4) 0; font-size:.9rem; }
+  .banner-good { border-left-color:var(--good); background:var(--good-bg); }
+  .banner-bad { border-left-color:var(--bad); }
+  .banner-note { border-left-color:var(--line); background:var(--soft); }
+
+  /* --- controls --- */
+  .toolbar, .filters { display:flex; gap:var(--s2); flex-wrap:wrap;
+                       align-items:end; margin-bottom:var(--s4); }
+  .ctl { display:flex; flex-direction:column; gap:.2rem; max-width:19rem; }
+  .ctl.ctl-wide { max-width:26rem; }
+  .ctl > label { font-size:.74rem; text-transform:uppercase; letter-spacing:.05em;
+                 color:var(--dim); font-weight:600; }
+  .ctl input[type=text] { width:17rem; }
+  label.check { display:flex; gap:var(--s2); align-items:flex-start; }
+  label.check input { margin:.25rem 0 0; }
+  label.check b { display:block; font-weight:600; font-size:.9rem; }
+
+  /* --- small pieces --- */
+  .pill { display:inline-block; padding:.05rem .5rem; border:1px solid var(--line);
+          border-radius:var(--r-pill); font-size:.78rem; margin:0 .25rem .25rem 0;
+          background:var(--paper); }
+  .pill.manual { border-color:var(--accent); color:var(--accent); }
+  .chip { background:var(--ink); color:var(--paper); border-radius:2px;
+          padding:0 .3rem; text-decoration:none; font-weight:600;
+          font-size:.7rem; letter-spacing:.02em; }
+  .stat { display:flex; flex-direction:column; }
+  .stat b { font-size:1.15rem; font-variant-numeric:tabular-nums; }
+  .stat span { font-size:.7rem; text-transform:uppercase; letter-spacing:.05em;
+               color:var(--dim); }
+  .stat-on b { color:var(--accent); }
+  .tabs { display:flex; gap:.9rem; margin:.2rem 0 var(--s4); font-size:var(--t-sm);
+          flex-wrap:wrap; }
+  .tabs a { color:var(--dim); text-decoration:none; }
+  .tabs a.on { font-weight:700; color:var(--ink); }
+  .crumbs { font-size:.82rem; color:var(--dim); margin:0 0 var(--s2); }
+  .crumbs a { color:var(--dim); }
+  .crumbs .sep { margin:0 var(--s2); color:var(--line); }
+  .band-high { color:var(--good); font-weight:600; }
+  .band-medium { color:var(--caution); }
+  .band-low, .band-excluded { color:var(--dim); }
+  .state-running { color:var(--accent); font-weight:600; }
+  .state-error { color:var(--bad); font-weight:600; }
+  .state-done { color:var(--dim); }
+  .stamp { display:inline-block; width:1.15rem; height:1.15rem; line-height:1.15rem;
+           text-align:center; border-radius:2px; font-size:.66rem; font-weight:700;
+           margin-right:.12rem; border:1px solid var(--line); color:var(--dim);
+           background:var(--paper); }
+  .stamp.on { background:var(--ink); border-color:var(--ink); color:var(--paper); }
+  .stamp.on.paid { background:var(--accent); border-color:var(--accent); }
+
+  /* --- saying a request is in flight --- */
+  .spinner { display:none; width:.85rem; height:.85rem; border-radius:50%;
+             border:2px solid var(--line); border-top-color:var(--accent);
+             animation:spin .7s linear infinite; }
+  .htmx-request .spinner, .spinner.htmx-request { display:inline-block; }
+  .htmx-request.spinner { display:inline-block; }
+  @keyframes spin { to { transform:rotate(360deg); } }
+  @media (prefers-reduced-motion:reduce) {
+    .spinner { animation:none; border-top-color:var(--line); }
+  }
+  /* A form mid-request dims rather than staying identical to one at rest. */
+  form.htmx-request { opacity:.6; }
+
+  /* --- reordering --- */
+  .sortable { margin:0 0 var(--s4); }
+  .sort-list { list-style:none; margin:0; padding:0; display:flex;
+               flex-direction:column; gap:var(--s1); }
+  .sort-item { display:flex; gap:var(--s2); align-items:flex-start;
+               background:var(--paper); border:1px solid var(--line);
+               border-radius:var(--r); padding:var(--s2) var(--s3); }
+  .sort-item.carried { opacity:.5; outline:2px dashed var(--accent);
+                       outline-offset:-3px; }
+  .sort-body { flex:1; min-width:0; }
+  .sort-ctl { display:flex; flex-direction:column; gap:2px; flex:0 0 auto; }
+  .sort-ctl .grip { cursor:grab; padding:0 .2rem; line-height:1;
+                    letter-spacing:-.2em; color:var(--dim); border-color:transparent;
+                    background:transparent; }
+  .sort-ctl .nudge { padding:0 .3rem; font-size:var(--t-xs); line-height:1.3; }
+  .sort-say { font-size:var(--t-xs); color:var(--accent); min-height:1.1em; }
+
+  /* --- dropping files --- */
+  .dropzone { border:1px dashed var(--line); background:var(--paper);
+              padding:var(--s4); text-align:center; border-radius:var(--r); }
+  .dropzone.over { border-color:var(--good); background:var(--good-bg);
+                   border-style:solid; }
+  .dropzone.busy { opacity:.6; }
+  .drop-say { margin:0 0 var(--s2); color:var(--dim); font-size:var(--t-sm); }
+  .drop-progress:empty { display:none; }
+  .drop-progress { font-size:var(--t-xs); color:var(--accent);
+                   margin-top:var(--s2); text-align:left; }
+
+  /* --- the palette --- */
+  dialog.palette { border:1px solid var(--line); border-radius:var(--r);
+                   padding:0; width:min(38rem,92vw); background:var(--paper);
+                   margin-top:12vh; }
+  dialog.palette::backdrop { background:rgb(28 26 23 / .35); }
+  dialog.palette input[name=q] { width:100%; border:0; border-bottom:1px solid var(--line);
+                                 padding:var(--s3) var(--s4); font-size:1.05rem; }
+  dialog.palette input[name=q]:focus-visible { outline:none;
+                                               border-bottom-color:var(--accent); }
+  .hits { max-height:56vh; overflow:auto; }
+  .hits .hit { display:flex; gap:var(--s3); align-items:baseline;
+               padding:var(--s2) var(--s4); text-decoration:none; color:var(--ink);
+               border-bottom:1px solid var(--line); }
+  .hits .hit:hover, .hits .hit:focus-visible { background:var(--tint);
+                                               outline-offset:-2px; }
+  .hits .kind { font-size:var(--t-xs); text-transform:uppercase;
+                letter-spacing:.05em; color:var(--dim); flex:0 0 5.5rem; }
+  .hits .why { color:var(--dim); font-size:var(--t-xs); margin-left:auto; }
+  .hits h4 { margin:var(--s3) var(--s4) var(--s1); font-size:var(--t-xs);
+             text-transform:uppercase; letter-spacing:.05em; color:var(--dim); }
+  .kbd { font:inherit; font-size:var(--t-xs); border:1px solid var(--line);
+         border-bottom-width:2px; border-radius:3px; padding:0 .3rem;
+         color:var(--dim); background:var(--bg); }
+
+  /* --- the survey pipeline cards --- */
+  .stages { display:flex; flex-direction:column; gap:var(--s4); }
+  .stage { background:var(--paper); border:1px solid var(--line);
+           border-radius:var(--r); }
+  .stage-head { display:flex; gap:.9rem; align-items:flex-start;
+                padding:var(--s4) 1.1rem .3rem; }
+  .step { flex:0 0 1.6rem; height:1.6rem; border-radius:50%; background:var(--ink);
+          color:var(--paper); font-size:.8rem; display:flex; align-items:center;
+          justify-content:center; margin-top:.1rem; }
+  .stage-title { flex:1; }
+  .stage-title h3 { margin:0; font-size:1.05rem; }
+  .what { margin:.25rem 0 0; color:var(--dim); max-width:64ch; }
+  .stage-count { display:flex; gap:1.1rem; text-align:right; }
+  .stage-count div { display:flex; flex-direction:column; }
+  .stage-count b { font-size:1.15rem; font-variant-numeric:tabular-nums; }
+  .stage-count span { font-size:.7rem; text-transform:uppercase;
+                      letter-spacing:.05em; color:var(--dim); }
+  .stage-count .waiting b { color:var(--accent); }
+  dl.facts { display:grid; grid-template-columns:9rem 1fr; gap:.15rem .8rem;
+             margin:.8rem 1.1rem; padding:var(--s3) .9rem; background:var(--bg);
+             border:1px solid var(--line); font-size:.86rem; }
+  dl.facts dt { color:var(--dim); text-transform:uppercase; font-size:.7rem;
+                letter-spacing:.05em; padding-top:.18rem; }
+  dl.facts dd { margin:0; }
+  dl.facts dd.money { color:var(--accent); font-weight:600; }
+  .controls { display:flex; gap:var(--s4) 1.3rem; flex-wrap:wrap;
+              align-items:start; margin:0 1.1rem var(--s4); }
+  .action { display:flex; gap:.8rem; align-items:center; flex-wrap:wrap;
+            padding:.8rem 1.1rem; border-top:1px solid var(--line);
+            background:var(--bg); }
+  .action button { padding:.45rem 1.1rem; font-weight:600; }
+  .action .hint { max-width:56ch; }
+  .acts { display:flex; gap:.8rem; flex-wrap:wrap; align-items:flex-start;
+          background:var(--paper); border:1px solid var(--line);
+          padding:.8rem .9rem; margin:0 0 1.2rem; }
+  .act { display:flex; flex-direction:column; gap:.2rem; max-width:17rem; }
+  .act button { font-weight:600; }
+  pre.log { background:var(--paper); border:1px solid var(--line);
+            padding:.8rem var(--s4); margin:0; max-height:70vh; overflow:auto;
+            font-size:.82rem; line-height:1.5; white-space:pre-wrap;
+            word-break:break-word; }
+
+  /* --- small screens --- */
+  @media (max-width:720px) {
+    header { gap:var(--s3); padding:var(--s2) var(--s3); }
+    header .where { margin-left:0; flex-basis:100%; }
+    header nav { gap:var(--s3); font-size:var(--t-sm); }
+    main { padding:var(--s3); }
+    .ctl, .ctl.ctl-wide { max-width:none; flex:1 1 12rem; }
+    .ctl input[type=text] { width:100%; }
+    .stage-head { flex-wrap:wrap; }
+  }
+}
 """
 
 FOOT = "</main></body></html>"
 
+# The primary navigation. Still a constant here; the module registry that is
+# meant to compose it is wired in the next step, and moving it into a function
+# first is what makes that a change to one place.
+NAV = (
+    ("/clients", "Clients"),
+    ("/mail", "Mail"),
+    ("/calendar", "Calendar"),
+    ("", ""),
+    ("/", "Survey"),
+    ("/board", "Board"),
+    ("/people", "People"),
+    ("/map", "Map"),
+    ("/reports", "Reports"),
+    ("/pipeline", "Operations"),
+    ("/runs", "History"),
+    ("/settings", "Settings"),
+)
 
-def esc(value: Any) -> str:
-    return html.escape("" if value is None else str(value))
+
+def _nav(here: str = "") -> str:
+    out = []
+    for href, label in NAV:
+        if not href:
+            out.append('<span class="sep" aria-hidden="true">|</span>')
+            continue
+        current = ' aria-current="page"' if href == here else ""
+        out.append(f'<a href="{esc(href)}"{current}>{esc(label)}</a>')
+    return f'<nav aria-label="Sections">{"".join(out)}</nav>'
 
 
-def page(title: str, body: str, territory: str = "", css: str = "") -> str:
-    """The shell, with a section's own stylesheet folded into the head.
+def page(
+    title: str, body: str, territory: str = "", css: str = "", here: str = "",
+) -> str:
+    """The shell, with a section's own stylesheet in its own cascade layer.
 
-    `css` goes through the format call rather than being concatenated into the
-    body, and that is the whole point of the parameter. A section used to pass
-    its rules as `<style>` inside `body`, which meant every brace had to be
-    doubled to survive an f-string, and the doubled braces then reached the
-    browser: `.crumbs {{ ... }}` is a selector followed by a block whose only
-    contents are an invalid declaration, so CSS error recovery discarded every
-    rule in the file. The Clients and Settings pages were rendering with none
-    of their own styling and nothing anywhere said so. A substituted value is
-    not re-scanned for placeholders, so passing it here lets the rules be
-    written once, normally, and arrive intact.
+    Built by concatenation rather than by `str.format`. That is not a style
+    preference: the head used to be one format string, so every brace in a
+    hundred lines of CSS had to be doubled, and a section that passed its rules
+    as `<style>` inside `body` had its doubled braces reach the browser intact.
+    `.crumbs {{ ... }}` is a selector followed by a block whose only content is
+    an invalid declaration, and CSS error recovery threw away the rest of the
+    file: the Clients and Settings pages rendered with none of their own styling
+    and nothing anywhere said so. With no format call there is no brace to
+    double and the failure cannot recur.
+
+    `css` is wrapped in `@layer page`, which is declared last, so a page's own
+    rules beat the components without having to out-specify them and a
+    component can be restyled here without auditing fourteen files.
     """
+    layer = f"@layer page {{\n{css}\n}}" if css else ""
     return (
-        HEAD.format(title=esc(title), territory=esc(territory), css=css)
+        "<!doctype html>\n"
+        '<html lang="en"><head>\n'
+        '<meta charset="utf-8">'
+        '<meta name="viewport" content="width=device-width,initial-scale=1">\n'
+        f"<title>{esc(title)}</title>\n"
+        f"{HTMX}\n"
+        f'<script src="{CONSOLE_JS_URL}" defer></script>\n'
+        f"<style>{STYLESHEET}{layer}</style></head><body>\n"
+        '<a class="skip" href="#main">Skip to the content</a>\n'
+        "<header>\n"
+        '  <span class="brand">ARPENTEUR</span>\n'
+        f"  {_nav(here)}\n"
+        f'  <span class="where"><span class="dim small">{esc(territory)}</span></span>\n'
+        '</header><main id="main">\n'
         + body
         + FOOT
     )

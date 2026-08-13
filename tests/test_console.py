@@ -17,6 +17,7 @@ a public register, notes are typed by hand, and neither is trustworthy.
 
 from __future__ import annotations
 
+import re
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -263,3 +264,19 @@ def test_the_pipeline_and_runs_pages_render(client) -> None:
     assert client.get("/pipeline").status_code == 200
     assert client.get("/runs").status_code == 200
     assert "runs" in client.get("/runs/rows").text
+
+
+def test_the_console_script_is_served_by_the_application_not_a_cdn(client) -> None:
+    """Thirty lines that belong to this console, from this console.
+
+    The URL carries the script's own digest, so a change produces a different
+    URL rather than a cached copy of the previous one that nobody can flush.
+    """
+    page = client.get("/company/1").text
+    url = re.search(r'/static/console\.[0-9a-f]+\.js', page)
+    assert url, "the page does not reference the console script"
+    reply = client.get(url.group(0))
+    assert reply.status_code == 200
+    assert "javascript" in reply.headers["content-type"]
+    assert "immutable" in reply.headers["cache-control"]
+    assert "data-sortable" in reply.text
