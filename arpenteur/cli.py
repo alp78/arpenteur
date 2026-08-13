@@ -23,6 +23,7 @@ from .stages import (
     draft,
     enrich,
     geocode,
+    mail,
     match,
     people,
     prep,
@@ -393,6 +394,36 @@ def cmd_reach(args: argparse.Namespace) -> int:
         f"{stats['without']} without, {stats['blocked']} declined by robots.txt, "
         f"{stats['unreadable']} unreadable; "
         f"{stats['for_pattern']} left for the pattern tier"
+    )
+    conn.close()
+    return 0
+
+
+def cmd_mail(args: argparse.Namespace) -> int:
+    """Read the mailbox into the review queue. Files nothing, sends nothing."""
+    settings = load_settings()
+    conn = db.open_db(settings.database_url)
+    run_id = db.start_run(conn, "mail", vars(args))
+    try:
+        stats = mail.run(
+            settings,
+            conn,
+            folders=_split(args.folder) or None,
+            days=args.days,
+            limit=args.limit,
+            dry_run=args.dry_run,
+        )
+    except Exception as exc:
+        db.finish_run(conn, run_id, error=str(exc))
+        print(f"error: {exc}", file=sys.stderr)
+        return 1
+    db.finish_run(conn, run_id, stats)
+    # The count that matters is what a person now has to read, not what was
+    # fetched: a run that queues two hundred messages has made work, not
+    # progress.
+    print(
+        f"{stats['queued']} queued for review, {stats['matched']} with a "
+        f"company proposed, {stats['known']} already held. Nothing filed."
     )
     conn.close()
     return 0
@@ -1135,6 +1166,23 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--limit", type=int, help="required for runs over 500 companies")
     p.add_argument("--dry-run", action="store_true", help="list the addresses, ask nothing")
     p.set_defaults(func=cmd_geocode)
+
+    p = sub.add_parser(
+        "mail",
+        help="read the mailbox into the review queue (read-only, files nothing)",
+    )
+    p.add_argument(
+        "--folder", help="comma separated folders; blank reads all but Spam and Trash"
+    )
+    p.add_argument(
+        "--days", type=int, default=mail.DEFAULT_DAYS,
+        help=f"how far back to look, in days (default {mail.DEFAULT_DAYS})",
+    )
+    p.add_argument("--limit", type=int, help="stop after this many new messages")
+    p.add_argument(
+        "--dry-run", action="store_true", help="list what would be queued, write nothing"
+    )
+    p.set_defaults(func=cmd_mail)
 
     p = sub.add_parser(
         "note", help="notes on a client, written in Markdown"

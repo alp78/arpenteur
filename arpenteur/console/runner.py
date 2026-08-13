@@ -34,7 +34,8 @@ from .. import db
 from ..config import Settings
 from ..kernel.db import Connection, Row
 from ..stages import (
-    enrich, geocode, match, people, profile, reach, resolve, source, sync,
+    enrich, geocode, mail, match, people, profile, reach, resolve, source,
+    sync,
 )
 
 
@@ -439,11 +440,47 @@ STAGES: dict[str, Stage] = {
         done_label="placed",
         module="geo",
     ),
+    "mail": Stage(
+        name="mail",
+        title="Read the mailbox",
+        what="Import correspondence from the mail server, match it to a company "
+             "by address or domain, and hold it for review. Nothing is filed "
+             "into a client's timeline here, and nothing in the mailbox is "
+             "marked read, moved or deleted.",
+        call=mail.run,
+        fields=(
+            Field("days", "How far back", "int", default=str(mail.DEFAULT_DAYS),
+                  help="Days of mail to look at. The server compares whole "
+                       "days, so this is a way of not asking for ten years "
+                       "rather than a precise cursor.",
+                  example="90"),
+            Field("folders", "Folders", "text", multi=True,
+                  help="Blank reads everything except Spam, Trash, Drafts and "
+                       "the promotional folders, which are what somebody has "
+                       "already decided against.",
+                  example="INBOX"),
+            SIZES, DRY,
+        ),
+        needs="A mailbox in .env. Most Swiss hosts issue one password per "
+              "application and refuse the account password over IMAP.",
+        produces="Messages waiting on the Mail page, each with the company it "
+                 "was matched to and the rule that matched it.",
+        cost="Free. Your own mail server, one session per run.",
+        button="Read mail",
+        button_does="Fetches envelopes read-only. The text of a message is "
+                    "downloaded only when it matched a company, or later when "
+                    "you file it by hand.",
+        done_sql="SELECT COUNT(*) FROM crm.email_message WHERE state = 'filed'",
+        waiting_sql="SELECT COUNT(*) FROM crm.email_message WHERE state = 'pending'",
+        done_label="filed",
+        waiting_label="to review",
+        module="clients",
+    ),
 }
 
 # The order the operations page shows them in, which is the order they run in.
 ORDER = ("source", "sync", "hydrate", "people", "resolve", "profile", "enrich",
-         "match", "reach", "geocode")
+         "match", "reach", "geocode", "mail")
 
 # Sizes offered instead of a free number box. "No limit" is last and named
 # rather than blank, so choosing it is a decision rather than an oversight.

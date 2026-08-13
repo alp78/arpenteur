@@ -904,3 +904,419 @@ def term_owner(conn: Connection, term_id: int) -> int | None:
         "SELECT client_id FROM crm.glossary WHERE id = %s", (term_id,)
     ).fetchone()
     return int(row["client_id"]) if row else None
+
+
+# --- correspondence ------------------------------------------------------------
+#
+# The import lives here rather than in the scout because filing a message
+# produces a `crm.interaction`, and the scout must not know that table exists.
+# Matching reads `core.contact` and `intel.site`, which is the permitted
+# direction: crm depends on scout, never the reverse.
+
+EMAIL_STATES = ("pending", "filed", "ignored")
+
+
+def known_messages(conn: Connection, message_ids: list[str]) -> set[str]:
+    """Which of these Message-IDs are already held.
+
+    Asked before any body is fetched, so a re-run over the same folder costs
+    one query rather than one download per message.
+    """
+    if not message_ids:
+        return set()
+    rows = conn.execute(
+        "SELECT message_id FROM crm.email_message WHERE message_id = ANY(%s)",
+        (message_ids,),
+    ).fetchall()
+    return {row["message_id"] for row in rows}
+
+
+def save_email(conn: Connection, row: dict[str, Any]) -> tuple[int, str]:
+    """Queue one message. Returns its id and whether it was new.
+
+    A message already held is left exactly as it was, including its state: a
+    second import must not resurrect something a person has already ignored,
+    which is the behaviour that makes people stop trusting an inbox integration.
+    """
+    seen = conn.execute(
+        "SELECT id FROM crm.email_message WHERE message_id = %s",
+        (row["message_id"],),
+    ).fetchone()
+    if seen:
+        return int(seen["id"]), "known"
+    made = conn.execute(
+        "INSERT INTO crm.email_message (message_id, thread_key, folder, uid,"
+        " direction, sent_at, subject, from_name, from_email, to_emails,"
+        " cc_emails, body, body_kind, state, company_id, match_method,"
+        " match_value, fetched_at)"
+        " VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,"
+        " %s, %s, %s) RETURNING id",
+        (row["message_id"], row.get("thread_key"), row["folder"], row.get("uid"),
+         row["direction"], row.get("sent_at"), row.get("subject"),
+         row.get("from_name"), row.get("from_email"),
+         list(row.get("to_emails") or []), list(row.get("cc_emails") or []),
+         row.get("body"), row.get("body_kind"), row.get("state", "pending"),
+         row.get("company_id"), row.get("match_method"), row.get("match_value"),
+         now()),
+    ).fetchone()
+    return int(made["id"]), "created"
+
+
+def set_email_body(conn: Connection, email_id: int, *, text: str, kind: str) -> None:
+    """Attach the text, once a person's decision has made it correspondence."""
+    conn.execute(
+        "UPDATE crm.email_message SET body = %s, body_kind = %s WHERE id = %s",
+        (text, kind, email_id),
+    )
+
+
+def email(conn: Connection, email_id: int) -> Row | None:
+    return conn.execute(
+        "SELECT m.*, c.name AS company_name, cl.id AS client_id, cl.code AS client_code"
+        "  FROM crm.email_message m"
+        "  LEFT JOIN core.company c ON c.id = m.company_id"
+        "  LEFT JOIN crm.client cl ON cl.company_id = m.company_id"
+        " WHERE m.id = %s",
+        (email_id,),
+    ).fetchone()
+
+
+def email_queue(
+    conn: Connection, *, state: str = "pending", limit: int = 200
+) -> list[Row]:
+    """What is waiting to be decided, matched first.
+
+    The ordering is the whole usability of the page: on a real mailbox most of
+    what is fetched is nobody's business, and a queue sorted purely by date
+    buries the two messages that matter under a month of newsletters.
+    """
+    return conn.execute(
+        "SELECT m.*, c.name AS company_name, cl.id AS client_id, cl.code AS client_code"
+        "  FROM crm.email_message m"
+        "  LEFT JOIN core.company c ON c.id = m.company_id"
+        "  LEFT JOIN crm.client cl ON cl.company_id = m.company_id"
+        " WHERE m.state = %s"
+        " ORDER BY (m.company_id IS NULL), m.sent_at DESC NULLS LAST, m.id DESC"
+        " LIMIT %s",
+        (state, limit),
+    ).fetchall()
+
+
+def email_counts(conn: Connection) -> dict[str, int]:
+    rows = conn.execute(
+        "SELECT state, COUNT(*) AS n, COUNT(company_id) AS matched"
+        "  FROM crm.email_message GROUP BY state"
+    ).fetchall()
+    counts = {state: 0 for state in EMAIL_STATES}
+    counts["matched"] = 0
+    for row in rows:
+        counts[row["state"]] = int(row["n"])
+        if row["state"] == "pending":
+            counts["matched"] = int(row["matched"])
+    return counts
+
+
+def emails_for_company(
+    conn: Connection, company_id: int, *, limit: int = 50
+) -> list[Row]:
+    return conn.execute(
+        "SELECT * FROM crm.email_message WHERE company_id = %s"
+        " ORDER BY sent_at DESC NULLS LAST LIMIT %s",
+        (company_id, limit),
+    ).fetchall()
+
+
+def match_company(
+    conn: Connection, addresses: list[str], *, own_domains: frozenset[str] = frozenset(),
+    free_domains: frozenset[str] = frozenset(),
+) -> tuple[int, str, str] | None:
+    """Whose message this is, or None, with how it was decided.
+
+    Five rules, tried in order of how much they claim. An address published by
+    a company is nearly proof; a domain is a good guess; nothing else is
+    attempted, because the alternatives that suggest themselves here — matching
+    a person's name in the subject, or the company name in the body — produce
+    exactly the confident wrong answers that make an inbox integration worse
+    than no integration.
+
+    Own domains are excluded throughout. A website contact form sends from the
+    site's own address, so without this the operator's own domain matches every
+    enquiry and the queue proposes the same wrong company for all of them.
+    """
+    wanted = [a.strip().lower() for a in addresses if a and "@" in a]
+    wanted = [a for a in wanted if a.rpartition("@")[2] not in own_domains]
+    if not wanted:
+        return None
+    domains = [a.rpartition("@")[2] for a in wanted]
+    # Free-mail domains are matchable by address and never by domain: a gerant
+    # writing from Bluewin is worth filing, and filing every Bluewin user in
+    # Switzerland against the same client is not.
+    corporate = [d for d in dict.fromkeys(domains) if d not in free_domains]
+
+    found = conn.execute(
+        "SELECT company_id, lower(value) AS value FROM core.contact"
+        " WHERE kind = 'email' AND lower(value) = ANY(%s) LIMIT 1",
+        (wanted,),
+    ).fetchone()
+    if found:
+        return int(found["company_id"]), "address", found["value"]
+
+    found = conn.execute(
+        "SELECT company_id, value FROM crm.email_link"
+        " WHERE kind = 'address' AND value = ANY(%s) LIMIT 1",
+        (wanted,),
+    ).fetchone()
+    if found:
+        return int(found["company_id"]), "link", found["value"]
+
+    if not corporate:
+        return None
+
+    found = conn.execute(
+        "SELECT company_id, value FROM crm.email_link"
+        " WHERE kind = 'domain' AND value = ANY(%s) LIMIT 1",
+        (corporate,),
+    ).fetchone()
+    if found:
+        return int(found["company_id"]), "link", found["value"]
+
+    found = conn.execute(
+        "SELECT company_id, split_part(lower(value), '@', 2) AS domain"
+        "  FROM core.contact WHERE kind = 'email'"
+        "   AND split_part(lower(value), '@', 2) = ANY(%s) LIMIT 1",
+        (corporate,),
+    ).fetchone()
+    if found:
+        return int(found["company_id"]), "domain", found["domain"]
+
+    # The website the enrich stage read. `intel.site.url` carries a scheme and
+    # often a www, neither of which appears in a mail address.
+    found = conn.execute(
+        "SELECT company_id, regexp_replace(lower(url),"
+        " '^https?://(www\\.)?([^/:]+).*$', '\\2') AS host"
+        "  FROM intel.site WHERE url IS NOT NULL AND url <> ''"
+        "   AND regexp_replace(lower(url), '^https?://(www\\.)?([^/:]+).*$', '\\2')"
+        "       = ANY(%s) LIMIT 1",
+        (corporate,),
+    ).fetchone()
+    if found:
+        return int(found["company_id"]), "site", found["host"]
+    return None
+
+
+def save_email_link(
+    conn: Connection, company_id: int, *, kind: str, value: str,
+    source: str = "filed",
+) -> str:
+    """Remember that an address or domain belongs to a company.
+
+    Returns 'saved', 'known', or 'conflict' when the value is already claimed
+    by a different company. A conflict is reported rather than resolved: two
+    entities sharing a mail domain is a real situation and picking a winner
+    silently would file one group company's correspondence against another.
+    """
+    value = value.strip().lower().lstrip("@")
+    if not value:
+        return "known"
+    seen = conn.execute(
+        "SELECT company_id FROM crm.email_link WHERE kind = %s AND value = %s",
+        (kind, value),
+    ).fetchone()
+    if seen:
+        return "known" if int(seen["company_id"]) == company_id else "conflict"
+    conn.execute(
+        "INSERT INTO crm.email_link (company_id, kind, value, source, created_at)"
+        " VALUES (%s, %s, %s, %s, %s)",
+        (company_id, kind, value, source, now()),
+    )
+    return "saved"
+
+
+def links_for(conn: Connection, company_id: int) -> list[Row]:
+    return conn.execute(
+        "SELECT * FROM crm.email_link WHERE company_id = %s"
+        " ORDER BY kind, value",
+        (company_id,),
+    ).fetchall()
+
+
+def delete_email_link(conn: Connection, link_id: int) -> int | None:
+    row = conn.execute(
+        "SELECT company_id FROM crm.email_link WHERE id = %s", (link_id,)
+    ).fetchone()
+    if row is None:
+        return None
+    conn.execute("DELETE FROM crm.email_link WHERE id = %s", (link_id,))
+    return int(row["company_id"])
+
+
+def counterparties(row: Row | dict[str, Any], *, own_domains: frozenset[str]) -> list[str]:
+    """The addresses on a message that are not the operator's own."""
+    if row["direction"] == "out":
+        found = list(row["to_emails"] or []) + list(row["cc_emails"] or [])
+    else:
+        found = ([row["from_email"]] if row["from_email"] else []) \
+            + list(row["cc_emails"] or [])
+    return [a for a in dict.fromkeys(a.lower() for a in found if a)
+            if a.rpartition("@")[2] not in own_domains]
+
+
+def file_email(
+    conn: Connection, email_id: int, *, client_id: int, project_id: int | None = None,
+    by: str | None = None, own_domains: frozenset[str] = frozenset(),
+    free_domains: frozenset[str] = frozenset(), learn: bool = True,
+) -> tuple[int, list[str]]:
+    """Accept a message into a client's timeline. Returns the interaction and
+    what filing it taught the matcher.
+
+    This is the only path from the queue into the record, and it is only ever
+    reached from a person clicking accept. The Message-ID goes into
+    `external_id`, so a message filed today and re-imported next month is
+    recognised rather than duplicated.
+    """
+    row = email(conn, email_id)
+    if row is None:
+        raise ValueError(f"no such message {email_id}")
+    interaction_id = record_interaction(
+        conn, client_id,
+        kind="email",
+        occurred_at=(row["sent_at"] or row["fetched_at"]),
+        subject=row["subject"] or "(no subject)",
+        body=row["body"],
+        project_id=project_id,
+        direction="in" if row["direction"] == "in" else "out",
+        with_whom=row["from_email"] if row["direction"] == "in"
+        else ", ".join(row["to_emails"] or []),
+        author=by,
+        source="mail",
+        external_id=row["message_id"],
+    )
+    company = conn.execute(
+        "SELECT company_id FROM crm.client WHERE id = %s", (client_id,)
+    ).fetchone()
+    company_id = int(company["company_id"]) if company else None
+    # The company is written from the client the person chose, not from
+    # whatever the matcher had proposed. A message filed against a company the
+    # matcher never found would otherwise keep an empty `company_id`, and the
+    # decision would then be invisible to everything that reads the table: the
+    # rest of the thread would stay unmatched, which is the case this whole
+    # mechanism exists for.
+    conn.execute(
+        "UPDATE crm.email_message SET state = 'filed', interaction_id = %s,"
+        " company_id = COALESCE(%s, company_id),"
+        " match_method = COALESCE(match_method, 'manual'),"
+        " decided_at = %s, decided_by = %s WHERE id = %s",
+        (interaction_id, company_id, now(), by, email_id),
+    )
+    learned: list[str] = []
+    if not learn or company_id is None:
+        return interaction_id, learned
+    for address in counterparties(row, own_domains=own_domains):
+        if save_email_link(conn, company_id, kind="address", value=address) == "saved":
+            learned.append(address)
+        domain = address.rpartition("@")[2]
+        if domain in free_domains:
+            continue
+        if save_email_link(conn, company_id, kind="domain", value=domain) == "saved":
+            learned.append(domain)
+    return interaction_id, learned
+
+
+def ignore_email(conn: Connection, email_id: int, *, by: str | None = None) -> None:
+    """Decline a message. It stays held, so a re-import does not offer it again."""
+    conn.execute(
+        "UPDATE crm.email_message SET state = 'ignored', decided_at = %s,"
+        " decided_by = %s WHERE id = %s",
+        (now(), by, email_id),
+    )
+
+
+def reopen_email(conn: Connection, email_id: int) -> None:
+    """Undo a decision, short of unpicking what filing wrote."""
+    conn.execute(
+        "UPDATE crm.email_message SET state = 'pending', decided_at = NULL,"
+        " decided_by = NULL WHERE id = %s",
+        (email_id,),
+    )
+
+
+def thread_of(conn: Connection, thread_key: str) -> list[Row]:
+    """Every held message in one chain, oldest first."""
+    if not thread_key:
+        return []
+    return conn.execute(
+        "SELECT * FROM crm.email_message WHERE thread_key = %s"
+        " ORDER BY sent_at NULLS LAST, id",
+        (thread_key,),
+    ).fetchall()
+
+
+def rematch_pending(
+    conn: Connection, *, own_domains: frozenset[str] = frozenset(),
+    free_domains: frozenset[str] = frozenset(), limit: int = 500,
+) -> int:
+    """Run the matcher again over what is waiting, and say how many moved.
+
+    Without this the learning loop only helps the future. Filing the reply in a
+    thread teaches the matcher the sender's domain, and the six earlier messages
+    of the same thread would sit unmatched in the queue for ever, because they
+    are already held and an import skips what it already has. So a decision
+    reaches backwards as well as forwards.
+
+    Only messages nobody has decided on and nobody has matched are touched: a
+    proposal a person has already seen is not quietly replaced with a different
+    one, and a filed message is never reconsidered.
+    """
+    rows = conn.execute(
+        "SELECT * FROM crm.email_message"
+        " WHERE state = 'pending' AND company_id IS NULL"
+        " ORDER BY sent_at DESC NULLS LAST LIMIT %s",
+        (limit,),
+    ).fetchall()
+    moved = 0
+    for row in rows:
+        found = match_company(
+            conn, counterparties(row, own_domains=own_domains),
+            own_domains=own_domains, free_domains=free_domains,
+        )
+        if found is None:
+            found = _by_thread(conn, row["thread_key"])
+        if found is None:
+            continue
+        conn.execute(
+            "UPDATE crm.email_message SET company_id = %s, match_method = %s,"
+            " match_value = %s WHERE id = %s",
+            (found[0], found[1], found[2], row["id"]),
+        )
+        moved += 1
+    return moved
+
+
+def _by_thread(conn: Connection, thread_key: str | None) -> tuple[int, str, str] | None:
+    """The company another message in the same chain was matched to.
+
+    Worth doing because the addresses on a message are a poor guide to whose
+    conversation it is. An enquiry arriving through a website contact form is
+    sent by the site itself, so the envelope names the operator on both sides
+    and the only mention of the person is in the text; the reply that follows
+    it carries their real address. Two messages, one References chain, and the
+    header is the only thing that connects them.
+
+    It is the last rule tried and never overrides an address or a domain, and
+    like every other rule it produces a proposal in a queue rather than a
+    filing. A chain is strong evidence and not proof: mail threads do get
+    hijacked, usually by somebody replying to the last message they can find
+    rather than writing a new one, which is exactly the case a person spots at
+    a glance and no header ever will.
+    """
+    if not thread_key:
+        return None
+    found = conn.execute(
+        "SELECT company_id FROM crm.email_message"
+        " WHERE thread_key = %s AND company_id IS NOT NULL"
+        " ORDER BY (state = 'filed') DESC, sent_at LIMIT 1",
+        (thread_key,),
+    ).fetchone()
+    if found is None:
+        return None
+    return int(found["company_id"]), "thread", thread_key

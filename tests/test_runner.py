@@ -410,6 +410,7 @@ def test_the_console_still_cannot_send(client, conn) -> None:
     different thing from transmitting to a company, and no stage that sends
     exists to be offered."""
     routes = {getattr(r, "path", "") for r in client.app.routes}
-    assert not [p for p in routes if "send" in p or "mail" in p]
+    # The mail stage reads; no stage transmits. See test_console.py.
+    assert not [p for p in routes if "send" in p or "smtp" in p]
     assert "draft" not in runner_module.STAGES
     assert conn.execute("SELECT COUNT(*) AS n FROM intel.draft WHERE sent_at IS NOT NULL").fetchone()[0] == 0

@@ -241,4 +241,7 @@ def test_a_won_card_offers_the_handoff(client, conn) -> None:
 
 def test_the_board_cannot_send_either(client) -> None:
     routes = {getattr(r, "path", "") for r in client.app.routes}
-    assert not [p for p in routes if "send" in p or "mail" in p or "smtp" in p]
+    # "mail" is not in this list: the console reads a mailbox now, and /mail is
+    # the review queue. test_console.py holds the guarantee itself, as a scan
+    # of the whole package for a send mechanism.
+    assert not [p for p in routes if "send" in p or "smtp" in p]

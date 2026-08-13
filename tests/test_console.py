@@ -84,11 +84,29 @@ def test_no_route_transmits_anything(settings, conn) -> None:
 
     LCD art. 3 al. 1 let. o draws the line at mass advertising email without
     consent, and this tool stays on the research side by having no way across.
+
+    The word "mail" used to be in the list below and is deliberately not any
+    more: the console reads a mailbox now, and `/mail` is the queue where
+    imported correspondence waits for somebody to accept it. Reading is not
+    transmitting, and a test that cannot tell them apart would have had to be
+    deleted the first time it was inconvenient. What replaces it is stronger
+    than a word in a path: the package as a whole holds no send mechanism.
     """
     app = create_app(settings)
     paths = " ".join(getattr(r, "path", "") for r in app.routes).lower()
-    for word in ("send", "mail", "smtp", "transmit", "dispatch"):
+    for word in ("send", "smtp", "transmit", "dispatch"):
         assert word not in paths, f"a route mentioning {word!r} appeared"
+
+    root = Path(__file__).resolve().parent.parent / "arpenteur"
+    for path in root.rglob("*.py"):
+        text = path.read_text(encoding="utf-8")
+        assert "smtplib" not in text, f"{path.name} imports an SMTP client"
+        assert "SMTP(" not in text, f"{path.name} opens an SMTP session"
+        # The IMAP commands that write to a mailbox. Arpenteur reads one, and
+        # a marked-read or moved message is a change to somebody else's record
+        # of their own correspondence.
+        for command in ('"APPEND"', '"STORE"', '"EXPUNGE"'):
+            assert command not in text, f"{path.name} writes to the mailbox"
 
 
 def test_the_advice_is_labelled_as_a_draft(client) -> None:

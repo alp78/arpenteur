@@ -43,9 +43,11 @@ from ..modules.geo import store as geo_store
 from ..modules.scout import store as scout_store
 from ..config import Settings, load_settings
 from ..sources import geoadmin
-from ..stages import advise, geocode, match, prep, source
+from ..sources import mail as mail_source
+from ..stages import advise, geocode, mail as mail_stage, match, prep, source
 from . import board as board_view
 from . import clients as clients_view
+from . import mail_page as mail_view
 from . import map_page as map_view_page
 from . import notes_page as notes_view
 from . import people_page as people_view_page
@@ -169,6 +171,9 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                 parties=scout_store.parties_for_company(conn, company_id),
                 overlap=people_view_page.overlap_panel(
                     scout_store.board_overlap(conn, company_id), company_id
+                ),
+                mail_links=mail_view.links_panel(
+                    clients_store.links_for(conn, company_id)
                 ),
             )
             return shell(body)
@@ -703,6 +708,94 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         return HTMLResponse(
             clients_view.shell("arpenteur", body, settings.territory.describe())
         )
+
+    @app.get("/mail", response_class=HTMLResponse)
+    def mail_queue(request: Request) -> HTMLResponse:
+        conn = connect()
+        try:
+            state = request.query_params.get("state", "pending")
+            if state not in clients_store.EMAIL_STATES:
+                state = "pending"
+            return HTMLResponse(
+                mail_view.mail_page(
+                    clients_store.email_queue(conn, state=state),
+                    db.clients(conn),
+                    clients_store.email_counts(conn),
+                    state=state,
+                    territory=settings.territory.describe(),
+                    configured=settings.mail.configured,
+                )
+            )
+        finally:
+            conn.close()
+
+    @app.post("/mail/{email_id}/file")
+    def file_mail(email_id: int, client_id: int = Form(...)) -> RedirectResponse:
+        """Accept a message into a client's timeline.
+
+        The body is fetched here rather than at import for anything the matcher
+        did not recognise: until this click there was no reason to believe the
+        message was correspondence, and copying the text of somebody's private
+        mail into the database on a guess is not a thing to do quietly. A
+        mailbox that cannot be reached now is not a failure; the message is
+        filed with what is already held.
+        """
+        conn = connect()
+        try:
+            if settings.mail.configured:
+                try:
+                    mail_stage.fetch_body(settings, conn, email_id)
+                except Exception:
+                    # Reported nowhere on purpose: the filing is what the
+                    # person asked for, and it succeeds without the text.
+                    conn.rollback()
+            clients_store.file_email(
+                conn, email_id, client_id=client_id, by="console",
+                own_domains=settings.mail.domains,
+                free_domains=mail_source.FREE_MAIL,
+            )
+            # What this filing taught applies to the rest of the queue as well
+            # as to the future: the earlier messages of the same thread are
+            # already held, and an import would never look at them again.
+            clients_store.rematch_pending(
+                conn, own_domains=settings.mail.domains,
+                free_domains=mail_source.FREE_MAIL,
+            )
+            conn.commit()
+        finally:
+            conn.close()
+        return RedirectResponse("/mail", status_code=303)
+
+    @app.post("/mail/{email_id}/ignore")
+    def ignore_mail(email_id: int) -> RedirectResponse:
+        conn = connect()
+        try:
+            clients_store.ignore_email(conn, email_id, by="console")
+            conn.commit()
+        finally:
+            conn.close()
+        return RedirectResponse("/mail", status_code=303)
+
+    @app.post("/mail/{email_id}/reopen")
+    def reopen_mail(email_id: int) -> RedirectResponse:
+        conn = connect()
+        try:
+            clients_store.reopen_email(conn, email_id)
+            conn.commit()
+        finally:
+            conn.close()
+        return RedirectResponse("/mail", status_code=303)
+
+    @app.post("/mail/link/{link_id}/delete")
+    def forget_link(link_id: int) -> RedirectResponse:
+        conn = connect()
+        try:
+            company_id = clients_store.delete_email_link(conn, link_id)
+            conn.commit()
+        finally:
+            conn.close()
+        return RedirectResponse(f"/company/{company_id}" if company_id else "/mail",
+                                status_code=303)
 
     @app.get("/clients", response_class=HTMLResponse)
     def portfolio() -> HTMLResponse:

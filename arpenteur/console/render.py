@@ -127,6 +127,7 @@ pre.log {{ background:#fff; border:1px solid var(--line); padding:.8rem 1rem; ma
 <header>
   <span class="brand">ARPENTEUR</span>
   <a href="/clients">Clients</a>
+  <a href="/mail">Mail</a>
   <a href="/calendar">Calendar</a>
   <span class="sep">|</span>
   <a href="/">Survey</a>
@@ -426,6 +427,7 @@ def company_page(
     client: Row | None = None,
     parties: list[Row] | None = None,
     overlap: str = "",
+    mail_links: str = "",
 ) -> str:
     out = [
         f"<h1>{esc(company['name'])}</h1>",
@@ -498,6 +500,10 @@ def company_page(
         out.append(overlap)
     out.append(_site_card(site))
     out.append(_contacts_card(contacts))
+    # What filing a message taught the matcher. An inference nobody can see is
+    # one nobody can correct, so it sits beside the contacts it behaves like.
+    if mail_links:
+        out.append(mail_links)
     out.append(_notes_card(company["id"], notes))
 
     if publications:

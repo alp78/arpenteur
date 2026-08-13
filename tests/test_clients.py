@@ -367,4 +367,6 @@ def test_the_client_section_cannot_send_either(client, conn) -> None:
     """The guarantee the whole console rests on, restated for the half of it
     that now holds correspondence."""
     routes = {getattr(r, "path", "") for r in client.app.routes}
-    assert not [p for p in routes if "send" in p or "mail" in p or "smtp" in p]
+    # See test_console.py: reading a mailbox is not transmitting, and the
+    # guarantee is checked there against the package rather than the paths.
+    assert not [p for p in routes if "send" in p or "smtp" in p]

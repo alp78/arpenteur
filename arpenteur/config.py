@@ -63,6 +63,42 @@ class ZefixConfig:
 
 
 @dataclass(frozen=True)
+class MailConfig:
+    """Where correspondence is read from. There is no send half, deliberately.
+
+    The credentials are per device rather than per address at most Swiss
+    hosts: Infomaniak issues one password per application, refuses the account
+    password over IMAP, and never shows the generated one twice. That is a
+    better fit for this than it first looks, since the credential Arpenteur
+    holds can be revoked on its own without logging every other client out of
+    the mailbox.
+    """
+
+    host: str = ""
+    port: int = 993
+    user: str = ""
+    password: str = ""
+    # Domains belonging to the operator, never matched on. Without this every
+    # message matches whoever owns the mailbox: a website contact form sends
+    # from the site's own domain, so the sender of an enquiry about a client is
+    # frequently the operator themselves.
+    own_domains: tuple[str, ...] = ()
+
+    @property
+    def configured(self) -> bool:
+        return bool(self.host and self.user and self.password)
+
+    @property
+    def domains(self) -> frozenset[str]:
+        """Own domains, including the one the mailbox address itself implies."""
+        found = {d.strip().lower().lstrip("@") for d in self.own_domains if d.strip()}
+        _, _, mine = self.user.rpartition("@")
+        if mine:
+            found.add(mine.lower())
+        return frozenset(found)
+
+
+@dataclass(frozen=True)
 class LlmConfig:
     provider: str
     classify_model: str
@@ -202,6 +238,7 @@ class Settings:
     # Which modules this deployment runs, in the order they were listed. The
     # registry resolves dependencies; this is only what was asked for.
     modules: tuple[str, ...] = ()
+    mail: MailConfig = field(default_factory=MailConfig)
     data_dir: Path = field(init=False)
 
     def __post_init__(self) -> None:
@@ -464,5 +501,33 @@ def load_settings(root: Path | None = None) -> Settings:
             prep_max_tokens=int(llm_raw.get("prep_max_tokens", 48000)),
             auth_mode=_auth_mode(llm_raw.get("auth_mode", "auto")),
             api_key=os.environ.get("ANTHROPIC_API_KEY") or None,
+        ),
+        mail=_mail(raw.get("mail") or {}),
+    )
+
+
+def _env(*names: str) -> str:
+    """The first of several environment names that carries a value.
+
+    Mail settings were first written into .env under the host's name, because
+    that is how the credential is generated and where it is revoked. The
+    generic names are what a second deployment on another host would use, and
+    both are read so nobody has to rewrite a working file to upgrade.
+    """
+    for name in names:
+        value = os.environ.get(name)
+        if value:
+            return value.strip()
+    return ""
+
+
+def _mail(raw: dict) -> MailConfig:
+    return MailConfig(
+        host=_env("MAIL_IMAP_SERVER", "INFOMANIAK_IMAP_SERVER"),
+        port=int(_env("MAIL_IMAP_PORT", "INFOMANIAK_IMAP_PORT") or 993),
+        user=_env("MAIL_USERNAME", "INFOMANIAK_USERNAME"),
+        password=_env("MAIL_PASSWORD", "INFOMANIAK_PASSWORD"),
+        own_domains=tuple(
+            str(d).strip().lower() for d in (raw.get("own_domains") or []) if str(d).strip()
         ),
     )
