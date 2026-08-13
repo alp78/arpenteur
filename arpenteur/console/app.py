@@ -51,6 +51,7 @@ from . import board as board_view
 from . import clients as clients_view
 from . import mail_page as mail_view
 from . import money_page as money_view
+from . import score_page as score_view
 from . import map_page as map_view_page
 from . import notes_page as notes_view
 from . import people_page as people_view_page
@@ -88,8 +89,13 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         return db.open_db(settings.database_url)
 
     def shell(body: str) -> HTMLResponse:
+        # The score breakdown's own rules travel with the shell rather than
+        # with the panel: a <style> block inside the body would have to survive
+        # an f-string, and the doubled braces that takes reach the browser and
+        # kill the whole stylesheet. See `render.page`.
         return HTMLResponse(
-            render.page("arpenteur", body, settings.territory.describe())
+            render.page("arpenteur", body, settings.territory.describe(),
+                        css=score_view.STYLES)
         )
 
     # --- the company list -----------------------------------------------------
@@ -177,6 +183,15 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                 ),
                 mail_links=mail_view.links_panel(
                     clients_store.links_for(conn, company_id)
+                ),
+                score_parts=(
+                    score_view.parts_panel(
+                        scout_store.score_with_parts(conn, company_id),
+                        scout_store.prospect_for(conn, company_id),
+                    )
+                    + score_view.disagreement_panel(
+                        scout_store.disagreements(conn, company_id)
+                    )
                 ),
             )
             return shell(body)

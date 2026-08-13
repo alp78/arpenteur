@@ -186,6 +186,34 @@ hardware and licences.
 # `vat_number` empty means not subject to TVA, which is the ordinary state of a
 # business under the CHF 100'000 threshold. Invoices then carry no tax line and
 # say so in words, rather than showing 0.00 beside a rate.
+# How the six parts of a score are weighed against each other.
+#
+# A score is not one number any more. Fit, need, timing and value are judged by
+# the model against the campaign brief; reach and relationship are counted from
+# the contacts and the officer graph, because they are facts this database
+# already holds and a model asked to guess at them will produce a number
+# anyway.
+#
+# These are a campaign's opinion, not a constant. A campaign selling to whoever
+# will answer weights reach heavily; one selling a six-figure programme weights
+# value and ignores it. The numbers need not sum to anything: they are
+# renormalised, so "twice as much as the others" can be written as a 2.
+#
+# `arpenteur weights load` opens a new version rather than editing the one in
+# force, because a re-weighting must not rewrite what last month's ranking was
+# and every score cites the set it was computed with.
+[scoring]
+name = "starting point"
+note = "Fit and need lead: a campaign that gets those wrong wastes every call."
+
+[scoring.weights]
+icp_fit = 0.30
+need = 0.25
+timing = 0.15
+value = 0.10
+reach = 0.10
+relationship = 0.10
+
 [issuer]
 name = ""
 street = ""

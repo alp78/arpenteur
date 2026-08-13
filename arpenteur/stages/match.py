@@ -31,6 +31,7 @@ from typing import Any, Callable
 from .. import db
 from ..config import Settings
 from ..kernel.db import Connection, Row
+from ..modules.scout import scoring
 from ..llm import get_provider
 
 SYSTEM = """You judge how well a company fits a campaign, for someone deciding \
@@ -42,19 +43,38 @@ authoritative. It states who this campaign serves well, who it serves badly, \
 what to look for and what warns off; apply it rather than your own notion of \
 a good prospect.
 
-Judgement:
-- score is 0 to 100 and means how well this company matches the brief. Use the \
-whole range. A campaign where everything scores 60 to 80 has told you nothing.
-- Weigh what the brief says warns you off as heavily as what it says to look \
-for. A company that matches three signals and one disqualifier is usually a \
-worse prospect than one that matches two and none.
-- matched lists the brief's own signals you actually found, in the brief's \
-words, so the score can be checked against the evidence.
-- against is what argues for not approaching. Say it plainly. An empty list \
-is a real answer, but so is a high score with a serious reservation.
-- Thin evidence is a reason for a middling score and a note saying so, not for \
-inventing a reason to be confident. A company with no website found is not \
-thereby a bad fit or a good one.
+You score four things separately, each 0 to 100. Score them separately: a \
+company can be an excellent fit that is two years too early, and collapsing \
+that into one number loses the only thing worth knowing about it.
+
+  fit     How closely this company matches who the brief says the campaign \
+serves well, and how far it matches who it says are served badly. Weigh a \
+disqualifier as heavily as a signal. A company matching three signals and one \
+disqualifier is usually worse than one matching two and none.
+  need    Evidence that this company has the problem the campaign solves. Not \
+whether it could benefit in principle: whether something in the material says \
+it has the problem now. No evidence is a low score, not a middling one.
+  timing  Signals that this is the moment rather than some moment: a move, a \
+hire, a change of officers, a system visibly aging, a deadline in its sector. \
+Absence of any timing signal is a low score and an honest one.
+  value   The commercial size of the opportunity if it converts, judged from \
+what the company is and does.
+
+Two further components, reachability and relationship, are computed from data \
+you cannot see. Do not score them and do not refer to them.
+
+For each of the four, give the evidence you scored on: `for` items and \
+`against` items, in the brief's own words where they are the brief's signals, \
+quoting or naming what in the material supports each. Evidence that would fit \
+any company in the segment is not evidence.
+
+Thin material is a reason for a low score with a note saying the material is \
+thin, never for inventing a reason to be confident. A company with no website \
+found is not thereby a bad fit or a good one; say so in the reasoning and \
+score what you can actually see.
+
+Use the whole range. A campaign where everything scores 60 to 80 has told you \
+nothing.
 
 The advice:
 - advice is what you would actually say in a first approach to this specific \
@@ -65,19 +85,45 @@ any company in the segment is worth nothing, and the recipient can tell.
 - Never mention anything from the restricted material. It is not shown to you \
 for that reason, and if you infer something of that kind, leave it out."""
 
+def _component_schema(name: str, asks: str) -> dict[str, Any]:
+    return {
+        "type": "object",
+        "description": asks,
+        "properties": {
+            "score": {"type": "integer", "description": "0 to 100."},
+            "reasoning": {"type": "string",
+                          "description": "Two sentences at most."},
+            "for": {"type": "array", "items": {"type": "string"},
+                    "description": "What in the material argues for this score."},
+            "against": {"type": "array", "items": {"type": "string"},
+                        "description": "What argues the other way. An empty "
+                                       "list is a real answer."},
+        },
+        "required": ["score", "reasoning", "for", "against"],
+        "additionalProperties": False,
+    }
+
+
 SCHEMA: dict[str, Any] = {
     "type": "object",
     "properties": {
-        "score": {"type": "integer"},
-        "band": {"type": "string", "enum": ["high", "medium", "low", "excluded"]},
-        "reasoning": {"type": "string"},
-        "matched": {"type": "array", "items": {"type": "string"}},
-        "against": {"type": "array", "items": {"type": "string"}},
+        "fit": _component_schema("fit", scoring.BY_KEY["icp_fit"].asks),
+        "need": _component_schema("need", scoring.BY_KEY["need"].asks),
+        "timing": _component_schema("timing", scoring.BY_KEY["timing"].asks),
+        "value": _component_schema("value", scoring.BY_KEY["value"].asks),
+        "reasoning": {"type": "string",
+                      "description": "The judgement overall, in three sentences."},
         "advice": {"type": ["string", "null"]},
     },
-    "required": ["score", "band", "reasoning", "matched", "against", "advice"],
+    "required": ["fit", "need", "timing", "value", "reasoning", "advice"],
     "additionalProperties": False,
 }
+
+# The model's key for each judged component, and the component it fills. The
+# names differ because "icp_fit" is a word from a data model and "fit" is the
+# word a person writing a prompt would use.
+JUDGED_KEYS = {"fit": "icp_fit", "need": "need", "timing": "timing",
+               "value": "value"}
 
 
 def load_brief(settings: Settings) -> str:
@@ -218,6 +264,73 @@ def _select(
     return conn.execute(sql, params).fetchall()
 
 
+def assemble(
+    conn: Connection, company: Row, reply: dict[str, Any],
+    weights: dict[str, Any],
+) -> dict[str, Any]:
+    """Turn one model reply plus what the database knows into a score run.
+
+    The four judged components come from the reply; reachability and
+    relationship are counted here from rows the model never saw. Everything
+    keeps its own evidence, so the total can be taken apart again by anybody
+    who disagrees with it.
+    """
+    components: list[dict[str, Any]] = []
+    parts: dict[str, Any] = {}
+
+    for key, component in JUDGED_KEYS.items():
+        given = reply.get(key) or {}
+        score = given.get("score")
+        if score is None:
+            continue
+        parts[component] = score
+        components.append({
+            "component": component,
+            "score": score,
+            "weight": weights.get(component),
+            "origin": "model",
+            "reasoning": given.get("reasoning"),
+            "evidence": (
+                [{"direction": "for", "statement": s} for s in given.get("for") or []]
+                + [{"direction": "against", "statement": s}
+                   for s in given.get("against") or []]
+            ),
+        })
+
+    contacts = db.contacts_for(conn, company["id"])
+    score, reason, evidence = scoring.reach_score([dict(c) for c in contacts])
+    parts["reach"] = score
+    components.append({
+        "component": "reach", "score": score, "weight": weights.get("reach"),
+        "origin": "computed", "reasoning": reason,
+        "evidence": [{"direction": "for", "statement": s} for s in evidence],
+    })
+
+    overlaps = db.board_overlap(conn, company["id"])
+    score, reason, evidence = scoring.relationship_score([dict(o) for o in overlaps])
+    parts["relationship"] = score
+    components.append({
+        "component": "relationship", "score": score,
+        "weight": weights.get("relationship"), "origin": "computed",
+        "reasoning": reason,
+        "evidence": [{"direction": "for", "statement": s} for s in evidence],
+    })
+
+    total, band = scoring.combine(parts, weights)
+    # `matched` and `against` are still written onto `intel.fit`, which the
+    # company page and the board read. Gathered from every component's
+    # evidence rather than asked for separately, so the two cannot disagree.
+    matched = [e["statement"] for c in components for e in c["evidence"]
+               if e["direction"] == "for"]
+    against = [e["statement"] for c in components for e in c["evidence"]
+               if e["direction"] == "against"]
+    return {
+        "total": total, "band": band, "components": components, "parts": parts,
+        "reasoning": reply.get("reasoning"), "advice": reply.get("advice"),
+        "matched": matched[:12], "against": against[:12],
+    }
+
+
 def run(
     settings: Settings,
     conn: Connection,
@@ -233,6 +346,8 @@ def run(
     brief = load_brief(settings)
     digest = brief_digest(brief)
     model = settings.llm.match_model or settings.llm.draft_model
+
+    weight_set_id, weights = db.active_weights(conn)
 
     companies = _select(
         conn, settings=settings, uids=uids, segment=segment,
@@ -292,27 +407,24 @@ def run(
             log(f"  ! {company['name'][:40]}: {exc}")
             continue
 
-        band = str(reply.get("band") or "low")
-        db.save_fit(
-            conn,
-            company["id"],
-            {
-                "score": int(reply.get("score") or 0),
-                "band": band,
-                "reasoning": reply.get("reasoning"),
-                "advice": reply.get("advice"),
-                "against": reply.get("against"),
-                "matched": reply.get("matched"),
-                "model": model,
-                "brief_hash": digest,
-                "site_hash": db.site_digest(site),  # what this score read
-            },
-        )
+        found = assemble(conn, company, reply, weights)
+        db.save_score_run(conn, company["id"], {
+            **found,
+            "weight_set_id": weight_set_id,
+            "model": model,
+            "brief_hash": digest,
+            "site_hash": db.site_digest(site),  # what this score read
+        })
         conn.commit()
         stats["scored"] += 1
+        band = found["band"]
         if band in stats:
             stats[band] += 1
-        log(f"  {reply.get('score'):>3} {band:9} {company['name'][:44]}")
+        parts = " ".join(
+            f"{key.split('_')[0]}:{int(value)}"
+            for key, value in found["parts"].items() if value is not None
+        )
+        log(f"  {found['total']:>6} {band:9} {company['name'][:34]:36} {parts}")
         if index % 25 == 0:
             log(f"  {index}/{len(companies)}")
 

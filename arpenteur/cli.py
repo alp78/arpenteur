@@ -469,6 +469,51 @@ def cmd_rates(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_weights(args: argparse.Namespace) -> int:
+    """The weight set: what the six parts of a score are worth to this campaign."""
+    from .modules.scout import scoring, store as scout
+
+    settings = load_settings()
+    conn = db.open_db(settings.database_url)
+    if args.action == "show":
+        set_id, weights = scout.active_weights(conn)
+        if set_id is None:
+            print(
+                "No weight set in force. Scoring uses the default, which is "
+                "named a starting point rather than a finding:"
+            )
+        for component in scoring.COMPONENTS:
+            weight = weights.get(component.key)
+            if weight is None:
+                continue
+            print(f"  {component.key:14} {weight}  ({component.origin})")
+        conn.close()
+        return 0
+
+    if not settings.weights:
+        print(
+            "No [scoring.weights] in arpenteur.toml. Nothing is invented here.",
+            file=sys.stderr,
+        )
+        conn.close()
+        return 1
+    try:
+        set_id = scout.save_weight_set(
+            conn, settings.weight_set_name, settings.weights,
+            note=settings.weight_set_note,
+        )
+    except scoring.ScoringError as exc:
+        print(f"error: {exc}", file=sys.stderr)
+        conn.close()
+        return 1
+    conn.commit()
+    # A new version, never an edit: every score cites the set it used, and a
+    # re-weighting must not rewrite what last month's ranking was.
+    print(f"weight set {set_id} opened and in force")
+    conn.close()
+    return 0
+
+
 def cmd_geocode(args: argparse.Namespace) -> int:
     settings = load_settings()
     conn = db.open_db(settings.database_url)
@@ -1233,6 +1278,16 @@ def build_parser() -> argparse.ArgumentParser:
              "rate card, or print the card in force",
     )
     p.set_defaults(func=cmd_rates)
+
+    p = sub.add_parser(
+        "weights", help="what each part of a score is worth to this campaign"
+    )
+    p.add_argument(
+        "action", choices=("load", "show"),
+        help="open a new version from [scoring.weights] in arpenteur.toml, or "
+             "print the set in force",
+    )
+    p.set_defaults(func=cmd_weights)
 
     p = sub.add_parser(
         "note", help="notes on a client, written in Markdown"

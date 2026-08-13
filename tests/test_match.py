@@ -27,12 +27,29 @@ from arpenteur.kernel.db import Connection, Row
 from arpenteur.config import Settings
 from arpenteur.stages import match
 
+# The reply as the model now returns it: four components, each with its own
+# score and the evidence it was scored on. The two computed components are
+# absent on purpose, because the model cannot see what they are counted from.
 REPLY: dict[str, Any] = {
-    "score": 78,
-    "band": "high",
+    "fit": {
+        "score": 85, "reasoning": "Fiduciaire de 20 personnes, dans la cible.",
+        "for": ["fiduciaire de 10 à 80 personnes"],
+        "against": ["en croissance, peut-être déjà accompagnée"],
+    },
+    "need": {
+        "score": 80, "reasoning": "Site ancien, aucun partenaire IT nommé.",
+        "for": ["site vitrine ancien", "aucun partenaire informatique nommé"],
+        "against": [],
+    },
+    "timing": {
+        "score": 60, "reasoning": "Rien de daté dans la matière.",
+        "for": [], "against": ["aucun signal de calendrier"],
+    },
+    "value": {
+        "score": 70, "reasoning": "Vingt personnes, plusieurs sites.",
+        "for": ["vingt personnes"], "against": [],
+    },
     "reasoning": "Fiduciaire de 20 personnes, site ancien, aucun partenaire IT nommé.",
-    "matched": ["site vitrine ancien", "aucun partenaire informatique nommé"],
-    "against": ["en croissance, peut-être déjà accompagnée"],
     "advice": "Bonjour, j'ai vu que votre site date de 2016...",
 }
 
@@ -167,7 +184,11 @@ def test_a_score_is_stored_with_its_reasoning_and_advice(
 ) -> None:
     match_with(monkeypatch, FakeProvider(), settings, conn)
     row = conn.execute("SELECT * FROM intel.fit").fetchone()
-    assert (row["score"], row["band"]) == (78, "high")
+    # The model scored this company 85 for fit and 80 for need, and it lands
+    # at medium rather than high because nobody can reach it and nobody knows
+    # anyone there. That is the rework: an excellent prospect with no way in
+    # is not the same as an excellent prospect, and one number said it was.
+    assert row["band"] == "medium" and 55 <= row["score"] <= 70
     assert "aucun partenaire" in row["reasoning"]
     assert row["advice"].startswith("Bonjour")
     assert row["matched"]

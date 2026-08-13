@@ -428,6 +428,7 @@ def company_page(
     parties: list[Row] | None = None,
     overlap: str = "",
     mail_links: str = "",
+    score_parts: str = "",
 ) -> str:
     out = [
         f"<h1>{esc(company['name'])}</h1>",
@@ -498,6 +499,11 @@ def company_page(
 
     if overlap:
         out.append(overlap)
+    # How the number above was arrived at. Directly under the score it
+    # explains, because a reader who has to go looking for the reasoning will
+    # take the number on faith instead.
+    if score_parts:
+        out.append(score_parts)
     out.append(_site_card(site))
     out.append(_contacts_card(contacts))
     # What filing a message taught the matcher. An inference nobody can see is

@@ -644,6 +644,11 @@ def set_prospect(
         f"UPDATE intel.prospect SET {', '.join(sets)} WHERE company_id = %s",
         params,
     )
+    # Leaving 'new' is the moment a person picked this company out of a ranked
+    # list, and it is the only moment at which where it stood in that list can
+    # be known. Recorded once, never updated: see `record_selection`.
+    if state is not None and state != "new":
+        record_selection(conn, company_id, by=by)
 
 
 def prospect_for(conn: Connection, company_id: int) -> Row | None:
@@ -1659,3 +1664,329 @@ def catalogue(conn: Connection) -> list[dict[str, Any]]:
         "SELECT value_json FROM intel.setting WHERE key = %s", (CATALOGUE_KEY,)
     ).fetchone()
     return row["value_json"] if row else []
+
+
+# --- evidence that accumulates ---------------------------------------------------
+
+
+def save_source_document(conn: Connection, row: dict[str, Any]) -> int:
+    """Record where a claim came from. The same document twice is one row."""
+    found = conn.execute(
+        "SELECT id FROM intel.source_document"
+        " WHERE company_id IS NOT DISTINCT FROM %s AND kind = %s"
+        "   AND url IS NOT DISTINCT FROM %s"
+        "   AND content_sha256 IS NOT DISTINCT FROM %s",
+        (row.get("company_id"), row["kind"], row.get("url"),
+         row.get("content_sha256")),
+    ).fetchone()
+    if found:
+        return int(found["id"])
+    made = conn.execute(
+        "INSERT INTO intel.source_document (company_id, kind, url, title,"
+        " content_sha256, licence, fetched_at, method, created_at)"
+        " VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s) RETURNING id",
+        (row.get("company_id"), row["kind"], row.get("url"), row.get("title"),
+         row.get("content_sha256"), row.get("licence"), row.get("fetched_at"),
+         row.get("method"), now()),
+    ).fetchone()
+    return int(made["id"])
+
+
+def observe(conn: Connection, company_id: int, row: dict[str, Any]) -> int:
+    """Record one claim. Never overwrites another.
+
+    Two sources disagreeing is the case this exists for, so a second claim
+    about the same attribute is a second row. Superseding is a separate,
+    deliberate act: see `supersede`.
+    """
+    made = conn.execute(
+        "INSERT INTO intel.observation (company_id, attribute, value, value_num,"
+        " confidence, source_document_id, parser_version, method, observed_at)"
+        " VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s) RETURNING id",
+        (company_id, row["attribute"], row.get("value"), row.get("value_num"),
+         row.get("confidence"), row.get("source_document_id"),
+         row.get("parser_version"), row.get("method"), row.get("observed_at") or now()),
+    ).fetchone()
+    return int(made["id"])
+
+
+def supersede(conn: Connection, observation_id: int, *, by: int | None = None) -> None:
+    """Mark a claim as no longer believed, without destroying it.
+
+    That it was once believed is itself a fact, and a deleted row is one a
+    re-run writes again next week.
+    """
+    conn.execute(
+        "UPDATE intel.observation SET superseded_at = %s, superseded_by = %s"
+        " WHERE id = %s AND superseded_at IS NULL",
+        (now(), by, observation_id),
+    )
+
+
+def observations_for(
+    conn: Connection, company_id: int, *, attribute: str = "",
+    include_superseded: bool = False,
+) -> list[Row]:
+    clauses = ["o.company_id = %s"]
+    params: list[Any] = [company_id]
+    if attribute:
+        # A prefix, so `site` fetches `site.signal` and `site.summary` alike.
+        clauses.append("(o.attribute = %s OR o.attribute LIKE %s)")
+        params += [attribute, f"{attribute}.%"]
+    if not include_superseded:
+        clauses.append("o.superseded_at IS NULL")
+    return conn.execute(
+        "SELECT o.*, d.url, d.kind AS source_kind, d.licence"
+        "  FROM intel.observation o"
+        "  LEFT JOIN intel.source_document d ON d.id = o.source_document_id"
+        f" WHERE {' AND '.join(clauses)}"
+        " ORDER BY o.attribute, o.confidence DESC NULLS LAST, o.observed_at DESC",
+        tuple(params),
+    ).fetchall()
+
+
+def disagreements(conn: Connection, company_id: int) -> list[Row]:
+    """Attributes where two live observations say different things.
+
+    The whole reason the table accumulates. A reader that only ever sees the
+    winning claim cannot tell a settled fact from a contested one, and the
+    contested ones are where the interesting questions are.
+    """
+    return conn.execute(
+        "SELECT attribute, COUNT(DISTINCT value) AS answers, COUNT(*) AS claims"
+        "  FROM intel.observation"
+        " WHERE company_id = %s AND superseded_at IS NULL AND value IS NOT NULL"
+        " GROUP BY attribute HAVING COUNT(DISTINCT value) > 1"
+        " ORDER BY attribute",
+        (company_id,),
+    ).fetchall()
+
+
+# --- weights and scores -----------------------------------------------------------
+
+
+def save_weight_set(
+    conn: Connection, name: str, weights: dict[str, Any], *, note: str = "",
+    activate: bool = True,
+) -> int:
+    """A new version of a weight set, never an edit of one in use.
+
+    Re-weighting a campaign must not rewrite what last month's ranking was, and
+    a score run cites the set it used, so the set has to still exist and still
+    say what it said.
+    """
+    from . import scoring
+
+    highest = conn.execute(
+        "SELECT COALESCE(MAX(version), 0) AS v FROM intel.weight_set WHERE name = %s",
+        (name,),
+    ).fetchone()
+    made = conn.execute(
+        "INSERT INTO intel.weight_set (name, version, note, active, created_at)"
+        " VALUES (%s, %s, %s, FALSE, %s) RETURNING id",
+        (name, int(highest["v"]) + 1, note or None, now()),
+    ).fetchone()
+    set_id = int(made["id"])
+    for component, weight in scoring.normalise(weights).items():
+        conn.execute(
+            "INSERT INTO intel.weight (weight_set_id, component, weight)"
+            " VALUES (%s, %s, %s)",
+            (set_id, component, weight),
+        )
+    if activate:
+        activate_weight_set(conn, set_id)
+    return set_id
+
+
+def activate_weight_set(conn: Connection, weight_set_id: int) -> None:
+    conn.execute("UPDATE intel.weight_set SET active = FALSE WHERE active")
+    conn.execute(
+        "UPDATE intel.weight_set SET active = TRUE WHERE id = %s", (weight_set_id,)
+    )
+
+
+def active_weights(conn: Connection) -> tuple[int | None, dict[str, Any]]:
+    """The weights in force, or the default with no set behind it.
+
+    Falling back rather than refusing: a survey that has never opened a weight
+    set should still be able to score, and the default says in its own name
+    that it is a starting point.
+    """
+    from . import scoring
+
+    found = conn.execute(
+        "SELECT id FROM intel.weight_set WHERE active LIMIT 1"
+    ).fetchone()
+    if found is None:
+        return None, dict(scoring.DEFAULT_WEIGHTS)
+    rows = conn.execute(
+        "SELECT component, weight FROM intel.weight WHERE weight_set_id = %s",
+        (found["id"],),
+    ).fetchall()
+    return int(found["id"]), {r["component"]: r["weight"] for r in rows}
+
+
+def weight_sets(conn: Connection) -> list[Row]:
+    return conn.execute(
+        "SELECT s.*, (SELECT COUNT(*) FROM intel.weight w"
+        "              WHERE w.weight_set_id = s.id) AS components"
+        "  FROM intel.weight_set s ORDER BY s.name, s.version DESC"
+    ).fetchall()
+
+
+def save_score_run(conn: Connection, company_id: int, row: dict[str, Any]) -> int:
+    """Record a scoring with its components and their evidence.
+
+    Also projects the total onto `intel.fit`, which every list and filter in
+    the console still ranks by. The projection honours the manual guard exactly
+    as before: a score somebody set by hand is not replaced by a run.
+    """
+    made = conn.execute(
+        "INSERT INTO intel.score_run (company_id, weight_set_id, total, band,"
+        " source, model, brief_hash, site_hash, reasoning, advice, author,"
+        " created_at) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"
+        " RETURNING id",
+        (company_id, row.get("weight_set_id"), row.get("total"), row.get("band"),
+         row.get("source", "model"), row.get("model"), row.get("brief_hash"),
+         row.get("site_hash"), row.get("reasoning"), row.get("advice"),
+         row.get("author"), now()),
+    ).fetchone()
+    run_id = int(made["id"])
+
+    for part in row.get("components") or []:
+        component_id = conn.execute(
+            "INSERT INTO intel.score_component (score_run_id, component, score,"
+            " weight, origin, reasoning) VALUES (%s, %s, %s, %s, %s, %s)"
+            " RETURNING id",
+            (run_id, part["component"], part.get("score"), part.get("weight"),
+             part.get("origin", "model"), part.get("reasoning")),
+        ).fetchone()
+        for item in part.get("evidence") or []:
+            statement = item if isinstance(item, str) else item.get("statement")
+            if not statement:
+                continue
+            direction = "for" if isinstance(item, str) else item.get("direction", "for")
+            conn.execute(
+                "INSERT INTO intel.score_evidence (score_component_id, direction,"
+                " statement, observation_id, source_document_id)"
+                " VALUES (%s, %s, %s, %s, %s)",
+                (int(component_id["id"]), direction, statement,
+                 None if isinstance(item, str) else item.get("observation_id"),
+                 None if isinstance(item, str) else item.get("source_document_id")),
+            )
+
+    save_fit(conn, company_id, {
+        "score": int(round(float(row.get("total") or 0))),
+        "band": row.get("band") or "low",
+        "reasoning": row.get("reasoning"),
+        "advice": row.get("advice"),
+        "against": row.get("against"),
+        "matched": row.get("matched"),
+        "model": row.get("model"),
+        "brief_hash": row.get("brief_hash"),
+        "site_hash": row.get("site_hash"),
+    })
+    return run_id
+
+
+def score_run(conn: Connection, run_id: int) -> Row | None:
+    return conn.execute(
+        "SELECT r.*, s.name AS weight_set, s.version AS weight_version"
+        "  FROM intel.score_run r"
+        "  LEFT JOIN intel.weight_set s ON s.id = r.weight_set_id"
+        " WHERE r.id = %s",
+        (run_id,),
+    ).fetchone()
+
+
+def latest_score(conn: Connection, company_id: int) -> Row | None:
+    return conn.execute(
+        "SELECT r.*, s.name AS weight_set, s.version AS weight_version"
+        "  FROM intel.score_run r"
+        "  LEFT JOIN intel.weight_set s ON s.id = r.weight_set_id"
+        " WHERE r.company_id = %s ORDER BY r.created_at DESC, r.id DESC LIMIT 1",
+        (company_id,),
+    ).fetchone()
+
+
+def score_history(conn: Connection, company_id: int, *, limit: int = 20) -> list[Row]:
+    return conn.execute(
+        "SELECT * FROM intel.score_run WHERE company_id = %s"
+        " ORDER BY created_at DESC, id DESC LIMIT %s",
+        (company_id, limit),
+    ).fetchall()
+
+
+def components_of(conn: Connection, run_id: int) -> list[Row]:
+    return conn.execute(
+        "SELECT * FROM intel.score_component WHERE score_run_id = %s"
+        " ORDER BY weight DESC NULLS LAST, component",
+        (run_id,),
+    ).fetchall()
+
+
+def evidence_of(conn: Connection, component_id: int) -> list[Row]:
+    return conn.execute(
+        "SELECT e.*, d.url FROM intel.score_evidence e"
+        "  LEFT JOIN intel.source_document d ON d.id = e.source_document_id"
+        " WHERE e.score_component_id = %s ORDER BY e.direction DESC, e.id",
+        (component_id,),
+    ).fetchall()
+
+
+def score_with_parts(conn: Connection, company_id: int) -> dict[str, Any] | None:
+    """The newest run, its components, and each component's evidence.
+
+    One call because every page that shows a score wants all three, and three
+    round trips per company on a list of forty is how a page becomes slow for
+    no reason a reader could name.
+    """
+    run = latest_score(conn, company_id)
+    if run is None:
+        return None
+    parts = []
+    for component in components_of(conn, int(run["id"])):
+        parts.append({
+            "row": component,
+            "evidence": evidence_of(conn, int(component["id"])),
+        })
+    return {"run": run, "components": parts}
+
+
+def record_selection(
+    conn: Connection, company_id: int, *, by: str | None = None
+) -> dict[str, Any] | None:
+    """Write down where this company stood in the ranking when it was picked.
+
+    Called when a prospect first moves out of 'new', which is the moment a
+    person chose it out of a list. See the migration for why: outcomes are only
+    ever observed for what was approached, and what was approached was chosen
+    by score, so anything later learned from those outcomes is learned from the
+    system's own choices unless the propensity at selection is kept.
+
+    Written once and never updated. The point is what was true at the moment of
+    the decision, and a later scoring is a different fact.
+    """
+    already = conn.execute(
+        "SELECT selected_at FROM intel.prospect WHERE company_id = %s",
+        (company_id,),
+    ).fetchone()
+    if already is not None and already["selected_at"] is not None:
+        return None
+    standing = conn.execute(
+        "SELECT f.score, f.band,"
+        "       (SELECT COUNT(*) FROM intel.fit) AS scored,"
+        "       (SELECT COUNT(*) FROM intel.fit o WHERE o.score <= f.score) AS below"
+        "  FROM intel.fit f WHERE f.company_id = %s",
+        (company_id,),
+    ).fetchone()
+    if standing is None or not standing["scored"]:
+        return None
+    percentile = round(float(standing["below"]) / float(standing["scored"]), 4)
+    conn.execute(
+        "UPDATE intel.prospect SET selection_p = %s, selection_score = %s,"
+        " selection_band = %s, selected_at = %s WHERE company_id = %s",
+        (percentile, standing["score"], standing["band"], now(), company_id),
+    )
+    return {"selection_p": percentile, "score": standing["score"],
+            "band": standing["band"]}

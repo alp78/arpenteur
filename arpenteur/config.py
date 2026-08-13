@@ -296,6 +296,11 @@ class Settings:
     # database, so a survey with neither still gets honest advice.
     catalogue: tuple[ServiceEntry, ...] = ()
     card_note: str = ""
+    # How the six components of a score are weighed. Empty falls back to
+    # `scoring.DEFAULT_WEIGHTS`, which is named a starting point.
+    weights: dict[str, str] = field(default_factory=dict)
+    weight_set_name: str = "starting point"
+    weight_set_note: str = ""
     data_dir: Path = field(init=False)
 
     def __post_init__(self) -> None:
@@ -563,6 +568,13 @@ def load_settings(root: Path | None = None) -> Settings:
         issuer=_issuer(raw.get("issuer") or {}),
         catalogue=_catalogue(raw.get("rates") or {}),
         card_note=str(((raw.get("rates") or {}).get("card_note") or {}).get("text", "")).strip(),
+        weights={
+            str(k): str(v)
+            for k, v in ((raw.get("scoring") or {}).get("weights") or {}).items()
+        },
+        weight_set_name=str((raw.get("scoring") or {}).get(
+            "name", "starting point")).strip() or "starting point",
+        weight_set_note=str((raw.get("scoring") or {}).get("note", "")).strip(),
     )
 
 
