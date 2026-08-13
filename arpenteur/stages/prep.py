@@ -40,8 +40,13 @@ from typing import Any, Callable
 from .. import db
 from ..config import Settings
 from ..kernel.db import Connection, Row
-from ..llm import get_provider
+from ..llm import Spend, get_provider
 from . import advise
+
+# Stand-in for a provider that does not account for itself, which is every
+# fake in the test suite. Reporting zeros is right: nothing was billed.
+_NO_SPEND = Spend()
+
 
 # The shelves the glossary is arranged on. A working vocabulary rather than a
 # constraint: the schema does not enforce it, so retiring one leaves the old
@@ -254,4 +259,8 @@ def run(
         f"  {len(terms)} terms ({added} new, {refreshed} refreshed), "
         f"{must} to know cold, {stats['agenda']} on the agenda"
     )
+    # What the run cost, from what the API reported rather than estimated. A
+    # stage that cannot be priced afterwards cannot be tuned, and four of the
+    # five paid stages were dropping this on the floor.
+    stats.update(getattr(provider, "spent", _NO_SPEND).as_stats())
     return stats

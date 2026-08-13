@@ -40,6 +40,7 @@ from ..kernel import modules as module_registry
 from ..kernel.db import Connection, Row
 from ..modules.clients import store as clients_store
 from ..modules.geo import store as geo_store
+from ..modules.analytics import store as analytics_store
 from ..modules.sales import money as money_lib
 from ..modules.sales import store as sales_store
 from ..modules.scout import store as scout_store
@@ -52,6 +53,7 @@ from . import clients as clients_view
 from . import mail_page as mail_view
 from . import money_page as money_view
 from . import score_page as score_view
+from . import reports_page as reports_view
 from . import map_page as map_view_page
 from . import notes_page as notes_view
 from . import people_page as people_view_page
@@ -1177,6 +1179,41 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             ))
         finally:
             conn.close()
+
+    # --- reports ----------------------------------------------------------------
+
+    @app.get("/reports", response_class=HTMLResponse)
+    def reports(request: Request) -> HTMLResponse:
+        conn = connect()
+        try:
+            have = analytics_store.available(conn)
+            sections, missing = [], []
+            for name, title, module in analytics_store.REPORTS:
+                if name in have:
+                    sections.append((name, title, analytics_store.read(conn, name)))
+                else:
+                    missing.append((name, module))
+            return HTMLResponse(reports_view.reports_page(
+                sections, missing=missing,
+                fresh=analytics_store.freshness(conn),
+                territory=settings.territory.describe(),
+                note=request.query_params.get("note", ""),
+            ))
+        finally:
+            conn.close()
+
+    @app.post("/reports/refresh")
+    def refresh_reports() -> RedirectResponse:
+        conn = connect()
+        try:
+            done = analytics_store.refresh(conn)
+            note = (f"Refreshed {len(done)} view(s): {', '.join(done)}."
+                    if done else "Nothing materialised to refresh.")
+        except Exception as exc:
+            note = f"The refresh failed: {exc}"
+        finally:
+            conn.close()
+        return RedirectResponse(f"/reports?note={quote(note)}", status_code=303)
 
     @app.get("/clients", response_class=HTMLResponse)
     def portfolio() -> HTMLResponse:

@@ -46,8 +46,13 @@ from .. import attachments as att
 from .. import db, dossier
 from ..config import Settings
 from ..kernel.db import Connection, Row
-from ..llm import get_provider
+from ..llm import Spend, get_provider
 from ..modules.clients import store as clients_store
+
+# Stand-in for a provider that does not account for itself, which is every
+# fake in the test suite. Reporting zeros is right: nothing was billed.
+_NO_SPEND = Spend()
+
 
 SYSTEM = """You advise an independent consultant preparing to meet a client. \
 You are given what is known about the client, the documents they sent, and the \
@@ -485,4 +490,8 @@ def run(
         f"  {stats['points']} discussion points, {stats['services']} services, "
         f"{priced} priced, {stats['questions']} open questions"
     )
+    # What the run cost, from what the API reported rather than estimated. A
+    # stage that cannot be priced afterwards cannot be tuned, and four of the
+    # five paid stages were dropping this on the floor.
+    stats.update(getattr(provider, "spent", _NO_SPEND).as_stats())
     return stats

@@ -51,7 +51,7 @@ of it.
 
 ## Modules
 
-Arpenteur is composed rather than written as one program. Four modules,
+Arpenteur is composed rather than written as one program. Five modules,
 each owning one Postgres schema and its own numbered migrations:
 
 | module | schema | what |
@@ -60,6 +60,7 @@ each owning one Postgres schema and its own numbered migrations:
 | `geo` | `geo` | the geocode stage, establishments with coordinates, the map |
 | `clients` | `crm` | clients, projects, the interaction log, notes, dossier, approach, prep |
 | `sales` | `commercial` | services, rate cards, quotes, invoices, time entries |
+| `analytics` | `analytics` | views over everything else: the funnel and its cycle times, spend by stage, the pipeline, what is outstanding. Written to by nothing |
 
 ```bash
 uv run arpenteur modules list          # what is installed and how far its schema has got

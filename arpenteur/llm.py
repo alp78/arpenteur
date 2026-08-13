@@ -38,6 +38,47 @@ class Provider(Protocol):
 
 
 @dataclass
+class Spend:
+    """What one provider instance has cost since it was made.
+
+    Tokens are the bill. `Research` already carried them because the enrich
+    stage was the first to cost money per company, and every other model stage
+    quietly dropped them: `complete_json` returned a dict and the usage went
+    with the response object. The result was a system that could price one of
+    its five paid stages.
+
+    Accumulated on the provider rather than returned, because a run makes one
+    provider and calls it once per company, and threading a second return
+    value through five stages to add it up again at the end is the same
+    arithmetic done in five places.
+    """
+
+    calls: int = 0
+    input_tokens: int = 0
+    output_tokens: int = 0
+
+    def add(self, message: Any) -> None:
+        """Take what an API response reports. Never estimates.
+
+        A message with no usage adds a call and no tokens, which is honest:
+        the call happened and what it cost is unknown. Inventing a figure from
+        the character count would produce a cost report that looks precise and
+        is not, which is worse than one with a gap in it.
+        """
+        self.calls += 1
+        usage = getattr(message, "usage", None)
+        self.input_tokens += getattr(usage, "input_tokens", 0) or 0
+        self.output_tokens += getattr(usage, "output_tokens", 0) or 0
+
+    def as_stats(self) -> dict[str, int]:
+        return {
+            "model_calls": self.calls,
+            "input_tokens": self.input_tokens,
+            "output_tokens": self.output_tokens,
+        }
+
+
+@dataclass
 class Research:
     """The result of a search-and-read call.
 
@@ -80,6 +121,7 @@ class AnthropicProvider:
         # imports (and the test suite still runs) with no key and no SDK.
         from anthropic import Anthropic
 
+        self.spent = Spend()
         if api_key:
             self.client = Anthropic(api_key=api_key)
             self.credential = "api key"
@@ -98,6 +140,7 @@ class AnthropicProvider:
             system=system,
             messages=[{"role": "user", "content": user}],
         )
+        self.spent.add(message)
         return "".join(
             block.text for block in message.content if getattr(block, "type", "") == "text"
         )
@@ -148,6 +191,10 @@ class AnthropicProvider:
             output_config=output_config,
         ) as stream:
             message = stream.get_final_message()
+        # Recorded before the refusals below: a request that hit max_tokens
+        # was billed for every token it produced on the way there, and that is
+        # exactly the run somebody wants the cost of.
+        self.spent.add(message)
         if message.stop_reason == "refusal":
             raise RuntimeError("the model declined this request")
         if message.stop_reason == "max_tokens":
@@ -257,6 +304,11 @@ class AnthropicProvider:
             # is worth recording rather than estimating.
             input_tokens += getattr(usage, "input_tokens", 0) or 0
             output_tokens += getattr(usage, "output_tokens", 0) or 0
+            # Also onto the provider's running total, so one object can be
+            # asked what a whole run cost regardless of which call shapes it
+            # used. `Research` keeps its own copy because enrich reports per
+            # company and this is per run.
+            self.spent.add(message)
             for block in message.content:
                 if getattr(block, "type", "") == "server_tool_use":
                     url = (getattr(block, "input", None) or {}).get("url")

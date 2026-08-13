@@ -134,6 +134,7 @@ pre.log {{ background:#fff; border:1px solid var(--line); padding:.8rem 1rem; ma
   <a href="/board">Board</a>
   <a href="/people">People</a>
   <a href="/map">Map</a>
+  <a href="/reports">Reports</a>
   <a href="/pipeline">Operations</a>
   <a href="/runs">History</a>
   <a href="/settings">Settings</a>

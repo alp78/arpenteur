@@ -168,9 +168,9 @@ class Registry:
 
 # Everything that ships. Enabling is a list in arpenteur.toml; this is the
 # catalogue of what may be listed.
-AVAILABLE = ("scout", "geo", "clients", "sales")
+AVAILABLE = ("scout", "geo", "clients", "sales", "analytics")
 
-DEFAULT = ("scout", "geo", "clients", "sales")
+DEFAULT = ("scout", "geo", "clients", "sales", "analytics")
 
 
 def load(names: Iterable[str]) -> Registry:

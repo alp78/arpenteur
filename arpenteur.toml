@@ -14,11 +14,15 @@
 #            suggested approach, interview preparation.
 #   sales    service catalogue, rate cards, quotes, invoices, time entries.
 #            Requires clients.
+#   analytics  views over everything else: the funnel and its cycle times,
+#            conversion by band, what each stage cost, the pipeline and what
+#            is outstanding. Written to by nothing, so removing it loses no
+#            data at all.
 #
 # Removing a name here stops the module loading. `arpenteur modules drop <name>`
 # also deletes its schema, which is not reversible without a backup.
 [modules]
-enabled = ["scout", "geo", "clients", "sales"]
+enabled = ["scout", "geo", "clients", "sales", "analytics"]
 
 [survey]
 # The territory. Name a region from [regions] below, or set `cantons`

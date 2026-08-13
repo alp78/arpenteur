@@ -17,7 +17,12 @@ from typing import Any, Callable
 from .. import db
 from ..config import Settings
 from ..kernel.db import Connection, Row
-from ..llm import extract_json, get_provider
+from ..llm import Spend, extract_json, get_provider
+
+# Stand-in for a provider that does not account for itself, which is every
+# fake in the test suite. Reporting zeros is right: nothing was billed.
+_NO_SPEND = Spend()
+
 
 SYSTEM = """You classify Swiss companies into market segments from their \
 registered commercial-register purpose text.
@@ -156,4 +161,8 @@ def run(
             conn.commit()
         log(f"  {min(start + size, len(rows))}/{len(rows)}")
 
+    # What the run cost, from what the API reported rather than estimated. A
+    # stage that cannot be priced afterwards cannot be tuned, and four of the
+    # five paid stages were dropping this on the floor.
+    stats.update(getattr(provider, "spent", _NO_SPEND).as_stats())
     return stats

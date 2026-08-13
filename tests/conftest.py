@@ -169,6 +169,24 @@ def db_path(pg_url: str) -> str:
         if tables:
             conn.execute(f"TRUNCATE {', '.join(tables)} RESTART IDENTITY CASCADE")
         conn.commit()
+        # A materialised view holds a copy of the rows and is not a base
+        # table, so TRUNCATE leaves it exactly as the last test refreshed it.
+        # One test's aggregate then reads as another's data, which fails in
+        # whichever test happens to run second and looks like a bug in the
+        # view. Emptied by refreshing after the truncate rather than by
+        # dropping: the view is part of the schema and should still be there.
+        views = [
+            row["matviewname"]
+            for row in conn.execute(
+                "SELECT matviewname FROM pg_matviews WHERE schemaname = 'analytics'"
+            )
+        ]
+        if views:
+            conn.commit()
+            conn.autocommit = True
+            for name in views:
+                conn.execute(f'REFRESH MATERIALIZED VIEW analytics."{name}"')
+            conn.autocommit = False
     finally:
         conn.close()
     return pg_url
