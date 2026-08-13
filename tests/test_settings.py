@@ -12,7 +12,9 @@ never been asked for.
 from __future__ import annotations
 
 import json
+import re
 import tomllib
+from dataclasses import replace
 from pathlib import Path
 
 import pytest
@@ -264,3 +266,45 @@ def test_selecting_no_canton_means_the_configured_territory(client) -> None:
     from arpenteur.console.runner import STAGES, coerce
 
     assert "cantons" not in coerce(STAGES["source"], {"no_hydrate": "1"})
+
+
+# --- the header is composed by the modules ------------------------------------
+
+
+def test_every_link_in_the_header_leads_somewhere(client) -> None:
+    """A header composed by the modules can name a route nobody wrote.
+
+    The navigation used to be a hardcoded string in `render.py`, so a link and
+    a route could drift apart in silence, and two of them had: quotes and
+    invoices existed with no way to reach them, and every link that did exist
+    was styled with an active state that was never applied.
+
+    This lives here rather than in `test_console.py` because it needs the one
+    fixture built from a real settings file. The console's own fixture is a
+    stub with three attributes, which is enough for the pages those tests open
+    and not enough for `/settings`, and a page nobody has a test for is a page
+    nobody knows is reachable.
+    """
+    header = client.get("/").text.split("<header>")[1].split("</header>")[0]
+    hrefs = re.findall(r'<a href="([^"]+)"', header)
+    assert len(hrefs) >= 12
+    for href in hrefs:
+        assert client.get(href).status_code == 200, href
+
+
+def test_turning_off_a_module_removes_its_pages_from_the_header(
+    root: Path, conn
+) -> None:
+    """The check that the slot wiring is real rather than decorative.
+
+    Dropping `sales` used to remove its tables and its stages and leave the
+    header pointing at a schema that was no longer there.
+    """
+    settings = load_settings(root)
+    settings = replace(settings, modules=("scout", "geo", "clients"))
+    client = TestClient(create_app(settings))
+    header = client.get("/").text.split("<header>")[1].split("</header>")[0]
+    labels = re.findall(r'<a href="[^"]+"[^>]*>([^<]+)</a>', header)
+    assert "Quotes" not in labels and "Invoices" not in labels
+    assert "Reports" not in labels
+    assert "Clients" in labels and "Survey" in labels and "Settings" in labels

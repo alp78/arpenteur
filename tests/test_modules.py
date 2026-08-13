@@ -116,6 +116,51 @@ def test_the_kernel_imports_no_module() -> None:
         )
 
 
+def test_no_module_imports_the_console() -> None:
+    """The seam that now carries the navigation, guarded from the other side.
+
+    A module declares where it appears in the header, and the console reads
+    that declaration. The temptation the moment a module wants a page is to
+    import the console and render one, and the direction has to stay: the
+    console knows the modules, no module knows the console. Otherwise a
+    deployment that ships the sales module without the web front end will not
+    import.
+
+    Text rather than the AST walk above, because `imports_in` deliberately only
+    reports sibling modules and would say nothing at all about this.
+    """
+    for path in sorted(MODULES_DIR.rglob("*.py")):
+        text = path.read_text(encoding="utf-8")
+        for spelling in ("from ...console", "from arpenteur.console",
+                         "import arpenteur.console"):
+            assert spelling not in text, (
+                f"{path.relative_to(ROOT.parent)} imports the console. A module "
+                "contributes to a slot and declares its navigation; it does not "
+                "render pages."
+            )
+
+
+def test_every_module_navigation_entry_is_complete() -> None:
+    """A header entry with no label or no href is a gap nobody sees until the
+    page is open."""
+    for name in module_names():
+        for item in declared(name).nav:
+            assert item.label.strip(), f"{name} declares a nameless nav entry"
+            assert item.href.startswith("/"), (
+                f"{name} declares nav to {item.href!r}, which is not a path"
+            )
+
+
+def test_two_modules_cannot_claim_the_same_place_in_the_header() -> None:
+    seen: dict[str, str] = {}
+    for name in module_names():
+        for item in declared(name).nav:
+            assert item.href not in seen, (
+                f"{name} and {seen[item.href]} both put {item.href} in the header"
+            )
+            seen[item.href] = name
+
+
 def test_the_scout_imports_neither_clients_nor_sales() -> None:
     """The direction that matters commercially: someone licensing the survey
     alone must be able to take it."""

@@ -48,8 +48,8 @@ STYLES = """
 """
 
 
-def shell(body: str, territory: str = "") -> str:
-    return page("arpenteur settings", body, territory, css=STYLES)
+def shell(body: str, chrome: Any = None) -> str:
+    return page("arpenteur settings", body, chrome, css=STYLES)
 
 
 def _block(

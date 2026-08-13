@@ -11,7 +11,7 @@ sales module be dropped without orphaning anything here.
 
 from __future__ import annotations
 
-from ...kernel.modules import Module
+from ...kernel.modules import Module, Nav
 
 MODULE = Module(
     name="scout",
@@ -23,5 +23,10 @@ MODULE = Module(
     ),
     requires=(),
     schemas=("core", "intel", "audit"),
+    nav=(
+        Nav("Survey", "/", group="survey", order=110),
+        Nav("Board", "/board", group="survey", order=120),
+        Nav("People", "/people", group="survey", order=130),
+    ),
     removable=False,
 )

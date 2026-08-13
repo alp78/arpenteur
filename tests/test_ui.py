@@ -27,6 +27,7 @@ from __future__ import annotations
 import pytest
 
 from arpenteur.console import assets, render, ui
+from arpenteur.kernel import modules
 
 EVIL = '<script>alert("x")</script>'
 
@@ -232,9 +233,58 @@ def test_a_page_with_no_rules_of_its_own_declares_no_empty_layer() -> None:
 
 
 def test_the_shell_marks_the_section_you_are_on() -> None:
-    out = render.page("t", "", here="/board")
+    chrome = render.Chrome.of(modules.load(modules.DEFAULT), "Vaud", "/board")
+    out = render.page("t", "", chrome)
     assert '<a href="/board" aria-current="page">Board</a>' in out
     assert out.count('aria-current="page"') == 1
+
+
+# --- the header is the modules, not a list in a file --------------------------
+
+
+def test_the_header_lists_what_this_deployment_actually_has() -> None:
+    chrome = render.Chrome.of(modules.load(modules.DEFAULT))
+    labels = [item.label for item in chrome.nav]
+    assert labels == [
+        "Clients", "Mail", "Calendar", "Quotes", "Invoices",
+        "Survey", "Board", "People", "Map", "Reports",
+        "Operations", "History", "Settings",
+    ]
+
+
+def test_turning_a_module_off_takes_its_links_with_it() -> None:
+    """The check that the slot wiring is real rather than decorative.
+
+    Dropping `sales` used to remove its tables and its stages and leave a
+    header pointing at a schema that was no longer there.
+    """
+    without = render.Chrome.of(modules.load(("scout", "geo", "clients")))
+    labels = [item.label for item in without.nav]
+    assert "Quotes" not in labels and "Invoices" not in labels
+    assert "Reports" not in labels          # analytics is off too
+    assert "Clients" in labels and "Survey" in labels
+    assert "Settings" in labels             # the console's own pages stay
+
+
+def test_the_console_own_pages_belong_to_no_module_and_always_appear() -> None:
+    bare = render.Chrome.of(modules.load(("scout",)))
+    assert [n.label for n in bare.nav if n.group == "system"] == [
+        "Operations", "History", "Settings",
+    ]
+
+
+def test_a_rule_is_drawn_between_groups_and_not_at_the_ends() -> None:
+    out = render.page("t", "", render.Chrome.of(modules.load(modules.DEFAULT)))
+    header = out.split("<header>")[1].split("</header>")[0]
+    assert header.count('class="sep"') == 2   # work | survey | system
+    assert not header.split("<nav")[1].lstrip().startswith('<span class="sep"')
+
+
+def test_every_navigation_entry_names_a_distinct_place() -> None:
+    nav = render.Chrome.of(modules.load(modules.DEFAULT)).nav
+    hrefs = [item.href for item in nav]
+    assert len(hrefs) == len(set(hrefs))
+    assert all(href.startswith("/") for href in hrefs)
 
 
 def test_the_shell_has_landmarks_and_a_way_past_the_navigation() -> None:

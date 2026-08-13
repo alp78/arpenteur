@@ -489,6 +489,79 @@ def quotes_for(conn: Connection, client_id: int) -> list[Row]:
     ).fetchall()
 
 
+def all_quotes(
+    conn: Connection, *, status: str = "", q: str = "", limit: int = 200,
+) -> list[Row]:
+    """Every quote, newest first, whoever it is for.
+
+    `quotes_for` answers "what has this client been sent", which is the
+    question the client page asks. This answers the other one, the one nobody
+    could ask at all: what is out, and who has not come back. A quote was
+    reachable only from the client it belonged to, so finding the unanswered
+    ones meant opening every client in turn and remembering.
+    """
+    where = ["TRUE"]
+    args: list[Any] = []
+    if status:
+        where.append("q.status = %s")
+        args.append(status)
+    if q:
+        where.append("(q.code ILIKE %s OR co.name ILIKE %s OR c.code ILIKE %s)")
+        args += [f"%{q}%"] * 3
+    args.append(limit)
+    return conn.execute(
+        "SELECT q.*, c.code AS client_code, co.name AS company_name,"
+        "       (SELECT MAX(version) FROM commercial.quote_version v"
+        "         WHERE v.quote_id = q.id) AS versions,"
+        "       (SELECT v.gross_total FROM commercial.quote_version v"
+        "         WHERE v.quote_id = q.id ORDER BY v.version DESC LIMIT 1) AS total,"
+        "       (SELECT v.sent_at FROM commercial.quote_version v"
+        "         WHERE v.quote_id = q.id AND v.sent_at IS NOT NULL"
+        "         ORDER BY v.version DESC LIMIT 1) AS sent_at,"
+        "       (SELECT v.valid_until FROM commercial.quote_version v"
+        "         WHERE v.quote_id = q.id ORDER BY v.version DESC LIMIT 1) AS valid_until"
+        "  FROM commercial.quote q"
+        "  JOIN crm.client c ON c.id = q.client_id"
+        "  JOIN core.company co ON co.id = c.company_id"
+        f" WHERE {' AND '.join(where)}"
+        " ORDER BY q.created_at DESC, q.id DESC LIMIT %s",
+        tuple(args),
+    ).fetchall()
+
+
+def all_invoices(
+    conn: Connection, *, status: str = "", q: str = "", limit: int = 200,
+) -> list[Row]:
+    """Every invoice, newest first, with what is still owed on it.
+
+    `outstanding` answers the Friday afternoon question and deliberately shows
+    only what is unsettled. This is the ledger: drafts, credit notes and
+    settled ones included, because "was that ever raised" is asked at least as
+    often as "who has not paid".
+    """
+    where = ["TRUE"]
+    args: list[Any] = []
+    if status:
+        where.append("i.status = %s")
+        args.append(status)
+    if q:
+        where.append("(i.number ILIKE %s OR co.name ILIKE %s OR c.code ILIKE %s)")
+        args += [f"%{q}%"] * 3
+    args.append(limit)
+    return conn.execute(
+        "SELECT i.*, c.code AS client_code, co.name AS company_name,"
+        "       (i.gross_total - i.paid_total) AS owed,"
+        "       (CURRENT_DATE - i.due_on) AS days_late"
+        "  FROM commercial.invoice i"
+        "  JOIN crm.client c ON c.id = i.client_id"
+        "  JOIN core.company co ON co.id = c.company_id"
+        f" WHERE {' AND '.join(where)}"
+        " ORDER BY COALESCE(i.issued_on, i.created_at::date) DESC, i.id DESC"
+        " LIMIT %s",
+        tuple(args),
+    ).fetchall()
+
+
 def pipeline_value(conn: Connection) -> list[Row]:
     """What is out, by state, with its money. The one number a quote table owes."""
     return conn.execute(

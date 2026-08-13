@@ -160,7 +160,7 @@ def _message(row: Row | dict[str, Any], clients: list[Row], *, decided: bool) ->
 
 def mail_page(
     rows: list[Row], clients: list[Row], counts: dict[str, int], *,
-    state: str = "pending", territory: str = "", configured: bool = True,
+    state: str = "pending", chrome: Any = None, configured: bool = True,
 ) -> str:
     tabs = " ".join(
         f'<a href="/mail?state={name}"'
@@ -195,7 +195,7 @@ def mail_page(
     body.append('<div class="queue">')
     body.extend(_message(row, clients, decided=decided) for row in rows)
     body.append("</div>")
-    return page("Mail", "".join(body), territory=territory, css=STYLES)
+    return page("Mail", "".join(body), chrome, css=STYLES)
 
 
 def links_panel(links: list[Row]) -> str:

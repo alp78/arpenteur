@@ -29,7 +29,7 @@ their job today.
 
 from __future__ import annotations
 
-from ...kernel.modules import Module
+from ...kernel.modules import Module, Nav
 
 MODULE = Module(
     name="analytics",
@@ -42,4 +42,5 @@ MODULE = Module(
     ),
     requires=("scout",),
     schemas=("analytics",),
+    nav=(Nav("Reports", "/reports", group="survey", order=150),),
 )

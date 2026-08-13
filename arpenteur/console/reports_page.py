@@ -88,7 +88,7 @@ def table(rows: list[Row]) -> str:
 
 def reports_page(
     sections: list[tuple[str, str, list[Row]]], *, missing: list[tuple[str, str]],
-    fresh: dict[str, Any], territory: str = "", note: str = "",
+    fresh: dict[str, Any], chrome: Any = None, note: str = "",
 ) -> str:
     body = [
         "<h1>Reports</h1>",
@@ -131,7 +131,7 @@ def reports_page(
         )
 
     body.append(_duckdb())
-    return page("Reports", "".join(body), territory=territory, css=STYLES)
+    return page("Reports", "".join(body), chrome, css=STYLES)
 
 
 def _duckdb() -> str:

@@ -21,6 +21,8 @@ index.
 from __future__ import annotations
 
 
+from typing import Any
+
 from ..kernel.db import Row
 from .render import band, esc, page
 
@@ -75,8 +77,8 @@ METHODS: dict[str, tuple[str, str]] = {
 WEAK = {"name-only", "sole-origin"}
 
 
-def shell(body: str, territory: str = "") -> str:
-    return page("arpenteur", body, territory, css=STYLES)
+def shell(body: str, chrome: Any = None) -> str:
+    return page("arpenteur", body, chrome, css=STYLES)
 
 
 def method_tag(party: Row) -> str:

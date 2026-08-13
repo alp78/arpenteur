@@ -29,7 +29,7 @@ most tempting to break.
 from __future__ import annotations
 
 from datetime import date
-from typing import Iterable
+from typing import Any, Iterable
 
 from ..kernel.db import Row
 from .render import esc, page
@@ -112,8 +112,8 @@ STYLES = """
 """
 
 
-def shell(body: str, territory: str = "") -> str:
-    return page("arpenteur", body, territory, css=STYLES)
+def shell(body: str, chrome: Any = None) -> str:
+    return page("arpenteur", body, chrome, css=STYLES)
 
 
 # --- putting a row in a lane --------------------------------------------------

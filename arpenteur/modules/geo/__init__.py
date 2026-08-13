@@ -15,7 +15,7 @@ for no gain.
 
 from __future__ import annotations
 
-from ...kernel.modules import Module
+from ...kernel.modules import Module, Nav
 
 MODULE = Module(
     name="geo",
@@ -27,4 +27,5 @@ MODULE = Module(
     ),
     requires=("scout",),
     schemas=("geo",),
+    nav=(Nav("Map", "/map", group="survey", order=140),),
 )

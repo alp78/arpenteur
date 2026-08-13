@@ -60,8 +60,8 @@ STYLES = """
 """
 
 
-def shell(body: str, territory: str = "") -> str:
-    return page("arpenteur", body, territory, css=CLIENT_STYLES + STYLES)
+def shell(body: str, chrome: Any = None) -> str:
+    return page("arpenteur", body, chrome, css=CLIENT_STYLES + STYLES)
 
 
 def _agenda(row: Row | None) -> str:

@@ -17,7 +17,7 @@ page does not import this module and does not know whether anyone answered.
 
 from __future__ import annotations
 
-from ...kernel.modules import Module
+from ...kernel.modules import Module, Nav
 
 MODULE = Module(
     name="sales",
@@ -29,4 +29,8 @@ MODULE = Module(
     ),
     requires=("clients",),
     schemas=("commercial",),
+    nav=(
+        Nav("Quotes", "/quotes", group="work", order=40),
+        Nav("Invoices", "/invoices", group="work", order=50),
+    ),
 )

@@ -21,6 +21,8 @@ a document nobody finishes.
 
 from __future__ import annotations
 
+from typing import Any
+
 from ..kernel.db import Row
 from ..markdown import render
 from .render import esc, page
@@ -62,8 +64,8 @@ textarea.md { min-height:16rem; font:13px/1.5 ui-monospace,SFMono-Regular,Menlo,
 """
 
 
-def shell(body: str, territory: str = "") -> str:
-    return page("arpenteur", body, territory, css=STYLES)
+def shell(body: str, chrome: Any = None) -> str:
+    return page("arpenteur", body, chrome, css=STYLES)
 
 
 def _meta(note: Row) -> str:

@@ -37,10 +37,17 @@ SEGMENTS = {
 
 @pytest.fixture
 def settings(db_path: str) -> SimpleNamespace:
+    """Enough of `Settings` for every page in the header to render.
+
+    It used to hold three attributes, which was enough for the pages the tests
+    happened to open. Walking every navigation link is what showed that up: a
+    page nobody had a test for is a page nobody knew was reachable.
+    """
     return SimpleNamespace(
         database_url=db_path,
         territory=Territory(cantons=("GE",), legal_forms=("0107",), name="geneve"),
         segments=SEGMENTS,
+        mail=SimpleNamespace(configured=False),
     )
 
 
@@ -264,6 +271,68 @@ def test_the_pipeline_and_runs_pages_render(client) -> None:
     assert client.get("/pipeline").status_code == 200
     assert client.get("/runs").status_code == 200
     assert "runs" in client.get("/runs/rows").text
+
+
+def test_the_header_says_which_section_you_are_on(client) -> None:
+    for url, label in (("/", "Survey"), ("/board", "Board"), ("/runs", "History"),
+                       ("/quotes", "Quotes"), ("/reports", "Reports")):
+        header = client.get(url).text.split("<header>")[1].split("</header>")[0]
+        current = re.findall(r'<a href="[^"]+" aria-current="page">([^<]+)</a>', header)
+        assert current == [label], (url, current)
+
+
+def test_a_filtered_list_is_given_an_address_that_renders_whole(client) -> None:
+    """The filter fetches a fragment; the bar must show the page.
+
+    Pushing the fragment's own URL would put an address in the bar that answers
+    with a bare table when anybody opens it.
+    """
+    reply = client.get("/companies?canton=GE", headers={"HX-Request": "true"})
+    assert reply.headers["HX-Push-Url"] == "/?canton=GE"
+    whole = client.get(reply.headers["HX-Push-Url"])
+    assert whole.status_code == 200
+    assert "<header>" in whole.text
+
+
+def test_the_palette_finds_a_company_by_name(client) -> None:
+    hits = client.get("/find?q=Fiduciaire").text
+    assert 'href="/company/1"' in hits
+    assert "Fiduciaire" in hits
+
+
+def test_the_palette_says_where_you_can_go_before_anything_is_typed(client) -> None:
+    """An empty palette that says nothing teaches nobody what it is for."""
+    hits = client.get("/find?q=").text
+    assert "Go to" in hits
+    assert 'href="/board"' in hits
+
+
+def test_the_palette_admits_what_it_does_not_search(client) -> None:
+    hits = client.get("/find?q=zzzznothing").text
+    assert "Nothing matches" in hits
+    assert "not" in hits and "notes" in hits
+
+
+def test_a_company_named_like_a_script_tag_is_escaped_in_the_palette(
+    client, conn
+) -> None:
+    db.upsert_company(
+        conn, {"uid": "CHE-EVIL", "name": '<script>alert("x")</script> SA',
+               "canton": "GE", "method": "zefix"})
+    conn.commit()
+    hits = client.get("/find?q=script").text
+    assert "<script>alert" not in hits
+
+
+def test_the_ledgers_render_and_filter(client) -> None:
+    """Quotes and invoices had no index at all: they were reachable only from
+    the client they belonged to."""
+    assert client.get("/quotes").status_code == 200
+    assert client.get("/invoices").status_code == 200
+    fragment = client.get("/quotes?status=sent", headers={"HX-Request": "true"})
+    assert fragment.status_code == 200
+    assert "<header>" not in fragment.text
+    assert 'id="ledger"' in fragment.text
 
 
 def test_the_console_script_is_served_by_the_application_not_a_cdn(client) -> None:

@@ -48,7 +48,7 @@ from ..config import Settings, load_settings
 from ..sources import geoadmin
 from ..sources import mail as mail_source
 from ..stages import advise, geocode, mail as mail_stage, match, prep, source
-from . import assets
+from . import assets, ui
 from . import board as board_view
 from . import clients as clients_view
 from . import mail_page as mail_view
@@ -91,14 +91,27 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         # console behind whatever a stage is writing.
         return db.open_db(settings.database_url)
 
-    def shell(body: str) -> HTMLResponse:
+    # The modules this deployment actually has, resolved once. The header is
+    # built from it, so turning `sales` off in arpenteur.toml removes Quotes
+    # and Invoices from every page rather than leaving links to a schema that
+    # is no longer there.
+    registry = module_registry.load(
+        getattr(settings, "modules", None) or module_registry.DEFAULT
+    )
+    app.state.registry = registry
+    enabled = set(registry.by_name)
+
+    def at(here: str = "") -> render.Chrome:
+        """The header, as seen from one section of the console."""
+        return render.Chrome.of(registry, settings.territory.describe(), here)
+
+    def shell(body: str, here: str = "") -> HTMLResponse:
         # The score breakdown's own rules travel with the shell rather than
         # with the panel: a <style> block inside the body would have to survive
         # an f-string, and the doubled braces that takes reach the browser and
         # kill the whole stylesheet. See `render.page`.
         return HTMLResponse(
-            render.page("arpenteur", body, settings.territory.describe(),
-                        css=score_view.STYLES)
+            render.page("arpenteur", body, at(here), css=score_view.STYLES)
         )
 
     # --- the company list -----------------------------------------------------
@@ -125,13 +138,21 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                 )
                 + f'<div id="list">{render.company_table(rows, total)}</div>'
             )
-            return shell(body)
+            return shell(body, "/")
         finally:
             conn.close()
 
     @app.get("/companies", response_class=HTMLResponse)
     def companies(request: Request) -> HTMLResponse:
-        """The filter's HTMX target: the table alone, no page furniture."""
+        """The filter's HTMX target: the table alone, no page furniture.
+
+        It also names the address the browser should be showing. The filter
+        fetches this route, but the page that renders the same result whole is
+        `/`, so pushing this URL would put something in the bar that answers
+        with a bare fragment when anybody opens it. `HX-Push-Url` is how the
+        server says where the reader actually is, which is what makes a
+        filtered list something you can send to somebody.
+        """
         conn = connect()
         try:
             args = request.query_params
@@ -140,8 +161,10 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                 segment=args.get("segment", ""), band=args.get("band", ""),
                 state=args.get("state", ""), stage=args.get("stage", ""),
             )
+            query = str(request.url.query or "")
             return HTMLResponse(
-                f'<div id="list">{render.company_table(rows, total)}</div>'
+                f'<div id="list">{render.company_table(rows, total)}</div>',
+                headers={"HX-Push-Url": f"/?{query}" if query else "/"},
             )
         finally:
             conn.close()
@@ -197,7 +220,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                     )
                 ),
             )
-            return shell(body)
+            return shell(body, "/")
         finally:
             conn.close()
 
@@ -338,7 +361,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                         back=str(request.url.query or ""),
                         note=args.get("note", ""),
                     ),
-                    settings.territory.describe(),
+                    at("/board"),
                 )
             )
         finally:
@@ -419,7 +442,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                         min_boards=min_boards,
                         counts=scout_store.party_counts(conn),
                     ),
-                    settings.territory.describe(),
+                    at("/people"),
                 )
             )
         finally:
@@ -439,7 +462,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                         scout_store.roles_for_party(conn, party_id),
                         also_named=scout_store.same_name_parties(conn, party_id),
                     ),
-                    settings.territory.describe(),
+                    at("/people"),
                 )
             )
         finally:
@@ -468,7 +491,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                 + people_view_page.route_panel(routes, named, target["name"])
             )
             return HTMLResponse(
-                people_view_page.shell(body, settings.territory.describe())
+                people_view_page.shell(body, at("/people"))
             )
         finally:
             conn.close()
@@ -507,7 +530,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                         regions=len(geo_store.regions(conn, "canton")),
                         **chosen,
                     ),
-                    settings.territory.describe(),
+                    at("/map"),
                 )
             )
         finally:
@@ -623,7 +646,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     def runs() -> HTMLResponse:
         conn = connect()
         try:
-            return shell(render.runs_page(db.runs(conn)))
+            return shell(render.runs_page(db.runs(conn)), "/runs")
         finally:
             conn.close()
 
@@ -652,7 +675,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                 return HTMLResponse("<h1>Not found</h1>", status_code=404)
             rows = db.lines_after(conn, run_id, 0)
             after = rows[-1]["seq"] if rows else 0
-            return shell(render.run_page(run, rows, after))
+            return shell(render.run_page(run, rows, after), "/runs")
         finally:
             conn.close()
 
@@ -691,7 +714,6 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         try:
             # Only the stages whose module is installed. A geocode button on a
             # console with no `geo` schema is one that can only fail.
-            enabled = set(getattr(settings, "modules", None) or module_registry.DEFAULT)
             stages = [STAGES[name] for name in ORDER if STAGES[name].module in enabled]
             return shell(
                 render.pipeline_page(
@@ -700,7 +722,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                     options_for(conn, settings),
                     runner.running(),
                     request.query_params.get("note", ""),
-                )
+                ),
+                "/pipeline",
             )
         finally:
             conn.close()
@@ -744,7 +767,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     def client_shell(body: str) -> HTMLResponse:
         return HTMLResponse(
-            clients_view.shell("arpenteur", body, settings.territory.describe())
+            clients_view.shell("arpenteur", body, at("/clients"))
         )
 
     @app.get("/mail", response_class=HTMLResponse)
@@ -760,7 +783,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                     db.clients(conn),
                     clients_store.email_counts(conn),
                     state=state,
-                    territory=settings.territory.describe(),
+                    chrome=at("/mail"),
                     configured=settings.mail.configured,
                 )
             )
@@ -866,6 +889,53 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             conn.close()
         return RedirectResponse(f"/quote/{quote_id}", status_code=303)
 
+    @app.get("/quotes", response_class=HTMLResponse)
+    def quotes_ledger(request: Request) -> HTMLResponse:
+        """What is out, and who has not come back.
+
+        A quote used to be reachable only from the client it belonged to, so
+        this question could be answered by opening every client in turn or by
+        reading an aggregate on the Reports page. Neither is a list you can act
+        on: a total says there is money out and not whose.
+        """
+        args = request.query_params
+        status, q = args.get("status", ""), args.get("q", "")
+        conn = connect()
+        try:
+            rows = sales_store.all_quotes(conn, status=status, q=q)
+            if request.headers.get("HX-Request"):
+                return HTMLResponse(
+                    '<div id="ledger">'
+                    + money_view._quote_table([money_view.quote_row(r) for r in rows])
+                    + "</div>"
+                )
+            return HTMLResponse(money_view.quotes_page(
+                rows, sales_store.pipeline_value(conn),
+                status=status, q=q, chrome=at("/quotes"),
+            ))
+        finally:
+            conn.close()
+
+    @app.get("/invoices", response_class=HTMLResponse)
+    def invoices_ledger(request: Request) -> HTMLResponse:
+        args = request.query_params
+        status, q = args.get("status", ""), args.get("q", "")
+        conn = connect()
+        try:
+            rows = sales_store.all_invoices(conn, status=status, q=q)
+            if request.headers.get("HX-Request"):
+                return HTMLResponse(
+                    '<div id="ledger">'
+                    + money_view._invoice_table(
+                        [money_view.invoice_row(r) for r in rows])
+                    + "</div>"
+                )
+            return HTMLResponse(money_view.invoices_page(
+                rows, status=status, q=q, chrome=at("/invoices"),
+            ))
+        finally:
+            conn.close()
+
     @app.get("/quote/{quote_id}", response_class=HTMLResponse)
     def one_quote(quote_id: int, request: Request) -> HTMLResponse:
         conn = connect()
@@ -885,7 +955,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                 quote, versions, full,
                 sales_store.lines_for(conn, int(shown["id"])),
                 sales_store.services(conn),
-                territory=settings.territory.describe(),
+                chrome=at("/quotes"),
             ))
         finally:
             conn.close()
@@ -1051,7 +1121,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             return HTMLResponse(money_view.invoice_page(
                 invoice, sales_store.invoice_lines(conn, invoice_id),
                 sales_store.services(conn), issuer=settings.issuer,
-                territory=settings.territory.describe(),
+                chrome=at("/invoices"),
             ))
         finally:
             conn.close()
@@ -1214,7 +1284,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             return HTMLResponse(reports_view.reports_page(
                 sections, missing=missing,
                 fresh=analytics_store.freshness(conn),
-                territory=settings.territory.describe(),
+                chrome=at("/reports"),
                 note=request.query_params.get("note", ""),
             ))
         finally:
@@ -1505,7 +1575,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                         note=args.get("note", ""),
                         projects=clients_store.projects_for(conn, client_id),
                     ),
-                    settings.territory.describe(),
+                    at("/clients"),
                 )
             )
         finally:
@@ -1603,7 +1673,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             return HTMLResponse(
                 notes_view.shell(
                     notes_view.one_note(client, company, row),
-                    settings.territory.describe(),
+                    at("/clients"),
                 )
             )
         finally:
@@ -1662,7 +1732,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     def dossier_shell(body: str) -> HTMLResponse:
         return HTMLResponse(
-            dossier_view.shell(body, settings.territory.describe())
+            dossier_view.shell(body, at("/clients"))
         )
 
     @app.get("/client/{client_id}/dossier", response_class=HTMLResponse)
@@ -1872,7 +1942,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                         live.llm.prep_effort,
                         request.query_params.get("note", ""),
                     ),
-                    settings.territory.describe(),
+                    at("/clients"),
                 )
             )
         finally:
@@ -2182,6 +2252,95 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             )
         (settings.root / "campaign.md").write_text(campaign, encoding="utf-8")
         return RedirectResponse("/settings", status_code=303)
+
+    @app.get("/find", response_class=HTMLResponse)
+    def find(request: Request) -> HTMLResponse:
+        """Everything with a name, from one box.
+
+        Eighty-seven routes hang off eleven links, so most of this console is
+        reachable only by knowing which page a thing lives under. That is fine
+        while you built it and useless to anybody else.
+
+        Only the modules that are installed are searched, and each result says
+        what kind of thing it is: a code like Q-2026-004 and a client code look
+        alike, and a list that does not distinguish them is a list you have to
+        click to read.
+        """
+        q = request.query_params.get("q", "").strip()
+        if len(q) < 2:
+            return HTMLResponse(_palette_places(q))
+        conn = connect()
+        try:
+            # (heading, what one of them is, results). The singular is stated
+            # rather than derived from the heading: "Companies"[:-1] is
+            # "Companie", and a label nobody proof-read is how a tool starts
+            # looking unfinished.
+            groups: list[tuple[str, str, list[tuple[str, str, str]]]] = []
+
+            companies, _total = scout_store.search_companies(conn, q=q, limit=6)
+            groups.append(("Companies", "company", [
+                (f"/company/{r['id']}", r["name"], r["canton"] or "")
+                for r in companies
+            ]))
+
+            if registry.has("clients"):
+                groups.append(("Clients", "client", [
+                    (f"/client/{r['id']}", r["name"] or r["code"], r["code"])
+                    for r in clients_store.search_clients(conn, q, limit=6)
+                ]))
+            if registry.has("sales"):
+                groups.append(("Quotes", "quote", [
+                    (f"/quote/{r['id']}", r["code"], r["company_name"])
+                    for r in sales_store.all_quotes(conn, q=q, limit=5)
+                ]))
+                groups.append(("Invoices", "invoice", [
+                    (f"/invoice/{r['id']}", r["number"], r["company_name"])
+                    for r in sales_store.all_invoices(conn, q=q, limit=5)
+                ]))
+
+            groups.append(("Pages", "page", [
+                (item.href, item.label, "")
+                for item in at().nav if q.lower() in item.label.lower()
+            ]))
+            return HTMLResponse(_palette_hits(groups, q))
+        finally:
+            conn.close()
+
+    def _palette_places(q: str) -> str:
+        """Before anything is typed: where you can go, not nothing at all.
+
+        An empty palette that says nothing teaches nobody what it is for.
+        """
+        hits = "".join(
+            f'<a class="hit" href="{ui.esc(item.href)}">'
+            f'<span class="kind">page</span><span>{ui.esc(item.label)}</span></a>'
+            for item in at().nav
+        )
+        return f"<h4>Go to</h4>{hits}"
+
+    def _palette_hits(
+        groups: list[tuple[str, str, list[tuple[str, str, str]]]], q: str
+    ) -> str:
+        out = []
+        for title, kind, items in groups:
+            if not items:
+                continue
+            out.append(f"<h4>{ui.esc(title)}</h4>")
+            for href, label, why in items:
+                out.append(
+                    f'<a class="hit" href="{ui.esc(href)}">'
+                    f'<span class="kind">{ui.esc(kind)}</span>'
+                    f"<span>{ui.esc(label)}</span>"
+                    + (f'<span class="why">{ui.esc(why)}</span>' if why else "")
+                    + "</a>"
+                )
+        if not out:
+            return (
+                f'<p class="empty" style="margin:1rem">Nothing matches '
+                f"{ui.esc(q)!s}. This searches names, codes and numbers, not "
+                "the text of notes or documents.</p>"
+            )
+        return "".join(out)
 
     @app.get("/static/console.{digest}.js")
     def console_js(digest: str) -> PlainTextResponse:

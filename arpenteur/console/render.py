@@ -13,8 +13,10 @@ register and notes are typed by hand, so neither is trusted: a company called
 from __future__ import annotations
 
 import json
+from dataclasses import dataclass, replace
 from typing import Any, Iterable
 
+from ..kernel.modules import Nav
 from .assets import CONSOLE_JS_URL
 from .ui import esc
 
@@ -303,38 +305,96 @@ STYLESHEET = """
 
 FOOT = "</main></body></html>"
 
-# The primary navigation. Still a constant here; the module registry that is
-# meant to compose it is wired in the next step, and moving it into a function
-# first is what makes that a change to one place.
-NAV = (
-    ("/clients", "Clients"),
-    ("/mail", "Mail"),
-    ("/calendar", "Calendar"),
-    ("", ""),
-    ("/", "Survey"),
-    ("/board", "Board"),
-    ("/people", "People"),
-    ("/map", "Map"),
-    ("/reports", "Reports"),
-    ("/pipeline", "Operations"),
-    ("/runs", "History"),
-    ("/settings", "Settings"),
+# The console's own pages: the ones that belong to no module because they are
+# about all of them. Operations runs whatever stages are installed, History is
+# every run, Settings configures the lot. Everything else in the header is
+# contributed by a module and disappears with it.
+SHELL_NAV: tuple[Nav, ...] = (
+    Nav("Operations", "/pipeline", group="system", order=310),
+    Nav("History", "/runs", group="system", order=320),
+    Nav("Settings", "/settings", group="system", order=330),
 )
 
 
-def _nav(here: str = "") -> str:
-    out = []
-    for href, label in NAV:
-        if not href:
+@dataclass(frozen=True)
+class Chrome:
+    """What a page needs from the application in order to draw its furniture.
+
+    This replaces the bare `territory` string every page function used to take.
+    Two things had to reach the shell that a string could not carry: which
+    modules are installed, so the header lists what this deployment actually
+    has rather than what the source happens to mention, and which page you are
+    on, so the header can say so.
+
+    Frozen, and `at()` returns a new one. A request-scoped value that pages
+    mutate is a value that leaks between requests the first time somebody adds
+    a cache.
+    """
+
+    territory: str = ""
+    nav: tuple[Nav, ...] = ()
+    here: str = ""
+
+    def at(self, here: str) -> "Chrome":
+        return replace(self, here=here)
+
+    @classmethod
+    def of(cls, registry: Any, territory: str = "", here: str = "") -> "Chrome":
+        """The header this deployment has, from the modules it has enabled.
+
+        Sorted by `order` across modules rather than by module, so the header
+        reads as a sequence of places rather than as a list of packages: Mail
+        sits next to Clients because that is where somebody looks for it, not
+        because they happen to ship together.
+        """
+        items = tuple(registry.navigation()) + SHELL_NAV
+        return cls(
+            territory=territory,
+            nav=tuple(sorted(items, key=lambda n: (n.order, n.label))),
+            here=here,
+        )
+
+
+def _nav(chrome: Chrome) -> str:
+    """The header links, with a rule between groups and one marked as here.
+
+    `aria-current` rather than a colour alone. "Which of these am I on" is a
+    question, and a shade of red is not an answer for everybody. The console
+    styled `header a.on` from the beginning and never once applied it.
+    """
+    out: list[str] = []
+    group = ""
+    for item in chrome.nav:
+        if group and item.group != group:
             out.append('<span class="sep" aria-hidden="true">|</span>')
-            continue
-        current = ' aria-current="page"' if href == here else ""
-        out.append(f'<a href="{esc(href)}"{current}>{esc(label)}</a>')
+        group = item.group
+        current = ' aria-current="page"' if item.href == chrome.here else ""
+        out.append(f'<a href="{esc(item.href)}"{current}>{esc(item.label)}</a>')
     return f'<nav aria-label="Sections">{"".join(out)}</nav>'
 
 
+# The palette. A dialog rather than a floating div: the top layer, the backdrop,
+# the escape key and the focus trap are all things the element does and all
+# things a div would have to be given by hand and would get subtly wrong.
+#
+# It is in the shell rather than on a page because the point of it is to be
+# reachable from anywhere, and a search you have to navigate to has not saved
+# anybody the navigation.
+PALETTE = """
+<dialog id="palette" class="palette" aria-label="Find anything">
+  <form onsubmit="return false">
+    <input name="q" type="search" autocomplete="off" placeholder="Find a company, a client, a quote, a page"
+           hx-get="/find" hx-trigger="keyup changed delay:180ms, search"
+           hx-target="#palette-results" aria-label="Search"
+           aria-controls="palette-results">
+  </form>
+  <div id="palette-results" class="hits"></div>
+</dialog>
+"""
+
+
 def page(
-    title: str, body: str, territory: str = "", css: str = "", here: str = "",
+    title: str, body: str, chrome: Chrome | str | None = None, css: str = "",
 ) -> str:
     """The shell, with a section's own stylesheet in its own cascade layer.
 
@@ -351,7 +411,15 @@ def page(
     `css` is wrapped in `@layer page`, which is declared last, so a page's own
     rules beat the components without having to out-specify them and a
     component can be restyled here without auditing fourteen files.
+
+    A bare string is still accepted where a `Chrome` is expected, and means the
+    territory with no navigation. That is for tests and for anything rendering
+    a page outside the application, which has no registry to ask.
     """
+    if chrome is None:
+        chrome = Chrome()
+    elif isinstance(chrome, str):
+        chrome = Chrome(territory=chrome)
     layer = f"@layer page {{\n{css}\n}}" if css else ""
     return (
         "<!doctype html>\n"
@@ -365,9 +433,14 @@ def page(
         '<a class="skip" href="#main">Skip to the content</a>\n'
         "<header>\n"
         '  <span class="brand">ARPENTEUR</span>\n'
-        f"  {_nav(here)}\n"
-        f'  <span class="where"><span class="dim small">{esc(territory)}</span></span>\n'
-        '</header><main id="main">\n'
+        f"  {_nav(chrome)}\n"
+        '  <span class="where">'
+        '<button type="button" data-palette-open class="kbd" '
+        'aria-label="Find anything. Shortcut: control K">&#8984;K find</button>'
+        f'<span class="dim small">{esc(chrome.territory)}</span></span>\n'
+        "</header>\n"
+        f"{PALETTE}"
+        '<main id="main">\n'
         + body
         + FOOT
     )
@@ -513,8 +586,19 @@ def filter_form(
         + f">{esc(label)}</option>"
         for value, label in STAGE_FILTERS
     )
+    # The address bar used to still say `/` after six controls had been set, so
+    # a filtered list could not be bookmarked, sent to anybody, or returned to
+    # with the back button: the only way to share "the high-fit unresearched
+    # ones in Vaud" was to describe it in words.
+    #
+    # The URL is pushed by the route rather than by `hx-push-url="true"` here.
+    # This form fetches `/companies`, which serves the table alone, and pushing
+    # that would put an address in the bar that answers with a bare fragment
+    # when anybody opens it. The route sends `HX-Push-Url` naming `/` with the
+    # same query, which is the page that renders it whole.
     return (
-        '<form class="filters" hx-get="/companies" hx-target="#list" hx-trigger="submit, change">'
+        '<form class="filters" hx-get="/companies" hx-target="#list"'
+        ' hx-trigger="submit, change">'
         '<div class="ctl"><label>Search</label>'
         f'<input name="q" value="{esc(q)}" placeholder="Name, or CHE164075515"></div>'
         f'<div class="ctl"><label>Canton</label><select name="canton">'

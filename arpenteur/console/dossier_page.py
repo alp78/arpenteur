@@ -75,10 +75,10 @@ table.price td.none { color:#8a3a2c; font-size:.85rem; }
 """
 
 
-def shell(body: str, territory: str = "") -> str:
+def shell(body: str, chrome: Any = None) -> str:
     """This page borrows the client section's furniture, so it takes its
     stylesheet too rather than restating the breadcrumbs and the code chip."""
-    return page("arpenteur", body, territory, css=CLIENT_STYLES + STYLES)
+    return page("arpenteur", body, chrome, css=CLIENT_STYLES + STYLES)
 
 
 def _money(value: Any, currency: str) -> str:

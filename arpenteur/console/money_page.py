@@ -22,8 +22,10 @@ transmits anything.
 
 from __future__ import annotations
 
+from datetime import date
 from typing import Any
 
+from . import ui
 from ..config import IssuerConfig
 from ..kernel.db import Row
 from ..modules.sales import money
@@ -138,6 +140,144 @@ def state_tag(state: str) -> str:
     return f'<span class="state {esc(state)}">{esc(state.replace("_", " "))}</span>'
 
 
+# --- the ledgers -----------------------------------------------------------------
+#
+# A quote and an invoice were reachable only from the client they belong to.
+# So "what is out and unanswered" and "who has not paid" could be asked only by
+# opening every client in turn and remembering, or through the Reports page,
+# which aggregates and therefore cannot be acted on: a total tells you there is
+# 14'200 francs outstanding and not whose.
+
+QUOTE_STATES = ("draft", "sent", "accepted", "declined", "expired", "withdrawn")
+INVOICE_STATES = ("draft", "issued", "part_paid", "paid", "overdue",
+                  "credited", "cancelled")
+
+
+def quotes_page(
+    quotes: list[Row], totals: list[Row], *, status: str = "", q: str = "",
+    chrome: Any = None,
+) -> str:
+    rows = [quote_row(row) for row in quotes]
+    summary = "".join(
+        ui.stat(f"{_num(t['total'])}", f"{t['status']} ({t['n']})")
+        for t in totals
+    )
+    body = [
+        "<h1>Quotes</h1>",
+        '<p class="lede">Everything proposed, whoever it was proposed to. The '
+        "money is the latest version of each quote, because that is the one the "
+        "client is holding.</p>",
+        f'<div class="acts">{summary}</div>' if summary else "",
+        ui.toolbar(
+            ui.text_field("q", "Search", value=q,
+                          placeholder="A code, a client, a company")
+            + ui.select_field("status", "State", QUOTE_STATES, chosen=status,
+                              blank="Any state"),
+            action="/quotes", target="#ledger", push=True,
+        ),
+        f'<div id="ledger">{_quote_table(rows)}</div>',
+    ]
+    return page("Quotes", "".join(body), chrome, css=STYLES)
+
+
+def quote_row(row: Row) -> str:
+    """One quote, as the page draws it and as the filter redraws it.
+
+    One function rather than two matching string literals: the filter swaps the
+    table in place, so a column added here and forgotten there gives a table
+    that changes shape when somebody types.
+    """
+    late = bool(row["valid_until"]) and (
+        str(row["valid_until"])[:10] < date.today().isoformat()
+        and row["status"] in ("sent", "draft")
+    )
+    return (
+        f"<tr><td><a href='/quote/{row['id']}'>{esc(row['code'])}</a>"
+        f"<div class='dim small'>v{row['versions'] or 1}</div></td>"
+        f"<td><a href='/client/{row['client_id']}'>{esc(row['company_name'])}</a>"
+        f"<div class='dim small'>{esc(row['client_code'])}</div></td>"
+        f"<td>{state_tag(row['status'])}</td>"
+        f"<td class='n'>{_num(row['total'])}</td>"
+        f"<td class='small'>{_day(row['sent_at']) if row['sent_at'] else '&mdash;'}</td>"
+        f"<td class='small{' state-error' if late else ''}'>"
+        f"{_day(row['valid_until']) if row['valid_until'] else '&mdash;'}"
+        + ("<div class='dim'>expired</div>" if late else "")
+        + "</td></tr>"
+    )
+
+
+def _quote_table(rows: list[str]) -> str:
+    return ui.table(
+        ["quote", "client", "state", "total", "sent", "valid until"],
+        rows, caption="Quotes, newest first", numeric=["total"],
+        empty_text="No quote matches. Quotes are raised from a client's page.",
+    )
+
+
+def invoices_page(
+    invoices: list[Row], *, status: str = "", q: str = "", chrome: Any = None,
+) -> str:
+    rows = [invoice_row(row) for row in invoices]
+    owed_total = sum(
+        float(r["owed"] or 0) for r in invoices
+        if r["status"] in ("issued", "part_paid", "overdue")
+    )
+    body = [
+        "<h1>Invoices</h1>",
+        '<p class="lede">The ledger: drafts, credit notes and settled ones '
+        'included. "Was that ever raised" gets asked at least as often as '
+        '"who has not paid".</p>',
+        f'<div class="acts">{ui.stat(_num(owed_total), "still owed", emphasis=True)}'
+        f'{ui.stat(len(invoices), "shown")}</div>',
+        ui.toolbar(
+            ui.text_field("q", "Search", value=q,
+                          placeholder="A number, a client, a company")
+            + ui.select_field("status", "State", INVOICE_STATES, chosen=status,
+                              blank="Any state"),
+            action="/invoices", target="#ledger", push=True,
+        ),
+        f'<div id="ledger">{_invoice_table(rows)}</div>',
+    ]
+    return page("Invoices", "".join(body), chrome, css=STYLES)
+
+
+def invoice_row(row: Row) -> str:
+    """One invoice, drawn once for the page and the filter alike.
+
+    Late is a state and not just a date: a credited or cancelled invoice with a
+    due date in the past is not owing anything, and colouring it red would send
+    somebody chasing a client who paid.
+    """
+    owed = row["owed"]
+    late = (
+        row["days_late"] is not None
+        and int(row["days_late"]) > 0
+        and row["status"] in ("issued", "part_paid", "overdue")
+    )
+    return (
+        f"<tr><td><a href='/invoice/{row['id']}'>{esc(row['number'])}</a></td>"
+        f"<td><a href='/client/{row['client_id']}'>{esc(row['company_name'])}</a>"
+        f"<div class='dim small'>{esc(row['client_code'])}</div></td>"
+        f"<td>{state_tag(row['status'])}</td>"
+        f"<td class='n'>{_num(row['gross_total'])}</td>"
+        f"<td class='n'>{_num(owed) if owed and float(owed) else '&mdash;'}</td>"
+        f"<td class='small'>{_day(row['issued_on']) if row['issued_on'] else '&mdash;'}</td>"
+        f"<td class='small{' state-error' if late else ''}'>"
+        f"{_day(row['due_on']) if row['due_on'] else '&mdash;'}"
+        + (f"<div class='dim'>{int(row['days_late'])} days late</div>" if late else "")
+        + "</td></tr>"
+    )
+
+
+def _invoice_table(rows: list[str]) -> str:
+    return ui.table(
+        ["invoice", "client", "state", "total", "owed", "issued", "due"],
+        rows, caption="Invoices, newest first", numeric=["total", "owed"],
+        empty_text="No invoice matches. Invoices are raised from a client's "
+                   "page or from an accepted quote.",
+    )
+
+
 # --- the quote on screen ---------------------------------------------------------
 
 
@@ -230,7 +370,7 @@ def _totals_rows(row: Row, *, columns: int) -> str:
 
 def quote_page(
     quote: Row, versions: list[Row], shown: Row, lines: list[Row],
-    services: list[Row], *, territory: str = "",
+    services: list[Row], *, chrome: Any = None,
 ) -> str:
     frozen = shown["sent_at"] is not None
     tabs = "".join(
@@ -325,12 +465,12 @@ def quote_page(
         body.append("</div>")
 
     body.append(f'<p><a href="/quote/{quote["id"]}/print">Print this version</a></p>')
-    return page(quote["code"], "".join(body), territory=territory, css=STYLES)
+    return page(quote["code"], "".join(body), chrome, css=STYLES)
 
 
 def invoice_page(
     invoice: Row, lines: list[Row], services: list[Row], *,
-    issuer: IssuerConfig, territory: str = "",
+    issuer: IssuerConfig, chrome: Any = None,
 ) -> str:
     draft = invoice["status"] == "draft"
     body = [
@@ -412,7 +552,7 @@ def invoice_page(
             )
     body.append(f'<p><a href="/invoice/{invoice["id"]}/print">Print</a></p>')
     return page(invoice["number"] or "Draft invoice", "".join(body),
-                territory=territory, css=STYLES)
+                chrome, css=STYLES)
 
 
 # --- on paper ---------------------------------------------------------------------

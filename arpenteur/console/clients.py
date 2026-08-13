@@ -22,6 +22,7 @@ from __future__ import annotations
 
 import calendar as calmod
 from datetime import date, timedelta
+from typing import Any
 
 from ..kernel.db import Row
 from .render import esc, page
@@ -120,9 +121,9 @@ details.del .hint { flex-basis:100%; }
 """
 
 
-def shell(title: str, body: str, territory: str = "") -> str:
+def shell(title: str, body: str, chrome: Any = None) -> str:
     """The ordinary page shell plus the styles this section needs."""
-    return page(title, body, territory, css=STYLES)
+    return page(title, body, chrome, css=STYLES)
 
 
 def _badge(value: str | None) -> str:

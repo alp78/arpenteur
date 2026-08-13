@@ -15,7 +15,7 @@ scout untouched, because nothing in `core` or `intel` refers to it.
 
 from __future__ import annotations
 
-from ...kernel.modules import Module
+from ...kernel.modules import Module, Nav
 
 MODULE = Module(
     name="clients",
@@ -27,4 +27,9 @@ MODULE = Module(
     ),
     requires=("scout",),
     schemas=("crm",),
+    nav=(
+        Nav("Clients", "/clients", group="work", order=10),
+        Nav("Mail", "/mail", group="work", order=20),
+        Nav("Calendar", "/calendar", group="work", order=30),
+    ),
 )

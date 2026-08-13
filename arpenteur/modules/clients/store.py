@@ -164,6 +164,21 @@ def clients_by_company(conn: Connection, company_ids: list[int]) -> dict[int, Ro
     }
 
 
+def search_clients(conn: Connection, q: str, *, limit: int = 10) -> list[Row]:
+    """Clients by their own code or by the company's name.
+
+    Both, because a client is referred to by whichever of the two the person
+    speaking happens to hold: the code on a quote, the name in a conversation.
+    """
+    return conn.execute(
+        "SELECT c.id, c.code, c.status, co.name, co.canton"
+        "  FROM crm.client c JOIN core.company co ON co.id = c.company_id"
+        " WHERE c.code ILIKE %s OR unaccent(co.name) ILIKE unaccent(%s)"
+        " ORDER BY co.name LIMIT %s",
+        (f"%{q}%", f"%{q}%", limit),
+    ).fetchall()
+
+
 def clients(conn: Connection, *, status: str = "") -> list[Row]:
     """The portfolio, with the numbers that say whether anything is adrift."""
     where = "WHERE c.status = %s" if status else ""
