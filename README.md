@@ -656,8 +656,14 @@ question, and its `origin`, `rank` and `weight` are indistinguishable from the
 first's. So each answer is compared with what was asked: the postcode must
 agree or nothing is stored, and a point is called an address only when the
 street and the house number are in the answer too. A marker placed on a town is
-drawn hollow and says so when clicked. On the first live run of 166 Geneva
-companies, 159 landed on a door, 2 on a street and 5 on a town only.
+drawn hollow and says so when clicked.
+
+Across 500 Geneva companies: 469 landed on a door, 15 on a street, 9 on a town
+only. Five got no point at all, and four of those are companies whose
+registered address reads `ohne Domizil-sans domicile`, which is the register
+saying they have none. That string is recognised, so the stage reports what the
+register said rather than what this tool failed to do, and spends no request
+finding out.
 
 Both the base map and the geocoder are swisstopo, published as open government
 data on the single condition that the source is named, which the page does.
