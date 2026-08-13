@@ -816,7 +816,7 @@ def resolve_parties(conn: Connection) -> dict[str, int]:
     conn.execute("TRUNCATE core.party RESTART IDENTITY CASCADE")
     rows = conn.execute(
         "SELECT id, company_id, full_name, role, origin, domicile, signature,"
-        "       last_seen_date, source_url, method"
+        "       first_seen_date, last_seen_date, left_date, source_url, method"
         "  FROM core.person ORDER BY full_name, company_id, id"
     ).fetchall()
 
@@ -873,7 +873,10 @@ def resolve_parties(conn: Connection) -> dict[str, int]:
         spellings = Counter(row["full_name"] for row in members)
         best = max(spellings.items(), key=lambda item: (item[1], len(item[0])))[0]
         domicile = next(
-            (row["domicile"] for row in reversed(members) if row["domicile"]), None
+            (row["domicile"] for row in reversed(members)
+             if row["domicile"] and not row["left_date"]),
+            next((row["domicile"] for row in reversed(members) if row["domicile"]),
+                 None),
         )
         party = conn.execute(
             "INSERT INTO core.party (kind, full_name, sort_name, origin, domicile,"
@@ -890,13 +893,14 @@ def resolve_parties(conn: Connection) -> dict[str, int]:
         for row in members:
             written = conn.execute(
                 "INSERT INTO core.party_role (party_id, company_id, person_id,"
-                " role, signature, valid_to, source_url, method, created_at)"
-                " VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)"
+                " role, signature, valid_from, valid_to, source_url, method,"
+                " created_at)"
+                " VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"
                 " ON CONFLICT (party_id, company_id, role) DO NOTHING"
                 " RETURNING id",
                 (party["id"], row["company_id"], row["id"], row["role"],
-                 row["signature"], None, row["source_url"],
-                 row["method"] or "shab", now()),
+                 row["signature"], row["first_seen_date"], row["left_date"],
+                 row["source_url"], row["method"] or "shab", now()),
             ).fetchone()
             if written:
                 stats["roles"] += 1
@@ -949,7 +953,7 @@ def roles_for_party(conn: Connection, party_id: int) -> list[Row]:
              LEFT JOIN intel.fit f ON f.company_id = c.id
              LEFT JOIN intel.prospect pr ON pr.company_id = c.id
             WHERE r.party_id = %s
-            ORDER BY c.name""",
+            ORDER BY r.valid_to NULLS FIRST, c.name""",
         (party_id,),
     ).fetchall()
 
@@ -963,7 +967,7 @@ def parties_for_company(conn: Connection, company_id: int) -> list[Row]:
              FROM core.party_role r
              JOIN core.party p ON p.id = r.party_id
             WHERE r.company_id = %s
-            ORDER BY boards DESC, p.full_name""",
+            ORDER BY r.valid_to NULLS FIRST, boards DESC, p.full_name""",
         (company_id,),
     ).fetchall()
 
@@ -979,7 +983,12 @@ def board_overlap(conn: Connection, company_id: int, *, limit: int = 40) -> list
         """SELECT other.company_id, c.name, c.uid, c.canton,
                   f.score, f.band, pr.state,
                   array_agg(DISTINCT p.full_name ORDER BY p.full_name) AS people,
-                  COUNT(DISTINCT p.id) AS shared
+                  COUNT(DISTINCT p.id) AS shared,
+                  -- Whether anyone shared is still in post at both ends. A
+                  -- link through two people who have each since left is real
+                  -- history and a poor introduction, and the two must not
+                  -- look the same in a list.
+                  bool_or(mine.valid_to IS NULL AND other.valid_to IS NULL) AS current
              FROM core.party_role mine
              JOIN core.party_role other
                ON other.party_id = mine.party_id AND other.company_id <> mine.company_id
@@ -989,7 +998,7 @@ def board_overlap(conn: Connection, company_id: int, *, limit: int = 40) -> list
              LEFT JOIN intel.prospect pr ON pr.company_id = c.id
             WHERE mine.company_id = %s
             GROUP BY other.company_id, c.name, c.uid, c.canton, f.score, f.band, pr.state
-            ORDER BY shared DESC, f.score DESC NULLS LAST, c.name
+            ORDER BY current DESC, shared DESC, f.score DESC NULLS LAST, c.name
             LIMIT %s""",
         (company_id, limit),
     ).fetchall()
@@ -1206,20 +1215,28 @@ def save_people(
         conn.execute(
             f"""
             INSERT INTO core.person (company_id, full_name, role, origin, domicile,
-                                     signature, last_seen_date, source_url, method,
-                                     fetched_at)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                                     signature, first_seen_date, last_seen_date,
+                                     left_date, source_url, method, fetched_at)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             ON CONFLICT (company_id, full_name, role) DO UPDATE SET
                 {merge}
+                -- The oldest notice naming them wins, and the newest says how
+                -- current it is. LEAST and GREATEST rather than COALESCE:
+                -- these are the ends of a span and a later parse of an older
+                -- notice must be able to push the start back.
+                first_seen_date = LEAST(excluded.first_seen_date,
+                                        person.first_seen_date),
                 last_seen_date = GREATEST(excluded.last_seen_date,
                                           person.last_seen_date),
+                left_date = excluded.left_date,
                 source_url = COALESCE(excluded.source_url, person.source_url),
                 fetched_at = excluded.fetched_at
             """,
             (
                 company_id, item["full_name"], item.get("role"), item.get("origin"),
                 item.get("domicile"), item.get("signature"),
-                item.get("last_seen_date"), item.get("source_url"),
+                item.get("first_seen_date"), item.get("last_seen_date"),
+                item.get("left_date"), item.get("source_url"),
                 item.get("method", "shab"), stamp,
             ),
         )
@@ -1227,9 +1244,20 @@ def save_people(
     return written
 
 
-def people_for(conn: Connection, company_id: int) -> list[Row]:
+def people_for(
+    conn: Connection, company_id: int, *, include_past: bool = False
+) -> list[Row]:
+    """Officers at this company. Current ones unless asked otherwise.
+
+    The default is what every caller that addresses a human wants. Recording
+    someone who left is worse than missing them: a draft would be addressed to
+    the wrong person with the federal register cited as the authority, so the
+    departed have to be asked for by name.
+    """
+    where = "" if include_past else " AND left_date IS NULL"
     return conn.execute(
-        "SELECT * FROM core.person WHERE company_id = %s ORDER BY role",
+        f"SELECT * FROM core.person WHERE company_id = %s{where}"
+        " ORDER BY left_date NULLS FIRST, role",
         (company_id,),
     ).fetchall()
 

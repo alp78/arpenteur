@@ -24,6 +24,7 @@ from arpenteur.config import Territory
 from arpenteur.console.app import create_app
 from arpenteur.kernel.db import Connection
 from arpenteur.modules.scout import store
+from arpenteur.sources import shab
 
 
 @pytest.fixture
@@ -341,3 +342,108 @@ def test_no_route_is_reported_as_an_answer(client, conn) -> None:
     store.resolve_parties(conn)
     conn.commit()
     assert "No route" in client.get("/company/1/route/4").text
+
+
+# --- board history ------------------------------------------------------------
+#
+# The register does not restate unchanged officers on every mutation, so the
+# dates come from walking every notice a company has: the oldest naming a
+# person opens their role and a "n'est plus" notice closes it.
+
+
+def test_a_notice_says_when_a_role_opened(conn) -> None:
+    """"Since 2011" and "appointed six weeks ago" are different conversations,
+    and one date could tell neither apart."""
+    found = shab.from_publications([
+        {"sogc_date": "2019-03-04",
+         "message": "Gérant: Dupont Jean, de France, à Genève."},
+        {"sogc_date": "2024-11-20",
+         "message": "Gérant: Dupont Jean, de France, à Genève."},
+    ])
+    assert found[0].first_seen == "2019-03-04"
+    assert found[0].last_seen == "2024-11-20"
+
+
+def test_a_departure_closes_the_role_rather_than_erasing_it(conn) -> None:
+    """Board history was being thrown away at parse time. "They worked
+    together at a company neither is at now" is a real link."""
+    found = shab.from_publications(
+        [
+            {"sogc_date": "2019-03-04",
+             "message": "Gérant: Dupont Jean, de France, à Genève."},
+            {"sogc_date": "2023-06-01",
+             "message": "Dupont Jean n'est plus gérant; ses pouvoirs sont radiés."},
+        ],
+        include_past=True,
+    )
+    assert [(o.full_name, o.left_on) for o in found] == [("Dupont Jean", "2023-06-01")]
+
+
+def test_somebody_who_left_is_not_returned_by_default(conn) -> None:
+    """Recording a departed officer is worse than missing them: a draft would
+    be addressed to the wrong person, citing the federal register."""
+    notices = [
+        {"sogc_date": "2019-03-04",
+         "message": "Gérant: Dupont Jean, de France, à Genève."},
+        {"sogc_date": "2023-06-01",
+         "message": "Dupont Jean n'est plus gérant."},
+    ]
+    assert shab.from_publications(notices) == []
+    assert len(shab.from_publications(notices, include_past=True)) == 1
+
+
+def test_a_departure_followed_by_a_reappointment_is_current(conn) -> None:
+    found = shab.from_publications(
+        [
+            {"sogc_date": "2019-03-04", "message": "Gérant: Dupont Jean, de France, à Genève."},
+            {"sogc_date": "2021-06-01", "message": "Dupont Jean n'est plus gérant."},
+            {"sogc_date": "2024-02-02", "message": "Gérant: Dupont Jean, de France, à Genève."},
+        ],
+        include_past=True,
+    )
+    assert [(o.full_name, o.left_on) for o in found] == [("Dupont Jean", None)]
+
+
+def test_the_company_page_shows_current_officers_only(conn) -> None:
+    store.save_people(
+        conn, 1,
+        [{"full_name": "Left Person", "role": "gérant", "first_seen_date": "2019-01-01",
+          "last_seen_date": "2023-01-01", "left_date": "2023-01-01", "method": "shab"},
+         {"full_name": "Here Person", "role": "gérant", "first_seen_date": "2019-01-01",
+          "last_seen_date": "2026-01-01", "left_date": None, "method": "shab"}],
+    )
+    conn.commit()
+    assert [p["full_name"] for p in store.people_for(conn, 1)] == ["Here Person"]
+    assert len(store.people_for(conn, 1, include_past=True)) == 2
+
+
+def test_a_finished_seat_still_makes_an_edge_and_says_so(conn) -> None:
+    """A link through two people who have each since left is real history and
+    a poor introduction. Both are shown, and they must not look the same."""
+    for company_id, left in ((1, "2023-01-01"), (2, "2024-01-01")):
+        store.save_people(
+            conn, company_id,
+            [{"full_name": "Gone Person", "role": "gérant", "origin": "Genève",
+              "first_seen_date": "2019-01-01", "last_seen_date": left,
+              "left_date": left, "method": "shab"}],
+        )
+    conn.commit()
+    store.resolve_parties(conn)
+    conn.commit()
+    overlap = store.board_overlap(conn, 1)
+    assert overlap and overlap[0]["name"] == "Beta Sàrl"
+    assert overlap[0]["current"] is False
+
+
+def test_a_role_carries_its_dates_onto_the_edge(conn) -> None:
+    store.save_people(
+        conn, 1,
+        [{"full_name": "Dupont Jean", "role": "gérant", "origin": "France",
+          "first_seen_date": "2019-03-04", "last_seen_date": "2023-06-01",
+          "left_date": "2023-06-01", "method": "shab"}],
+    )
+    conn.commit()
+    store.resolve_parties(conn)
+    conn.commit()
+    role = store.roles_for_party(conn, store.parties(conn)[0]["id"])[0]
+    assert role["valid_from"] == "2019-03-04" and role["valid_to"] == "2023-06-01"

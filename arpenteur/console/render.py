@@ -118,6 +118,7 @@ details.card summary {{ cursor:pointer; }}
 .state-running {{ color:var(--accent); font-weight:600; }}
 .state-error {{ color:#a3341c; font-weight:600; }}
 .state-done {{ color:var(--dim); }}
+tr.past td {{ color:var(--dim); background:#f7f5f1; }}
 pre.log {{ background:#fff; border:1px solid var(--line); padding:.8rem 1rem; margin:0;
            max-height:70vh; overflow:auto; font-size:.82rem; line-height:1.5;
            white-space:pre-wrap; word-break:break-word; }}
@@ -457,9 +458,14 @@ def company_page(
         # the party table exists: a director on nine boards is a route into
         # nine companies, and a name in a cell is not.
         rows = "".join(
-            f'<tr><td><a href="/party/{o["id"]}">{esc(o["full_name"])}</a></td>'
+            f'<tr class="{"past" if o["valid_to"] else ""}">'
+            f'<td><a href="/party/{o["id"]}">{esc(o["full_name"])}</a>'
+            + ('<span class="dim small"> (left)</span>' if o["valid_to"] else "")
+            + "</td>"
             f"<td>{esc(o['role'] or '')}</td>"
-            f"<td class='small dim'>{esc(o['signature'] or '')}</td>"
+            f"<td class='small dim'>{esc((o['valid_from'] or '')[:10])}"
+            + (f" to {esc((o['valid_to'] or '')[:10])}" if o["valid_to"] else "")
+            + "</td>"
             + (
                 f'<td class="small"><a href="/party/{o["id"]}">'
                 f'{o["boards"] - 1} other board'

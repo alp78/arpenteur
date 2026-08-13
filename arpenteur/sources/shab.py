@@ -36,7 +36,7 @@ from __future__ import annotations
 import html
 import re
 import unicodedata
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from typing import Any, Iterator
 
 # Labels that look like roles but never introduce a person. "Communication aux
@@ -172,6 +172,13 @@ class Officer:
     origin: str | None = None
     domicile: str | None = None
     signature: str | None = None
+    # When the register first and last named them in this role, and the date of
+    # the notice that announced they had gone. Filled by `from_publications`,
+    # which is the only caller that sees more than one notice; a single notice
+    # cannot say when something started.
+    first_seen: str | None = None
+    last_seen: str | None = None
+    left_on: str | None = None
 
     def key(self) -> tuple[str, str]:
         """Identity for deduplication: name and role, accent- and case-folded.
@@ -424,7 +431,9 @@ def officers(message: str) -> list[Officer]:
     return found
 
 
-def from_publications(publications: list[dict[str, Any]]) -> list[Officer]:
+def from_publications(
+    publications: list[dict[str, Any]], *, include_past: bool = False
+) -> list[Officer]:
     """Merge the officers named across a company's notices, newest first.
 
     Notices are processed newest first so the most recent statement of a
@@ -432,6 +441,17 @@ def from_publications(publications: list[dict[str, Any]]) -> list[Officer]:
     old notice is still returned: the register does not restate unchanged
     officers on every mutation, so absence from the latest notice is not
     evidence of departure.
+
+    Each officer comes back with the dates the notices give: the oldest notice
+    naming them in that role, the newest, and — for those who left — the date
+    of the notice that said so. That is what makes this board history rather
+    than a snapshot, and it costs nothing extra because the walk already visits
+    every notice in order.
+
+    `include_past` decides whether the people who have gone come back too. It
+    is off by default and every caller that addresses a human leaves it off:
+    recording a departed officer is worse than missing them, because a draft
+    would then be addressed to somebody who left, citing the federal register.
     """
     ordered = sorted(
         publications,
@@ -439,22 +459,50 @@ def from_publications(publications: list[dict[str, Any]]) -> list[Officer]:
         reverse=True,
     )
     merged: dict[tuple[str, str], Officer] = {}
+    spans: dict[tuple[str, str], list[str | None]] = {}
+    departed: dict[tuple[str, str], str | None] = {}
     # Someone who left is gone from every earlier notice too. Walking newest
     # first and accumulating departures means a 2022 "n'est plus associé"
     # suppresses the 2021 notice that appointed them, without needing to
     # understand the register's full mutation history.
     gone: set[str] = set()
+    # When each departure was announced, taken from the newest notice that
+    # says so. Somebody appointed, gone and appointed again is already current
+    # by the time the older departure is read, so they are not marked.
+    left: dict[str, str | None] = {}
     for publication in ordered:
         message = publication.get("message") or ""
+        stamp = publication.get("sogc_date") or publication.get("sogcDate") or None
         text = plain_text(message)
         for officer in officers(message):
-            if fold(officer.full_name) in gone:
+            key = officer.key()
+            if key in merged:
+                # Walking backwards, so every later sighting is older than the
+                # one before it and the last write is the first appearance.
+                spans[key][0] = stamp or spans[key][0]
                 continue
-            merged.setdefault(officer.key(), officer)
+            merged[key] = officer
+            spans[key] = [stamp, stamp]
+            if fold(officer.full_name) in gone:
+                departed[key] = left.get(fold(officer.full_name))
         # Applied after this notice's own officers, so a notice that both
         # removes and reappoints a person (a role change) keeps them. A name
         # reinstated in this notice is not carried back as departed, because
         # the register removes and re-adds the same person on a role change.
         reinstated = {fold(m.group(1)) for m in REINSTATEMENT.finditer(text)}
+        for name in departures(text) - reinstated:
+            left.setdefault(name, stamp)
         gone |= departures(text) - reinstated
-    return list(merged.values())
+
+    out = []
+    for key, officer in merged.items():
+        first, last = spans[key]
+        if key in departed and not include_past:
+            continue
+        out.append(
+            replace(
+                officer, first_seen=first, last_seen=last,
+                left_on=departed.get(key),
+            )
+        )
+    return out

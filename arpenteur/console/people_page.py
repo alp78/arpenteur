@@ -37,7 +37,23 @@ STYLES = """
 .route { background:#fff; border:1px solid var(--line); padding:.5rem .7rem;
          margin-bottom:.5rem; }
 .route .via { font-size:.8rem; color:var(--dim); margin-top:.2rem; }
+tr.past td { color:var(--dim); background:#f7f5f1; }
+.past-tag { font-size:.7rem; text-transform:uppercase; letter-spacing:.05em;
+            color:var(--dim); }
 """
+
+
+def _span(role: Row) -> str:
+    """How long somebody has held a seat, or when they gave it up.
+
+    "Since 2011" and "appointed six weeks ago" are different conversations,
+    and a table that shows neither reduces both to a name in a cell.
+    """
+    start = (role["valid_from"] or "")[:10]
+    end = (role["valid_to"] or "")[:10]
+    if end:
+        return f'{esc(start)} to {esc(end)}'
+    return f'since {esc(start)}' if start else '<span class="dim">&mdash;</span>' 
 
 # What each resolution method means, said where it is read. A table of parties
 # with no gloss on the method column is a table that gets trusted uniformly.
@@ -145,19 +161,28 @@ def party_page(
     )
 
     rows = "".join(
-        f'<tr><td><a href="/company/{r["company_id"]}">{esc(r["name"])}</a>'
+        f'<tr class="{"past" if r["valid_to"] else ""}">'
+        f'<td><a href="/company/{r["company_id"]}">{esc(r["name"])}</a>'
         f'<div class="dim small">{esc(r["uid"])} &middot; {esc(r["canton"] or "")}</div></td>'
         f'<td class="small">{esc(r["role"] or "")}</td>'
-        f'<td class="small">{esc(r["signature"] or "")}</td>'
+        f'<td class="small">{_span(r)}</td>'
         f"<td>{band(r)}</td>"
         f'<td class="small">{esc(r["state"] or "")}</td></tr>'
         for r in roles
     )
+    ended = sum(1 for r in roles if r["valid_to"])
     return (
         head
         + "<h2>boards</h2>"
-        + "<table><thead><tr><th>company</th><th>role</th><th>signature</th>"
+        + "<table><thead><tr><th>company</th><th>role</th><th>when</th>"
         f"<th>fit</th><th>pipeline</th></tr></thead><tbody>{rows}</tbody></table>"
+        + (
+            f"<p class='dim small'>{ended} of these has ended. A seat somebody "
+            "has left is still a link, and a poor introduction; both are shown "
+            "and the finished ones are greyed.</p>"
+            if ended
+            else ""
+        )
         + (_also_named(also_named) if also_named else "")
     )
 
@@ -197,7 +222,9 @@ def overlap_panel(rows: list[Row], company_id: int) -> str:
     body = "".join(
         f'<tr><td><a href="/company/{r["company_id"]}">{esc(r["name"])}</a>'
         f'<div class="dim small">{esc(r["canton"] or "")}</div></td>'
-        f'<td class="small">{esc(", ".join(r["people"] or []))}</td>'
+        f'<td class="small">{esc(", ".join(r["people"] or []))}'
+        + ("" if r["current"] else '<div class="past-tag">both have left</div>')
+        + "</td>"
         f"<td>{band(r)}</td>"
         f'<td class="small">{esc(r["state"] or "")}</td></tr>'
         for r in rows[:12]

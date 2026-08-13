@@ -665,11 +665,22 @@ parser faults and two write faults came out of that afternoon, and they are why
 `people --reparse` can now withdraw a row and overwrite an attribute rather
 than only add.
 
-From 4'943 officer rows: 3'852 people, of whom 129 sit on more than one board.
-A company page names its officers, says how many other boards each sits on, and
-lists the companies it shares one with. `/company/A/route/B` walks up to four
-hops of shared officers and reports no route as an answer, because a chain
-longer than that is a chain of strangers.
+**Board history, not a snapshot.** Each role carries the date of the oldest
+notice naming the person in it and, where the register says so, the date they
+left. Departed officers used to be dropped at parse time, on the grounds that
+addressing someone who left would be worse than missing them. That reasoning
+stands and is why `left_date` is a column rather than a deletion: `people_for`
+returns current officers unless asked otherwise, so nothing that addresses a
+human sees a departure by accident. What it stops doing is throwing the history
+away, because "they sat together at a company neither is at now" is a real link
+and a poor introduction, and the two must not look the same in a list.
+
+From 5'688 officer rows, of which 745 are seats somebody has since left: 4'440
+people, 176 of them on more than one board. A company page names its officers
+as people, says since when and how many other boards each sits on, and lists
+the companies it shares one with. `/company/A/route/B` walks up to four hops of
+shared officers and reports no route as an answer, because a chain longer than
+that is a chain of strangers.
 
 ### The map
 

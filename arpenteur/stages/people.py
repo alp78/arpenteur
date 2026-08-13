@@ -53,6 +53,7 @@ def run(
         "considered": len(companies),
         "with_people": 0,
         "people": 0,
+        "past": 0,
         "pruned": 0,
     }
     if not companies:
@@ -70,7 +71,9 @@ def run(
         if not publications:
             continue
 
-        officers = shab.from_publications([dict(row) for row in publications])
+        officers = shab.from_publications(
+            [dict(row) for row in publications], include_past=True
+        )
         if not officers:
             # Most notices are address or capital changes naming nobody. Not
             # an error, and not worth logging one line per company.
@@ -85,7 +88,9 @@ def run(
                 "origin": officer.origin,
                 "domicile": officer.domicile,
                 "signature": officer.signature,
-                "last_seen_date": newest,
+                "first_seen_date": officer.first_seen,
+                "last_seen_date": officer.last_seen or newest,
+                "left_date": officer.left_on,
                 "source_url": source,
                 "method": "shab",
             }
@@ -111,7 +116,8 @@ def run(
                 )
 
         stats["with_people"] += 1
-        stats["people"] += len(people)
+        stats["people"] += sum(1 for p in people if not p["left_date"])
+        stats["past"] += sum(1 for p in people if p["left_date"])
 
         if not dry_run and index % 200 == 0:
             conn.commit()
