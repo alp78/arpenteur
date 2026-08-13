@@ -215,6 +215,7 @@ def client_page(
     has_approach: bool = False,
     sites: list[Row] | None = None,
     note: str = "",
+    notes: str = "",
 ) -> str:
     head = (
         f'<p class="crumbs"><a href="/clients">Clients</a> / {esc(client["code"])}</p>'
@@ -226,7 +227,8 @@ def client_page(
         f'client since {esc(client["since"] or "?")} &middot; '
         f'<a href="/company/{company["id"]}">survey record</a></p>'
         + _dossier_strip(
-            client["id"], dossier_filled, dossier_total, documents, has_approach
+            client["id"], dossier_filled, dossier_total, documents, has_approach,
+            notes,
         )
     )
 
@@ -285,7 +287,8 @@ def client_page(
 
 
 def _dossier_strip(
-    client_id: int, filled: int, total: int, documents: int, has_approach: bool
+    client_id: int, filled: int, total: int, documents: int, has_approach: bool,
+    notes: str = "",
 ) -> str:
     """The way in to the dossier, and how much of it exists.
 
@@ -302,6 +305,7 @@ def _dossier_strip(
         '<div class="dossier-strip">'
         f'<a class="go" href="/client/{client_id}/dossier">Dossier and approach</a>'
         f'<a class="go" href="/client/{client_id}/prep">Interview prep</a>'
+        f"{notes}"
         f'<span class="dim small">{state}</span>'
         "<span class='dim small'>What they run, who decides, what is exposed, "
         "the documents they sent, and what to propose. None of it is in the "

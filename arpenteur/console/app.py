@@ -35,6 +35,7 @@ from fastapi.responses import (
 
 from .. import attachments as att
 from .. import attribution, db, dossier
+from .. import markdown as md
 from ..kernel import modules as module_registry
 from ..kernel.db import Connection, Row
 from ..modules.clients import store as clients_store
@@ -46,6 +47,7 @@ from ..stages import advise, geocode, match, prep, source
 from . import board as board_view
 from . import clients as clients_view
 from . import map_page as map_view_page
+from . import notes_page as notes_view
 from . import people_page as people_view_page
 from . import dossier_page as dossier_view
 from . import prep_page as prep_view
@@ -775,6 +777,13 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                     dossier_total=len(dossier.SECTIONS),
                     documents=clients_store.attachment_count(conn, client_id),
                     has_approach=clients_store.has_approach(conn, client_id),
+                    notes=notes_view.strip(
+                        client_id,
+                        clients_store.note_count(conn, client_id),
+                        next(iter(clients_store.notes_for(
+                            conn, client_id, with_body=False, limit=1
+                        )), None),
+                    ),
                     sites=geo_store.establishments_for(conn, client["company_id"]),
                     note=request.query_params.get("note", ""),
                 )
@@ -917,6 +926,182 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             conn.commit()
             target = f"/client/{row['client_id']}" if row else "/clients"
             return RedirectResponse(target, status_code=303)
+        finally:
+            conn.close()
+
+    # --- notes ------------------------------------------------------------------
+    #
+    # The operator's own writing about a client, in Markdown, stored exactly as
+    # typed. HTML is made on the way to a page and never kept: a stored
+    # rendering drifts from its source the first time the source is edited.
+
+    def _tags(raw: str) -> list[str]:
+        return [t.strip() for t in (raw or "").replace(";", ",").split(",") if t.strip()]
+
+    @app.get("/client/{client_id}/notes", response_class=HTMLResponse)
+    def client_notes(client_id: int, request: Request) -> HTMLResponse:
+        conn = connect()
+        try:
+            client, company = _client_rows(conn, client_id)
+            if client is None:
+                return HTMLResponse("<h1>Not found</h1>", status_code=404)
+            args = request.query_params
+            return HTMLResponse(
+                notes_view.shell(
+                    notes_view.notes_page(
+                        client, company,
+                        clients_store.notes_for(conn, client_id, q=args.get("q", "")),
+                        q=args.get("q", ""),
+                        note=args.get("note", ""),
+                        projects=clients_store.projects_for(conn, client_id),
+                    ),
+                    settings.territory.describe(),
+                )
+            )
+        finally:
+            conn.close()
+
+    @app.post("/client/{client_id}/notes")
+    async def add_note(client_id: int, request: Request) -> RedirectResponse:
+        """A note pasted into the form, or a Markdown file uploaded.
+
+        A file keeps its name as the source path, so importing it again updates
+        this note rather than adding a second one. That is the same rule the
+        command line follows, and it is the reason the path is stored at all.
+        """
+        form = await request.form()
+        upload = form.get("file")
+        body = str(form.get("body") or "")
+        source = None
+        if upload is not None and getattr(upload, "filename", ""):
+            raw = await upload.read()
+            try:
+                body = raw.decode("utf-8")
+            except UnicodeDecodeError:
+                return RedirectResponse(
+                    f"/client/{client_id}/notes?note="
+                    + quote(
+                        f"{upload.filename} is not UTF-8 text. Notes are "
+                        "Markdown; a PDF or a Word file belongs under the "
+                        "dossier as a document."
+                    ),
+                    status_code=303,
+                )
+            source = upload.filename
+        if not body.strip():
+            return RedirectResponse(
+                f"/client/{client_id}/notes?note="
+                + quote("Nothing to save: paste some Markdown or choose a file."),
+                status_code=303,
+            )
+        project = str(form.get("project_id") or "").strip()
+        conn = connect()
+        try:
+            note_id, what = clients_store.save_note(
+                conn, client_id,
+                title=md.title_of(body),
+                body=body,
+                source_path=source,
+                project_id=int(project) if project else None,
+                tags=_tags(str(form.get("tags") or "")),
+                digest=md.digest(body),
+            )
+            if what == "created":
+                # A note arriving is part of the record, like a document. The
+                # timeline should be able to answer "when did we write down the
+                # access conditions" without anyone remembering to say so.
+                clients_store.record_interaction(
+                    conn, client_id, kind="note", occurred_at=db.now(),
+                    subject=f"Note: {md.title_of(body)}",
+                    project_id=int(project) if project else None,
+                    author="console",
+                )
+            conn.commit()
+            return RedirectResponse(
+                f"/client/{client_id}/notes#note-{note_id}", status_code=303
+            )
+        finally:
+            conn.close()
+
+    # Declared before /note/{note_id}: routes match in order, and `1.md` is
+    # not an integer, so the other way round every markdown fetch was a 422.
+    @app.get("/note/{note_id}.md", response_class=PlainTextResponse)
+    def note_markdown(note_id: int) -> PlainTextResponse:
+        """The note as it was written.
+
+        A stable URL that is the document rather than a page about it, so an
+        agent asked to read a client has something to fetch, and so a note
+        typed here can be got back out as a file.
+        """
+        conn = connect()
+        try:
+            row = clients_store.note(conn, note_id)
+            if row is None:
+                return PlainTextResponse("Not found", status_code=404)
+            return PlainTextResponse(row["body"], media_type="text/markdown")
+        finally:
+            conn.close()
+
+    @app.get("/note/{note_id}", response_class=HTMLResponse)
+    def one_note(note_id: int) -> HTMLResponse:
+        conn = connect()
+        try:
+            row = clients_store.note(conn, note_id)
+            if row is None:
+                return HTMLResponse("<h1>Not found</h1>", status_code=404)
+            client, company = _client_rows(conn, row["client_id"])
+            return HTMLResponse(
+                notes_view.shell(
+                    notes_view.one_note(client, company, row),
+                    settings.territory.describe(),
+                )
+            )
+        finally:
+            conn.close()
+
+    @app.post("/note/{note_id}")
+    def edit_note(
+        note_id: int, body: str = Form(""), tags: str = Form("")
+    ) -> RedirectResponse:
+        conn = connect()
+        try:
+            row = clients_store.note(conn, note_id)
+            if row is None or not body.strip():
+                return RedirectResponse("/clients", status_code=303)
+            conn.execute(
+                "UPDATE crm.note SET title = %s, body = %s, sha256 = %s,"
+                " tags = %s, updated_at = %s WHERE id = %s",
+                (md.title_of(body), body, md.digest(body), _tags(tags),
+                 db.now(), note_id),
+            )
+            conn.commit()
+            return RedirectResponse(f"/note/{note_id}", status_code=303)
+        finally:
+            conn.close()
+
+    @app.post("/note/{note_id}/pin")
+    def pin_note(note_id: int, pinned: str = Form("1")) -> RedirectResponse:
+        conn = connect()
+        try:
+            client_id = clients_store.set_note_pinned(conn, note_id, pinned == "1")
+            conn.commit()
+            return RedirectResponse(
+                f"/client/{client_id}/notes" if client_id else "/clients",
+                status_code=303,
+            )
+        finally:
+            conn.close()
+
+    @app.post("/note/{note_id}/delete")
+    def remove_note(note_id: int, reason: str = Form("")) -> RedirectResponse:
+        conn = connect()
+        try:
+            client_id = clients_store.delete_note(conn, note_id, reason=reason)
+            conn.commit()
+            return RedirectResponse(
+                f"/client/{client_id}/notes" if client_id else "/clients",
+                status_code=303,
+            )
         finally:
             conn.close()
 

@@ -162,11 +162,11 @@ def build_prompt(
     not vocabulary and there is no reason to put them in front of a second
     model.
     """
-    client, company, sections, projects, papers, officers = advise.gather(
+    client, company, sections, projects, papers, officers, notes = advise.gather(
         conn, client_id
     )
     prompt, read = advise.build_prompt(
-        company, client, sections, projects, papers, officers, ""
+        company, client, sections, projects, papers, officers, "", notes=notes
     )
     read.pop("rate_card", None)
     known = db.known_terms(conn, client_id)

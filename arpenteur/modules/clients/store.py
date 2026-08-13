@@ -472,6 +472,126 @@ def sha_is_orphaned(conn: Connection, digest: str) -> bool:
     ).fetchone()
 
 
+# --- notes --------------------------------------------------------------------
+#
+# The operator's own writing about a client: long-form, revised over weeks,
+# belonging to the engagement rather than to any one day of it. See
+# migrations/0003_note.sql for why this is none of the three tables that
+# already hold text.
+
+
+def save_note(
+    conn: Connection, client_id: int, *, title: str, body: str,
+    source_path: str | None = None, project_id: int | None = None,
+    tags: list[str] | None = None, pinned: bool | None = None,
+    author: str = "console", digest: str = "",
+) -> tuple[int, str]:
+    """Write a note, or update the one that came from the same file.
+
+    Returns its id and what happened: `created`, `updated`, or `unchanged`.
+    The third is the one worth having. These are files edited in an editor and
+    imported again, and an import that reports "updated" for a file nobody
+    touched teaches its user to ignore the word.
+    """
+    fingerprint = digest or ""
+    held = None
+    if source_path:
+        held = conn.execute(
+            "SELECT id, sha256 FROM crm.note WHERE client_id = %s AND source_path = %s",
+            (client_id, source_path),
+        ).fetchone()
+    if held is not None:
+        if held["sha256"] == fingerprint and pinned is None and tags is None:
+            return int(held["id"]), "unchanged"
+        conn.execute(
+            "UPDATE crm.note SET title = %s, body = %s, sha256 = %s,"
+            " project_id = COALESCE(%s, project_id),"
+            " tags = COALESCE(%s, tags), pinned = COALESCE(%s, pinned),"
+            " updated_at = %s WHERE id = %s",
+            (title, body, fingerprint, project_id, tags, pinned, now(), held["id"]),
+        )
+        return int(held["id"]), "updated"
+    created = conn.execute(
+        "INSERT INTO crm.note (client_id, project_id, title, body, format,"
+        " source_path, sha256, tags, pinned, author, created_at, updated_at)"
+        " VALUES (%s, %s, %s, %s, 'markdown', %s, %s, %s, %s, %s, %s, %s)"
+        " RETURNING id",
+        (client_id, project_id, title, body, source_path, fingerprint,
+         tags or [], bool(pinned), author, now(), now()),
+    ).fetchone()
+    return int(created["id"]), "created"
+
+
+def note(conn: Connection, note_id: int) -> Row | None:
+    return conn.execute("SELECT * FROM crm.note WHERE id = %s", (note_id,)).fetchone()
+
+
+def notes_for(
+    conn: Connection, client_id: int, *, q: str = "", tag: str = "",
+    with_body: bool = True, limit: int = 200,
+) -> list[Row]:
+    """A client's notes, pinned first and newest after.
+
+    `with_body` is not a micro-optimisation: the bodies are whole documents and
+    a page that lists forty titles would otherwise read a megabyte to print a
+    few hundred bytes.
+    """
+    columns = "*" if with_body else (
+        "id, client_id, project_id, title, format, source_path, sha256, tags,"
+        " pinned, author, created_at, updated_at, length(body) AS chars"
+    )
+    where = ["client_id = %s"]
+    params: list[Any] = [client_id]
+    if q:
+        where.append(
+            "to_tsvector('french', coalesce(title,'') || ' ' || coalesce(body,''))"
+            " @@ plainto_tsquery('french', %s)"
+        )
+        params.append(q)
+    if tag:
+        where.append("%s = ANY(tags)")
+        params.append(tag)
+    return conn.execute(
+        f"SELECT {columns} FROM crm.note WHERE {' AND '.join(where)}"
+        " ORDER BY pinned DESC, updated_at DESC, id DESC LIMIT %s",
+        params + [limit],
+    ).fetchall()
+
+
+def note_count(conn: Connection, client_id: int) -> int:
+    return conn.execute(
+        "SELECT COUNT(*) AS n FROM crm.note WHERE client_id = %s", (client_id,)
+    ).fetchone()["n"]
+
+
+def set_note_pinned(conn: Connection, note_id: int, pinned: bool) -> int | None:
+    row = conn.execute(
+        "UPDATE crm.note SET pinned = %s, updated_at = updated_at WHERE id = %s"
+        " RETURNING client_id",
+        (pinned, note_id),
+    ).fetchone()
+    return int(row["client_id"]) if row else None
+
+
+def delete_note(
+    conn: Connection, note_id: int, *, reason: str = "", by: str = "console"
+) -> int | None:
+    """Remove a note, and record that it went.
+
+    Same rule as the rest of this schema: what is removed leaves a tombstone
+    naming it, because a file that can be emptied without trace is not a
+    record.
+    """
+    row = conn.execute(
+        "SELECT client_id, title FROM crm.note WHERE id = %s", (note_id,)
+    ).fetchone()
+    if row is None:
+        return None
+    conn.execute("DELETE FROM crm.note WHERE id = %s", (note_id,))
+    _tombstone(conn, row["client_id"], f"note “{row['title']}”", reason, by)
+    return int(row["client_id"])
+
+
 # --- the dossier --------------------------------------------------------------
 
 

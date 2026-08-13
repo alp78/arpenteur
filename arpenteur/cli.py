@@ -7,11 +7,16 @@ stays short, and `arpenteur --help` prints the whole pipeline in one screen.
 from __future__ import annotations
 
 import argparse
+import re
 import sys
+from pathlib import Path
 from typing import Any
 
 from . import attachments as att
-from . import db, dossier
+from . import db, dossier, markdown
+# Notes are new and the storage façade is meant to shrink, so this one reaches
+# for the module store it means rather than growing the shim.
+from .modules.clients import store as clients_store
 from .config import load_settings
 from .stages import (
     advise,
@@ -543,6 +548,22 @@ def cmd_stats(args: argparse.Namespace) -> int:
     return 0
 
 
+def _local_path(given: str) -> Path:
+    """A path as typed, including a Windows one under WSL.
+
+    `C:\\Users\\aperi\\DEV\\note.md` is where the file is as far as its author is
+    concerned, and it is `/mnt/c/Users/aperi/DEV/note.md` as far as this
+    process is concerned. Translating it here costs four lines and removes a
+    step that would otherwise be got wrong at the end of every day.
+    """
+    text = given.strip().strip('"')
+    match = re.match(r"^([A-Za-z]):[\\/](.*)$", text)
+    if match:
+        drive, rest = match.groups()
+        return Path(f"/mnt/{drive.lower()}/" + rest.replace("\\", "/"))
+    return Path(text)
+
+
 def _find_client(conn: Any, reference: str) -> Any:
     """A client by its code, its UID or its name. Any of the three."""
     wanted = reference.strip()
@@ -557,6 +578,84 @@ def _find_client(conn: Any, reference: str) -> Any:
     if not row:
         raise RuntimeError(f"No client matching {reference!r}. Try: arpenteur clients")
     return row[0]
+
+
+def cmd_note(args: argparse.Namespace) -> int:
+    """Notes on a client, in Markdown, from the editor already open.
+
+    `add` takes a path. The path is stored, so running the same command again
+    after editing the file updates that note instead of writing a second one,
+    and an unchanged file says so rather than claiming an update. A Windows
+    path is accepted as typed: this runs under WSL as often as not, and
+    retyping `C:\\Users\\...` as `/mnt/c/Users/...` is a translation the
+    program can do and a person should not have to.
+    """
+    settings = load_settings()
+    conn = db.open_db(settings.database_url)
+    try:
+        client = _find_client(conn, args.client)
+    except RuntimeError as exc:
+        print(f"error: {exc}", file=sys.stderr)
+        return 1
+
+    if args.action == "list":
+        rows = clients_store.notes_for(conn, client["id"], with_body=False)
+        if not rows:
+            print(f"No notes on {client['code']}.")
+        for row in rows:
+            mark = "*" if row["pinned"] else " "
+            stamp = (row["updated_at"] or "")[:10]
+            tags = " ".join(row["tags"] or [])
+            print(f"{mark} {row['id']:>4}  {stamp}  {row['title'][:52]:54} {tags}")
+            if row["source_path"]:
+                print(f"        from {row['source_path']}")
+        conn.close()
+        return 0
+
+    if args.action == "show":
+        row = clients_store.note(conn, int(args.path))
+        if row is None or row["client_id"] != client["id"]:
+            print("error: no such note on that client", file=sys.stderr)
+            return 1
+        print(row["body"])
+        conn.close()
+        return 0
+
+    path = _local_path(args.path)
+    if not path.is_file():
+        print(f"error: no such file: {path}", file=sys.stderr)
+        return 1
+    try:
+        body = path.read_text(encoding="utf-8")
+    except UnicodeDecodeError:
+        print(
+            f"error: {path} is not UTF-8 text. Notes are Markdown; a PDF or a "
+            "Word file belongs under the dossier as a document.",
+            file=sys.stderr,
+        )
+        return 1
+
+    title = args.title or markdown.title_of(body)
+    note_id, what = clients_store.save_note(
+        conn, client["id"], title=title, body=body,
+        source_path=str(args.path), tags=_split(args.tag) or None,
+        pinned=True if args.pin else None, author="cli",
+        digest=markdown.digest(body),
+    )
+    if what == "created":
+        db.record_event(
+            conn, client["id"], kind="note", occurred_at=db.now(),
+            subject=f"Note: {title}", author="cli",
+        )
+    conn.commit()
+    print(
+        f"{what}: note {note_id} on {client['code']} — {title}\n"
+        f"  {len(body):,} characters from {path}"
+    )
+    if what == "unchanged":
+        print("  the file has not changed since it was last imported")
+    conn.close()
+    return 0
 
 
 def cmd_clients(args: argparse.Namespace) -> int:
@@ -598,6 +697,18 @@ def cmd_dossier(args: argparse.Namespace) -> int:
     if client["brief"]:
         print(f"\nStanding brief: {client['brief']}")
     print(f"\n{dossier.as_text(sections)}")
+
+    notes = clients_store.notes_for(conn, client["id"])
+    if notes:
+        # Printed in full, and before the client's own papers. This command
+        # exists so an agent can be pointed at a client without a browser, and
+        # the operator's notes are the part of the file that says what was
+        # decided rather than what was found.
+        print("\n## Your own notes")
+        for item in notes:
+            print(f"\n--- begin note: {item['title']} ---")
+            print(item["body"])
+            print(f"--- end note: {item['title']} ---")
 
     if papers:
         print("\n## Documents held")
@@ -1024,6 +1135,23 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--limit", type=int, help="required for runs over 500 companies")
     p.add_argument("--dry-run", action="store_true", help="list the addresses, ask nothing")
     p.set_defaults(func=cmd_geocode)
+
+    p = sub.add_parser(
+        "note", help="notes on a client, written in Markdown"
+    )
+    p.add_argument("client", help="client code, UID or name")
+    p.add_argument(
+        "action", choices=("add", "list", "show"),
+        help="add a file, list what is held, or print one back",
+    )
+    p.add_argument(
+        "path", nargs="?", default="",
+        help="the .md file for add, the note id for show",
+    )
+    p.add_argument("--title", help="overrides the note's own first heading")
+    p.add_argument("--tag", help="comma separated")
+    p.add_argument("--pin", action="store_true", help="keep it at the top")
+    p.set_defaults(func=cmd_note)
 
     p = sub.add_parser(
         "resolve",

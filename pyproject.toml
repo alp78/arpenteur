@@ -18,6 +18,13 @@ dependencies = [
     # want poppler or MuPDF on the machine.
     "pypdf>=5.1",
     "psycopg[binary,pool]>=3.2",
+    # Notes are written in Markdown, in whatever editor the operator already
+    # uses, and rendered by the console. CommonMark has more corners than it
+    # looks (nested lists above all), and a hand-rolled renderer that gets one
+    # wrong quietly mangles somebody's own writing. This one is pure Python,
+    # needs no build step, and escapes raw HTML by default, which is the
+    # property that matters when the result is put on a page.
+    "markdown-it-py>=3.0",
 ]
 
 [project.scripts]

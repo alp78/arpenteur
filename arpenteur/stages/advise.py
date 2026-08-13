@@ -47,6 +47,7 @@ from .. import db, dossier
 from ..config import Settings
 from ..kernel.db import Connection, Row
 from ..llm import get_provider
+from ..modules.clients import store as clients_store
 
 SYSTEM = """You advise an independent consultant preparing to meet a client. \
 You are given what is known about the client, the documents they sent, and the \
@@ -196,6 +197,7 @@ def build_prompt(
     papers: list[Row],
     officers: list[Row],
     rate_card: str,
+    notes: list[Row] | None = None,
 ) -> tuple[str, dict[str, Any]]:
     """The whole file, and a record of what went into it.
 
@@ -247,9 +249,37 @@ def build_prompt(
     read: dict[str, Any] = {
         "sections": dossier.filled(sections),
         "documents": [],
+        "notes": [],
         "projects": [p["code"] for p in projects],
         "rate_card": bool(rate_card.strip()),
     }
+
+    # Notes go in above the client's own documents, and the prompt says whose
+    # they are. They are the operator's considered writing about this
+    # engagement — what was decided, what the constraints are, what not to say
+    # in the room — and a suggestion that contradicts them is worse than no
+    # suggestion. A document the client sent is evidence; a note is
+    # instruction, and the model has to be able to tell them apart.
+    if notes:
+        lines.append("\nYOUR OWN NOTES ON THIS CLIENT")
+        lines.append("=" * 60)
+        lines.append(
+            "Written by the consultant, in Markdown. These outrank anything "
+            "inferred elsewhere in this file: where a note states a position, "
+            "a constraint or a decision, follow it."
+        )
+        for item in notes:
+            body, cut = att.for_prompt(item["body"])
+            lines.append(f"\n--- {item['title']}")
+            if cut:
+                lines.append(
+                    f"[truncated: first {len(body):,} of {len(item['body']):,} "
+                    "characters.]"
+                )
+            lines.append(body)
+            read["notes"].append(
+                {"title": item["title"], "chars": len(body), "truncated": cut}
+            )
 
     readable = [p for p in papers if (p["text"] or "").strip()]
     if readable:
@@ -292,7 +322,7 @@ def build_prompt(
 def gather(
     conn: Connection, client_id: int
 ) -> tuple[Row, Row, dict[str, Any], list[Row],
-           list[Row], list[Row]]:
+           list[Row], list[Row], list[Row]]:
     client = db.client(conn, client_id)
     if client is None:
         raise RuntimeError(f"No client {client_id}.")
@@ -303,6 +333,7 @@ def gather(
         db.projects_for(conn, client_id),
         db.attachments_for(conn, client_id, with_text=True),
         db.people_for(conn, client["company_id"]),
+        clients_store.notes_for(conn, client_id),
     )
 
 
@@ -315,9 +346,12 @@ def run(
     log: Callable[[str], None] = print,
 ) -> dict[str, Any]:
     """Suggest an approach for one client. One model call, no web access."""
-    client, company, sections, projects, papers, officers = gather(conn, client_id)
+    client, company, sections, projects, papers, officers, notes = gather(
+        conn, client_id
+    )
     prompt, read = build_prompt(
-        company, client, sections, projects, papers, officers, settings.rate_card
+        company, client, sections, projects, papers, officers, settings.rate_card,
+        notes=notes,
     )
     # This is the hardest judgement the tool makes and the one whose output
     # gets repeated out loud to a client, so it carries its own model and
@@ -334,6 +368,7 @@ def run(
         "client": client["code"],
         "sections": len(read["sections"]),
         "documents": len(read["documents"]),
+        "notes": len(read["notes"]),
         "rate_card": read["rate_card"],
         "model": model,
         "effort": effort or "default",
