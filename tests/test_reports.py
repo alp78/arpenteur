@@ -372,6 +372,7 @@ def _app(db_path):
         database_url=db_path,
         territory=Territory(cantons=("GE",), legal_forms=("0107",), name="geneve"),
         segments={},
+        sectors={},
     )))
 
 

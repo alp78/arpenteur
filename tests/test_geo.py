@@ -196,6 +196,7 @@ def settings(db_path: str) -> SimpleNamespace:
         database_url=db_path,
         territory=Territory(cantons=("VD",), legal_forms=("0110",), name="vaud"),
         segments={"ems": "A nursing home."},
+        sectors={"health-care": "Care homes and clinics."},
         # The add-a-site route builds a real polite client before it geocodes,
         # so these have to be here. Without them the route caught its own
         # AttributeError, reported "the geocoder did not answer" and stored the

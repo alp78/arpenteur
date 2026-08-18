@@ -258,7 +258,8 @@ def cmd_profile(args: argparse.Namespace) -> int:
         return 1
     db.finish_run(conn, run_id, stats)
     print(
-        f"classified {stats['classified']} companies, {stats['labels']} labels"
+        f"classified {stats['classified']} companies, "
+        f"{stats['sectors']} sectors, {stats['labels']} segment labels"
         + (" (dry run, nothing written)" if args.dry_run else "")
     )
     conn.close()
@@ -319,6 +320,7 @@ def cmd_enrich(args: argparse.Namespace) -> int:
             uids=_split(args.uid),
             canton=args.canton,
             segment=args.segment,
+            sector=args.sector,
             limit=args.limit,
             refresh=args.refresh,
             dry_run=args.dry_run,
@@ -350,6 +352,7 @@ def cmd_match(args: argparse.Namespace) -> int:
             conn,
             uids=_split(args.uid),
             segment=args.segment,
+            sector=args.sector,
             researched_only=not args.include_unresearched,
             limit=args.limit,
             rescore=args.rescore,
@@ -379,6 +382,7 @@ def cmd_reach(args: argparse.Namespace) -> int:
             conn,
             uids=_split(args.uid),
             segment=args.segment,
+            sector=args.sector,
             band=args.band,
             limit=args.limit,
             refresh=args.refresh,
@@ -621,6 +625,7 @@ def cmd_geocode(args: argparse.Namespace) -> int:
             uids=_split(args.uid),
             canton=args.canton or "",
             segment=args.segment or "",
+            sector=args.sector or "",
             band=args.band or "",
             worked=args.worked,
             limit=args.limit,
@@ -730,9 +735,21 @@ def cmd_stats(args: argparse.Namespace) -> int:
         ).fetchone()
         print(f"  {'searches / fetches':20} {spend['s']:>7} / {spend['f']}")
         emails = conn.execute(
-            "SELECT COUNT(*) FROM core.contact WHERE kind = 'email' AND suppressed = 0"
+            # `NOT suppressed`, not `suppressed = 0`: the column is a boolean
+            # in Postgres and the integer comparison is a SQLite habit that
+            # survived the port. It raised before reaching anything below it,
+            # so every section after this one was unreachable.
+            "SELECT COUNT(*) FROM core.contact WHERE kind = 'email' AND NOT suppressed"
         ).fetchone()[0]
         print(f"  {'usable emails':20} {emails:>7}")
+
+    rows = conn.execute(
+        "SELECT sector, COUNT(*) AS n FROM intel.sector GROUP BY sector ORDER BY n DESC"
+    ).fetchall()
+    if rows:
+        print("\nby sector")
+        for row in rows:
+            print(f"  {row['sector']:20} {row['n']:>7}")
 
     rows = conn.execute(
         "SELECT segment, COUNT(*) AS n FROM intel.segment GROUP BY segment ORDER BY n DESC"
@@ -1185,7 +1202,7 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--dry-run", action="store_true", help="say what would be fetched")
     p.set_defaults(func=cmd_sync)
 
-    p = sub.add_parser("profile", help="sort companies into segments")
+    p = sub.add_parser("profile", help="sort companies into sectors and segments")
     p.add_argument("--limit", type=int)
     p.add_argument("--reclassify", action="store_true", help="include already classified")
     p.add_argument("--dry-run", action="store_true", help="print, write nothing")
@@ -1213,6 +1230,7 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--uid", help="comma separated UIDs, e.g. CHE123...,CHE456...")
     p.add_argument("--canton")
     p.add_argument("--segment", help="only companies carrying this segment")
+    p.add_argument("--sector", help="only companies in this line of business")
     p.add_argument("--limit", type=int, help="required for runs over 200 companies")
     p.add_argument("--refresh", action="store_true", help="re-research companies already done")
     p.add_argument("--dry-run", action="store_true", help="list the shortlist, spend nothing")
@@ -1223,6 +1241,7 @@ def build_parser() -> argparse.ArgumentParser:
     )
     p.add_argument("--uid", help="comma separated UIDs")
     p.add_argument("--segment", help="only companies carrying this segment")
+    p.add_argument("--sector", help="only companies in this line of business")
     p.add_argument(
         "--include-unresearched",
         action="store_true",
@@ -1324,6 +1343,7 @@ def build_parser() -> argparse.ArgumentParser:
     )
     p.add_argument("--uid", help="comma separated UIDs")
     p.add_argument("--segment", help="only companies carrying this segment")
+    p.add_argument("--sector", help="only companies in this line of business")
     p.add_argument("--band", help="only companies whose fit is in this band")
     p.add_argument("--limit", type=int, help="required for runs over 200 companies")
     p.add_argument(
@@ -1339,6 +1359,7 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--uid", help="comma separated UIDs")
     p.add_argument("--canton", help="only companies in this canton")
     p.add_argument("--segment", help="only companies carrying this segment")
+    p.add_argument("--sector", help="only companies in this line of business")
     p.add_argument("--band", help="only companies whose fit is in this band")
     p.add_argument(
         "--worked", action="store_true",

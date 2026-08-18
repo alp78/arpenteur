@@ -33,6 +33,7 @@ def settings(db_path: str) -> SimpleNamespace:
         database_url=db_path,
         territory=Territory(cantons=("GE",), legal_forms=("0106",), name="geneve"),
         segments={},
+        sectors={},
     )
 
 

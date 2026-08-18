@@ -39,6 +39,7 @@ def settings(db_path: str) -> SimpleNamespace:
         database_url=db_path,
         territory=Territory(cantons=("VD",), legal_forms=("0110",), name="vaud"),
         segments={"ems": "A nursing home.", "clinic": "A clinic."},
+        sectors={"health-care": "Care homes and clinics.", "retail": "Shops."},
     )
 
 

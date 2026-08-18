@@ -29,6 +29,7 @@ from arpenteur.console.app import create_app
 from arpenteur.console.runner import Runner, Stage, coerce, check
 
 SEGMENTS = {"sme-owner": "A small owner-run business."}
+SECTORS = {"hospitality": "Restaurants, cafés and hotels."}
 
 
 @pytest.fixture
@@ -37,6 +38,7 @@ def settings(db_path: str) -> SimpleNamespace:
         database_url=db_path,
         territory=Territory(cantons=("GE",), legal_forms=("0107",), name="geneve"),
         segments=SEGMENTS,
+        sectors=SECTORS,
     )
 
 

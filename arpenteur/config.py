@@ -301,6 +301,11 @@ class Settings:
     weights: dict[str, str] = field(default_factory=dict)
     weight_set_name: str = "starting point"
     weight_set_note: str = ""
+    # The trade vocabulary, alongside `segments` above in every way except
+    # that a company gets exactly one of these. It carries a default so that a
+    # survey whose arpenteur.toml predates the [sectors] block still loads;
+    # the profile stage then applies segments alone, as it always did.
+    sectors: dict[str, str] = field(default_factory=dict)
     data_dir: Path = field(init=False)
 
     def __post_init__(self) -> None:
@@ -495,6 +500,8 @@ def load_settings(root: Path | None = None) -> Settings:
                 survey["region"] = None
     if "segments" in overlay:
         raw["segments"] = overlay["segments"]
+    if "sectors" in overlay:
+        raw["sectors"] = overlay["sectors"]
     if "signal_brief" in overlay:
         raw.setdefault("enrich", {})["signal_brief"] = overlay["signal_brief"]
     if "rate_card" in overlay:
@@ -522,6 +529,7 @@ def load_settings(root: Path | None = None) -> Settings:
             if str(v).strip()
         ),
         segments=dict(raw.get("segments", {})),
+        sectors=dict(raw.get("sectors", {})),
         # Collapsed to one line: it goes into a JSON Schema description, where
         # the newlines of a TOML block string are noise.
         signal_brief=" ".join(

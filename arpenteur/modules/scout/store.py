@@ -205,6 +205,11 @@ STAGE_FILTERS: dict[str, str] = {
     "unclassified": "c.hydrated_at IS NOT NULL AND NOT EXISTS "
                     "(SELECT 1 FROM intel.segment s WHERE s.company_id = c.id)",
     "classified": "EXISTS (SELECT 1 FROM intel.segment s WHERE s.company_id = c.id)",
+    # The backlog the sector vocabulary created. Companies profiled before it
+    # existed carry segments and no sector, and this is how an operator sees
+    # exactly them rather than inferring the gap from two counts.
+    "no-sector": "c.hydrated_at IS NOT NULL AND NOT EXISTS "
+                 "(SELECT 1 FROM intel.sector x WHERE x.company_id = c.id)",
     "unresearched": "EXISTS (SELECT 1 FROM intel.segment s WHERE s.company_id = c.id) "
                     "AND w.company_id IS NULL",
     "researched": "w.company_id IS NOT NULL",
@@ -218,13 +223,17 @@ _LIST_JOINS = (
     "FROM core.company c "
     "LEFT JOIN intel.fit f ON f.company_id = c.id "
     "LEFT JOIN intel.site w ON w.company_id = c.id "
-    "LEFT JOIN intel.prospect p ON p.company_id = c.id"
+    "LEFT JOIN intel.prospect p ON p.company_id = c.id "
+    # Joined rather than sub-selected because the sector is shown in every row
+    # as well as filtered on, and one row per company makes that free.
+    "LEFT JOIN intel.sector sec ON sec.company_id = c.id"
 )
 
 
 def search_companies(
     conn: Connection, *, q: str = "", canton: str = "", segment: str = "",
-    band: str = "", state: str = "", stage: str = "", limit: int = 200,
+    sector: str = "", band: str = "", state: str = "", stage: str = "",
+    limit: int = 200,
 ) -> tuple[list[Row], int]:
     """The survey list, and how many rows the filter actually matched.
 
@@ -271,6 +280,9 @@ def search_companies(
             " WHERE s.company_id = c.id AND s.segment = %s)"
         )
         params.append(segment)
+    if sector:
+        where.append("sec.sector = %s")
+        params.append(sector)
     if band:
         where.append("f.band = %s")
         params.append(band)
@@ -283,6 +295,7 @@ def search_companies(
         SELECT c.id, c.uid, c.name, c.canton,
                (SELECT COALESCE(json_agg(s.segment ORDER BY s.segment), '[]'::json)
                   FROM intel.segment s WHERE s.company_id = c.id) AS segments,
+               sec.sector,
                f.score, f.band, f.source, w.url, p.state,
                -- The progress stamps, as five booleans rather than five round
                -- trips: this list is 200 rows and a query each would be a
@@ -490,6 +503,82 @@ def segments_for(conn: Connection, company_id: int) -> list[Row]:
     return conn.execute(
         "SELECT * FROM intel.segment WHERE company_id = %s ORDER BY segment",
         (company_id,),
+    ).fetchall()
+
+
+# --- sector -------------------------------------------------------------------
+#
+# One row per company rather than many, which is the whole difference from
+# segments: a company fits several campaigns and works in one trade.
+
+
+def save_sector(
+    conn: Connection, company_id: int, sector: str, *,
+    confidence: float | None = None, rationale: str | None = None,
+    model: str = "",
+) -> None:
+    """Store the classifier's sector, without touching a human's.
+
+    The WHERE on the conflict clause does the same job it does in
+    `save_segments`: a sector corrected in the console must survive the stage
+    running again, or correcting it is work that the next run silently undoes.
+    """
+    conn.execute(
+        """
+        INSERT INTO intel.sector (company_id, sector, confidence, rationale,
+                                  model, classified_at, source)
+        VALUES (%s, %s, %s, %s, %s, %s, 'model')
+        ON CONFLICT (company_id) DO UPDATE SET
+            sector = excluded.sector,
+            confidence = excluded.confidence,
+            rationale = excluded.rationale,
+            model = excluded.model,
+            classified_at = excluded.classified_at
+        WHERE sector.source <> 'manual'
+        """,
+        (company_id, sector, confidence, rationale, model, now()),
+    )
+
+
+def set_sector_manually(
+    conn: Connection, company_id: int, sector: str, *,
+    rationale: str | None = None, author: str | None = None,
+) -> None:
+    """Set the sector by hand, and mark it as a person's doing.
+
+    An empty sector clears the row rather than storing a blank, because "not
+    classified" and "classified as nothing" are the same fact and one of them
+    would need the reader to know which.
+    """
+    if not sector:
+        conn.execute("DELETE FROM intel.sector WHERE company_id = %s", (company_id,))
+        return
+    conn.execute(
+        """
+        INSERT INTO intel.sector (company_id, sector, confidence, rationale,
+                                  model, classified_at, source)
+        VALUES (%s, %s, 1.0, %s, %s, %s, 'manual')
+        ON CONFLICT (company_id) DO UPDATE SET
+            sector = excluded.sector, confidence = 1.0,
+            rationale = excluded.rationale, model = excluded.model,
+            classified_at = excluded.classified_at, source = 'manual'
+        """,
+        (company_id, sector, rationale, author or "manual", now()),
+    )
+
+
+def sector_for(conn: Connection, company_id: int) -> Row | None:
+    return conn.execute(
+        "SELECT * FROM intel.sector WHERE company_id = %s", (company_id,)
+    ).fetchone()
+
+
+def sector_counts(conn: Connection) -> list[Row]:
+    """How the survey divides by trade, commonest first."""
+    return conn.execute(
+        "SELECT sector, COUNT(*) AS n,"
+        " COUNT(*) FILTER (WHERE source = 'manual') AS by_hand"
+        " FROM intel.sector GROUP BY sector ORDER BY n DESC, sector"
     ).fetchall()
 
 
@@ -740,8 +829,8 @@ def time_in_state(conn: Connection, entity: str, entity_ids: list[int]) -> dict[
 
 
 def board(
-    conn: Connection, *, canton: str = "", segment: str = "", band: str = "",
-    owner: str = "", q: str = "", limit: int = 500,
+    conn: Connection, *, canton: str = "", segment: str = "", sector: str = "",
+    band: str = "", owner: str = "", q: str = "", limit: int = 500,
 ) -> list[Row]:
     """Every company in the campaign, with what a card has to show.
 
@@ -761,6 +850,12 @@ def board(
             " WHERE s.company_id = c.id AND s.segment = %s)"
         )
         params.append(segment)
+    if sector:
+        where.append(
+            "EXISTS (SELECT 1 FROM intel.sector x"
+            " WHERE x.company_id = c.id AND x.sector = %s)"
+        )
+        params.append(sector)
     if band:
         where.append("f.band = %s")
         params.append(band)
@@ -784,6 +879,8 @@ def board(
                f.score, f.band, w.url,
                (SELECT array_agg(s.segment ORDER BY s.segment)
                   FROM intel.segment s WHERE s.company_id = c.id) AS segments,
+               (SELECT x.sector FROM intel.sector x
+                 WHERE x.company_id = c.id) AS sector,
                EXISTS (SELECT 1 FROM core.contact ct
                         WHERE ct.company_id = c.id AND ct.kind = 'email'
                           AND NOT ct.suppressed) AS reachable
@@ -810,8 +907,8 @@ def prospect_owners(conn: Connection) -> list[str]:
 
 
 def bring_in(
-    conn: Connection, *, band: str = "high", segment: str = "", canton: str = "",
-    limit: int = 25,
+    conn: Connection, *, band: str = "high", segment: str = "", sector: str = "",
+    canton: str = "", limit: int = 25,
 ) -> int:
     """Put the best-scoring companies not yet on the board into `new`.
 
@@ -831,6 +928,12 @@ def bring_in(
             " WHERE s.company_id = c.id AND s.segment = %s)"
         )
         params.append(segment)
+    if sector:
+        where.append(
+            "EXISTS (SELECT 1 FROM intel.sector x"
+            " WHERE x.company_id = c.id AND x.sector = %s)"
+        )
+        params.append(sector)
     if canton:
         where.append("c.canton = %s")
         params.append(canton)
@@ -1608,7 +1711,7 @@ def close_orphans(conn: Connection, started_by: str = "console") -> int:
 # --- operator settings --------------------------------------------------------
 
 SETTABLE = ("cantons", "legal_forms", "statuses", "admit_new", "segments",
-            "signal_brief", "rate_card")
+            "sectors", "signal_brief", "rate_card")
 
 
 def settings_overlay(conn: Connection) -> dict[str, Any]:

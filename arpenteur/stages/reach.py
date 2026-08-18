@@ -227,6 +227,7 @@ def _select(
     settings: Settings,
     uids: list[str] | None,
     segment: str | None,
+    sector: str | None,
     band: str | None,
     limit: int | None,
     refresh: bool,
@@ -246,6 +247,11 @@ def _select(
             "EXISTS (SELECT 1 FROM intel.segment s WHERE s.company_id = c.id AND s.segment = %s)"
         )
         params.append(segment)
+    if sector:
+        where.append(
+            "EXISTS (SELECT 1 FROM intel.sector x WHERE x.company_id = c.id AND x.sector = %s)"
+        )
+        params.append(sector)
     if band:
         where.append("EXISTS (SELECT 1 FROM intel.fit f WHERE f.company_id = c.id AND f.band = %s)")
         params.append(band)
@@ -267,6 +273,7 @@ def run(
     *,
     uids: list[str] | None = None,
     segment: str | None = None,
+    sector: str | None = None,
     band: str | None = None,
     limit: int | None = None,
     refresh: bool = False,
@@ -274,8 +281,8 @@ def run(
     log: Callable[[str], None] = print,
 ) -> dict[str, Any]:
     companies = _select(
-        conn, settings=settings, uids=uids, segment=segment, band=band,
-        limit=limit, refresh=refresh,
+        conn, settings=settings, uids=uids, segment=segment, sector=sector,
+        band=band, limit=limit, refresh=refresh,
     )
     # Companies whose research found no site at all cannot be reached this
     # way. Counted and named rather than silently absent, because "no address

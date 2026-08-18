@@ -188,8 +188,8 @@ def establishments_for(conn: Connection, company_id: int) -> list[Row]:
 
 def waiting(
     conn: Connection, *, uids: list[str] | None = None, canton: str = "",
-    segment: str = "", band: str = "", only_worked: bool = False,
-    limit: int = 200,
+    segment: str = "", sector: str = "", band: str = "",
+    only_worked: bool = False, limit: int = 200,
 ) -> list[Row]:
     """Companies holding a register address and no point yet.
 
@@ -222,6 +222,12 @@ def waiting(
             " WHERE s.company_id = c.id AND s.segment = %s)"
         )
         params.append(segment)
+    if sector:
+        where.append(
+            "EXISTS (SELECT 1 FROM intel.sector x"
+            " WHERE x.company_id = c.id AND x.sector = %s)"
+        )
+        params.append(sector)
     if band:
         where.append(
             "EXISTS (SELECT 1 FROM intel.fit f"
@@ -256,8 +262,9 @@ def counts(conn: Connection) -> dict[str, int]:
 
 
 def points(
-    conn: Connection, *, canton: str = "", segment: str = "", band: str = "",
-    state: str = "", company_ids: list[int] | None = None, limit: int = 5000,
+    conn: Connection, *, canton: str = "", segment: str = "", sector: str = "",
+    band: str = "", state: str = "", company_ids: list[int] | None = None,
+    limit: int = 5000,
 ) -> list[Row]:
     """Everything with a point, with what a marker has to say for itself.
 
@@ -276,6 +283,12 @@ def points(
             " WHERE s.company_id = c.id AND s.segment = %s)"
         )
         params.append(segment)
+    if sector:
+        where.append(
+            "EXISTS (SELECT 1 FROM intel.sector x"
+            " WHERE x.company_id = c.id AND x.sector = %s)"
+        )
+        params.append(sector)
     if band:
         where.append("f.band = %s")
         params.append(band)

@@ -196,6 +196,9 @@ STYLESHEET = """
           border-radius:var(--r-pill); font-size:.78rem; margin:0 .25rem .25rem 0;
           background:var(--paper); }
   .pill.manual { border-color:var(--accent); color:var(--accent); }
+  /* The trade, not a segment, and deliberately not a pill: one company has one
+     of these, and a row of identical pills stops saying which is which. */
+  .sector { font-weight:600; }
   .chip { background:var(--ink); color:var(--paper); border-radius:2px;
           padding:0 .3rem; text-decoration:none; font-weight:600;
           font-size:.7rem; letter-spacing:.02em; }
@@ -579,6 +582,11 @@ def company_rows(rows: list[Row]) -> str:
     out = []
     for row in rows:
         segments = pills(as_list(row["segments"]))
+        sector = (
+            f'<span class="sector">{esc(row["sector"])}</span>'
+            if "sector" in row.keys() and row["sector"]
+            else '<span class="dim">&mdash;</span>'
+        )
         url = row["url"] or ""
         site = (
             f'<a href="{esc(url)}" rel="noreferrer noopener" target="_blank">'
@@ -590,6 +598,7 @@ def company_rows(rows: list[Row]) -> str:
             f'<tr><td><a href="/company/{row["id"]}">{esc(row["name"])}</a>'
             f'<div class="dim small">{esc(row["uid"])}</div></td>'
             f'<td class="small">{esc(row["canton"])}</td>'
+            f'<td class="small">{sector}</td>'
             f'<td class="small nowrap">{progress(row)}</td>'
             f'<td class="small">{segments}</td>'
             f'<td>{band(row)}</td>'
@@ -607,7 +616,8 @@ def company_table(rows: list[Row], total: int) -> str:
         f'<p class="dim small">{ui.num(total)} companies match. '
         f"Progress: {legend}</p>"
         + ui.table(
-            ["company", "canton", "progress", "segments", "fit", "website", "state"],
+            ["company", "canton", "sector", "progress", "segments", "fit",
+             "website", "state"],
             [company_rows(rows)] if rows else [],
             caption=f"{ui.num(total)} companies match this filter",
             empty_text="Nothing matches. Widen the filter, or run a stage on "
@@ -626,6 +636,7 @@ STAGE_FILTERS = (
     ("detail", "Detail fetched"),
     ("unclassified", "Detail fetched, not yet segmented"),
     ("classified", "Segmented"),
+    ("no-sector", "Detail fetched, no sector yet"),
     ("unresearched", "Segmented, website not researched"),
     ("researched", "Website researched"),
     ("unscored", "Researched, not yet scored"),
@@ -637,8 +648,16 @@ STAGE_FILTERS = (
 def filter_form(
     *, q: str, canton: str, segment: str, band_name: str, state: str, stage: str,
     cantons: list[str], segments: list[str], states: list[str],
+    sector: str = "", sectors: list[str] | None = None,
 ) -> str:
-    """The six controls that narrow the survey.
+    """The seven controls that narrow the survey.
+
+    Sector and segment sit next to each other and are not the same question.
+    Sector is what the company does for a living, one of them, from a closed
+    list; segment is how it fits this campaign, several at once. They are
+    adjacent because the pair is how a shortlist actually gets built — the
+    restaurants that are also owner-run — and labelled separately because one
+    dropdown holding both would read as one question with twenty-seven answers.
 
     Built from the components, which is what binds each label to the control it
     names. They were adjacent and unbound: six words on a page pointing at
@@ -661,6 +680,8 @@ def filter_form(
                       placeholder="Name, or CHE164075515")
         + ui.select_field("canton", "Canton", cantons, chosen=canton,
                           blank="All cantons")
+        + (ui.select_field("sector", "Sector", sectors, chosen=sector,
+                           blank="All sectors") if sectors else "")
         + ui.select_field("segment", "Segment", segments, chosen=segment,
                           blank="All segments")
         + ui.select_field("band", "Fit band",
@@ -774,6 +795,8 @@ def company_page(
     overlap: str = "",
     mail_links: str = "",
     score_parts: str = "",
+    sector: Row | None = None,
+    sector_vocabulary: list[str] | None = None,
 ) -> str:
     out = [
         f"<h1>{esc(company['name'])}</h1>",
@@ -793,6 +816,7 @@ def company_page(
 
     out.append(_fit_card(fit))
     out.append(_prospect_card(company["id"], prospect, states))
+    out.append(_sector_card(company["id"], sector, sector_vocabulary or []))
     out.append(_segments_card(company["id"], segments, vocabulary))
 
     if company["purpose"]:
@@ -931,6 +955,50 @@ def _prospect_card(company_id: int, prospect: Row | None, states: list[str]) -> 
         '<p class="dim small" style="margin:.5rem 0 0">Saving a state puts this '
         'company on the <a href="/board">board</a>, where it can be moved from '
         "column to column against everything else being worked.</p></div>"
+    )
+
+
+def _sector_card(
+    company_id: int, sector: Row | None, vocabulary: list[str]
+) -> str:
+    """What trade this company is in, as one choice out of the vocabulary.
+
+    A select rather than the segments card's row of checkboxes, because the
+    control should say what kind of answer is wanted: one of these, not any of
+    these. The blank option is "not classified", which is a real state and the
+    one every company sat in before the vocabulary existed.
+    """
+    if not vocabulary:
+        return ""
+    held = sector["sector"] if sector is not None else ""
+    by_hand = sector is not None and sector["source"] == "manual"
+    options = '<option value="">not classified</option>' + "".join(
+        f'<option value="{esc(name)}"'
+        + (" selected" if name == held else "")
+        + f">{esc(name)}</option>"
+        for name in vocabulary
+    )
+    if sector is None:
+        note = (
+            "Not classified yet. Run <b>Sort into segments</b>, or set it here."
+        )
+    elif by_hand:
+        note = "Set by hand. The classifier will not overwrite it."
+    else:
+        confidence = sector["confidence"]
+        note = (
+            "From the registered purpose"
+            + (f", confidence {confidence:.2f}" if confidence is not None else "")
+            + (f" &mdash; {esc(sector['rationale'])}" if sector["rationale"] else "")
+        )
+    return (
+        '<h2>sector</h2><div class="card" id="sector">'
+        f'<form hx-post="/company/{company_id}/sector" hx-target="#sector" '
+        'hx-swap="outerHTML">'
+        f'<select name="sector" aria-label="Sector">{options}</select> '
+        '<button class="primary">save</button>'
+        f'<p class="dim small" style="margin:.5rem 0 0">{note}</p>'
+        "</form></div>"
     )
 
 

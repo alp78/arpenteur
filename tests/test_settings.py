@@ -33,6 +33,10 @@ legal_forms = ["0107"]
 [segments]
 sme-owner = "A small owner-run business."
 
+[sectors]
+hospitality = "Restaurants, cafés and hotels."
+construction = "Building and civil works."
+
 [enrich]
 signal_brief = "Ageing website, manual processes."
 
@@ -224,6 +228,39 @@ def test_the_last_segment_cannot_be_dropped(client, root) -> None:
     )
     assert "at least one" in reply.text
     assert load_settings(root).segments
+
+
+def test_sectors_are_edited_as_a_set(client, root) -> None:
+    client.post(
+        "/settings/sectors",
+        data={"sec_name": ["hospitality", "agriculture"],
+              "sec_text": ["Restaurants and hotels.", "Farming and viticulture."]},
+    )
+    assert set(load_settings(root).sectors) == {"hospitality", "agriculture"}
+
+
+def test_a_sector_can_be_dropped(client, root) -> None:
+    client.post(
+        "/settings/sectors",
+        data={"sec_name": ["hospitality", "construction"],
+              "sec_text": ["x", "y"], "sec_drop": ["construction"]},
+    )
+    assert set(load_settings(root).sectors) == {"hospitality"}
+
+
+def test_the_last_sector_may_be_dropped(client, root) -> None:
+    """Unlike segments, and the difference is what each absence means.
+
+    No segments is a survey that cannot be sliced at all. No sectors is the
+    survey this tool was before the vocabulary existed: the classify stage
+    asks for the segments alone and everything else still works.
+    """
+    reply = client.post(
+        "/settings/sectors", data={"sec_drop": ["hospitality", "construction"]},
+        follow_redirects=True,
+    )
+    assert "at least one" not in reply.text
+    assert load_settings(root).sectors == {}
 
 
 def test_the_signal_brief_is_collapsed_to_one_line(client, root) -> None:

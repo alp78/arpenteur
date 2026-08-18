@@ -1,6 +1,6 @@
 # Arpenteur configuration. Everything that varies between surveys lives here
 # rather than in code: the territory, the legal forms worth sweeping, and the
-# segments the profile stage sorts companies into.
+# sectors and segments the profile stage sorts companies into.
 
 # Which modules this deployment runs. Each owns its own Postgres schema and
 # its own migrations, and nothing upstream holds a foreign key into anything
@@ -337,6 +337,10 @@ sort_order = 50
 [rates.card_note]
 text = "Travel inside the surveyed cantons is not billed. Nothing is billed before a written order."
 
+# How a company fits a campaign. Several at once is normal and expected: a
+# regulated laboratory is both compliance-sector and data-driven, and forcing
+# one label would throw away the more interesting half. These definitions are
+# the classifier's prompt word for word, so they are the whole of what it knows.
 [segments]
 sme-owner = "A small owner-run business, typically under 50 people, where the owner decides."
 mature-sme = "An established firm, long registered, with structured operations and likely several sites or departments."
@@ -344,3 +348,44 @@ data-driven = "Work that produces or depends on substantial data: analytics, lab
 ai-adopter = "Purpose text mentions software, automation, digital products or AI as part of what the company does."
 compliance-sector = "Regulated activity: health, finance, insurance, legal, public mandates, personal data at the centre."
 lean-startup = "Recently registered, small capital, product or technology purpose rather than trade or services."
+
+# What line of business a company is in, which is a different question from how
+# it fits a campaign. Exactly one per company, chosen from this list and never
+# invented, so `restaurants in Vaud` is a filter rather than a search for the
+# word "restaurant" in a purpose text that says "exploitation d'établissements
+# publics".
+#
+# One is a floor, not a target: the same classify call that applies the
+# segments above picks the sector, so a longer list costs a few output tokens
+# and no extra pass. Rename them, merge them, split them; the vocabulary is
+# closed only in the sense that the classifier may not step outside whatever is
+# written here. Editing this list and re-running with 're-label' re-sorts the
+# survey, and sectors set by hand in the console are never overwritten.
+#
+# Loosely the top level of NOGA, with the parts a Swiss SME survey actually
+# distinguishes split out: holdings apart from finance because a large share of
+# SA and Sàrl purposes are pure participation vehicles and would otherwise
+# swamp the finance bucket, engineering apart from consulting because the
+# `bureau d'ingénieurs` is a different customer from the `conseil en gestion`.
+[sectors]
+agriculture = "Farming, viticulture, forestry, horticulture, fishing, and the first processing of what they produce."
+construction = "Building and civil works, and the trades on site: masonry, carpentry, roofing, plumbing, heating, electrical installation, painting, renovation."
+manufacturing = "Making physical goods: production, machining, assembly, workshop and industrial processing, food production."
+energy-environment = "Electricity, heating, water, waste, recycling, remediation, environmental services."
+wholesale-trade = "Buying and selling goods to businesses: import, export, distribution, trading, representation."
+retail = "Selling goods to the public, in a shop or online."
+hospitality = "Restaurants, cafés, bars, catering, hotels, guest accommodation, tourism."
+transport-logistics = "Carrying goods or people, freight forwarding, warehousing, delivery, removals, taxi and coach."
+it-services = "Software, IT services, hosting, networks, data, artificial intelligence, electronics and telecoms engineering."
+engineering = "Technical design offices: architecture, civil, mechanical and electrical engineering, surveying, laboratory and testing work."
+marketing-media = "Advertising, communication, graphic and web design, publishing, audiovisual production, events, public relations."
+finance = "Banking, credit, asset and fund management, insurance and its broking, payment and financial services."
+holding = "Acquisition, holding and management of participations in other companies, and management of the group's own assets. The purpose describes owning rather than operating."
+real-estate = "Owning, letting, managing, brokering or developing property."
+legal-accounting = "Law, notarial work, fiduciary and accounting services, audit, tax and payroll administration."
+consulting = "Advice and services to businesses that are none of the above: management, strategy, organisation, human resources, recruitment, training of staff, administrative support."
+health-care = "Medical, dental, veterinary and paramedical practice, therapy, care homes, home care, pharmacies, medical analysis."
+education = "Schools, teaching, vocational and language training, coaching, childcare."
+personal-services = "Services to individuals: hairdressing, beauty, wellbeing, cleaning, security, repair, funeral services, domestic work."
+non-profit = "An association, foundation or cooperative whose purpose is charitable, cultural, sporting, religious, professional or otherwise not for profit."
+other = "The purpose text does not place the company in any sector above, or describes something too general to place."

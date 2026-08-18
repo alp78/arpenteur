@@ -223,6 +223,7 @@ def _select(
     settings: Settings,
     uids: list[str] | None,
     segment: str | None,
+    sector: str | None,
     researched_only: bool,
     limit: int | None,
     rescore: bool,
@@ -243,6 +244,11 @@ def _select(
             "EXISTS (SELECT 1 FROM intel.segment s WHERE s.company_id = c.id AND s.segment = %s)"
         )
         params.append(segment)
+    if sector:
+        where.append(
+            "EXISTS (SELECT 1 FROM intel.sector x WHERE x.company_id = c.id AND x.sector = %s)"
+        )
+        params.append(sector)
     if researched_only:
         where.append("EXISTS (SELECT 1 FROM intel.site w WHERE w.company_id = c.id)")
     if not rescore:
@@ -342,6 +348,7 @@ def run(
     *,
     uids: list[str] | None = None,
     segment: str | None = None,
+    sector: str | None = None,
     researched_only: bool = True,
     limit: int | None = None,
     rescore: bool = False,
@@ -355,7 +362,7 @@ def run(
     weight_set_id, weights = db.active_weights(conn)
 
     companies = _select(
-        conn, settings=settings, uids=uids, segment=segment,
+        conn, settings=settings, uids=uids, segment=segment, sector=sector,
         researched_only=researched_only, limit=limit, rescore=rescore,
         brief_hash=digest,
     )

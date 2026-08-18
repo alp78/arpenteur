@@ -110,12 +110,14 @@ def collection(rows: list[Row]) -> dict[str, Any]:
 
 def map_page(
     *, count: int, placed: int, with_address: int, canton: str = "",
-    segment: str = "", band: str = "", state: str = "", cantons: list[str],
-    segments: list[str], states: list[str], attribution_notice: str = "",
+    segment: str = "", sector: str = "", band: str = "", state: str = "",
+    cantons: list[str], segments: list[str], states: list[str],
+    sectors: list[str] | None = None, attribution_notice: str = "",
     regions: int = 0,
 ) -> str:
     query = {k: v for k, v in (
-        ("canton", canton), ("segment", segment), ("band", band), ("state", state)
+        ("canton", canton), ("segment", segment), ("sector", sector),
+        ("band", band), ("state", state)
     ) if v}
     source_url = "/map/points.geojson" + (
         "?" + "&".join(f"{k}={v}" for k, v in query.items()) if query else ""
@@ -124,6 +126,8 @@ def map_page(
     filters = ui.toolbar(
         ui.select_field("canton", "Canton", cantons, chosen=canton,
                         blank="All cantons")
+        + (ui.select_field("sector", "Sector", sectors, chosen=sector,
+                           blank="All sectors") if sectors else "")
         + ui.select_field("segment", "Segment", segments, chosen=segment,
                           blank="All segments")
         + ui.select_field("band", "Fit band",

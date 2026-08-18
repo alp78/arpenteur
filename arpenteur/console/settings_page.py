@@ -162,6 +162,47 @@ def segments_block(segments: dict[str, str], changed: str) -> str:
     )
 
 
+def sectors_block(sectors: dict[str, str], changed: str) -> str:
+    """The trade vocabulary, laid out exactly like the segments above it.
+
+    Same shape on purpose: they are the same kind of setting, edited the same
+    way, read by the same stage in the same call. What differs is the count a
+    company gets, and that is said in words rather than left to be inferred
+    from two identical-looking boxes.
+    """
+    rows = "".join(
+        '<div class="seg">'
+        f'<input type="text" name="sec_name" value="{esc(name)}">'
+        f'<input type="text" name="sec_text" value="{esc(text)}">'
+        '<label class="check small"><input type="checkbox" name="sec_drop" '
+        f'value="{esc(name)}"> drop</label></div>'
+        for name, text in sorted(sectors.items())
+    )
+    rows += (
+        '<div class="seg">'
+        '<input type="text" name="sec_name" placeholder="new-sector">'
+        '<input type="text" name="sec_text" placeholder="One concrete line '
+        'naming the trades it covers.">'
+        "<span></span></div>"
+    )
+    return _block(
+        "Sectors",
+        "What line of business a company is in, which is a different question "
+        "from how it fits this campaign. Exactly one per company, chosen from "
+        "this list and never invented, which is what makes 'restaurants in "
+        "Vaud' a filter rather than a search for a word. Keep an entry for the "
+        "purposes too general to place, or they will be forced into one that "
+        "does not fit.",
+        rows,
+        "Save sectors",
+        "Costs nothing on its own: the same classify call that applies the "
+        "segments picks the sector. Re-run Sort into segments with 're-label' "
+        "to apply a changed list; sectors set by hand are never overwritten.",
+        "/settings/sectors",
+        changed,
+    )
+
+
 def signal_block(brief: str, changed: str) -> str:
     return _block(
         "What the research looks for",
@@ -235,6 +276,7 @@ def settings_page(
     counts: dict[str, int], segments: dict[str, str], signal_brief: str,
     campaign: str, campaign_digest: str, scored: int, campaign_path: str,
     history: list[Row], rate_card: str = "", note: str = "",
+    sectors: dict[str, str] | None = None,
 ) -> str:
     when = {row["key"]: (row["updated_at"] or "")[:10] for row in history}
 
@@ -262,6 +304,7 @@ def settings_page(
             else "Never fetched."
         )
         + "</span></footer></form>"
+        + sectors_block(sectors or {}, changed("sectors"))
         + segments_block(segments, changed("segments"))
         + signal_block(signal_brief, changed("signal_brief"))
         + campaign_block(campaign, campaign_digest, scored, campaign_path)

@@ -2,12 +2,12 @@
 
 The arpenteur is the surveyor who paces out a territory parcel by
 parcel. This one surveys a market from the Swiss commercial register: it
-builds a qualified map of a territory (who exists, which segment, who
-decides, how to reach them) from public sources, then prepares
+builds a qualified map of a territory (who exists, what trade they are in,
+which segment, who decides, how to reach them) from public sources, then prepares
 personalised approaches for human review.
 
 What the survey is *for* is configuration rather than code. The territory,
-the segment vocabulary and what counts as a signal all live in
+the sector and segment vocabularies and what counts as a signal all live in
 `arpenteur.toml`, so the same pipeline serves a consultancy scouting for
 clients, a recruiter reading for hiring signals, an association looking
 for members or a distributor looking for partners. The examples shipped
@@ -19,8 +19,8 @@ Pipeline stages, each a standalone command:
    legal form *(built)*
 2. **sync** — keep that copy current from the FOSC change feed, one
    request per day rather than one per company *(built)*
-3. **profile** — sort companies into segments from their registered
-   purpose text *(built)*
+3. **profile** — from the registered purpose text, place each company in
+   one sector and against any number of segments, in one call *(built)*
 4. **people** — officers from the SHAB notices the register publishes
    alongside each company *(built)*
 5. **resolve** — work out which officer rows are the same human, and the
@@ -56,7 +56,7 @@ each owning one Postgres schema and its own numbered migrations:
 
 | module | schema | what |
 |---|---|---|
-| `scout` | `core`, `intel`, `audit` | the survey: sweep, detail, officers, segments, website research, scoring, and the record of every state change |
+| `scout` | `core`, `intel`, `audit` | the survey: sweep, detail, officers, sectors and segments, website research, scoring, and the record of every state change |
 | `geo` | `geo` | the geocode stage, establishments with coordinates, the map |
 | `clients` | `crm` | clients, projects, the interaction log, notes, dossier, approach, prep |
 | `sales` | `commercial` | services, rate cards, quotes, invoices, time entries |
@@ -242,7 +242,7 @@ uv run arpenteur source zefix --canton VS --legal-form 0107
 # a sweep is resumable: re-running skips prefixes already covered
 uv run arpenteur source zefix --canton VS --legal-form 0107
 
-# sort what was found into segments (--dry-run prints without writing)
+# sort what was found into sectors and segments (--dry-run writes nothing)
 uv run arpenteur profile --limit 100 --dry-run
 uv run arpenteur profile
 
@@ -253,6 +253,9 @@ uv run arpenteur people
 # so check the shortlist before paying for it.
 uv run arpenteur enrich --canton VS --segment data-driven --dry-run
 uv run arpenteur enrich --canton VS --segment data-driven --limit 20
+
+# or by trade rather than by fit: every restaurant in the territory
+uv run arpenteur enrich --sector hospitality --limit 20
 
 # score what was researched against campaign.md, with an approach for each
 uv run arpenteur match --limit 20
@@ -266,10 +269,20 @@ uv run arpenteur stats
 uv run arpenteur console
 ```
 
-The segment definitions in `arpenteur.toml` *are* the classifier's
-prompt, and `enrich.signal_brief` *is* what the web research looks for.
-Both are the operator's own words: editing them changes what the survey
-sorts for and what it reports, without touching code.
+The sector and segment definitions in `arpenteur.toml` *are* the
+classifier's prompt, and `enrich.signal_brief` *is* what the web research
+looks for. All three are the operator's own words: editing them changes what
+the survey sorts for and what it reports, without touching code.
+
+**Sector and segment are two different questions asked in one call.** A
+*sector* is what a company does for a living — one of them, from a closed
+list, so `--sector hospitality` is a filter rather than a search for the word
+"restaurant" in a purpose text that says *exploitation d'établissements
+publics*. A *segment* is how a company fits this campaign — several at once,
+because a regulated laboratory is both `compliance-sector` and `data-driven`
+and forcing one label throws away the more interesting half. Both come from the
+same reading of the same purpose text, so the sector costs a few output tokens
+rather than a second pass over the register.
 
 ## The campaign brief
 
@@ -596,7 +609,7 @@ on, and only one of those should be quoted back later.
 uv run arpenteur console      # then Settings
 ```
 
-The territory, the segment vocabulary, what the research looks for, the campaign
+The territory, the sector and segment vocabularies, what the research looks for, the campaign
 brief and the rate card decide what every stage below them does. They used to
 live only in `arpenteur.toml` and `campaign.md`, which made the most
 consequential decisions in the tool the ones you had to leave the tool to make.
@@ -628,7 +641,7 @@ asked after the bill rather than before it.
 uv run arpenteur console          # http://127.0.0.1:8000
 ```
 
-Filter the survey by canton, segment, fit band and pipeline state; open a
+Filter the survey by canton, sector, segment, fit band and pipeline state; open a
 company to see its register entry, officers, web research, fit reasoning and
 suggested opening; correct a label, set a state and an owner, log a call, or
 suppress an address.
@@ -681,13 +694,15 @@ not already there and puts them in `new`. It only ever inserts, so running it
 again after another sweep cannot walk a company at `meeting` back to the start.
 
 **Swimlanes** cut the board horizontally by something a state change does not
-alter: how overdue the next action is, fit band, canton, or owner. The first is
-the one the option exists for — overdue at the top, because a board is read
-downwards and the thing that has slipped should not sit below the thing that
-has not. Grouping by segment is deliberately not offered: a company carries
-several segments, its card would appear in several lanes, and a card you can
-drag in one lane while a stale copy sits in another is worse than no grouping.
-Segment stays a filter, where one company is one row.
+alter: how overdue the next action is, fit band, canton, owner, or sector. The
+first is the one the option exists for — overdue at the top, because a board is
+read downwards and the thing that has slipped should not sit below the thing
+that has not. Grouping by *segment* is deliberately not offered, and the reason
+is arithmetic rather than taste: a company carries several segments, its card
+would appear in several lanes, and a card you can drag in one lane while a
+stale copy sits in another is worse than no grouping. A company carries one
+sector, so a sector lane holds each card exactly once. Segment stays a filter,
+where one company is one row.
 
 Dragging is the fast way to move a card and not the only one: each card has a
 plain form under it that posts the same change, so the board works from a
@@ -758,7 +773,7 @@ that is a chain of strangers.
 ### The map
 
 Every establishment with a coordinate, on swisstopo's own base map. Markers
-are coloured by fit band, filtered by canton, segment, band and pipeline state,
+are coloured by fit band, filtered by canton, sector, segment, band and pipeline state,
 and each one opens the company.
 
 **A company has no location; its establishments do.** A foundation running an

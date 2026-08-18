@@ -106,6 +106,7 @@ def run(
     uids: list[str] | None = None,
     canton: str = "",
     segment: str = "",
+    sector: str = "",
     band: str = "",
     worked: bool = False,
     limit: int | None = None,
@@ -113,8 +114,8 @@ def run(
     log: Callable[[str], None] = print,
 ) -> dict[str, Any]:
     companies = geo.waiting(
-        conn, uids=uids, canton=canton, segment=segment, band=band,
-        only_worked=worked, limit=limit or POLITE_LIMIT + 1,
+        conn, uids=uids, canton=canton, segment=segment, sector=sector,
+        band=band, only_worked=worked, limit=limit or POLITE_LIMIT + 1,
     )
     stats: dict[str, Any] = {
         "considered": len(companies), "placed": 0, "unplaced": 0,

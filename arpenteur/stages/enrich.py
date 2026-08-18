@@ -204,6 +204,7 @@ def _select(
     uids: list[str] | None,
     canton: str | None,
     segment: str | None,
+    sector: str | None,
     limit: int | None,
     refresh: bool,
 ) -> list[Row]:
@@ -227,6 +228,9 @@ def _select(
     if segment:
         where.append("EXISTS (SELECT 1 FROM intel.segment s WHERE s.company_id = c.id AND s.segment = %s)")
         params.append(segment)
+    if sector:
+        where.append("EXISTS (SELECT 1 FROM intel.sector x WHERE x.company_id = c.id AND x.sector = %s)")
+        params.append(sector)
     if not refresh:
         where.append("c.id NOT IN (SELECT company_id FROM intel.site)")
     sql = f"SELECT c.* FROM core.company c WHERE {' AND '.join(where)} ORDER BY c.id"
@@ -242,6 +246,7 @@ def run(
     uids: list[str] | None = None,
     canton: str | None = None,
     segment: str | None = None,
+    sector: str | None = None,
     limit: int | None = None,
     refresh: bool = False,
     dry_run: bool = False,
@@ -256,7 +261,7 @@ def run(
 
     companies = _select(
         conn, settings=settings, uids=uids, canton=canton, segment=segment,
-        limit=limit, refresh=refresh,
+        sector=sector, limit=limit, refresh=refresh,
     )
     stats: dict[str, Any] = {
         "considered": len(companies),

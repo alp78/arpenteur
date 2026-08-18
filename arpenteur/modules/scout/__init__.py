@@ -18,7 +18,8 @@ MODULE = Module(
     title="Scout",
     what=(
         "Sweeps the commercial register, fetches company detail, mines the "
-        "official notices for officers, sorts companies into segments, "
+        "official notices for officers, places each company in a sector and "
+        "against your segments, "
         "researches their websites and scores them against a campaign brief."
     ),
     requires=(),

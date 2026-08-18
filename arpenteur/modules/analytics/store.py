@@ -26,6 +26,7 @@ REPORTS: tuple[tuple[str, str, str], ...] = (
     ("funnel", "The funnel, and how long each step took", "scout"),
     ("band_profile", "Score bands, and how reachable each one is", "scout"),
     ("survey_by_canton", "The survey by canton", "scout"),
+    ("survey_by_sector", "The survey by sector", "scout"),
     ("survey_by_segment", "The survey by segment", "scout"),
     ("selection_outcomes", "What was picked, and what came of it", "scout"),
     ("gone_quiet", "On the board and not moving", "scout"),

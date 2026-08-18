@@ -149,6 +149,13 @@ SEGMENT = Field(
          "and are defined in arpenteur.toml.",
 )
 
+SECTOR = Field(
+    "sector", "Sector", "select", source="sectors",
+    help="Only companies in this line of business. One per company, set by "
+         "profile from the registered purpose, and correctable on any company "
+         "page.",
+)
+
 BAND = Field(
     "band", "Fit band", "select", source="bands",
     help="Only companies whose match score falls in this band.",
@@ -288,27 +295,34 @@ STAGES: dict[str, Stage] = {
     "profile": Stage(
         name="profile",
         title="Sort into segments",
-        what="Read each company's registered purpose and apply your segment labels to it, "
-             "so the survey can be sliced by the kind of business rather than by canton.",
+        what="Read each company's registered purpose and say two things about it: which "
+             "line of business it is in, one from your sector list, and which of your "
+             "segments it fits, any number of them. Both from the same call, so the "
+             "survey can be sliced by what a company does as well as by canton.",
         call=profile.run,
         fields=(
             SIZES,
             Field("reclassify", "Re-label companies already classified", "bool",
-                  help="Use after editing the segment definitions in arpenteur.toml. "
-                       "Labels you set by hand are never overwritten."),
+                  help="Use after editing the sector or segment definitions in "
+                       "Settings. Labels you set by hand are never overwritten."),
             DRY_PROFILE,
         ),
         needs="Fetch company detail. The purpose text only arrives with it.",
-        produces="Segment labels, which then filter every stage below.",
+        produces="A sector and any number of segment labels, which then filter "
+                 "every stage below.",
         cost="A cheap model call per batch of twenty companies. Roughly a franc "
              "per few thousand companies.",
         button="Sort into segments",
-        button_does="Labels companies that have a purpose and no labels yet. "
-                    "Companies in liquidation are skipped.",
-        done_sql="SELECT COUNT(DISTINCT company_id) FROM intel.segment",
+        button_does="Labels companies that have a purpose and have not been "
+                    "classified yet. Companies in liquidation are skipped.",
+        # Counted on the sector rather than on segments, because that is the
+        # mark the stage leaves on every company it has looked at. A company it
+        # found nothing to label has no segment rows, and counting those as
+        # untouched is what made the queue never empty.
+        done_sql="SELECT COUNT(*) FROM intel.sector",
         waiting_sql="SELECT COUNT(*) FROM core.company c WHERE c.purpose IS NOT NULL "
                     "AND c.status = 'ACTIVE' AND NOT EXISTS "
-                    "(SELECT 1 FROM intel.segment s WHERE s.company_id = c.id)",
+                    "(SELECT 1 FROM intel.sector x WHERE x.company_id = c.id)",
     ),
     "enrich": Stage(
         name="enrich",
@@ -317,7 +331,7 @@ STAGES: dict[str, Stage] = {
              "what it runs on, who it partners with, and anything that argues against "
              "approaching it.",
         call=enrich.run,
-        fields=(CANTON, SEGMENT, UIDS, SIZES,
+        fields=(CANTON, SECTOR, SEGMENT, UIDS, SIZES,
                 Field("refresh", "Research again", "bool",
                       help="Re-read companies already researched. Their previous "
                            "reading is replaced, and their fit score is re-taken."),
@@ -347,7 +361,7 @@ STAGES: dict[str, Stage] = {
              "questions: how good a fit, why, and what you would actually say first.",
         call=match.run,
         fields=(
-            SEGMENT, UIDS, SIZES,
+            SECTOR, SEGMENT, UIDS, SIZES,
             Field("researched_only", "Only companies with website research", "bool",
                   default="1",
                   help="Turn off to score on the register entry alone. Weaker, but it "
@@ -374,7 +388,7 @@ STAGES: dict[str, Stage] = {
         what="Open the websites already found and take the email addresses the company "
              "publishes on them, recording which page each one came from.",
         call=reach.run,
-        fields=(SEGMENT, BAND, UIDS, SIZES,
+        fields=(SECTOR, SEGMENT, BAND, UIDS, SIZES,
                 Field("refresh", "Look again", "bool",
                       help="Re-read sites already looked at. A site that published "
                            "nothing last time usually still publishes nothing."),
@@ -418,7 +432,7 @@ STAGES: dict[str, Stage] = {
              "the Confederation's own address search, so companies and clients can "
              "be seen on a map and asked about by distance.",
         call=geocode.run,
-        fields=(CANTON, SEGMENT, BAND, UIDS,
+        fields=(CANTON, SECTOR, SEGMENT, BAND, UIDS,
                 Field("worked", "Only what is on the board", "bool",
                       help="The companies with a pipeline state. This is the "
                            "shortlist a map is actually read for, and it is a "
@@ -552,6 +566,7 @@ def options_for(conn: Connection, settings: Settings) -> dict[str, tuple]:
         )
     ]
     segments = [(name, name) for name in sorted(settings.segments)]
+    sectors = [(name, name) for name in sorted(settings.sectors)]
     # Every Swiss canton, not only the ones already swept: this list is what a
     # sweep is aimed at, and offering only cantons already in the database
     # would make it impossible to add one.
@@ -576,6 +591,7 @@ def options_for(conn: Connection, settings: Settings) -> dict[str, tuple]:
         "cantons_multi": tuple(all_cantons),
         "forms_multi": tuple(forms),
         "segments": (("", "All segments"), *segments),
+        "sectors": (("", "All sectors"), *sectors),
         "bands": BAND_CHOICES,
         "limits": LIMIT_CHOICES,
     }

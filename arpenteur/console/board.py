@@ -13,11 +13,13 @@ contacted and nothing replied is a different instruction from five replied and
 no meetings booked.
 
 **Swimlanes** cut the board horizontally by something that does not change when
-the state does: fit band, canton, owner, or how overdue the next action is.
-That last one is the useful one and the reason the option exists. Grouping by
-segment is deliberately not offered: a company carries several segments, the
+the state does: fit band, canton, owner, how overdue the next action is,
+or sector. The overdue one is the useful one and the reason the option
+exists. Grouping by *segment* is deliberately not offered, and the difference
+is arithmetic rather than taste: a company carries several segments, so the
 card would have to appear in several lanes, and a card you can drag in one lane
-while a stale copy of it sits in another is worse than no grouping at all.
+while a stale copy of it sits in another is worse than no grouping at all. A
+company carries one sector, so a sector lane holds each card exactly once.
 Segment stays a filter, where one company is one row.
 
 The board is a scout page. It reads `intel.prospect` and knows nothing about
@@ -55,6 +57,7 @@ LANES: tuple[tuple[str, str], ...] = (
     ("band", "Fit band"),
     ("canton", "Canton"),
     ("owner", "Owner"),
+    ("sector", "Sector"),
 )
 
 # Ordering for the computed lanes. Overdue first: a board is read top down and
@@ -90,6 +93,7 @@ STYLES = """
                margin-top:.25rem; font-size:.72rem; }
 .kard .seg { background:var(--bg); border:1px solid var(--line); border-radius:1rem;
              padding:0 .4rem; color:var(--dim); }
+.kard .sector { font-weight:600; color:var(--ink); }
 .kard .next { margin-top:.25rem; font-size:.74rem; border-top:1px dotted var(--line);
               padding-top:.22rem; }
 .kard .next.late { color:var(--late); font-weight:600; }
@@ -144,6 +148,12 @@ def lane_of(row: Row, lane: str, today: date) -> str:
         return row["canton"] or "no canton"
     if lane == "owner":
         return row["owner"] or "nobody"
+    if lane == "sector":
+        # The one classification that can be a lane at all: exactly one per
+        # company, so a card belongs to exactly one row of the board.
+        return (
+            row["sector"] if "sector" in row.keys() and row["sector"] else "no sector"
+        )
     return ""
 
 
@@ -154,8 +164,9 @@ def _lane_order(lane: str, keys: Iterable[str]) -> list[str]:
         return [k for k in DUE_LANES if k in present]
     if lane == "band":
         return [k for k in BAND_LANES if k in present]
-    named = sorted(k for k in present if k not in ("nobody", "no canton"))
-    return named + [k for k in ("nobody", "no canton") if k in present]
+    trailing = ("nobody", "no canton", "no sector")
+    named = sorted(k for k in present if k not in trailing)
+    return named + [k for k in trailing if k in present]
 
 
 # --- one card -----------------------------------------------------------------
@@ -208,6 +219,12 @@ def card(
         marks.append('<span class="dim" title="A usable email address is held">@</span>')
     if row["url"]:
         marks.append('<span class="dim" title="Website researched">w</span>')
+    # The trade first and in its own mark, because it is the one thing on a
+    # card that says what the company actually does. Two segments after it are
+    # a reminder of why it was brought in; a third would be noise on a card
+    # this size.
+    if "sector" in row.keys() and row["sector"]:
+        marks.append(f'<span class="sector">{esc(row["sector"])}</span>')
     marks += [f'<span class="seg">{esc(s)}</span>' for s in segments[:2]]
     if client is not None:
         marks.append(
@@ -286,11 +303,13 @@ def board_page(
     q: str = "",
     canton: str = "",
     segment: str = "",
+    sector: str = "",
     band: str = "",
     owner: str = "",
     cantons: list[str],
     segments: list[str],
     owners: list[str],
+    sectors: list[str] | None = None,
     back: str = "",
     note: str = "",
 ) -> str:
@@ -331,9 +350,11 @@ def board_page(
         "move it; the state is saved as it lands. Only companies with a state "
         "are here, which is the difference between this and the survey.</p>"
         + banner
-        + _filters(lane, q, canton, segment, band, owner, cantons, segments, owners)
+        + _filters(lane, q, canton, segment, band, owner, cantons, segments,
+                   owners, sector, sectors or [])
         + "".join(lanes)
-        + _bring_in(band or "high", segment, canton, segments, cantons)
+        + _bring_in(band or "high", segment, canton, segments, cantons,
+                    sector, sectors or [])
         + SCRIPT
     )
 
@@ -341,11 +362,14 @@ def board_page(
 def _filters(
     lane: str, q: str, canton: str, segment: str, band: str, owner: str,
     cantons: list[str], segments: list[str], owners: list[str],
+    sector: str = "", sectors: list[str] | None = None,
 ) -> str:
     return ui.toolbar(
         ui.text_field("q", "Search", value=q, placeholder="Name")
         + ui.select_field("canton", "Canton", cantons, chosen=canton,
                           blank="All cantons")
+        + (ui.select_field("sector", "Sector", sectors, chosen=sector,
+                           blank="All sectors") if sectors else "")
         + ui.select_field("segment", "Segment", segments, chosen=segment,
                           blank="All segments")
         + ui.select_field("band", "Fit band",
@@ -359,7 +383,8 @@ def _filters(
 
 
 def _bring_in(band: str, segment: str, canton: str,
-              segments: list[str], cantons: list[str]) -> str:
+              segments: list[str], cantons: list[str],
+              sector: str = "", sectors: list[str] | None = None) -> str:
     """The step between a scored survey and a pipeline.
 
     Stated as a count and a band rather than a button called "sync", because
@@ -371,6 +396,8 @@ def _bring_in(band: str, segment: str, canton: str,
         + ui.toolbar(
             ui.select_field("band", "Fit band", ["high", "medium", "low"],
                             chosen=band or "high")
+            + (ui.select_field("sector", "Sector", sectors, chosen=sector,
+                               blank="Any sector") if sectors else "")
             + ui.select_field("segment", "Segment", segments, chosen=segment,
                               blank="Any segment")
             + ui.select_field("canton", "Canton", cantons, chosen=canton,

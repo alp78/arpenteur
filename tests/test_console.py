@@ -34,6 +34,11 @@ SEGMENTS = {
     "data-driven": "Work that produces or depends on data.",
 }
 
+SECTORS = {
+    "legal-accounting": "Fiduciary, accounting and audit work.",
+    "hospitality": "Restaurants, cafés and hotels.",
+}
+
 
 @pytest.fixture
 def settings(db_path: str) -> SimpleNamespace:
@@ -47,6 +52,7 @@ def settings(db_path: str) -> SimpleNamespace:
         database_url=db_path,
         territory=Territory(cantons=("GE",), legal_forms=("0107",), name="geneve"),
         segments=SEGMENTS,
+        sectors=SECTORS,
         mail=SimpleNamespace(configured=False),
     )
 
@@ -154,6 +160,58 @@ def test_unchecking_a_label_removes_it(client, conn) -> None:
     """The false positive case, which is most of why the console exists."""
     client.post("/company/1/segments", data={"segment": []})
     assert conn.execute("SELECT COUNT(*) AS n FROM intel.segment").fetchone()[0] == 0
+
+
+def test_a_sector_set_here_survives_re_classification(client, conn) -> None:
+    client.post("/company/1/sector", data={"sector": "legal-accounting"})
+
+    db.save_sector(conn, 1, "hospitality", confidence=0.9, model="claude-haiku-4-5")
+    conn.commit()
+    row = conn.execute("SELECT sector, source FROM intel.sector").fetchone()
+    assert (row["sector"], row["source"]) == ("legal-accounting", "manual")
+
+
+def test_a_sector_outside_the_vocabulary_is_refused(client, conn) -> None:
+    """Only an edited form can send one, and storing it would put a name in
+    the filter that no definition anywhere explains."""
+    client.post("/company/1/sector", data={"sector": "restauration-de-luxe"})
+    assert conn.execute("SELECT COUNT(*) AS n FROM intel.sector").fetchone()[0] == 0
+
+
+def test_clearing_the_sector_here_removes_it(client, conn) -> None:
+    client.post("/company/1/sector", data={"sector": "legal-accounting"})
+    client.post("/company/1/sector", data={"sector": ""})
+    assert conn.execute("SELECT COUNT(*) AS n FROM intel.sector").fetchone()[0] == 0
+
+
+def test_the_survey_narrows_by_sector(client, conn) -> None:
+    db.save_sector(conn, 1, "legal-accounting", model="m")
+    db.upsert_company(
+        conn, {"uid": "CHE4", "name": "Café du Marché Sàrl", "canton": "GE",
+               "method": "zefix"}
+    )
+    company_id = conn.execute(
+        "SELECT id FROM core.company WHERE uid = 'CHE4'"
+    ).fetchone()["id"]
+    db.save_sector(conn, company_id, "hospitality", model="m")
+    conn.commit()
+
+    only_food = client.get("/companies", params={"sector": "hospitality"}).text
+    assert "Café du Marché" in only_food
+    assert "Fiduciaire" not in only_food
+
+
+def test_a_company_with_no_sector_is_findable_as_such(client, conn) -> None:
+    """The backlog the vocabulary created has to be visible, or the only way to
+    see it is to subtract two counts and hope."""
+    waiting = client.get("/companies", params={"stage": "no-sector"}).text
+    assert "Fiduciaire" in waiting
+
+    db.save_sector(conn, 1, "legal-accounting", model="m")
+    conn.commit()
+    assert "Fiduciaire" not in client.get(
+        "/companies", params={"stage": "no-sector"}
+    ).text
 
 
 def test_pipeline_state_and_notes_are_written(client, conn) -> None:

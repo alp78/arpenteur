@@ -75,6 +75,69 @@ def test_a_label_removed_by_hand_goes_away(conn) -> None:
     assert conn.execute("SELECT COUNT(*) AS n FROM intel.segment").fetchone()[0] == 0
 
 
+# --- the sector, which is one per company rather than several -----------------
+
+
+def place(conn, sector: str, confidence: float = 0.6) -> None:
+    db.save_sector(
+        conn, 1, sector, confidence=confidence,
+        rationale="the model's reading", model="claude-haiku-4-5",
+    )
+
+
+def test_a_manual_sector_survives_re_classification(conn) -> None:
+    """Same guard as the segments, and it has to be a separate one.
+
+    The sector's conflict target is the company rather than the pair, so the
+    clause that protects a segment protects nothing here: without its own
+    WHERE, a re-run would not merely restore a confidence, it would move the
+    company into a different trade.
+    """
+    place(conn, "hospitality")
+    db.set_sector_manually(conn, 1, "construction", rationale="they build kitchens")
+
+    place(conn, "hospitality", confidence=0.95)
+
+    row = conn.execute("SELECT * FROM intel.sector").fetchone()
+    assert row["sector"] == "construction", "a re-run moved a company by hand into another trade"
+    assert row["source"] == "manual"
+    assert row["rationale"] == "they build kitchens"
+
+
+def test_the_model_may_still_correct_its_own_sector(conn) -> None:
+    place(conn, "retail", confidence=0.3)
+    place(conn, "hospitality", confidence=0.9)
+    row = conn.execute("SELECT sector, confidence, source FROM intel.sector").fetchone()
+    assert (row["sector"], row["confidence"], row["source"]) == ("hospitality", 0.9, "model")
+
+
+def test_a_company_has_at_most_one_sector(conn) -> None:
+    """The whole difference from a segment, enforced by the primary key."""
+    place(conn, "retail")
+    place(conn, "hospitality")
+    assert conn.execute("SELECT COUNT(*) AS n FROM intel.sector").fetchone()[0] == 1
+
+
+def test_clearing_the_sector_by_hand_removes_the_row(conn) -> None:
+    """Not classified is an absent row, so "no answer" has one representation."""
+    place(conn, "retail")
+    db.set_sector_manually(conn, 1, "", author="alex")
+    assert conn.execute("SELECT COUNT(*) AS n FROM intel.sector").fetchone()[0] == 0
+
+
+def test_a_sector_set_by_hand_is_marked_as_such(conn) -> None:
+    db.set_sector_manually(conn, 1, "hospitality", author="alex")
+    row = conn.execute("SELECT * FROM intel.sector").fetchone()
+    assert row["source"] == "manual" and row["model"] == "alex"
+    assert row["confidence"] == 1.0
+
+
+def test_a_sector_dies_with_the_company_row(conn) -> None:
+    place(conn, "retail")
+    conn.execute("DELETE FROM core.company WHERE id = 1")
+    assert conn.execute("SELECT COUNT(*) AS n FROM intel.sector").fetchone()[0] == 0
+
+
 # --- the follow-up log --------------------------------------------------------
 
 

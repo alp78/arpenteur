@@ -444,6 +444,7 @@ def test_the_company_page_shows_what_the_score_is_made_of(db_path):
         database_url=db_path,
         territory=Territory(cantons=("GE",), legal_forms=("0107",), name="geneve"),
         segments={},
+        sectors={},
     )
     page = TestClient(create_app(settings)).get(f"/company/{company_id}").text
     assert "how the score is made" in page

@@ -124,7 +124,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             args = request.query_params
             rows, total = scout_store.search_companies(
                 conn, q=args.get("q", ""), canton=args.get("canton", ""),
-                segment=args.get("segment", ""), band=args.get("band", ""),
+                segment=args.get("segment", ""), sector=args.get("sector", ""),
+                band=args.get("band", ""),
                 state=args.get("state", ""), stage=args.get("stage", ""),
             )
             cantons = scout_store.cantons_present(conn)
@@ -136,6 +137,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                     state=args.get("state", ""), stage=args.get("stage", ""),
                     cantons=cantons,
                     segments=sorted(settings.segments), states=list(db.PROSPECT_STATES),
+                    sector=args.get("sector", ""),
+                    sectors=sorted(settings.sectors),
                 )
                 + f'<div id="list">{render.company_table(rows, total)}</div>'
             )
@@ -159,7 +162,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             args = request.query_params
             rows, total = scout_store.search_companies(
                 conn, q=args.get("q", ""), canton=args.get("canton", ""),
-                segment=args.get("segment", ""), band=args.get("band", ""),
+                segment=args.get("segment", ""), sector=args.get("sector", ""),
+                band=args.get("band", ""),
                 state=args.get("state", ""), stage=args.get("stage", ""),
             )
             query = str(request.url.query or "")
@@ -220,6 +224,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                         scout_store.disagreements(conn, company_id)
                     )
                 ),
+                sector=scout_store.sector_for(conn, company_id),
+                sector_vocabulary=sorted(settings.sectors),
             )
             return shell(body, "/")
         finally:
@@ -244,6 +250,32 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                     company_id,
                     scout_store.segments_for(conn, company_id),
                     sorted(settings.segments),
+                )
+            )
+        finally:
+            conn.close()
+
+    @app.post("/company/{company_id}/sector", response_class=HTMLResponse)
+    async def set_sector(company_id: int, request: Request) -> HTMLResponse:
+        """The trade as a person sees it, marked so no re-run undoes it.
+
+        A name outside the vocabulary is refused rather than stored. The only
+        way to send one is to have edited the form, and accepting it would put
+        a sector in the filter dropdown that no definition anywhere explains.
+        """
+        form = await request.form()
+        chosen = str(form.get("sector") or "").strip()
+        if chosen and chosen not in settings.sectors:
+            chosen = ""
+        conn = connect()
+        try:
+            db.set_sector_manually(conn, company_id, chosen, author="console")
+            conn.commit()
+            return HTMLResponse(
+                render._sector_card(
+                    company_id,
+                    scout_store.sector_for(conn, company_id),
+                    sorted(settings.sectors),
                 )
             )
         finally:
@@ -331,6 +363,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         try:
             rows = scout_store.board(
                 conn, canton=args.get("canton", ""), segment=args.get("segment", ""),
+                sector=args.get("sector", ""),
                 band=args.get("band", ""), owner=args.get("owner", ""),
                 q=args.get("q", ""),
             )
@@ -358,6 +391,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                         owner=args.get("owner", ""),
                         cantons=scout_store.cantons_present(conn),
                         segments=sorted(settings.segments),
+                        sector=args.get("sector", ""),
+                        sectors=sorted(settings.sectors),
                         owners=scout_store.prospect_owners(conn),
                         back=str(request.url.query or ""),
                         note=args.get("note", ""),
@@ -396,7 +431,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     @app.post("/board/bring-in")
     def bring_in(
         band: str = Form("high"), segment: str = Form(""), canton: str = Form(""),
-        limit: str = Form("25"),
+        sector: str = Form(""), limit: str = Form("25"),
     ) -> RedirectResponse:
         conn = connect()
         try:
@@ -405,7 +440,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             except ValueError:
                 how_many = 25
             added = scout_store.bring_in(
-                conn, band=band, segment=segment, canton=canton, limit=how_many
+                conn, band=band, segment=segment, sector=sector, canton=canton,
+                limit=how_many
             )
             conn.commit()
             note = (
@@ -506,6 +542,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     def _map_filters(args: Any) -> dict[str, str]:
         return {
             "canton": args.get("canton", ""), "segment": args.get("segment", ""),
+            "sector": args.get("sector", ""),
             "band": args.get("band", ""), "state": args.get("state", ""),
         }
 
@@ -524,6 +561,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                         with_address=counts["with_address"],
                         cantons=scout_store.cantons_present(conn),
                         segments=sorted(settings.segments),
+                        sectors=sorted(settings.sectors),
                         states=list(db.PROSPECT_STATES),
                         attribution_notice=attribution.notice(
                             ["zefix", "geoadmin", "swissboundaries"]
@@ -2204,6 +2242,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                         catalogue=db.catalogue(conn),
                         counts=counts,
                         segments=dict(live.segments),
+                        sectors=dict(live.sectors),
                         signal_brief=live.signal_brief,
                         campaign=text,
                         campaign_digest=match.brief_digest(text.strip()) if text.strip() else "—",
@@ -2297,6 +2336,34 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         conn = connect()
         try:
             db.save_setting(conn, "segments", segments)
+            conn.commit()
+            return RedirectResponse("/settings", status_code=303)
+        finally:
+            conn.close()
+
+    @app.post("/settings/sectors")
+    async def save_sectors_setting(request: Request) -> RedirectResponse:
+        """The trade vocabulary, saved the way the segments one is.
+
+        An empty list is allowed here where it is refused for segments, and
+        the difference is what each absence means. A survey with no segments
+        cannot be sliced at all. A survey with no sectors is the survey this
+        tool was before the vocabulary existed: the classify stage asks for
+        the segments alone and nothing breaks. Sectors already stored stay
+        stored; they simply stop being offered.
+        """
+        form = await request.form()
+        names = form.getlist("sec_name")
+        texts = form.getlist("sec_text")
+        dropped = {str(v) for v in form.getlist("sec_drop")}
+        sectors = {
+            str(name).strip(): str(text).strip()
+            for name, text in zip(names, texts)
+            if str(name).strip() and str(text).strip() and str(name).strip() not in dropped
+        }
+        conn = connect()
+        try:
+            db.save_setting(conn, "sectors", sectors)
             conn.commit()
             return RedirectResponse("/settings", status_code=303)
         finally:
