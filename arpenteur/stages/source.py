@@ -217,7 +217,13 @@ def hydrate_pending(
         "ORDER BY stale_since IS NULL, last_mutation_date DESC, id"
     )
     if limit:
-        sql += " LIMIT ?"
+        # `%s`, not the `?` this carried since the SQLite days. Postgres never
+        # saw a placeholder there, so psycopg refused the call before a single
+        # request went out and every `--limit` run failed. Which left `--bulk`
+        # over the whole territory as the only hydration that worked, and that
+        # is a twenty-five hour run: the reason this survey has one canton
+        # hydrated and five untouched.
+        sql += " LIMIT %s"
         params.append(limit)
     rows = conn.execute(sql, params).fetchall()
     if not rows:

@@ -72,6 +72,36 @@ def test_the_guard_names_the_way_out(settings, conn) -> None:
     assert "--limit" in message and "--bulk" in message
 
 
+def test_a_limited_run_gets_past_its_own_query(settings, db_path: Path) -> None:
+    """The way out the guard names has to actually work.
+
+    `--limit` selected with `LIMIT ?`, a SQLite placeholder Postgres never
+    saw, so psycopg refused the call and every capped run died on the query
+    before a single request went out. The guard tests above all take the
+    uncapped path, which is why it survived: the one route they prove exists
+    was the one route nobody could take. That left `--bulk` over the whole
+    territory as the only hydration that ran, and it is a day of requests.
+
+    Reaching the network is the pass condition. There is none in a test, so
+    the failure that arrives must be about the connection rather than about
+    the statement.
+    """
+    import psycopg
+
+    connection = db.open_db(db_path)
+    for i in range(3):
+        db.upsert_company(
+            connection, {"uid": f"CHE{i}", "name": f"Name {i}", "method": "zefix"}
+        )
+    connection.commit()
+
+    with pytest.raises(Exception) as caught:
+        source.hydrate_pending(settings, connection, limit=2, log=lambda _m: None)
+    assert not isinstance(caught.value, psycopg.ProgrammingError), (
+        f"the selection query itself failed: {caught.value}"
+    )
+
+
 def test_a_small_backlog_needs_no_ceremony(settings, db_path: Path) -> None:
     """The guard is for the corpus, not for ordinary use.
 
