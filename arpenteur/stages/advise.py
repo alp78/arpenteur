@@ -293,7 +293,12 @@ def build_prompt(
         for paper in readable:
             body, cut = att.for_prompt(paper["text"])
             label = att.KIND_LABELS.get(paper["kind"] or "", paper["kind"] or "unclassified")
-            lines.append(f"\n--- {paper['filename']} ({label})")
+            # The folder is part of what the document is. Ten papers that
+            # arrived as one consultation dossier are evidence of a different
+            # weight from ten collected one at a time over a year, and the
+            # model cannot tell which it is holding from the filenames.
+            filed = f", filed in {paper['folder']}" if paper.get("folder") else ""
+            lines.append(f"\n--- {paper['filename']} ({label}{filed})")
             if paper["note"]:
                 lines.append(f"Note from the file: {paper['note']}")
             if cut:

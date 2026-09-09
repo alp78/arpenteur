@@ -1848,6 +1848,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                     ).fetchall(),
                     bool(_fresh().rate_card.strip()),
                     request.query_params.get("note", ""),
+                    clients_store.folders_for(conn, client_id),
                 )
             )
         finally:
@@ -1949,6 +1950,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         kind: str = Form(""),
         note: str = Form(""),
         project_id: str = Form(""),
+        folder_id: str = Form(""),
+        new_folder: str = Form(""),
     ) -> Response:
         """Store what the client sent, and extract the text.
 
@@ -1970,6 +1973,23 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         said: list[str] = []
         conn = connect()
         try:
+            # A folder typed into the drop is made before anything is stored,
+            # so a batch cannot half-arrive into a folder that does not exist
+            # yet. Naming one that is already there is that folder, which is
+            # what a second delivery of the same dossier should do.
+            into = int(folder_id) if folder_id.strip() else None
+            if new_folder.strip():
+                # The note is not passed on. It says where these papers came
+                # from, which is a fact about the documents; the folder's own
+                # note says what the batch is, and is written where a folder
+                # is made deliberately.
+                into, existed = clients_store.add_folder(
+                    conn, client_id, new_folder
+                )
+                said.append(
+                    f"Filed in the existing folder {new_folder.strip()}."
+                    if existed else f"Made the folder {new_folder.strip()}."
+                )
             for item in file:
                 content = await item.read()
                 name = item.filename or "file"
@@ -1992,6 +2012,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                         "kind": kind or None,
                         "note": note.strip() or None,
                         "project_id": int(project_id) if project_id.strip() else None,
+                        "folder_id": into,
                         "text": text,
                         "extract_error": error,
                     },
@@ -2022,7 +2043,9 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                 said.append("Nothing was sent, so nothing was stored.")
             if request.headers.get("HX-Request"):
                 return HTMLResponse(dossier_view.documents_panel(
-                    clients_store.attachments_for(conn, client_id), note=" ".join(said)
+                    clients_store.attachments_for(conn, client_id),
+                    folders=clients_store.folders_for(conn, client_id),
+                    client_id=client_id, note=" ".join(said),
                 ))
             return RedirectResponse(
                 f"{back}?note=" + quote(" ".join(said)), status_code=303
@@ -2183,6 +2206,75 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                 folder = att.root_for(settings.data_dir) / digest[:2]
                 for path in folder.glob(f"{digest}*"):
                     path.unlink(missing_ok=True)
+            return RedirectResponse(f"/client/{client_id}/dossier", status_code=303)
+        finally:
+            conn.close()
+
+    # --- folders --------------------------------------------------------------
+    #
+    # Filing over the documents already held. A folder is made, documents are
+    # moved into it, and removing it takes the filing and not the papers. See
+    # modules/clients/migrations/0007_folder.sql for why this is not a project.
+
+    @app.post("/dossier/{client_id}/folder")
+    def make_folder(
+        client_id: int, name: str = Form(...), note: str = Form("")
+    ) -> RedirectResponse:
+        conn = connect()
+        try:
+            try:
+                _id, existed = clients_store.add_folder(
+                    conn, client_id, name, note=note
+                )
+            except ValueError as exc:
+                return RedirectResponse(
+                    f"/client/{client_id}/dossier?note=" + quote(str(exc)),
+                    status_code=303,
+                )
+            conn.commit()
+            said = (
+                f"{name.strip()} already existed, so nothing was made."
+                if existed else f"Folder {name.strip()} made."
+            )
+            return RedirectResponse(
+                f"/client/{client_id}/dossier?note=" + quote(said), status_code=303
+            )
+        finally:
+            conn.close()
+
+    @app.post("/attachment/{attachment_id}/folder")
+    def move_attachment(
+        attachment_id: int, folder_id: str = Form("")
+    ) -> RedirectResponse:
+        """File a document, or take it out of its folder with a blank value."""
+        conn = connect()
+        try:
+            try:
+                client_id = clients_store.file_attachment(
+                    conn, attachment_id,
+                    int(folder_id) if folder_id.strip() else None,
+                )
+            except ValueError as exc:
+                conn.rollback()
+                return RedirectResponse(
+                    "/clients?note=" + quote(str(exc)), status_code=303
+                )
+            if client_id is None:
+                return RedirectResponse("/clients", status_code=303)
+            conn.commit()
+            return RedirectResponse(f"/client/{client_id}/dossier", status_code=303)
+        finally:
+            conn.close()
+
+    @app.post("/folder/{folder_id}/delete")
+    def remove_folder(folder_id: int, reason: str = Form("")) -> RedirectResponse:
+        """Remove the folder. What was in it stays, unfiled."""
+        conn = connect()
+        try:
+            client_id = clients_store.delete_folder(conn, folder_id, reason=reason)
+            if client_id is None:
+                return RedirectResponse("/clients", status_code=303)
+            conn.commit()
             return RedirectResponse(f"/client/{client_id}/dossier", status_code=303)
         finally:
             conn.close()

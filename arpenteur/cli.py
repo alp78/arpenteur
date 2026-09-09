@@ -887,6 +887,138 @@ def cmd_note(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_docs(args: argparse.Namespace) -> int:
+    """The client's papers from the shell, and the folders they go in.
+
+    The console does this by dropping files on a page, which is the right
+    interface for two documents and the wrong one for a consultation dossier
+    of ten that is already sitting in a directory. Windows paths are accepted
+    as typed, for the same reason `note` accepts them.
+    """
+    settings = load_settings()
+    conn = db.open_db(settings.database_url)
+    try:
+        client = _find_client(conn, args.client)
+    except RuntimeError as exc:
+        print(f"error: {exc}", file=sys.stderr)
+        return 1
+    client_id = int(client["id"])
+
+    if args.action == "folders":
+        rows = clients_store.folders_for(conn, client_id)
+        if not rows:
+            print(f"No folders on {client['code']}.")
+        for row in rows:
+            print(f"{row['id']:>4}  {row['name'][:44]:46} "
+                  f"{row['documents']:>3} document(s)  "
+                  f"{row['bytes'] / 1024:>8,.0f} kB")
+            if row["note"]:
+                print(f"      {row['note']}")
+        conn.close()
+        return 0
+
+    if args.action == "list":
+        rows = clients_store.attachments_for(conn, client_id)
+        if not rows:
+            print(f"No documents on {client['code']}.")
+        for row in rows:
+            state = row["extract_error"] or f"{row['text_chars'] or 0:,} chars"
+            print(f"{row['id']:>4}  {(row['created_at'] or '')[:10]}  "
+                  f"{row['filename'][:44]:46} {(row['folder'] or '—')[:22]:24} "
+                  f"{state}")
+        conn.close()
+        return 0
+
+    if args.action == "mkdir":
+        if not args.path:
+            print("error: name the folder", file=sys.stderr)
+            return 1
+        folder_id, existed = clients_store.add_folder(
+            conn, client_id, " ".join(args.path), note=args.note or None
+        )
+        conn.commit()
+        print(f"{'exists' if existed else 'made'}: folder {folder_id} on "
+              f"{client['code']} — {' '.join(args.path)}")
+        conn.close()
+        return 0
+
+    if args.action == "file":
+        if len(args.path) < 1:
+            print("error: name the document id", file=sys.stderr)
+            return 1
+        target = None
+        if args.folder:
+            target, _ = clients_store.add_folder(conn, client_id, args.folder)
+        try:
+            owner = clients_store.file_attachment(conn, int(args.path[0]), target)
+        except ValueError as exc:
+            print(f"error: {exc}", file=sys.stderr)
+            return 1
+        if owner is None:
+            print("error: no such document", file=sys.stderr)
+            return 1
+        conn.commit()
+        print(f"document {args.path[0]} "
+              + (f"filed in {args.folder}" if target else "taken out of its folder"))
+        conn.close()
+        return 0
+
+    # add
+    if not args.path:
+        print("error: name at least one file", file=sys.stderr)
+        return 1
+    folder_id = None
+    if args.folder:
+        # `--note` describes the papers, not the folder. A folder's own note is
+        # written by `docs mkdir`, so a second batch dropped into an existing
+        # folder cannot silently retitle it.
+        folder_id, existed = clients_store.add_folder(conn, client_id, args.folder)
+        print(f"{'folder' if existed else 'new folder'}: {args.folder}")
+    stored = 0
+    for given in args.path:
+        path = _local_path(given)
+        if not path.is_file():
+            print(f"error: no such file: {path}", file=sys.stderr)
+            continue
+        content = path.read_bytes()
+        try:
+            kept = att.store(settings.data_dir, content, path.name)
+        except ValueError as exc:
+            print(f"  {path.name}: {exc}", file=sys.stderr)
+            continue
+        text, error = att.extract(content, path.name, "")
+        _id, existed = clients_store.add_attachment(conn, client_id, {
+            "filename": path.name,
+            "media_type": "",
+            "bytes": kept.bytes,
+            "sha256": kept.sha256,
+            "kind": args.kind or None,
+            "note": args.note.strip() or None,
+            "folder_id": folder_id,
+            "text": text,
+            "extract_error": error,
+        })
+        if existed:
+            print(f"  {path.name}: already held byte for byte, labels updated")
+            continue
+        # A document arriving is part of the record, whichever door it came
+        # in by. The console writes this event and so must the shell, or a
+        # timeline says a paper appeared from nowhere.
+        db.record_event(
+            conn, client_id, kind="document", occurred_at=db.now(),
+            subject=f"Document received: {path.name}",
+            body=args.note.strip() or None, author="cli",
+        )
+        stored += 1
+        print(f"  {path.name}: stored, but not readable. {error}" if error
+              else f"  {path.name}: stored and read, {len(text):,} characters")
+    conn.commit()
+    print(f"{stored} document(s) stored on {client['code']}"
+          + (f", filed in {args.folder}" if args.folder else ""))
+    conn.close()
+    return 0
+
+
 def cmd_clients(args: argparse.Namespace) -> int:
     settings = load_settings()
     conn = db.open_db(settings.database_url)
@@ -947,7 +1079,8 @@ def cmd_dossier(args: argparse.Namespace) -> int:
                 if not paper["extract_error"] else f"NOT READABLE: {paper['extract_error']}"
             )
             print(f"- {paper['filename']} [{att.KIND_LABELS.get(paper['kind'] or '', '?')}] "
-                  f"{paper['bytes']} bytes, {state}")
+                  f"{paper['bytes']} bytes, {state}"
+                  + (f", filed in {paper['folder']}" if paper.get("folder") else ""))
             if paper["note"]:
                 print(f"  note: {paper['note']}")
             if args.documents and (paper["text"] or "").strip():
@@ -1449,6 +1582,31 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--tag", help="comma separated")
     p.add_argument("--pin", action="store_true", help="keep it at the top")
     p.set_defaults(func=cmd_note)
+
+    p = sub.add_parser(
+        "docs", help="the client's documents, and the folders they are filed in"
+    )
+    p.add_argument("client", help="client code, UID or name")
+    p.add_argument(
+        "action", choices=("add", "list", "folders", "mkdir", "file"),
+        help="store files, list what is held, list folders, make a folder, "
+             "or move a document into one",
+    )
+    p.add_argument(
+        "path", nargs="*", default=[],
+        help="files for add; the folder name for mkdir; a document id and a "
+             "folder name for file",
+    )
+    p.add_argument(
+        "--folder", default="",
+        help="file everything added into this folder, making it if needed",
+    )
+    p.add_argument(
+        "--kind", default="",
+        help=f"what it is: {', '.join(k for k, _ in att.KINDS if k)}",
+    )
+    p.add_argument("--note", default="", help="where it came from, for the model")
+    p.set_defaults(func=cmd_docs)
 
     p = sub.add_parser(
         "resolve",

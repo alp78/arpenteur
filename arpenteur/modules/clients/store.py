@@ -805,20 +805,22 @@ def add_attachment(
     if known:
         conn.execute(
             "UPDATE crm.attachment SET filename = %s, kind = %s, note = %s,"
-            " project_id = COALESCE(%s, project_id) WHERE id = %s",
+            " project_id = COALESCE(%s, project_id),"
+            " folder_id = COALESCE(%s, folder_id) WHERE id = %s",
             (row["filename"], row.get("kind"), row.get("note"),
-             row.get("project_id"), known["id"]),
+             row.get("project_id"), row.get("folder_id"), known["id"]),
         )
         return int(known["id"]), True
     text = row.get("text") or None
     created = conn.execute(
-        "INSERT INTO crm.attachment (client_id, project_id, filename, media_type,"
-        " bytes, sha256, kind, note, text, text_chars, extracted_at,"
+        "INSERT INTO crm.attachment (client_id, project_id, folder_id, filename,"
+        " media_type, bytes, sha256, kind, note, text, text_chars, extracted_at,"
         " extract_error, uploaded_by, created_at)"
-        " VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"
+        " VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"
         " RETURNING id",
         (
-            client_id, row.get("project_id"), row["filename"],
+            client_id, row.get("project_id"), row.get("folder_id"),
+            row["filename"],
             row.get("media_type"), row["bytes"], row["sha256"], row.get("kind"),
             row.get("note"), text, len(text) if text else None,
             now() if text else None, row.get("extract_error") or None,
@@ -829,22 +831,37 @@ def add_attachment(
 
 
 def attachments_for(
-    conn: Connection, client_id: int, *, with_text: bool = False
+    conn: Connection, client_id: int, *, with_text: bool = False,
+    folder_id: int | None = None, unfiled: bool = False,
 ) -> list[Row]:
-    """The documents held for a client.
+    """The documents held for a client, each carrying the folder it is in.
 
     `text` is left out unless asked for. The listing renders a dozen rows and
     the column holds whole annual reports; selecting it to display a filename
     would read megabytes to print kilobytes.
+
+    The folder's *name* is joined in rather than left as an id, because every
+    caller that has a document wants to say where it was filed, and none of
+    them wants a second query to find out.
     """
-    columns = "*" if with_text else (
-        "id, client_id, project_id, filename, media_type, bytes, sha256, kind,"
-        " note, text_chars, extracted_at, extract_error, uploaded_by, created_at"
+    columns = "a.*" if with_text else (
+        "a.id, a.client_id, a.project_id, a.folder_id, a.filename, a.media_type,"
+        " a.bytes, a.sha256, a.kind, a.note, a.text_chars, a.extracted_at,"
+        " a.extract_error, a.uploaded_by, a.created_at"
     )
+    where = ["a.client_id = %s"]
+    params: list[Any] = [client_id]
+    if unfiled:
+        where.append("a.folder_id IS NULL")
+    elif folder_id is not None:
+        where.append("a.folder_id = %s")
+        params.append(folder_id)
     return conn.execute(
-        f"SELECT {columns} FROM crm.attachment WHERE client_id = %s"
-        " ORDER BY created_at DESC, id DESC",
-        (client_id,),
+        f"SELECT {columns}, f.name AS folder FROM crm.attachment a"
+        " LEFT JOIN crm.folder f ON f.id = a.folder_id"
+        f" WHERE {' AND '.join(where)}"
+        " ORDER BY a.created_at DESC, a.id DESC",
+        tuple(params),
     ).fetchall()
 
 
@@ -852,6 +869,143 @@ def attachment(conn: Connection, attachment_id: int) -> Row | None:
     return conn.execute(
         "SELECT * FROM crm.attachment WHERE id = %s", (attachment_id,)
     ).fetchone()
+
+
+# --- folders ------------------------------------------------------------------
+#
+# The client's own filing over the documents already held. See
+# migrations/0007_folder.sql for why this is not a project.
+
+
+def add_folder(
+    conn: Connection, client_id: int, name: str, *, note: str | None = None
+) -> tuple[int, bool]:
+    """Make a folder, or hand back the one already called that.
+
+    Returns its id and whether it existed. Creating a folder twice is what
+    happens when a batch arrives in two deliveries, and the useful answer to
+    the second one is the first folder rather than an error or a twin.
+    """
+    name = name.strip()
+    if not name:
+        raise ValueError("a folder needs a name")
+    known = conn.execute(
+        "SELECT id FROM crm.folder WHERE client_id = %s AND lower(name) = lower(%s)",
+        (client_id, name),
+    ).fetchone()
+    if known:
+        # The name stands as it was first typed; a note is added if this
+        # delivery came with one and left alone if it did not.
+        if note and note.strip():
+            conn.execute(
+                "UPDATE crm.folder SET note = %s WHERE id = %s",
+                (note.strip(), known["id"]),
+            )
+        return int(known["id"]), True
+    created = conn.execute(
+        "INSERT INTO crm.folder (client_id, name, note, created_at)"
+        " VALUES (%s, %s, %s, %s) RETURNING id",
+        (client_id, name, (note or "").strip() or None, now()),
+    ).fetchone()
+    return int(created["id"]), False
+
+
+def folders_for(conn: Connection, client_id: int) -> list[Row]:
+    """A client's folders, each with what is in it.
+
+    The count comes from the join rather than a column on the folder, because
+    a stored count is a second copy of a fact the documents already state and
+    is wrong the first time one is moved.
+    """
+    return conn.execute(
+        "SELECT f.*, COUNT(a.id) AS documents,"
+        " COALESCE(SUM(a.bytes), 0) AS bytes"
+        "  FROM crm.folder f"
+        "  LEFT JOIN crm.attachment a ON a.folder_id = f.id"
+        " WHERE f.client_id = %s GROUP BY f.id ORDER BY lower(f.name)",
+        (client_id,),
+    ).fetchall()
+
+
+def folder(conn: Connection, folder_id: int) -> Row | None:
+    return conn.execute(
+        "SELECT * FROM crm.folder WHERE id = %s", (folder_id,)
+    ).fetchone()
+
+
+def rename_folder(
+    conn: Connection, folder_id: int, *, name: str | None = None,
+    note: str | None = None,
+) -> None:
+    sets: dict[str, Any] = {}
+    if name is not None and name.strip():
+        sets["name"] = name.strip()
+    if note is not None:
+        sets["note"] = note.strip() or None
+    if not sets:
+        return
+    columns = ", ".join(f"{k} = %s" for k in sets)
+    conn.execute(
+        f"UPDATE crm.folder SET {columns} WHERE id = %s",
+        (*sets.values(), folder_id),
+    )
+
+
+def file_attachment(
+    conn: Connection, attachment_id: int, folder_id: int | None
+) -> int | None:
+    """Put a document in a folder, or take it out of one with None.
+
+    The folder has to belong to the same client as the document. Moving a
+    paper into another client's folder is not a mistake worth a friendly
+    error; it is a confidentiality failure, and it is refused here rather than
+    trusted to whichever form happened to submit it.
+    """
+    row = conn.execute(
+        "SELECT client_id FROM crm.attachment WHERE id = %s", (attachment_id,)
+    ).fetchone()
+    if row is None:
+        return None
+    if folder_id is not None:
+        owner = conn.execute(
+            "SELECT client_id FROM crm.folder WHERE id = %s", (folder_id,)
+        ).fetchone()
+        if owner is None or int(owner["client_id"]) != int(row["client_id"]):
+            raise ValueError("that folder belongs to another client")
+    conn.execute(
+        "UPDATE crm.attachment SET folder_id = %s WHERE id = %s",
+        (folder_id, attachment_id),
+    )
+    return int(row["client_id"])
+
+
+def delete_folder(
+    conn: Connection, folder_id: int, *, reason: str = "", by: str = "console"
+) -> int | None:
+    """Remove a folder. Everything in it stays, unfiled.
+
+    The foreign key is ON DELETE SET NULL for exactly this: tidying the filing
+    is not the same act as destroying the papers, and a tool that conflates
+    them teaches people never to tidy. The tombstone says how many documents
+    came loose, because that is the number somebody will want when they
+    wonder where they went.
+    """
+    row = conn.execute(
+        "SELECT client_id, name FROM crm.folder WHERE id = %s", (folder_id,)
+    ).fetchone()
+    if row is None:
+        return None
+    held = conn.execute(
+        "SELECT COUNT(*) AS n FROM crm.attachment WHERE folder_id = %s", (folder_id,)
+    ).fetchone()["n"]
+    conn.execute("DELETE FROM crm.folder WHERE id = %s", (folder_id,))
+    _tombstone(
+        conn, row["client_id"],
+        f"folder {row['name']}"
+        + (f" — {held} document(s) kept, now unfiled" if held else " — it was empty"),
+        reason, by,
+    )
+    return int(row["client_id"])
 
 
 # --- interview preparation ----------------------------------------------------

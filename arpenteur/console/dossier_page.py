@@ -337,7 +337,9 @@ def generate_form(client_id: int, filled: int, docs: int, rate_card: bool) -> st
 # --- the client's papers ------------------------------------------------------
 
 
-def upload_form(client_id: int, projects: list[Row]) -> str:
+def upload_form(
+    client_id: int, projects: list[Row], folders: list[Row] = ()
+) -> str:
     kinds = "".join(
         f'<option value="{esc(value)}">{esc(label)}</option>'
         for value, label in ATTACHMENT_KINDS
@@ -345,6 +347,11 @@ def upload_form(client_id: int, projects: list[Row]) -> str:
     options = "".join(
         f'<option value="{p["id"]}">{esc(p["code"])} &mdash; {esc(p["name"])}</option>'
         for p in projects
+    )
+    in_folders = "".join(
+        f'<option value="{f["id"]}">{esc(f["name"])} '
+        f'({f["documents"]})</option>'
+        for f in folders
     )
     fields = (
         "<div class='two'>"
@@ -358,6 +365,19 @@ def upload_form(client_id: int, projects: list[Row]) -> str:
         f"<option value=''>The relationship, not a project</option>{options}</select>"
         "<p class='hint'>Applied to everything sent in one go, so drop a batch "
         "that belongs together.</p></div></div>"
+        "<div class='two'>"
+        f"<div><label class='small' for='fid'><b>Folder</b></label><br>"
+        f"<select id='fid' name='folder_id'>"
+        f"<option value=''>Not filed</option>{in_folders}</select>"
+        "<p class='hint'>Where these papers go. A folder is filing and nothing "
+        "else: it carries no dates, no budget and no code, so making one "
+        "commits you to nothing.</p></div>"
+        "<div><label class='small' for='fnew'><b>or a new folder</b></label><br>"
+        "<input id='fnew' name='new_folder' style='width:100%' "
+        "placeholder='Dossier de consultation 09.2026'>"
+        "<p class='hint'>Typed here, it is created and everything in this drop "
+        "goes into it. A name that already exists is that folder, not a "
+        "second one.</p></div></div>"
         "<label class='small' for='dnote'><b>Note</b></label><br>"
         "<input id='dnote' name='note' style='width:100%' "
         "placeholder='Sent by the director 14.08.2026 after the kickoff. "
@@ -383,20 +403,94 @@ def upload_form(client_id: int, projects: list[Row]) -> str:
     )
 
 
-def documents_panel(rows: list[Row], *, note: str = "") -> str:
+def documents_panel(
+    rows: list[Row], *, folders: list[Row] = (), client_id: int = 0, note: str = ""
+) -> str:
     """The papers held, wrapped in the element a drop replaces.
 
     One element, named once. Dropping four files has four outcomes and a
     redirect can report one, so the answer to an upload is this panel
     redrawn with a line per file rather than a page with a banner.
+
+    Filed papers are shown folder by folder and the unfiled ones last, because
+    the question asked of a batch is "what came in the consultation dossier",
+    and one flat list of thirty rows sorted by arrival answers it only by
+    reading every line.
     """
     said = f'<div class="banner banner-note">{note}</div>' if note else ""
-    return f'<div id="papers">{said}{documents_table(rows)}</div>'
+    return (
+        f'<div id="papers">{said}'
+        + documents_by_folder(rows, folders, client_id)
+        + new_folder_form(client_id)
+        + "</div>"
+    )
 
 
-def documents_table(rows: list[Row]) -> str:
+def new_folder_form(client_id: int) -> str:
+    if not client_id:
+        return ""
+    return (
+        f'<details class="card"><summary>new folder</summary>'
+        f'<form method="post" action="/dossier/{client_id}/folder" class="row">'
+        "<input name='name' placeholder='Dossier de consultation 09.2026' "
+        "style='width:16rem' required>"
+        "<input name='note' placeholder='What this batch is and where it came "
+        "from' style='width:22rem'>"
+        "<button>Make the folder</button>"
+        "<span class='hint'>An empty folder is a fine thing to have: it is "
+        "where the next delivery goes. Documents are moved into it from the "
+        "table above.</span></form></details>"
+    )
+
+
+def documents_by_folder(
+    rows: list[Row], folders: list[Row] = (), client_id: int = 0
+) -> str:
+    """One table per folder, then whatever is not filed."""
+    if not rows and not folders:
+        return documents_table(rows, folders=folders, client_id=client_id)
+    out = []
+    for folder in folders:
+        held = [r for r in rows if r["folder_id"] == folder["id"]]
+        out.append(
+            f'<h3 class="folder">{esc(folder["name"])} '
+            f'<span class="dim small">{len(held)} document(s)</span></h3>'
+            + (f'<p class="dim small">{esc(folder["note"])}</p>'
+               if folder["note"] else "")
+            + documents_table(
+                held, folders=folders, client_id=client_id,
+                caption=f'In {folder["name"]}',
+                empty="Nothing filed here yet.",
+            )
+            + f'<details class="del"><summary>delete this folder</summary>'
+            f'<form method="post" action="/folder/{folder["id"]}/delete">'
+            "<input name='reason' placeholder='Why, for the tombstone'>"
+            "<button>Delete folder</button>"
+            "<span class='hint'>Removes the folder only. The "
+            f"{len(held)} document(s) in it stay, unfiled, and the timeline "
+            "keeps a note saying the folder went and why.</span>"
+            "</form></details>"
+        )
+    loose = [r for r in rows if not r["folder_id"]]
+    if loose or not folders:
+        out.append(
+            '<h3 class="folder">Not in a folder '
+            f'<span class="dim small">{len(loose)} document(s)</span></h3>'
+            + documents_table(
+                loose, folders=folders, client_id=client_id,
+                caption="Documents not filed in any folder",
+            )
+        )
+    return "".join(out)
+
+
+def documents_table(
+    rows: list[Row], *, folders: list[Row] = (), client_id: int = 0,
+    caption: str = "Documents the client has sent", empty: str = "",
+) -> str:
     if not rows:
         return (
+            f"<p class='dim small'>{esc(empty)}</p>" if empty else
             "<p class='dim small'>No documents yet. Anything the client sends "
             "goes here: the accounts, a supplier's proposal, an internal "
             "policy, a system inventory. What is stored here is what the "
@@ -423,7 +517,8 @@ def documents_table(rows: list[Row]) -> str:
             f'<td class="small">{state}</td>'
             f'<td class="small dim nowrap">{esc((row["created_at"] or "")[:10])}</td>'
             f'<td class="small dim" title="content digest">{esc((row["sha256"] or "")[:12])}</td>'
-            f'<td class="small"><details class="del"><summary>delete</summary>'
+            + f'<td class="small">{_move_form(row, folders)}</td>'
+            + f'<td class="small"><details class="del"><summary>delete</summary>'
             f'<form method="post" action="/attachment/{row["id"]}/delete">'
             "<input name='reason' placeholder='Why, for the tombstone'>"
             "<button>Delete document</button>"
@@ -433,8 +528,35 @@ def documents_table(rows: list[Row]) -> str:
             "</tr>"
         )
     return ui.table(
-        ["document", "what it is", "size", "text", "added", "digest", ""],
-        out, caption="Documents the client has sent", css="docs",
+        ["document", "what it is", "size", "text", "added", "digest",
+         "filed in", ""],
+        out, caption=caption, css="docs",
+    )
+
+
+def _move_form(row: Row, folders: list[Row]) -> str:
+    """Where this document is filed, and the control that moves it.
+
+    A select and a button rather than a select that submits itself: this posts
+    with no JavaScript, and a filing that changes on a stray scroll wheel is
+    worse than one that takes a click.
+    """
+    here = row["folder_id"]
+    if not folders:
+        return '<span class="dim">&mdash;</span>'
+    options = "".join(
+        f'<option value="{f["id"]}"{" selected" if f["id"] == here else ""}>'
+        f'{esc(f["name"])}</option>'
+        for f in folders
+    )
+    label = esc(row["folder"]) if row["folder"] else "&mdash;"
+    return (
+        f'<details><summary>{label}</summary>'
+        f'<form method="post" action="/attachment/{row["id"]}/folder">'
+        f'<select name="folder_id">'
+        f'<option value=""{"" if here else " selected"}>Not filed</option>'
+        f"{options}</select>"
+        "<button>Move</button></form></details>"
     )
 
 
@@ -451,6 +573,7 @@ def dossier_page(
     projects: list[Row],
     rate_card: bool,
     note: str = "",
+    folders: list[Row] = (),
 ) -> str:
     filled = len(vocab.filled(sections))
     history = ""
@@ -481,15 +604,16 @@ def dossier_page(
         "been tried, none of which is in any register.</p>"
         + (f'<div class="warn">{esc(note)}</div>' if note else "")
         + f'<p class="meta">{filled} of {len(vocab.SECTIONS)} sections filled '
-          f'&middot; {len(papers)} documents held &middot; '
-          f'<a href="/client/{client["id"]}/prep">interview prep</a></p>'
+          f'&middot; {len(papers)} documents held'
+          + (f' in {len(folders)} folder(s)' if folders else "")
+          + f' &middot; <a href="/client/{client["id"]}/prep">interview prep</a></p>'
         + "<h2>suggested approach</h2>"
         + generate_form(client["id"], filled, len(papers), rate_card)
         + approach_block(approach, rate_card)
         + history
         + "<h2>documents from the client</h2>"
-        + documents_panel(papers)
-        + upload_form(client["id"], projects)
+        + documents_panel(papers, folders=folders, client_id=client["id"])
+        + upload_form(client["id"], projects, folders)
         + "<h2>the dossier</h2>"
         + dossier_form(client["id"], sections)
     )
