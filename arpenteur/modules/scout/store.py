@@ -1628,6 +1628,48 @@ def mark_reached(conn: Connection, company_id: int, pages: int) -> None:
     )
 
 
+# --- the address hunt -----------------------------------------------------------
+
+
+def save_address_hunt(conn: Connection, company_id: int, hunt: Any) -> None:
+    """Record how far the cascade got, including when it got nowhere.
+
+    Upserted on the company, because a hunt is the current state of the
+    looking rather than a log of every attempt: a later run that finds an
+    address supersedes the one that did not, and keeping both would leave two
+    rows disagreeing about whether the company is reachable.
+    """
+    conn.execute(
+        "INSERT INTO intel.address_hunt (company_id, outcome, tier, domain,"
+        " addresses, method, pages, searches, tried, note, hunted_at)"
+        " VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"
+        " ON CONFLICT (company_id) DO UPDATE SET"
+        " outcome = EXCLUDED.outcome, tier = EXCLUDED.tier,"
+        " domain = EXCLUDED.domain, addresses = EXCLUDED.addresses,"
+        " method = EXCLUDED.method, pages = EXCLUDED.pages,"
+        " searches = EXCLUDED.searches, tried = EXCLUDED.tried,"
+        " note = EXCLUDED.note, hunted_at = EXCLUDED.hunted_at",
+        (company_id, hunt.outcome, hunt.tier, hunt.domain,
+         list(hunt.addresses), hunt.method or None, hunt.pages, hunt.searches,
+         json_param(hunt.tried or None), hunt.note or None, now()),
+    )
+
+
+def address_hunt(conn: Connection, company_id: int) -> Row | None:
+    return conn.execute(
+        "SELECT * FROM intel.address_hunt WHERE company_id = %s", (company_id,)
+    ).fetchone()
+
+
+def hunt_counts(conn: Connection) -> dict[str, int]:
+    return {
+        str(row["outcome"]): int(row["n"])
+        for row in conn.execute(
+            "SELECT outcome, COUNT(*) AS n FROM intel.address_hunt GROUP BY outcome"
+        )
+    }
+
+
 # --- runs ---------------------------------------------------------------------
 
 

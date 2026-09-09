@@ -39,15 +39,16 @@ marginally more addresses and would be a different kind of program.
 from __future__ import annotations
 
 import urllib.robotparser
-from dataclasses import dataclass
+from dataclasses import dataclass, field as dc_field
 from typing import Any, Callable
 from urllib.parse import urlsplit, urlunsplit
 
 from .. import db
 from ..config import Settings
 from ..kernel.db import Connection, Row
+from ..modules.scout import store as scout_store
 from ..http import PoliteClient
-from ..sources import web
+from ..sources import mailcheck, web
 
 # Home page plus this many candidate contact pages. Four covers the site that
 # splits contact, impressum and team across separate pages, and stops well
@@ -374,19 +375,444 @@ def run(
     return stats
 
 
-# --- the tiers below this line ------------------------------------------------
+# --- the cascade --------------------------------------------------------------
 #
-# `pattern` would take the companies counted in for_pattern: a domain we know
-# and no published address. Given one address elsewhere on the domain and the
-# officers already in `person`, the house convention is usually inferable
-# (prenom.nom@, initiale.nom@, nom@). It must not be stored as an address
-# until verified, or the dataset fills with plausible strings nobody can tell
-# from facts, and `method` stops meaning anything. That verification is the
-# part that needs deciding: SMTP probing is rude and widely blocked, so the
-# honest options are a paid verifier or storing the guess as a candidate with
-# a status of its own.
+# Five tiers, cheapest and most consented first, and a company stops at the
+# first one that answers. The ordering is not a preference: tier 1 is an
+# address the company chose to publish, tier 3 is a string this program made
+# up, and a dataset that cannot tell them apart has stopped being evidence.
 #
-# `provider` is a paid lookup and needs an account, a per-query cost and a
-# processing-agreement read before it writes a single row. Under the nLPD a
-# bought address has a different basis from a published one, and the `method`
-# column is what would let anyone tell them apart afterwards.
+#   1  site      read off the company's own pages          free, certain
+#   2  search    a web search finds the site, then read it  costs a search
+#   3  inferred  a role address at the known domain         free, a candidate
+#   4  variants  other domains the name suggests            free, a candidate
+#   5  none      every tier ran, there is nothing           free, and settled
+#
+# Tier 5 is a result, not a failure. Storing "looked everywhere, found none"
+# is what stops the paid tier being spent twice on the same company, and it is
+# what lets an export print a dash and mean it.
+
+SEARCH_SCHEMA: dict[str, Any] = {
+    "type": "object",
+    "properties": {
+        "website": {"type": ["string", "null"]},
+        "emails": {"type": "array", "items": {"type": "string"}},
+        "confidence": {"type": "number"},
+        "reasoning": {"type": "string"},
+    },
+    "required": ["website", "emails", "confidence", "reasoning"],
+    "additionalProperties": False,
+}
+
+SEARCH_SYSTEM = (
+    "You find the official website and published contact addresses of one "
+    "named Swiss company. Return only what you can see on a page you actually "
+    "opened. Swiss company names collide constantly, so a site that belongs to "
+    "a namesake in another canton is a wrong answer, not a partial one: when "
+    "the town or the register name does not agree, return null and say so. "
+    "Never construct an address from a pattern; that is another tier's job and "
+    "it is recorded differently."
+)
+
+
+@dataclass
+class Hunt:
+    """What the cascade established about one company."""
+
+    outcome: str
+    tier: int | None = None
+    domain: str | None = None
+    addresses: list[str] = dc_field(default_factory=list)
+    method: str = ""
+    pages: int = 0
+    searches: int = 0
+    tried: list[dict[str, str]] = dc_field(default_factory=list)
+    note: str = ""
+    # Page each address was on, so `core.contact.source_url` stays truthful.
+    where: dict[str, str] = dc_field(default_factory=dict)
+
+
+def own_domain_only(
+    addresses: list[str], domain: str | None
+) -> tuple[list[str], list[str]]:
+    """Split what was found into this company's addresses and other people's.
+
+    A company's site carries other companies' addresses: a partner, a group
+    sister, the agency that built the site, a syndicate member. Reading naef.ch
+    returned `info@acanthe.ch`, `info@sioux.immo` and `info@alios-sa.ch`, and
+    because they are role addresses the ranking put all three above Naef's own.
+
+    Filing another firm's address under this one is worse than finding nothing:
+    nothing is a gap, and this is a wrong fact that a later mail-merge acts on.
+    So only addresses at the site's own domain are kept, and the rest are
+    recorded as seen and set aside.
+    """
+    if not domain:
+        return list(addresses), []
+    root = domain.lower().lstrip(".")
+    mine, theirs = [], []
+    for address in addresses:
+        at = mailcheck.domain_of(address)
+        (mine if at == root or at.endswith("." + root) else theirs).append(address)
+    return mine, theirs
+
+
+def rank_addresses(addresses: list[str]) -> list[str]:
+    """Every address found, role addresses first.
+
+    All of them are kept: a régie publishes a switchboard, a lettings desk and
+    often a named manager, and which one to write to about a handover is the
+    operator's call rather than this program's. The ordering only decides which
+    one an export shows when it has room for one.
+    """
+    ranked = sorted(
+        dict.fromkeys(a.strip().lower() for a in addresses if a.strip()),
+        key=lambda a: (
+            a.partition("@")[0] not in mailcheck.ROLE_PARTS,  # roles first
+            len(a),
+            a,
+        ),
+    )
+    return ranked
+
+
+def _search_for_site(
+    provider: Any, company: Row, *, model: str, max_tokens: int
+) -> tuple[dict[str, Any], int, int]:
+    """Tier 2: ask a search to find the site and any address on it.
+
+    Deliberately a much smaller call than `enrich`. That stage researches a
+    company in depth and costs about a franc; this one asks two questions and
+    caps the searching, because the answer needed here is a domain and a
+    mailto, not a picture of the business.
+    """
+    town = company["legal_seat"] or company["canton"] or "Switzerland"
+    user = (
+        f"Company: {company['name']}\n"
+        f"Registered seat: {town}, Switzerland\n"
+        f"Swiss UID: {company['uid']}\n\n"
+        "Find its official website and any contact email addresses published "
+        "on it. If several addresses are published, return all of them."
+    )
+    result = provider.research(
+        system=SEARCH_SYSTEM, user=user, model=model,
+        max_tokens=max_tokens, schema=SEARCH_SCHEMA, max_searches=2,
+    )
+    return result.data, result.searches, result.input_tokens + result.output_tokens
+
+
+def hunt_one(
+    client: PoliteClient,
+    company: Row,
+    *,
+    agent: str,
+    url: str | None = None,
+    provider: Any = None,
+    model: str = "",
+    max_tokens: int = 1200,
+    language: str = "",
+    mx_cache: dict[str, bool] | None = None,
+    places: frozenset[str] | None = None,
+    allow_search: bool = True,
+    allow_inference: bool = True,
+) -> Hunt:
+    """Run the cascade for one company and stop at the first tier that answers."""
+    mx_cache = mx_cache if mx_cache is not None else {}
+    tried: list[dict[str, str]] = []
+    domain = _host(url) if url else None
+    pages = searches = 0
+
+    # --- tier 1: the site we already know about -------------------------------
+    if url:
+        reading = published(client, url, agent)
+        pages += reading.pages
+        if reading.refused:
+            tried.append({"what": url, "why": reading.refused})
+        found, others = own_domain_only(
+            [a for a, _ in reading.addresses if mailcheck.shape_ok(a)], domain
+        )
+        found = rank_addresses(found)
+        if others:
+            tried.append({"what": f"{len(others)} address(es) at other domains",
+                          "why": "not this company's domain"})
+        if found:
+            where = {a.lower(): p for a, p in reading.addresses}
+            return Hunt("site", 1, domain, found, "published", pages, 0, tried,
+                        where=where)
+
+    # --- tier 2: search the web for the site, then read it --------------------
+    if allow_search and provider is not None:
+        try:
+            data, used, _tokens = _search_for_site(
+                provider, company, model=model, max_tokens=max_tokens
+            )
+            searches += used
+            site = (data.get("website") or "").strip()
+            said = [a for a in (data.get("emails") or []) if mailcheck.shape_ok(a)]
+            if site:
+                domain = _host(site) or domain
+            # An address the search reported is still hearsay until the page is
+            # read, so the site is opened and the address taken from it. What
+            # the search is really for is the domain.
+            if site:
+                reading = published(client, site, agent)
+                pages += reading.pages
+                seen, others = own_domain_only(
+                    [a for a, _ in reading.addresses if mailcheck.shape_ok(a)],
+                    _host(site),
+                )
+                seen = rank_addresses(seen)
+                if others:
+                    tried.append({"what": f"{len(others)} address(es) at other domains",
+                                  "why": "not this company's domain"})
+                if seen:
+                    where = {a.lower(): p for a, p in reading.addresses}
+                    return Hunt("search", 2, domain, seen, "published", pages,
+                                searches, tried, where=where)
+                if reading.refused:
+                    tried.append({"what": site, "why": reading.refused})
+            if said:
+                # The page could not be read but the search saw addresses on
+                # it. Kept, marked as the weaker thing it is.
+                ranked = rank_addresses(said)
+                return Hunt("search", 2, domain, ranked, "published", pages,
+                            searches, tried,
+                            note="reported by search, page not readable",
+                            where={a: site for a in ranked})
+        except Exception as exc:  # noqa: BLE001
+            tried.append({"what": "web search", "why": f"{type(exc).__name__}: {exc}"})
+
+    # --- tiers 3 and 4: construct, and verify what can be verified ------------
+    if allow_inference:
+        wanted: list[str] = []
+        if domain:
+            wanted.append(domain)
+        # Tier 4 is domains the name suggests. It is a real tier rather than a
+        # restatement of tier 3 because the *domain* is checkable by DNS where
+        # an individual mailbox is not: `nicod.ch` either answers or it does
+        # not, and that is a fact.
+        for guess in mailcheck.domain_candidates(
+            company["name"], seat=company["legal_seat"] or "",
+            places=places or frozenset(),
+        ):
+            if guess not in wanted:
+                wanted.append(guess)
+
+        for index, candidate_domain in enumerate(wanted):
+            if not mailcheck.accepts_mail(candidate_domain, cache=mx_cache):
+                tried.append({"what": candidate_domain, "why": "takes no mail"})
+                continue
+            # A domain that resolves is not a domain that belongs to this
+            # company, and DNS cannot tell the difference. Guessing from branch
+            # names produced `nyon.ch`, `lancy.ch` and `fribourg.ch`, which are
+            # a commune, a commune and a city: all real, all accepting mail,
+            # all the wrong recipient. Only the page settles it, so the page is
+            # read and has to name the firm.
+            if candidate_domain != _host(url or ""):
+                probe = _page(client, f"https://{candidate_domain}/")
+                pages += 1
+                if not probe:
+                    tried.append({"what": candidate_domain, "why": "no page to read"})
+                    continue
+                if not mailcheck.page_confirms(
+                    web.visible_text(probe), company["name"],
+                    seat=company["legal_seat"] or "", places=places or frozenset(),
+                ):
+                    tried.append(
+                        {"what": candidate_domain, "why": "page does not name this firm"}
+                    )
+                    continue
+                # It is theirs, and it was fetched. An address printed on it
+                # beats one this program made up, so the site is read properly
+                # before anything is constructed: the whole contact-page budget,
+                # not just the home page, because a régie prints one address per
+                # branch on a contact page and one switchboard on the front.
+                reading = published(client, f"https://{candidate_domain}/", agent)
+                pages += reading.pages
+                seen, others = own_domain_only(
+                    [a for a, _ in reading.addresses if mailcheck.shape_ok(a)],
+                    candidate_domain,
+                )
+                seen = rank_addresses(seen)
+                if others:
+                    tried.append({"what": f"{len(others)} address(es) at other domains",
+                                  "why": "not this company's domain"})
+                if seen:
+                    where = {a.lower(): p for a, p in reading.addresses}
+                    return Hunt("site", 1, candidate_domain, seen, "published",
+                                pages, searches, tried, where=where)
+            role = mailcheck.candidates(candidate_domain, language=language)
+            if not role:
+                continue
+            # Every role address at a domain that accepts mail passes the same
+            # check, because MX answers for the domain and never for the
+            # mailbox. So one is offered rather than twelve: a list of twelve
+            # equally unverified strings is not twelve times the evidence.
+            address = role[0]
+            return Hunt(
+                "inferred", 3 if index == 0 and domain else 4,
+                candidate_domain, [address], "inferred", pages, searches, tried,
+                note="constructed at a confirmed domain, mailbox unverified",
+            )
+
+    return Hunt("none", None, domain, [], "", pages, searches, tried,
+                note="every tier ran")
+
+
+def _host(url: str) -> str | None:
+    host = urlsplit(url if "//" in url else f"https://{url}").netloc.lower()
+    host = host.split("@")[-1].split(":")[0]
+    return host[4:] if host.startswith("www.") else host or None
+
+
+def _language_of(canton: str | None) -> str:
+    """The language to try role addresses in, from the canton.
+
+    An approximation, and the same one `arpenteur.toml` makes: a canton is
+    placed by its majority language. It decides only which of `info@`,
+    `kontakt@` or `contatto@` is offered first, so being wrong at the bilingual
+    edges costs an ordering rather than a result.
+    """
+    canton = (canton or "").upper()
+    if canton in ("GE", "VD", "NE", "JU"):
+        return "fr"
+    if canton == "TI":
+        return "it"
+    if canton in ("FR", "VS"):
+        return "fr"
+    return "de"
+
+
+def hunt_all(
+    settings: Settings,
+    conn: Connection,
+    *,
+    company_ids: list[int] | None = None,
+    sector: str | None = None,
+    canton: str | None = None,
+    limit: int | None = None,
+    refresh: bool = False,
+    allow_search: bool = True,
+    allow_inference: bool = True,
+    dry_run: bool = False,
+    log: Callable[[str], None] = print,
+) -> dict[str, Any]:
+    """Run the cascade over a selection, cheapest tier first, one pass.
+
+    Every company gets a row in `intel.address_hunt`, including the ones where
+    nothing was found. That is the point of the negative: without it the tier
+    that costs money is paid for again on the next run, for the same companies,
+    for the same nothing.
+    """
+    where = ["c.status = 'ACTIVE'"]
+    params: list[Any] = []
+    if company_ids:
+        where.append("c.id = ANY(%s)")
+        params.append(list(company_ids))
+    if sector:
+        where.append(
+            "EXISTS (SELECT 1 FROM intel.sector x"
+            " WHERE x.company_id = c.id AND x.sector = %s)"
+        )
+        params.append(sector)
+    if canton:
+        where.append("c.canton = ANY(%s)")
+        params.append([p.strip().upper() for p in canton.split(",") if p.strip()])
+    if not refresh:
+        where.append(
+            "NOT EXISTS (SELECT 1 FROM intel.address_hunt h"
+            " WHERE h.company_id = c.id)"
+        )
+    sql = (
+        "SELECT c.id, c.uid, c.name, c.canton, c.legal_seat, w.url"
+        "  FROM core.company c"
+        "  LEFT JOIN intel.site w ON w.company_id = c.id"
+        f" WHERE {' AND '.join(where)} ORDER BY c.name"
+    )
+    if limit:
+        sql += f" LIMIT {int(limit)}"
+    companies = conn.execute(sql, params).fetchall()
+
+    stats: dict[str, Any] = {
+        "considered": len(companies), "site": 0, "search": 0, "inferred": 0,
+        "none": 0, "addresses": 0, "new": 0, "pages": 0, "searches": 0,
+        "failed": 0,
+    }
+    if not companies:
+        log("Nothing to hunt. Everything selected already has a result; "
+            "pass --refresh to look again.")
+        return stats
+
+    if dry_run:
+        log(f"{len(companies)} companies would be hunted:")
+        for company in companies[:20]:
+            log(f"  {company['uid']}  {company['name'][:40]:42} "
+                f"{company['url'] or '(no site known)'}")
+        if len(companies) > 20:
+            log(f"  ... and {len(companies) - 20} more")
+        return stats
+
+    provider = None
+    model = ""
+    if allow_search:
+        try:
+            from .. import llm
+
+            provider = llm.get_provider(settings)
+            model = settings.llm.enrich_model
+        except Exception as exc:  # noqa: BLE001
+            log(f"  no search tier: {exc}")
+
+    agent = settings.zefix.contact
+    mx_cache: dict[str, bool] = {}
+    # Every Swiss commune name, from the register itself rather than a list
+    # kept by hand. It is what stops a branch office's town becoming its
+    # domain, and it costs one query.
+    places = frozenset(
+        word
+        for row in conn.execute(
+            "SELECT DISTINCT legal_seat FROM core.company"
+            " WHERE legal_seat IS NOT NULL AND legal_seat <> ''"
+        )
+        for word in mailcheck.WORD.findall(mailcheck.deaccent(row["legal_seat"]).lower())
+        if len(word) > 2
+    )
+    with _client(settings) as client:
+        for index, company in enumerate(companies, 1):
+            try:
+                hunt = hunt_one(
+                    client, company, agent=agent, url=company["url"],
+                    provider=provider, model=model,
+                    language=_language_of(company["canton"]),
+                    mx_cache=mx_cache, places=places, allow_search=allow_search,
+                    allow_inference=allow_inference,
+                )
+            except Exception as exc:  # noqa: BLE001
+                stats["failed"] += 1
+                log(f"  ! {company['name'][:40]:42} {type(exc).__name__}: {exc}")
+                continue
+
+            stats[hunt.outcome] = stats.get(hunt.outcome, 0) + 1
+            stats["pages"] += hunt.pages
+            stats["searches"] += hunt.searches
+            stats["addresses"] += len(hunt.addresses)
+            for address in hunt.addresses:
+                stats["new"] += db.save_contact(
+                    conn, company_id=company["id"], kind="email", value=address,
+                    source_url=hunt.where.get(address) or (
+                        f"https://{hunt.domain}" if hunt.domain else None
+                    ),
+                    method=hunt.method or "inferred",
+                )
+            scout_store.save_address_hunt(conn, int(company["id"]), hunt)
+            conn.commit()
+
+            if hunt.addresses:
+                shown = ", ".join(hunt.addresses[:2])
+                extra = f" (+{len(hunt.addresses) - 2})" if len(hunt.addresses) > 2 else ""
+                log(f"  {hunt.tier} {company['name'][:36]:38} {shown[:44]}{extra}")
+            else:
+                log(f"  - {company['name'][:36]:38} nothing published")
+            if index % 25 == 0:
+                log(f"  {index}/{len(companies)}")
+    return stats

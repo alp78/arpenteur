@@ -85,6 +85,25 @@ suisse = [
     "ZG", "ZH",
 ]
 
+# The language regions, for a campaign that writes to each company in its own
+# language. A canton is placed by its majority language, which is an
+# approximation and is wrong at four known edges: Bern is German-speaking with
+# a French Jura bernois, Fribourg and Valais are officially bilingual with
+# German minorities, and Grisons is trilingual.
+#
+# Romansh cannot be selected this way at all. It is spoken by a minority of one
+# canton, in named valleys, so `romanche` below is Grisons entire and is a
+# starting point rather than an answer: the register stores each company's
+# `legal_seat`, which is a commune, and that is the column a real Romansh list
+# would be built from.
+suisse-romande = ["GE", "VD", "FR", "NE", "VS", "JU"]
+suisse-alemanique = [
+    "AG", "AI", "AR", "BE", "BL", "BS", "GL", "GR", "LU", "NW", "OW", "SG",
+    "SH", "SO", "SZ", "TG", "UR", "ZG", "ZH",
+]
+suisse-italienne = ["TI"]
+romanche = ["GR"]
+
 [zefix]
 base_url = "https://www.zefix.admin.ch/ZefixPublicREST"
 # Requests per second. The registry is a public service run for everyone;
