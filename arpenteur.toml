@@ -249,16 +249,30 @@ payment_days = 30
 # Write it however you actually quote. Name the unit (day, package, month),
 # give a range where you quote a range, and say what moves a price inside it.
 card = """
-Diagnostic, fixed fee. 2 to 4 days on site: inventory of systems, mapping of \
-flows, written report and a prioritised list. CHF 3'600 to CHF 7'200 \
-depending on the number of sites and systems. This is the usual way in.
-Day rate, time and materials: CHF 1'400 to CHF 1'800. The upper end for work \
-carrying regulatory exposure or out-of-hours migration.
-Implementation, fixed fee, quoted only after a diagnostic: CHF 8'000 to \
-CHF 40'000 depending on scope. Never quoted before the diagnostic is done.
-Retainer, monthly: CHF 1'200 to CHF 3'500, minimum six months, for ongoing \
-custody of a data platform or standing advisory to a management team.
-Second opinion on a supplier's proposal, fixed fee: CHF 1'800, one to two days.
+One rate governs this whole card: CHF 86 an hour, and a day means eight hours, \
+so CHF 688. Every fixed fee below is a number of hours at that rate and \
+nothing else. A client who divides any fixed fee by its stated hours finds \
+CHF 86 every time.
+Hourly rate, time and materials: CHF 86, billed on the quarter hour against a \
+statement of actual time. Used where the volume cannot be fixed in advance.
+Day rate, time and materials: CHF 688, being eight hours.
+Diagnostic, fixed fee. 2 to 4 days on site, 16 to 32 hours: inventory of \
+systems, mapping of flows, written report and a prioritised list. CHF 1'376 to \
+CHF 2'752 depending on the number of sites and systems. This is the usual way in.
+Document review, fixed fee: CHF 4'816, being 7 days or 56 hours. Critical \
+review of a body of documents the client has produced, with the annexes \
+cross-checked against each other, written findings, and the corrections \
+carried into their document ready to issue.
+Attendance at a session, fixed fee: CHF 516 per occurrence, being 6 hours of \
+preparation, travel and the session itself. One board, management committee or \
+supplier hearing, no written deliverable.
+Second opinion on a supplier's proposal, fixed fee: CHF 688 to CHF 1'376, \
+being one to two days.
+Implementation, fixed fee, quoted only after a diagnostic: CHF 8'256 to \
+CHF 41'280, being 12 to 60 days. Never quoted before the diagnostic is done.
+Retainer, monthly: CHF 1'376 to CHF 3'440, being 2 to 5 days a month reserved, \
+minimum six months, for ongoing custody of a data platform or standing \
+advisory to a management team. Unused hours do not carry over.
 Travel inside the surveyed cantons is not billed. Nothing is billed before a \
 written order.
 """
@@ -289,50 +303,83 @@ written order.
 code = "diagnostic"
 name = "Diagnostic"
 unit = "fixed"
-low = 3600
-high = 7200
-what = "Two to four days on site: inventory of systems, mapping of flows, written report and a prioritised list."
-basis = "The number of sites and systems."
+low = 1376
+high = 2752
+what = "Two to four days on site: inventory of systems, mapping of flows, written report and a prioritised list. Sixteen to thirty-two hours."
+basis = "The number of sites and systems, counted in hours at the hourly rate."
 sort_order = 10
+
+[[rates.service]]
+code = "hour"
+name = "Hourly rate, time and materials"
+unit = "hour"
+low = 86
+high = 86
+what = "Work whose volume cannot be fixed in advance, billed on the quarter hour against a statement of actual time."
+basis = "One rate, whatever the work. A range on an hourly line invites an argument about which end applies after the hours are spent."
+sort_order = 15
 
 [[rates.service]]
 code = "day"
 name = "Day rate, time and materials"
 unit = "day"
-low = 1400
-high = 1800
-basis = "The upper end for work carrying regulatory exposure or out-of-hours migration."
+low = 688
+high = 688
+what = "Eight hours at the hourly rate, for work planned as whole days."
+basis = "Eight times the hourly rate exactly. Every other line on this card is hours at that same rate, so no client finds two prices for one hour of the same work."
 sort_order = 20
 
 [[rates.service]]
 code = "implementation"
 name = "Implementation"
 unit = "fixed"
-low = 8000
-high = 40000
-what = "Fixed fee, quoted only after a diagnostic."
+low = 8256
+high = 41280
+what = "Fixed fee, quoted only after a diagnostic. Twelve to sixty days, which is ninety-six to four hundred and eighty hours."
 prerequisite = "A completed diagnostic. Never quoted before."
-basis = "Scope."
+basis = "Scope, converted into hours at the hourly rate."
 sort_order = 30
 
 [[rates.service]]
 code = "retainer"
 name = "Retainer"
 unit = "month"
-low = 1200
-high = 3500
-what = "Ongoing custody of a data platform, or standing advisory to a management team."
+low = 1376
+high = 3440
+what = "Ongoing custody of a data platform, or standing advisory to a management team. Two to five days a month, which is sixteen to forty hours."
 prerequisite = "Minimum six months."
+basis = "The hours reserved each month, at the hourly rate. Unused hours do not carry over."
 sort_order = 40
 
 [[rates.service]]
 code = "second-opinion"
 name = "Second opinion on a supplier's proposal"
 unit = "fixed"
-low = 1800
-high = 1800
-what = "One to two days."
+low = 688
+high = 1376
+what = "One to two days, which is eight to sixteen hours."
+basis = "The length of the proposal and whether a written note is wanted, counted in hours at the hourly rate."
 sort_order = 50
+
+[[rates.service]]
+code = "document-review"
+name = "Document review"
+unit = "fixed"
+low = 4816
+high = 4816
+what = "Critical review of a body of documents the client has produced: cross-checking the annexes against each other, written findings, and the corrections carried into their own document ready to issue. Seven days, which is fifty-six hours."
+basis = "The number of pieces in the file and the number of arbitrations the client asks to have settled, counted in hours at the hourly rate."
+sort_order = 60
+
+[[rates.service]]
+code = "session"
+name = "Attendance at a session"
+unit = "fixed"
+low = 516
+high = 516
+what = "One board, management committee or supplier hearing: attendance, technical questions answered on the spot, no written deliverable. Six hours, covering preparation, travel and the session itself."
+basis = "Per occurrence. A session running long is billed at the hourly rate for the excess rather than re-quoted."
+sort_order = 70
 
 [rates.card_note]
 text = "Travel inside the surveyed cantons is not billed. Nothing is billed before a written order."

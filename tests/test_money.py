@@ -16,6 +16,7 @@ deliberately corrupted one, and the VAT rates against the change of 1 January
 
 from __future__ import annotations
 
+from dataclasses import replace
 from datetime import date
 from decimal import Decimal
 
@@ -247,6 +248,31 @@ def test_loading_the_card_twice_supersedes_rather_than_edits(db_path):
     assert first != second
     assert sales.current_card(conn, date(2026, 3, 1))["id"] == first
     assert sales.current_card(conn, date(2026, 8, 13))["id"] == second
+    conn.close()
+
+
+def test_correcting_a_price_the_same_day_supersedes_the_earlier_card(db_path):
+    """Reloading within the day is how a corrected price actually arrives.
+
+    The first version of this closed only cards dated strictly earlier, so a
+    same-day reload left two cards open with identical `valid_from` and no
+    tie-break between them. The console then went on quoting the superseded
+    prices, which is the one failure this whole table exists to prevent.
+    """
+    conn = db.open_db(db_path)
+    when = date(2026, 9, 9)
+    first = sales.load_catalogue(conn, list(CATALOGUE), valid_from=when)[0]
+    corrected = [replace(CATALOGUE[0], low="999", high="999"), *CATALOGUE[1:]]
+    second = sales.load_catalogue(conn, corrected, valid_from=when)[0]
+    assert first != second
+
+    card = sales.current_card(conn, when)
+    assert card["id"] == second
+    line = next(
+        row for row in sales.card_lines(conn, card["id"])
+        if row["code"] == CATALOGUE[0].code
+    )
+    assert str(line["low"]) == "999.00"
     conn.close()
 
 

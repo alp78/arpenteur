@@ -98,9 +98,13 @@ def save_rate_card(conn: Connection, row: dict[str, Any]) -> int:
     still have the card it was built from.
     """
     valid_from = row["valid_from"]
+    # `<=` rather than `<`, so a card opened earlier the same day is closed
+    # too. Correcting a price and reloading within the day is the ordinary
+    # way this is used, and the strict comparison left both cards open with
+    # nothing to choose between them.
     conn.execute(
         "UPDATE commercial.rate_card SET valid_to = %s"
-        " WHERE valid_to IS NULL AND valid_from < %s",
+        " WHERE valid_to IS NULL AND valid_from <= %s",
         (valid_from, valid_from),
     )
     made = conn.execute(
@@ -131,12 +135,18 @@ def save_rate_line(
 
 
 def current_card(conn: Connection, on: date | None = None) -> Row | None:
-    """The card in force on a date, which is today unless asked otherwise."""
+    """The card in force on a date, which is today unless asked otherwise.
+
+    The tie-break on id is not decoration. Two cards can share a `valid_from`,
+    and without it Postgres is free to return either, so a corrected price
+    would sometimes be quoted and sometimes not, which is the worst shape a
+    pricing bug can take.
+    """
     when = on or date.today()
     return conn.execute(
         "SELECT * FROM commercial.rate_card"
         " WHERE valid_from <= %s AND (valid_to IS NULL OR valid_to > %s)"
-        " ORDER BY valid_from DESC LIMIT 1",
+        " ORDER BY valid_from DESC, id DESC LIMIT 1",
         (when, when),
     ).fetchone()
 
