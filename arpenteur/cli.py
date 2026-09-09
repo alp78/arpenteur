@@ -1028,6 +1028,218 @@ def cmd_clients(args: argparse.Namespace) -> int:
     return 0
 
 
+def _find_company(conn: Any, reference: str) -> Any:
+    """A company by its UID or by part of its name.
+
+    Separate from `_find_client` because a programme's members are companies
+    and most of them will never be clients: looking one up through `crm.client`
+    would find nothing for exactly the rows this command exists to add.
+    """
+    wanted = reference.strip()
+    rows = conn.execute(
+        "SELECT id, uid, name FROM core.company"
+        " WHERE uid = %s OR REPLACE(uid, '-', '') = %s OR name ILIKE %s"
+        " ORDER BY name LIMIT 3",
+        (wanted, wanted.replace("-", "").replace(".", ""), f"%{wanted}%"),
+    ).fetchall()
+    if not rows:
+        raise RuntimeError(f"No company matching {reference!r}")
+    if len(rows) > 1 and rows[0]["uid"] != wanted:
+        named = ", ".join(f"{r['name']} ({r['uid']})" for r in rows)
+        raise RuntimeError(f"{reference!r} matches more than one: {named}")
+    return rows[0]
+
+
+def cmd_programme(args: argparse.Namespace) -> int:
+    """A programme: one endeavour across many companies.
+
+    Distinct from a project, which is one client's piece of work. Sending an
+    application to fifty agencies is one programme with fifty members, each at
+    its own stage, and the same agency can be a member of a second programme
+    without either knowing about the other.
+
+    Every action but `new` and `list` takes the programme's code first.
+    """
+    settings = load_settings()
+    conn = db.open_db(settings.database_url)
+
+    def close(code: int) -> int:
+        conn.close()
+        return code
+
+    if args.action == "list":
+        rows = clients_store.programmes(conn)
+        if not rows:
+            print("No programmes. Start one: arpenteur programme new CODE \"Name\"")
+        for row in rows:
+            by_stage = dict(row["by_stage"] or {})
+            tally = "  ".join(
+                f"{stage} {by_stage[stage]}"
+                for stage in (row["stages"] or []) if by_stage.get(stage)
+            )
+            print(f"{row['code']:<16} {row['status']:<9} "
+                  f"{row['members']:>4} member(s)  {row['name'][:34]:36} {tally}")
+        return close(0)
+
+    if args.action == "new":
+        if len(args.rest) < 2:
+            print("error: give a code and a name", file=sys.stderr)
+            return close(1)
+        try:
+            programme_id = clients_store.add_programme(
+                conn, args.rest[0], " ".join(args.rest[1:]),
+                what=args.what or None, started_at=db.now()[:10],
+            )
+        except ValueError as exc:
+            print(f"error: {exc}", file=sys.stderr)
+            return close(1)
+        conn.commit()
+        row = clients_store.programme(conn, programme_id)
+        print(f"created: programme {programme_id} — {row['code']}")
+        print(f"  stages: {', '.join(row['stages'])}")
+        return close(0)
+
+    if not args.rest:
+        print("error: name the programme", file=sys.stderr)
+        return close(1)
+    programme = clients_store.programme_by_code(conn, args.rest[0])
+    if programme is None:
+        print(f"error: no programme called {args.rest[0]!r}. "
+              "Try: arpenteur programme list", file=sys.stderr)
+        return close(1)
+    programme_id = int(programme["id"])
+    rest = args.rest[1:]
+
+    if args.action == "show":
+        members = clients_store.members_for(conn, programme_id)
+        print(f"{programme['code']} — {programme['name']}  [{programme['status']}]")
+        if programme["what"]:
+            print(f"  {programme['what']}")
+        print(f"  stages: {', '.join(programme['stages'])}")
+        print(f"  {len(members)} member(s)")
+        for row in members:
+            mail = f"{row['inbound']} in" if row["inbound"] else "no reply"
+            print(f"  {row['stage']:<12} {row['company_name'][:38]:40} "
+                  f"{(row['canton'] or ''):<3} {mail:<9} "
+                  f"{row['feedback']} said")
+        said = clients_store.feedback_on(conn, programme_id, limit=20)
+        if said:
+            print("\n  what they said, newest first:")
+            for row in said:
+                print(f"  {(row['occurred_at'] or '')[:10]}  {row['kind']:<8} "
+                      f"{row['company_name'][:26]:28} {row['body'][:60]}")
+        return close(0)
+
+    if args.action == "stages":
+        if not rest:
+            for stage in programme["stages"]:
+                gloss = (programme["stage_notes"] or {}).get(stage, "")
+                print(f"  {stage:<14} {gloss}")
+            return close(0)
+        try:
+            kept = clients_store.set_stages(conn, programme_id, rest)
+        except ValueError as exc:
+            print(f"error: {exc}", file=sys.stderr)
+            return close(1)
+        conn.commit()
+        print(f"stages: {', '.join(kept)}")
+        return close(0)
+
+    if args.action == "add":
+        if not rest:
+            print("error: name at least one company, by UID or name",
+                  file=sys.stderr)
+            return close(1)
+        added = 0
+        for reference in rest:
+            try:
+                company = _find_company(conn, reference)
+            except RuntimeError as exc:
+                print(f"  {reference}: {exc}", file=sys.stderr)
+                continue
+            _id, existed = clients_store.add_member(
+                conn, programme_id, int(company["id"]), contact=args.contact or None
+            )
+            print(f"  {company['name'][:44]:46} "
+                  + ("already a member" if existed else "added"))
+            added += 0 if existed else 1
+        conn.commit()
+        print(f"{added} added to {programme['code']}")
+        return close(0)
+
+    if args.action == "bring-in":
+        added = clients_store.bring_in_members(
+            conn, programme_id, sector=args.sector, canton=args.canton,
+            band=args.band, segment=args.segment, limit=args.limit,
+        )
+        conn.commit()
+        print(f"{added} companies added to {programme['code']}"
+              if added else
+              "Nothing to add: every company matching that is already a member, "
+              "or none matches.")
+        return close(0)
+
+    if args.action == "move":
+        if len(rest) < 2:
+            print("error: name a company and a stage", file=sys.stderr)
+            return close(1)
+        try:
+            company = _find_company(conn, rest[0])
+        except RuntimeError as exc:
+            print(f"error: {exc}", file=sys.stderr)
+            return close(1)
+        row = conn.execute(
+            "SELECT id FROM crm.programme_member"
+            " WHERE programme_id = %s AND company_id = %s",
+            (programme_id, int(company["id"])),
+        ).fetchone()
+        if row is None:
+            print(f"error: {company['name']} is not a member of "
+                  f"{programme['code']}", file=sys.stderr)
+            return close(1)
+        try:
+            clients_store.move_member(
+                conn, int(row["id"]), " ".join(rest[1:]), by="cli",
+                reason=args.why or "",
+            )
+        except ValueError as exc:
+            print(f"error: {exc}", file=sys.stderr)
+            return close(1)
+        conn.commit()
+        print(f"{company['name']} -> {' '.join(rest[1:])}")
+        return close(0)
+
+    # say
+    if len(rest) < 2:
+        print("error: name a company and what they said", file=sys.stderr)
+        return close(1)
+    try:
+        company = _find_company(conn, rest[0])
+    except RuntimeError as exc:
+        print(f"error: {exc}", file=sys.stderr)
+        return close(1)
+    row = conn.execute(
+        "SELECT id FROM crm.programme_member"
+        " WHERE programme_id = %s AND company_id = %s",
+        (programme_id, int(company["id"])),
+    ).fetchone()
+    if row is None:
+        print(f"error: {company['name']} is not a member of {programme['code']}",
+              file=sys.stderr)
+        return close(1)
+    try:
+        clients_store.add_feedback(
+            conn, int(row["id"]), " ".join(rest[1:]), kind=args.kind,
+            occurred_at=args.on or None, author="cli",
+        )
+    except ValueError as exc:
+        print(f"error: {exc}", file=sys.stderr)
+        return close(1)
+    conn.commit()
+    print(f"kept against {company['name']}: {args.kind}")
+    return close(0)
+
+
 def cmd_dossier(args: argparse.Namespace) -> int:
     """Print everything held on a client, as text.
 
@@ -1607,6 +1819,37 @@ def build_parser() -> argparse.ArgumentParser:
     )
     p.add_argument("--note", default="", help="where it came from, for the model")
     p.set_defaults(func=cmd_docs)
+
+    p = sub.add_parser(
+        "programme",
+        help="one endeavour across many companies, each member at its own stage",
+    )
+    p.add_argument(
+        "action",
+        choices=("list", "new", "show", "add", "bring-in", "move", "say", "stages"),
+        help="list them; start one; show one; add companies; add a shortlist "
+             "from the survey; move a member; keep what a member said; read or "
+             "rewrite the stages",
+    )
+    p.add_argument(
+        "rest", nargs="*", default=[],
+        help="the programme code first, then what the action needs: a company "
+             "and a stage for move, a company and the words for say",
+    )
+    p.add_argument("--what", default="", help="what the programme is, for new")
+    p.add_argument("--contact", default="", help="who you deal with, for add")
+    p.add_argument(
+        "--kind", default="note", choices=clients_store.FEEDBACK_KINDS,
+        help="what sort of feedback, for say",
+    )
+    p.add_argument("--on", default="", help="when they said it, for say")
+    p.add_argument("--why", default="", help="the reason for a move")
+    p.add_argument("--sector", default="", help="for bring-in")
+    p.add_argument("--segment", default="", help="for bring-in")
+    p.add_argument("--canton", default="", help="comma separated, for bring-in")
+    p.add_argument("--band", default="", help="fit band, for bring-in")
+    p.add_argument("--limit", type=int, default=25, help="how many, for bring-in")
+    p.set_defaults(func=cmd_programme)
 
     p = sub.add_parser(
         "resolve",

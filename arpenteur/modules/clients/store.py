@@ -1008,6 +1008,489 @@ def delete_folder(
     return int(row["client_id"])
 
 
+# --- programmes ---------------------------------------------------------------
+#
+# One endeavour across many companies, each member at its own stage. See
+# migrations/0008_programme.sql for why this is neither a prospect nor a
+# project.
+
+
+DEFAULT_STAGES = (
+    "selected", "contacted", "replied", "onboarding",
+    "testing", "live", "refused", "parked",
+)
+
+# What each default stage means, written for somebody deciding where to drop a
+# card. The programme owns its own copy from creation, so editing these later
+# changes what new programmes start with and never what a running one says.
+DEFAULT_STAGE_NOTES = {
+    "selected": "On the list. Not written to yet.",
+    "contacted": "Sent to them. Nothing back.",
+    "replied": "They answered. The conversation is live.",
+    "onboarding": "Agreed to try it. Being set up.",
+    "testing": "Using it. Feedback is coming in.",
+    "live": "Released and in real use.",
+    "refused": "Said no. Kept, with the reason.",
+    "parked": "Interested, not now.",
+}
+
+FEEDBACK_KINDS = ("note", "bug", "request", "praise")
+
+
+def add_programme(
+    conn: Connection, code: str, name: str, *, what: str | None = None,
+    stages: Sequence[str] | None = None, started_at: str | None = None,
+) -> int:
+    """Start a programme under its own reference.
+
+    FLATCHECK, for the same reason a project has a code: it outlives the
+    conversation that started it and has to be nameable in a contract, a file
+    and a sentence said out loud.
+    """
+    code = code.strip().upper()
+    name = name.strip()
+    if not code:
+        raise ValueError("a programme needs a code")
+    if not name:
+        raise ValueError("a programme needs a name")
+    if conn.execute(
+        "SELECT 1 FROM crm.programme WHERE code = %s", (code,)
+    ).fetchone():
+        raise ValueError(f"a programme already goes by {code}")
+    wanted = _clean_stages(stages) if stages else list(DEFAULT_STAGES)
+    notes = {k: v for k, v in DEFAULT_STAGE_NOTES.items() if k in wanted}
+    created = conn.execute(
+        "INSERT INTO crm.programme (code, name, what, stages, stage_notes,"
+        " started_at, created_at) VALUES (%s, %s, %s, %s, %s, %s, %s) RETURNING id",
+        (code, name, (what or "").strip() or None, wanted,
+         json_param(notes), started_at, now()),
+    ).fetchone()
+    return int(created["id"])
+
+
+def _clean_stages(stages: Sequence[str]) -> list[str]:
+    """An ordered stage list with the blanks and the repeats taken out.
+
+    Order is preserved because the board draws its columns in it, and a
+    duplicate is dropped rather than refused: it is a typo in a textarea, not a
+    decision worth an error page.
+    """
+    out: list[str] = []
+    for raw in stages:
+        stage = str(raw).strip()
+        if stage and stage not in out:
+            out.append(stage)
+    if not out:
+        raise ValueError("a programme needs at least one stage")
+    return out
+
+
+def programme(conn: Connection, programme_id: int) -> Row | None:
+    return conn.execute(
+        "SELECT * FROM crm.programme WHERE id = %s", (programme_id,)
+    ).fetchone()
+
+
+def programme_by_code(conn: Connection, code: str) -> Row | None:
+    return conn.execute(
+        "SELECT * FROM crm.programme WHERE upper(code) = upper(%s)", (code.strip(),)
+    ).fetchone()
+
+
+def programmes(conn: Connection, *, status: str = "") -> list[Row]:
+    """Every programme, with its members counted and broken down by stage.
+
+    The counts come from the join rather than columns on the programme, for the
+    reason a folder's document count does: a stored count is a second copy of a
+    fact the members already state, and it is wrong the first time a card
+    moves.
+
+    The breakdown is returned whole rather than reduced to a headline number
+    like "how many engaged". Which stage counts as engaged is a judgement the
+    stage list does not carry, and it would be a different judgement in the
+    next programme; the page can read the stages in their own order and say
+    what it likes.
+    """
+    where = "WHERE p.status = %s" if status else ""
+    return conn.execute(
+        "SELECT p.*, COALESCE(SUM(m.n), 0)::int AS members,"
+        " COALESCE(jsonb_object_agg(m.stage, m.n)"
+        "   FILTER (WHERE m.stage IS NOT NULL), '{}'::jsonb) AS by_stage"
+        "  FROM crm.programme p"
+        "  LEFT JOIN (SELECT programme_id, stage, COUNT(*) AS n"
+        "               FROM crm.programme_member GROUP BY programme_id, stage) m"
+        "    ON m.programme_id = p.id"
+        f" {where}"
+        " GROUP BY p.id ORDER BY p.status, p.created_at DESC",
+        ([status] if status else []),
+    ).fetchall()
+
+
+def update_programme(conn: Connection, programme_id: int, **fields: Any) -> None:
+    allowed = {"name", "what", "status", "started_at", "released_at", "code"}
+    sets = {k: v for k, v in fields.items() if k in allowed and v is not None}
+    if not sets:
+        return
+    if "code" in sets:
+        sets["code"] = str(sets["code"]).strip().upper()
+    if "status" in sets:
+        before = conn.execute(
+            "SELECT status FROM crm.programme WHERE id = %s", (programme_id,)
+        ).fetchone()
+        if before is not None:
+            record_state_change(
+                conn, entity="programme", entity_id=programme_id,
+                from_state=before["status"], to_state=sets["status"],
+                by=fields.get("by"),
+            )
+    assignments = ", ".join(f"{k} = %({k})s" for k in sets)
+    conn.execute(
+        f"UPDATE crm.programme SET {assignments}, updated_at = %(now)s"
+        " WHERE id = %(id)s",
+        {**sets, "now": now(), "id": programme_id},
+    )
+
+
+def set_stages(
+    conn: Connection, programme_id: int, stages: Sequence[str],
+    *, notes: dict[str, str] | None = None,
+) -> list[str]:
+    """Rewrite the pipeline, refusing to strand anybody.
+
+    Removing a stage that members are standing in is the one edit that has to
+    be refused rather than absorbed. Absorbing it means either deleting those
+    members or moving them somewhere nobody chose, and both are decisions the
+    operator should make while looking at the cards. So the refusal names the
+    stage and counts who is in it, which is the number needed to act on it.
+    """
+    wanted = _clean_stages(stages)
+    occupied = {
+        row["stage"]: int(row["n"])
+        for row in conn.execute(
+            "SELECT stage, COUNT(*) AS n FROM crm.programme_member"
+            " WHERE programme_id = %s GROUP BY stage",
+            (programme_id,),
+        )
+    }
+    stranded = sorted(
+        (stage, n) for stage, n in occupied.items() if stage not in wanted
+    )
+    if stranded:
+        detail = ", ".join(f"{stage} ({n})" for stage, n in stranded)
+        raise ValueError(
+            f"move the members out first: {detail} would be left with no column"
+        )
+    kept = {}
+    if notes is None:
+        held = conn.execute(
+            "SELECT stage_notes FROM crm.programme WHERE id = %s", (programme_id,)
+        ).fetchone()
+        notes = dict(held["stage_notes"] or {}) if held else {}
+    for stage in wanted:
+        gloss = (notes.get(stage) or DEFAULT_STAGE_NOTES.get(stage) or "").strip()
+        if gloss:
+            kept[stage] = gloss
+    conn.execute(
+        "UPDATE crm.programme SET stages = %s, stage_notes = %s, updated_at = %s"
+        " WHERE id = %s",
+        (wanted, json_param(kept), now(), programme_id),
+    )
+    return wanted
+
+
+def add_member(
+    conn: Connection, programme_id: int, company_id: int, *,
+    stage: str = "", contact: str | None = None, note: str | None = None,
+) -> tuple[int, bool]:
+    """Put a company on a programme, or hand back the member already there.
+
+    Returns its id and whether it existed, the same contract `add_folder`
+    offers and for the same reason: adding a company a second time is what
+    happens when a shortlist overlaps one already imported, and the useful
+    answer is the member already on the board rather than an error or a twin.
+    """
+    stages = _stages_of(conn, programme_id)
+    known = conn.execute(
+        "SELECT id FROM crm.programme_member"
+        " WHERE programme_id = %s AND company_id = %s",
+        (programme_id, company_id),
+    ).fetchone()
+    if known:
+        return int(known["id"]), True
+    where = stage.strip() or stages[0]
+    if where not in stages:
+        raise ValueError(_no_such_stage(where, stages))
+    created = conn.execute(
+        "INSERT INTO crm.programme_member (programme_id, company_id, stage,"
+        " contact, note, created_at) VALUES (%s, %s, %s, %s, %s, %s) RETURNING id",
+        (programme_id, company_id, where, (contact or "").strip() or None,
+         (note or "").strip() or None, now()),
+    ).fetchone()
+    member_id = int(created["id"])
+    record_state_change(
+        conn, entity="programme_member", entity_id=member_id,
+        company_id=company_id, to_state=where, by="programme",
+    )
+    return member_id, False
+
+
+def _stages_of(conn: Connection, programme_id: int) -> list[str]:
+    row = conn.execute(
+        "SELECT stages FROM crm.programme WHERE id = %s", (programme_id,)
+    ).fetchone()
+    if row is None:
+        raise ValueError(f"no programme with id {programme_id}")
+    return list(row["stages"])
+
+
+def _no_such_stage(stage: str, stages: Sequence[str]) -> str:
+    """Say which stages were on offer.
+
+    The valid set is a column on another row rather than a constant, so a bare
+    "unknown stage" would send the reader looking for a list that is not in the
+    code.
+    """
+    return f"{stage!r} is not a stage of this programme: {', '.join(stages)}"
+
+
+def member(conn: Connection, member_id: int) -> Row | None:
+    return conn.execute(
+        "SELECT m.*, p.code AS programme_code, p.stages, co.name AS company_name,"
+        " co.uid, co.canton"
+        "  FROM crm.programme_member m"
+        "  JOIN crm.programme p ON p.id = m.programme_id"
+        "  JOIN core.company co ON co.id = m.company_id"
+        " WHERE m.id = %s",
+        (member_id,),
+    ).fetchone()
+
+
+def members_for(conn: Connection, programme_id: int) -> list[Row]:
+    """Every member, with what a card needs and nothing that needs a second query.
+
+    The inbound mail count is joined here and is read-only. It says a company
+    has written back; it never moves the card. Nothing in this schema files
+    itself, and a stage that advanced because a message arrived would be the
+    first thing that did.
+    """
+    return conn.execute(
+        """
+        SELECT m.*, co.name AS company_name, co.uid, co.canton,
+               co.legal_form_label,
+               (SELECT COUNT(*) FROM crm.email_message e
+                 WHERE e.company_id = m.company_id AND e.direction = 'in')
+                   AS inbound,
+               (SELECT MAX(e.sent_at) FROM crm.email_message e
+                 WHERE e.company_id = m.company_id AND e.direction = 'in')
+                   AS last_inbound,
+               (SELECT COUNT(*) FROM crm.programme_feedback f
+                 WHERE f.member_id = m.id) AS feedback
+          FROM crm.programme_member m
+          JOIN core.company co ON co.id = m.company_id
+         WHERE m.programme_id = %s
+         ORDER BY co.name
+        """,
+        (programme_id,),
+    ).fetchall()
+
+
+def move_member(
+    conn: Connection, member_id: int, stage: str, *,
+    by: str = "console", reason: str = "",
+) -> Row | None:
+    """Move one member to another stage of its own programme.
+
+    The transition goes to `audit.state_change`, which is why there is no
+    history table here: that one names its subject as text and holds no foreign
+    key, so it takes a programme's moves without either schema knowing about
+    the other, and the board's existing `time_in_state` query dates the card
+    with no new code.
+    """
+    row = conn.execute(
+        "SELECT m.stage, m.company_id, p.stages FROM crm.programme_member m"
+        "  JOIN crm.programme p ON p.id = m.programme_id"
+        " WHERE m.id = %s",
+        (member_id,),
+    ).fetchone()
+    if row is None:
+        return None
+    stages = list(row["stages"])
+    stage = stage.strip()
+    if stage not in stages:
+        raise ValueError(_no_such_stage(stage, stages))
+    conn.execute(
+        "UPDATE crm.programme_member SET stage = %s, updated_at = %s WHERE id = %s",
+        (stage, now(), member_id),
+    )
+    record_state_change(
+        conn, entity="programme_member", entity_id=member_id,
+        company_id=int(row["company_id"]), from_state=row["stage"],
+        to_state=stage, by=by, reason=reason.strip() or None,
+    )
+    return row
+
+
+def update_member(conn: Connection, member_id: int, **fields: Any) -> None:
+    allowed = {"contact", "note"}
+    sets = {k: v for k, v in fields.items() if k in allowed and v is not None}
+    if not sets:
+        return
+    columns = ", ".join(f"{k} = %s" for k in sets)
+    conn.execute(
+        f"UPDATE crm.programme_member SET {columns}, updated_at = %s WHERE id = %s",
+        (*[str(v).strip() or None for v in sets.values()], now(), member_id),
+    )
+
+
+def remove_member(conn: Connection, member_id: int) -> int | None:
+    """Take a company off a programme.
+
+    No tombstone, and the asymmetry with `delete_folder` is deliberate: the
+    moves are already in `audit.state_change`, which has no foreign key and
+    therefore still holds them. A member removed in error is recoverable from
+    that history; a document deleted with its folder is not.
+    """
+    row = conn.execute(
+        "SELECT programme_id FROM crm.programme_member WHERE id = %s", (member_id,)
+    ).fetchone()
+    if row is None:
+        return None
+    conn.execute("DELETE FROM crm.programme_member WHERE id = %s", (member_id,))
+    return int(row["programme_id"])
+
+
+def bring_in_members(
+    conn: Connection, programme_id: int, *, sector: str = "", canton: str = "",
+    band: str = "", segment: str = "", limit: int = 25,
+) -> int:
+    """Put companies matching a survey filter on the programme, in bulk.
+
+    The step between a scored survey and a rollout, done in bulk because doing
+    it one company at a time is the reason shortlists sit unworked. It is the
+    same shape as the board's own `bring_in` and shares its one rule.
+
+    It only ever inserts. A company already a member keeps whatever stage it
+    has reached, so running this again after another sweep cannot walk an
+    agency at `testing` back to `selected`.
+    """
+    stages = _stages_of(conn, programme_id)
+    where = ["c.status = 'ACTIVE'",
+             "NOT EXISTS (SELECT 1 FROM crm.programme_member m"
+             " WHERE m.programme_id = %s AND m.company_id = c.id)"]
+    params: list[Any] = [programme_id]
+    joins = ""
+    if band:
+        joins = " JOIN intel.fit f ON f.company_id = c.id"
+        where.append("f.band = %s")
+        params.append(band)
+    if sector:
+        where.append(
+            "EXISTS (SELECT 1 FROM intel.sector x"
+            " WHERE x.company_id = c.id AND x.sector = %s)"
+        )
+        params.append(sector)
+    if segment:
+        where.append(
+            "EXISTS (SELECT 1 FROM intel.segment s"
+            " WHERE s.company_id = c.id AND s.segment = %s)"
+        )
+        params.append(segment)
+    if canton:
+        where.append("c.canton = ANY(%s)")
+        params.append([part.strip().upper() for part in canton.split(",") if part.strip()])
+    order = "f.score DESC NULLS LAST" if band else "c.name"
+    rows = conn.execute(
+        f"""
+        SELECT c.id FROM core.company c{joins}
+         WHERE {' AND '.join(where)}
+         ORDER BY {order}
+         LIMIT %s
+        """,
+        params + [limit],
+    ).fetchall()
+    for row in rows:
+        add_member(conn, programme_id, int(row["id"]), stage=stages[0])
+    return len(rows)
+
+
+def add_feedback(
+    conn: Connection, member_id: int, body: str, *, kind: str = "note",
+    occurred_at: str | None = None, author: str | None = None,
+) -> int:
+    """What a member said back, dated when they said it.
+
+    `occurred_at` is separate from `created_at` because a bug reported on the
+    phone on Tuesday and typed up on Thursday belongs to Tuesday, and a
+    feedback log whose dates are typing dates cannot answer how long a fault
+    was known about.
+    """
+    body = body.strip()
+    if not body:
+        raise ValueError("feedback needs something in it")
+    created = conn.execute(
+        "INSERT INTO crm.programme_feedback (member_id, kind, body, occurred_at,"
+        " author, created_at) VALUES (%s, %s, %s, %s, %s, %s) RETURNING id",
+        (member_id, (kind or "note").strip() or "note", body,
+         occurred_at or now(), (author or "").strip() or None, now()),
+    ).fetchone()
+    return int(created["id"])
+
+
+def feedback_for(conn: Connection, member_id: int, *, limit: int = 100) -> list[Row]:
+    return conn.execute(
+        "SELECT * FROM crm.programme_feedback WHERE member_id = %s"
+        " ORDER BY occurred_at DESC, id DESC LIMIT %s",
+        (member_id, limit),
+    ).fetchall()
+
+
+def feedback_on(conn: Connection, programme_id: int, *, limit: int = 200) -> list[Row]:
+    """A whole programme's feedback in one stream, newest first.
+
+    The testing phase's actual output. Read per programme rather than per
+    member because "what are they all telling us" is the question that decides
+    what gets fixed, and it cannot be asked one card at a time.
+    """
+    return conn.execute(
+        "SELECT f.*, co.name AS company_name, m.company_id, m.stage"
+        "  FROM crm.programme_feedback f"
+        "  JOIN crm.programme_member m ON m.id = f.member_id"
+        "  JOIN core.company co ON co.id = m.company_id"
+        " WHERE m.programme_id = %s"
+        " ORDER BY f.occurred_at DESC, f.id DESC LIMIT %s",
+        (programme_id, limit),
+    ).fetchall()
+
+
+def delete_programme(
+    conn: Connection, programme_id: int, *, reason: str = "", by: str = "console"
+) -> str | None:
+    """Remove a programme. The companies and their clients are untouched.
+
+    The tombstone goes to `audit.state_change` rather than to a client's
+    timeline, because a programme has no client to write to: its members are
+    companies, and most of them never became one. That table takes it precisely
+    because it holds no foreign key and can outlive what it describes.
+    """
+    row = conn.execute(
+        "SELECT code, name FROM crm.programme WHERE id = %s", (programme_id,)
+    ).fetchone()
+    if row is None:
+        return None
+    held = conn.execute(
+        "SELECT COUNT(*) AS n FROM crm.programme_member WHERE programme_id = %s",
+        (programme_id,),
+    ).fetchone()["n"]
+    conn.execute("DELETE FROM crm.programme WHERE id = %s", (programme_id,))
+    record_state_change(
+        conn, entity="programme", entity_id=programme_id, to_state="deleted",
+        by=by,
+        reason=(reason.strip() or "No reason given.")
+        + f" ({held} member(s) released, the companies kept)",
+    )
+    return str(row["code"])
+
+
 # --- interview preparation ----------------------------------------------------
 
 

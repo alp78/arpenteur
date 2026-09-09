@@ -59,6 +59,7 @@ from . import reports_page as reports_view
 from . import map_page as map_view_page
 from . import notes_page as notes_view
 from . import people_page as people_view_page
+from . import programme_page as programme_view
 from . import dossier_page as dossier_view
 from . import prep_page as prep_view
 from . import render
@@ -1637,6 +1638,248 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             conn.commit()
             target = f"/client/{row['client_id']}" if row else "/clients"
             return RedirectResponse(target, status_code=303)
+        finally:
+            conn.close()
+
+    # --- programmes -------------------------------------------------------------
+    #
+    # One endeavour across many companies, each member at its own stage. The
+    # board's twin, and it borrows the board's drag handler on purpose: the
+    # columns come from the programme rather than from a constant, but the card
+    # and the move are the same job and should not become two.
+
+    def programme_shell(body: str) -> HTMLResponse:
+        return HTMLResponse(programme_view.shell(body, at("/programmes")))
+
+    @app.get("/programmes", response_class=HTMLResponse)
+    def programmes_list(request: Request) -> HTMLResponse:
+        conn = connect()
+        try:
+            return programme_shell(
+                programme_view.programmes_page(
+                    clients_store.programmes(conn),
+                    note=request.query_params.get("note", ""),
+                )
+            )
+        finally:
+            conn.close()
+
+    @app.post("/programmes/new")
+    def new_programme(
+        code: str = Form(""), name: str = Form(""), what: str = Form("")
+    ) -> RedirectResponse:
+        conn = connect()
+        try:
+            try:
+                programme_id = clients_store.add_programme(
+                    conn, code, name, what=what, started_at=db.now()[:10]
+                )
+            except ValueError as exc:
+                return RedirectResponse(
+                    f"/programmes?note={quote(str(exc))}", status_code=303
+                )
+            conn.commit()
+            return RedirectResponse(f"/programme/{programme_id}", status_code=303)
+        finally:
+            conn.close()
+
+    @app.get("/programme/{programme_id}", response_class=HTMLResponse)
+    def programme_card(programme_id: int, request: Request) -> HTMLResponse:
+        args = request.query_params
+        conn = connect()
+        try:
+            row = clients_store.programme(conn, programme_id)
+            if row is None:
+                return HTMLResponse("<h1>Not found</h1>", status_code=404)
+            members = clients_store.members_for(conn, programme_id)
+            company_ids = [int(m["company_id"]) for m in members]
+            today = date.fromisoformat(
+                conn.execute("SELECT current_date AS d").fetchone()["d"]
+            )
+            return programme_shell(
+                programme_view.programme_page(
+                    row, members,
+                    # The client chip is looked up here rather than in the
+                    # store, exactly as the prospect board does it: the console
+                    # is allowed to know about both modules where the page is
+                    # not.
+                    clients=clients_store.clients_by_company(conn, company_ids),
+                    today=today,
+                    moved=scout_store.time_in_state(
+                        conn, "programme_member", [int(m["id"]) for m in members]
+                    ),
+                    feedback=clients_store.feedback_on(conn, programme_id),
+                    sectors=sorted(settings.sectors),
+                    cantons=scout_store.cantons_present(conn),
+                    note=args.get("note", ""), error=args.get("error", ""),
+                )
+            )
+        finally:
+            conn.close()
+
+    @app.post("/programme/{programme_id}/move")
+    def move_member(
+        programme_id: int, member_id: int = Form(...), state: str = Form(...)
+    ) -> Any:
+        """Where a card lands. Called by the drag, and by the fold under it.
+
+        Same shape as `/board/move`: the drag has already moved the card and
+        only needs to know whether to keep it there, so it gets a bare `ok`.
+        """
+        conn = connect()
+        try:
+            try:
+                moved = clients_store.move_member(conn, member_id, state)
+            except ValueError as exc:
+                return PlainTextResponse(str(exc), status_code=400)
+            if moved is None:
+                return PlainTextResponse("no such member", status_code=404)
+            conn.commit()
+            return PlainTextResponse("ok")
+        finally:
+            conn.close()
+
+    @app.post("/member/{member_id}/move")
+    def move_member_form(member_id: int, stage: str = Form(...)) -> Any:
+        """The fold under the card, which works without JavaScript.
+
+        A separate route from the drag's because this one has a page to go back
+        to and the drag does not, and because a refusal has to be readable here
+        rather than swallowed by a fetch.
+        """
+        conn = connect()
+        try:
+            row = clients_store.member(conn, member_id)
+            if row is None:
+                return PlainTextResponse("no such member", status_code=404)
+            where = f"/programme/{row['programme_id']}"
+            try:
+                clients_store.move_member(conn, member_id, stage)
+            except ValueError as exc:
+                return RedirectResponse(
+                    f"{where}?error={quote(str(exc))}", status_code=303
+                )
+            conn.commit()
+            return RedirectResponse(where, status_code=303)
+        finally:
+            conn.close()
+
+    @app.post("/programme/{programme_id}/members")
+    def add_programme_member(
+        programme_id: int, uid: str = Form(""), contact: str = Form("")
+    ) -> RedirectResponse:
+        conn = connect()
+        try:
+            where = f"/programme/{programme_id}"
+            company = scout_store.company_by_uid(conn, uid.strip())
+            if company is None:
+                found = conn.execute(
+                    "SELECT id FROM core.company WHERE name ILIKE %s"
+                    " ORDER BY name LIMIT 2",
+                    (f"%{uid.strip()}%",),
+                ).fetchall()
+                if len(found) != 1:
+                    said = (
+                        "no company matches that"
+                        if not found
+                        else "more than one company matches that, give the UID"
+                    )
+                    return RedirectResponse(
+                        f"{where}?error={quote(said)}", status_code=303
+                    )
+                company = {"id": found[0]["id"]}
+            _member, existed = clients_store.add_member(
+                conn, programme_id, int(company["id"]), contact=contact
+            )
+            conn.commit()
+            note = "already a member" if existed else "added"
+            return RedirectResponse(f"{where}?note={quote(note)}", status_code=303)
+        finally:
+            conn.close()
+
+    @app.post("/programme/{programme_id}/bring-in")
+    def bring_in_members(
+        programme_id: int, sector: str = Form(""), canton: str = Form(""),
+        band: str = Form(""), limit: str = Form("25"),
+    ) -> RedirectResponse:
+        conn = connect()
+        try:
+            try:
+                how_many = max(1, min(200, int(limit)))
+            except ValueError:
+                how_many = 25
+            added = clients_store.bring_in_members(
+                conn, programme_id, sector=sector, canton=canton, band=band,
+                limit=how_many,
+            )
+            conn.commit()
+            note = (
+                f"{added} companies added."
+                if added
+                else "Nothing to add: every company matching that is already a "
+                     "member, or none matches."
+            )
+            return RedirectResponse(
+                f"/programme/{programme_id}?note={quote(note)}", status_code=303
+            )
+        finally:
+            conn.close()
+
+    @app.post("/programme/{programme_id}/stages")
+    def set_programme_stages(
+        programme_id: int, stages: str = Form("")
+    ) -> RedirectResponse:
+        """Rewrite the pipeline from the textarea.
+
+        One stage per line, an optional gloss after a colon. A stage that
+        members are standing in cannot be removed, and the store's refusal is
+        shown rather than swallowed: it names the count, which is what the
+        operator needs to act on it.
+        """
+        wanted: list[str] = []
+        notes: dict[str, str] = {}
+        for line in stages.splitlines():
+            name, _, gloss = line.partition(":")
+            name = name.strip()
+            if not name:
+                continue
+            wanted.append(name)
+            if gloss.strip():
+                notes[name] = gloss.strip()
+        conn = connect()
+        try:
+            where = f"/programme/{programme_id}"
+            try:
+                clients_store.set_stages(conn, programme_id, wanted, notes=notes)
+            except ValueError as exc:
+                return RedirectResponse(
+                    f"{where}?error={quote(str(exc))}", status_code=303
+                )
+            conn.commit()
+            return RedirectResponse(where, status_code=303)
+        finally:
+            conn.close()
+
+    @app.post("/member/{member_id}/feedback")
+    def say_feedback(
+        member_id: int, body: str = Form(""), kind: str = Form("note")
+    ) -> RedirectResponse:
+        conn = connect()
+        try:
+            row = clients_store.member(conn, member_id)
+            if row is None:
+                return RedirectResponse("/programmes", status_code=303)
+            where = f"/programme/{row['programme_id']}"
+            try:
+                clients_store.add_feedback(
+                    conn, member_id, body, kind=kind, author="console"
+                )
+            except ValueError as exc:
+                return RedirectResponse(
+                    f"{where}?error={quote(str(exc))}", status_code=303
+                )
+            conn.commit()
+            return RedirectResponse(where, status_code=303)
         finally:
             conn.close()
 

@@ -2,7 +2,12 @@
 
 Owns `crm`: the client record, projects, one interaction log read as a
 timeline and as a calendar, the sourced dossier, versioned AI approaches, the
-interview glossary and the documents a client sends.
+interview glossary, the documents a client sends, and programmes.
+
+A programme is the one thing here that is not about a single client: one
+endeavour across many companies, each member at its own stage. It lives in this
+module rather than in the scout because it has to reach `core.company` and
+`crm.client` in the same query, and only this side of the boundary may.
 
 Depends on the scout because a client is a company, not a copy of one.
 Promoting a prospect keeps the register entry, the officers, the research and
@@ -29,6 +34,7 @@ MODULE = Module(
     schemas=("crm",),
     nav=(
         Nav("Clients", "/clients", group="work", order=10),
+        Nav("Programmes", "/programmes", group="work", order=15),
         Nav("Mail", "/mail", group="work", order=20),
         Nav("Calendar", "/calendar", group="work", order=30),
     ),

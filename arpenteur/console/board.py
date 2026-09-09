@@ -426,7 +426,17 @@ def _bring_in(band: str, segment: str, canton: str,
 # change does not alter — the canton does not move when a company replies — so
 # a card dragged into another lane's column would be filed under a fact that is
 # not true of it.
-SCRIPT = """
+#
+# It takes its endpoint and its id field as arguments because there are two
+# boards now: this one moves a company between prospect states, and a programme
+# moves a member between its own stages. The behaviour is identical and the
+# markup is identical, so duplicating thirty lines of drag handling would mean
+# fixing the next bug in it twice.
+
+
+def drag_script(url: str, field: str) -> str:
+    """The drag handler, posting `field` and `state` to `url`."""
+    return """
 <script>
 (function () {
   let held = null;
@@ -467,13 +477,16 @@ SCRIPT = """
       if (head) head.textContent = column.querySelectorAll('.kard').length;
     });
     const body = new URLSearchParams(
-      {company_id: card.dataset.id, state: drop.dataset.state}
+      {__FIELD__: card.dataset.id, state: drop.dataset.state}
     );
-    fetch('/board/move', {method: 'POST', body: body,
+    fetch('__URL__', {method: 'POST', body: body,
       headers: {'Content-Type': 'application/x-www-form-urlencoded'}})
       .then(function (r) { if (!r.ok) location.reload(); })
       .catch(function () { location.reload(); });
   });
 })();
 </script>
-"""
+""".replace("__FIELD__", field).replace("__URL__", url)
+
+
+SCRIPT = drag_script("/board/move", "company_id")
