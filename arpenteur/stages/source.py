@@ -188,6 +188,7 @@ def hydrate_pending(
     cantons: list[str] | None = None,
     legal_forms: list[str] | None = None,
     name_like: str | None = None,
+    uids: list[str] | None = None,
     limit: int | None = None,
     bulk: bool = False,
     fixture: bool = False,
@@ -223,6 +224,14 @@ def hydrate_pending(
     if name_like:
         where.append("name ~* %s")
         params.append(name_like)
+    if uids:
+        # Named companies rather than a territory, which is what an outside
+        # source produces: a directory of agencies knows which firms are worth
+        # the detail call, and the name gate that stands in for that knowledge
+        # cannot see a régie called "Bory & Cie". Narrower than any filter
+        # above it, so it is a smaller call on the register, not a larger one.
+        where.append("uid = ANY(%s)")
+        params.append(list(uids))
     sql = (
         f"SELECT uid, stale_since FROM core.company WHERE {' AND '.join(where)} "
         "ORDER BY stale_since IS NULL, last_mutation_date DESC, id"
