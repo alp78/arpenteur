@@ -13,7 +13,7 @@ from types import SimpleNamespace
 import pytest
 
 from arpenteur import db
-from arpenteur.kernel.db import Connection, Row
+from arpenteur.kernel.db import Connection
 from arpenteur.config import Settings
 from arpenteur.stages import reach
 
@@ -337,3 +337,102 @@ def test_dry_run_fetches_nothing(monkeypatch, settings, conn) -> None:
     stats = reach_with(monkeypatch, client, settings, conn, dry_run=True)
     assert stats["considered"] == 1 and client.asked == []
     assert conn.execute("SELECT reached_at FROM intel.site").fetchone()[0] is None
+
+
+# --- the cascade: what a negative is allowed to claim --------------------------
+#
+# `none` is the settled negative. It tells every later run to stop looking and
+# it lets an export print a dash, so the cost of it being wrong is not a wrong
+# label but a company that leaves the search and cannot come back. These pin
+# the two ways it was being handed out unearned.
+
+
+class FakeProvider:
+    """A search tier that answers, or refuses, on command."""
+
+    def __init__(self, data: dict | None = None, raises: Exception | None = None):
+        self.data = data
+        self.raises = raises
+        self.calls = 0
+
+    def research(self, **_kw: object) -> SimpleNamespace:
+        self.calls += 1
+        if self.raises is not None:
+            raise self.raises
+        return SimpleNamespace(
+            data=self.data, searches=1, input_tokens=0, output_tokens=0
+        )
+
+
+ANON = {"uid": "CHE9", "name": "Introuvable SA", "canton": "GE",
+        "legal_seat": "Genève"}
+
+
+@pytest.fixture
+def no_mx(monkeypatch):
+    """No domain accepts mail, so tiers 3 and 4 fall through to the end."""
+    monkeypatch.setattr(reach.mailcheck, "accepts_mail", lambda *_a, **_k: False)
+
+
+def test_a_cascade_that_never_searched_does_not_report_a_settled_negative(
+    no_mx,
+) -> None:
+    """The machine running this has no API credit, so the search tier is off.
+    Calling that outcome `none` would claim the company publishes nothing when
+    the tier that finds most companies never ran."""
+    hunt = reach.hunt_one(
+        FakeClient({}), ANON, agent="test", allow_search=False,
+    )
+    assert hunt.outcome == "partial"
+    assert "search" in hunt.note
+    assert any("search" in t["what"] for t in hunt.tried)
+
+
+def test_a_search_that_ran_and_found_nothing_is_settled(no_mx) -> None:
+    """The other side of it: the tier ran, so the negative is earned and the
+    company should not be paid for twice."""
+    provider = FakeProvider({"website": None, "emails": [], "confidence": 0.0,
+                             "reasoning": "no such company"})
+    hunt = reach.hunt_one(
+        FakeClient({}), ANON, agent="test", provider=provider,
+    )
+    assert provider.calls == 1
+    assert hunt.outcome == "none" and hunt.note == "every tier ran"
+
+
+def test_a_search_tier_that_fails_leaves_the_company_owed_a_look(no_mx) -> None:
+    """A credit error and an empty result are not the same fact. Treating them
+    alike is how an outage becomes a permanent negative in the record."""
+    provider = FakeProvider(raises=RuntimeError("credit balance is too low"))
+    hunt = reach.hunt_one(
+        FakeClient({}), ANON, agent="test", provider=provider,
+    )
+    assert hunt.outcome == "partial"
+    assert any("credit balance" in t["why"] for t in hunt.tried)
+
+
+def test_an_unfinished_company_is_selected_again_and_a_settled_one_is_not(
+    monkeypatch, settings, conn
+) -> None:
+    """The selection is where a premature negative does its damage: it skipped
+    on the existence of a row, so one source having nothing retired a company
+    from the cascade before its own site was ever read."""
+    from arpenteur.modules.scout import store as scout_store
+
+    db.upsert_company(
+        conn,
+        {"uid": "CHE3", "name": "Ouverte SA", "canton": "GE", "status": "ACTIVE",
+         "hydrated": True, "method": "zefix"},
+    )
+    conn.commit()
+    scout_store.save_address_hunt(conn, 1, reach.Hunt("none", note="every tier ran"))
+    scout_store.save_address_hunt(
+        conn, 2, reach.Hunt("partial", note="ran without the search tier")
+    )
+    conn.commit()
+
+    monkeypatch.setattr(reach, "_client", lambda _s: FakeClient({}))
+    stats = reach.hunt_all(
+        settings, conn, allow_search=False, dry_run=True, log=lambda _m: None
+    )
+    assert stats["considered"] == 1

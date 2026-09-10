@@ -99,11 +99,19 @@ def sheet(row: dict) -> str:
     every = list(dict.fromkeys(addresses + contacts))
 
     # A dash, and it means something: every tier ran and this firm publishes
-    # nothing findable. Distinct from a blank, which would mean nobody looked.
+    # nothing findable. Distinct from a blank, which would mean nobody looked,
+    # and distinct again from `partial`, which means the looking is unfinished.
+    # Collapsing those three into one empty cell is what makes a shortlist
+    # unreadable: an operator cannot tell which firms are worth another pass.
     if every:
         mail_block = "\n".join(f"- `{a}`" for a in every)
     elif row["outcome"] == "none":
         mail_block = "- (dash) every tier ran and found nothing published"
+    elif row["outcome"] == "partial":
+        mail_block = (
+            "- nothing yet, and the search is unfinished — "
+            + (row["note"] or "a tier did not run")
+        )
     elif row["outcome"]:
         mail_block = f"- nothing yet, the hunt stopped at `{row['outcome']}`"
     else:
@@ -167,7 +175,7 @@ def main() -> int:
         SELECT c.uid, c.name, c.canton, c.legal_seat, c.legal_form_label,
                c.status, c.purpose, c.address_json, c.zefix_detail_url,
                s.segment AS band, s.rationale,
-               h.outcome, h.domain, h.addresses,
+               h.outcome, h.domain, h.addresses, h.note,
                ARRAY(SELECT value FROM core.contact
                       WHERE company_id = c.id AND kind = 'email'
                         AND NOT suppressed) AS contacts,
@@ -218,7 +226,10 @@ def main() -> int:
                     [a for a in (row["addresses"] or []) if a]
                     + [a for a in (row["contacts"] or []) if a]
                 ))
-                shown = mail[0] if mail else ("-" if row["outcome"] == "none" else "")
+                # `-` settled, `?` still owed a tier, blank never looked at.
+                shown = mail[0] if mail else {
+                    "none": "-", "partial": "?"
+                }.get(row["outcome"] or "", "")
                 extra = f" (+{len(mail) - 1})" if len(mail) > 1 else ""
                 lines.append(
                     f"- [{row['name']}]({slug(row['name'])}.md) · "
@@ -232,6 +243,11 @@ def main() -> int:
     have_mail = sum(
         1 for r in rows if (r["addresses"] or []) or (r["contacts"] or [])
     )
+    unfinished = sum(
+        1 for r in rows
+        if r["outcome"] == "partial"
+        and not ((r["addresses"] or []) or (r["contacts"] or []))
+    )
     readme = [
         "# Limen · Swiss rental agencies\n",
         "One folder per language region, then one per canton, then one sheet "
@@ -239,6 +255,7 @@ def main() -> int:
         "each run, so corrections belong upstream rather than in these files.\n",
         f"- firms: **{len(rows):,}**",
         f"- with an address found: **{have_mail:,}**",
+        f"- still owed a tier of the search (`?`): **{unfinished:,}**",
         "",
         "## Bands\n",
     ]
@@ -247,10 +264,18 @@ def main() -> int:
             readme.append(f"- **{band}** ({counts[band]:,}) — {BAND_NOTE[band]}")
     readme += [
         "",
-        "## What a dash means\n",
-        "A sheet showing `(dash)` had every tier of the address search run "
-        "against it and publishes nothing findable. That is a settled result, "
-        "not a gap: it stops the paid tier being spent on the same firm twice.\n",
+        "## What a dash means, and what a question mark means\n",
+        "A sheet showing `-` had every tier of the address search run against "
+        "it and publishes nothing findable. That is a settled result, not a "
+        "gap: it stops the paid tier being spent on the same firm twice.\n",
+        "A `?` is the opposite claim. Some tier did not run — usually the web "
+        "search, which needs API credit this machine does not have — so the "
+        "firm is unfinished rather than unreachable, and it is the first place "
+        "another pass should go. A blank means nothing has looked at all.\n",
+        "The distinction is the reason these are three symbols and not one "
+        "empty cell. A dash that quietly covered unfinished work would be "
+        "worse than no dash: it reads as a settled negative, and every later "
+        "run skips what it covers.\n",
         "## The Romansh gap\n",
         "Grisons sits under `de`, its majority language. Romansh is spoken by "
         "a minority of one canton in named valleys, so no canton list selects "
@@ -265,6 +290,7 @@ def main() -> int:
         if counts.get(band):
             print(f"  {band:18} {counts[band]:>6,}")
     print(f"  with an address    {have_mail:>6,}")
+    print(f"  unfinished search  {unfinished:>6,}")
     conn.close()
     return 0
 

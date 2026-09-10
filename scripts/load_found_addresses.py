@@ -127,7 +127,11 @@ def main() -> int:
                   "set aside", file=sys.stderr)
 
         hunt = Hunt(
-            outcome="search" if ranked else "none",
+            # This loader stands in for tier 2 and for nothing else, so a
+            # record that yielded no address settles that one tier. Calling it
+            # `none` would claim the whole cascade came back empty, and would
+            # take the company out of the selection that reads its own site.
+            outcome="search" if ranked else "partial",
             tier=2 if ranked else None,
             domain=domain,
             addresses=ranked,

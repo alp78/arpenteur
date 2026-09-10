@@ -170,8 +170,14 @@ def match(path: Path, *, dry_run: bool, log=print) -> int:
                 conn, company_id=int(company["id"]), kind="email", value=address,
                 source_url=record["url"] or None, method="published",
             )
+        # A directory that lists no public address for a firm has established
+        # one thing: this directory has nothing. It has not established that
+        # the firm publishes nothing, because no tier of the cascade ran. The
+        # difference is not pedantry — `none` is the settled negative the
+        # cascade skips on, so writing it here retires the firm from the search
+        # before anyone has read its own website.
         scout_store.save_address_hunt(conn, int(company["id"]), Hunt(
-            outcome="search" if ranked else "none",
+            outcome="search" if ranked else "partial",
             tier=2 if ranked else None,
             domain=(mailcheck.domain_of(ranked[0]) if ranked else None),
             addresses=ranked, method="published" if ranked else "",
@@ -179,7 +185,8 @@ def match(path: Path, *, dry_run: bool, log=print) -> int:
             tried=[{"what": f"{record['withheld']} address(es)",
                     "why": "the directory flags them private"}]
             if record["withheld"] else None,
-            note="ImmoScout24 agency directory, public agent addresses only",
+            note="ImmoScout24 agency directory, public agent addresses only"
+            + ("" if ranked else "; the directory had none, the cascade is still owed"),
             where={a: record["url"] or "" for a in ranked},
         ))
         conn.commit()

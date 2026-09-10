@@ -391,6 +391,14 @@ def run(
 # Tier 5 is a result, not a failure. Storing "looked everywhere, found none"
 # is what stops the paid tier being spent twice on the same company, and it is
 # what lets an export print a dash and mean it.
+#
+# WHICH IS WHY `none` HAS TO BE EARNED. A run with a tier switched off — no API
+# credit for the search, or `--no-search` — has exhausted the free tiers and
+# still owes the paid one. Recording that as `none` claims a company publishes
+# nothing when nobody finished looking, and the lie is self-concealing: the
+# next run selects on the negative and skips exactly the companies the search
+# was owed to. So an unfinished cascade returns `partial`, which reads as still
+# open everywhere `none` reads as settled.
 
 SEARCH_SCHEMA: dict[str, Any] = {
     "type": "object",
@@ -521,6 +529,10 @@ def hunt_one(
     tried: list[dict[str, str]] = []
     domain = _host(url) if url else None
     pages = searches = 0
+    # Whether tier 2 got an answer, as opposed to being switched off or failing
+    # on the way out. It decides whether an empty result may call itself
+    # settled, so it is set only where the call returns.
+    searched = False
 
     # --- tier 1: the site we already know about -------------------------------
     if url:
@@ -546,6 +558,7 @@ def hunt_one(
             data, used, _tokens = _search_for_site(
                 provider, company, model=model, max_tokens=max_tokens
             )
+            searched = True
             searches += used
             site = (data.get("website") or "").strip()
             said = [a for a in (data.get("emails") or []) if mailcheck.shape_ok(a)]
@@ -656,6 +669,18 @@ def hunt_one(
                 note="constructed at a confirmed domain, mailbox unverified",
             )
 
+    # Nothing answered. Whether that is settled depends on what ran: a tier
+    # that was switched off, or that raised on its way out, leaves the company
+    # owed a look rather than proven unreachable.
+    missing = [
+        name for name, ran in (("search", searched), ("inference", allow_inference))
+        if not ran
+    ]
+    if missing:
+        for name in missing:
+            tried.append({"what": f"the {name} tier", "why": "it did not run"})
+        return Hunt("partial", None, domain, [], "", pages, searches, tried,
+                    note="ran without the " + " or ".join(missing) + " tier")
     return Hunt("none", None, domain, [], "", pages, searches, tried,
                 note="every tier ran")
 
@@ -720,9 +745,15 @@ def hunt_all(
         where.append("c.canton = ANY(%s)")
         params.append([p.strip().upper() for p in canton.split(",") if p.strip()])
     if not refresh:
+        # "Already has a result" and "already has a row" are not the same
+        # claim, and treating them as one is how 2,360 companies left the
+        # cascade without being looked at. A row can record that one source was
+        # checked and had nothing — the agency directory writes exactly that —
+        # which is a fact worth keeping and not a reason to stop looking.
+        # `partial` is the outcome that says so, and it stays selectable.
         where.append(
             "NOT EXISTS (SELECT 1 FROM intel.address_hunt h"
-            " WHERE h.company_id = c.id)"
+            " WHERE h.company_id = c.id AND h.outcome <> 'partial')"
         )
     sql = (
         "SELECT c.id, c.uid, c.name, c.canton, c.legal_seat, w.url"
@@ -736,8 +767,8 @@ def hunt_all(
 
     stats: dict[str, Any] = {
         "considered": len(companies), "site": 0, "search": 0, "inferred": 0,
-        "none": 0, "addresses": 0, "new": 0, "pages": 0, "searches": 0,
-        "failed": 0,
+        "none": 0, "partial": 0, "addresses": 0, "new": 0, "pages": 0,
+        "searches": 0, "failed": 0,
     }
     if not companies:
         log("Nothing to hunt. Everything selected already has a result; "
