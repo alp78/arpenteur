@@ -23,10 +23,47 @@ import hashlib
 import json
 import time
 from dataclasses import dataclass
+from email.utils import parsedate_to_datetime
 from pathlib import Path
 from typing import Any
 
 import httpx
+
+# The longest this client will ever sleep between attempts, whoever asks for
+# it. Thirty seconds is short enough that a stalled worker is visible in a log
+# and long enough to clear an ordinary burst limit.
+MAX_BACKOFF = 30
+
+
+def _retry_after(value: str | None) -> float | None:
+    """`Retry-After` in seconds, or None when the header says nothing usable.
+
+    RFC 9110 allows two forms and the second was being dropped in silence: a
+    delay in seconds, or an HTTP-date. `"120".isdigit()` is true and
+    `"Fri, 10 Sep 2026 23:30:00 GMT".isdigit()` is false, so a date-form header
+    fell through to the exponential branch and the server's actual instruction
+    was discarded.
+
+    Returns None rather than 0 for an unusable value, so the caller can tell
+    "the server said nothing" from "the server said go now".
+    """
+    if not value:
+        return None
+    text = value.strip()
+    if text.isdigit():
+        return float(text)
+    try:
+        when = parsedate_to_datetime(text)
+    except (TypeError, ValueError):
+        return None
+    if when is None:
+        return None
+    import datetime as _dt
+
+    now = _dt.datetime.now(_dt.timezone.utc)
+    if when.tzinfo is None:
+        when = when.replace(tzinfo=_dt.timezone.utc)
+    return max(0.0, (when - now).total_seconds())
 
 
 def _older_than(path: Path, max_age: float | None) -> bool:
@@ -165,12 +202,26 @@ class PoliteClient:
                 continue
 
             if reply.status_code in (429, 500, 502, 503, 504):
-                # Respect Retry-After when the server sends one; otherwise
-                # exponential backoff, capped so a bad afternoon does not
-                # turn into a half-hour sleep.
-                wait = reply.headers.get("Retry-After")
-                delay = float(wait) if wait and wait.isdigit() else min(2**attempt, 30)
-                time.sleep(delay)
+                # Respect Retry-After when the server sends one, but never
+                # further than MAX_BACKOFF.
+                #
+                # THE CAP USED TO APPLY TO THE WRONG BRANCH. It bounded the
+                # exponential fallback — the one that was already small — and
+                # left a server-supplied delay unbounded, so the comment's
+                # promise about a bad afternoon was exactly inverted. A
+                # `Retry-After: 86400` from a Cloudflare or Squarespace edge
+                # parked a worker for twenty-four hours, holding its socket in
+                # CLOSE_WAIT and writing nothing. Two shards of a six-way run
+                # sat like that for an hour before anyone noticed, because a
+                # silent sleep looks identical to slow work.
+                #
+                # A delay longer than the cap is a refusal, not a hint: waiting
+                # it out serves nobody, and the retry budget is a better place
+                # to give up than the clock.
+                delay = _retry_after(reply.headers.get("Retry-After"))
+                if delay is None:
+                    delay = float(min(2**attempt, MAX_BACKOFF))
+                time.sleep(min(delay, float(MAX_BACKOFF)))
                 last_error = httpx.HTTPStatusError(
                     f"{reply.status_code} from {url}", request=reply.request, response=reply
                 )

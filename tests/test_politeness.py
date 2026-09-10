@@ -20,7 +20,7 @@ from types import SimpleNamespace
 import pytest
 
 from arpenteur import db
-from arpenteur.kernel.db import Connection, Row
+from arpenteur.kernel.db import Connection
 from arpenteur.stages import source
 
 
@@ -116,3 +116,52 @@ def test_a_small_backlog_needs_no_ceremony(settings, db_path: Path) -> None:
     assert "mass querying" not in str(caught.value), (
         "a one-company backlog tripped the bulk guard"
     )
+
+
+# --- backing off without disappearing -----------------------------------------
+#
+# The client sleeps when a server pushes back, and a sleep is invisible: it
+# looks exactly like slow work from the outside. So the bound on it is asserted
+# rather than trusted. Two shards of a six-way run sat in a 24-hour sleep for
+# an hour before anyone noticed, and nothing in any log said so.
+
+import datetime as _dt  # noqa: E402
+
+from arpenteur.http import MAX_BACKOFF, _retry_after  # noqa: E402
+
+
+def test_a_server_asking_for_a_day_does_not_get_one() -> None:
+    """The bug this file was extended for.
+
+    The cap was applied to the exponential fallback and not to the header, so
+    `Retry-After: 86400` was honoured in full. A delay that long is a refusal,
+    not a hint, and waiting it out serves nobody: the retry budget is the right
+    place to give up, not the clock.
+    """
+    asked = _retry_after("86400")
+    assert asked == 86400.0, "the header should still be read faithfully"
+    assert min(asked, float(MAX_BACKOFF)) == float(MAX_BACKOFF), (
+        "a server-supplied delay must be capped like any other"
+    )
+
+
+def test_the_http_date_form_is_not_dropped() -> None:
+    """RFC 9110 allows two forms and only one was understood.
+
+    `"120".isdigit()` is true and a date string's is not, so a date-form header
+    fell through to the exponential branch and the server's instruction was
+    discarded in silence.
+    """
+    soon = _dt.datetime.now(_dt.timezone.utc) + _dt.timedelta(seconds=90)
+    parsed = _retry_after(soon.strftime("%a, %d %b %Y %H:%M:%S GMT"))
+    assert parsed is not None, "an HTTP-date Retry-After must be understood"
+    assert 60 <= parsed <= 120
+
+
+def test_an_unusable_header_is_not_mistaken_for_go_now() -> None:
+    """None and 0 mean different things: "nothing said" and "no wait at all".
+    Collapsing them would turn a malformed header into a hot retry loop."""
+    assert _retry_after("garbage") is None
+    assert _retry_after(None) is None
+    assert _retry_after("") is None
+    assert _retry_after("0") == 0.0
