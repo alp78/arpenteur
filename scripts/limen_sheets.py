@@ -71,6 +71,26 @@ def address_lines(raw: dict | None) -> str:
     return ", ".join(part for part in (street, raw.get("addon"), town) if part) or "incomplete"
 
 
+def provenance(row: dict) -> str:
+    """Where the addresses on this sheet came from, in the operator's terms.
+
+    Read from the contact rows rather than from the cascade's outcome. The two
+    disagree whenever a later source supplied an address the cascade had given
+    up on, and a sheet that reports the cascade would then say `none` above a
+    working address.
+    """
+    methods = [m for m in (row["methods"] or []) if m]
+    if not methods:
+        return "none held"
+    said = {
+        "published": "published by the firm or a directory that reproduced it",
+        "inferred": "constructed and checked, not seen published",
+    }
+    parts = [said.get(m, m) for m in sorted(methods)]
+    where = row["contact_source"]
+    return ", ".join(parts) + (f" ({where})" if where else "")
+
+
 def sheet(row: dict) -> str:
     """One agency, as a page."""
     band = row["band"] or "ungraded"
@@ -121,7 +141,8 @@ def sheet(row: dict) -> str:
 
 - Register entry: {row["zefix_detail_url"] or "not recorded"}
 - Grading: rule over the registered purpose, see `scripts/classify_regies.py`
-- Address search: `intel.address_hunt`, outcome `{row["outcome"] or "not run"}`
+- Addresses: {provenance(row)}
+- Cascade: `intel.address_hunt`, outcome `{row["outcome"] or "not run"}`
 
 The register carries no warranty and has no legal effect; only the certified
 cantonal excerpt and the FOSC publication text are binding.
@@ -149,7 +170,18 @@ def main() -> int:
                h.outcome, h.domain, h.addresses,
                ARRAY(SELECT value FROM core.contact
                       WHERE company_id = c.id AND kind = 'email'
-                        AND NOT suppressed) AS contacts
+                        AND NOT suppressed) AS contacts,
+               -- How the addresses actually held were come by, which is not
+               -- the same question as how far the cascade got. A firm can have
+               -- a published address from the agency directory and a hunt row
+               -- saying `none`, because the two ran at different times.
+               ARRAY(SELECT DISTINCT method FROM core.contact
+                      WHERE company_id = c.id AND kind = 'email'
+                        AND NOT suppressed AND method IS NOT NULL) AS methods,
+               (SELECT source_url FROM core.contact
+                 WHERE company_id = c.id AND kind = 'email'
+                   AND NOT suppressed AND source_url IS NOT NULL
+                 LIMIT 1) AS contact_source
           FROM core.company c
           JOIN intel.segment s ON s.company_id = c.id AND s.segment = ANY(%s)
           LEFT JOIN intel.address_hunt h ON h.company_id = c.id
