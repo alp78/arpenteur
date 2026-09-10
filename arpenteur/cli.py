@@ -116,6 +116,15 @@ def cmd_source(args: argparse.Namespace) -> int:
 
 def cmd_hydrate(args: argparse.Namespace) -> int:
     settings = _scoped(args)
+    # `\b` is a word boundary in every regex flavour a person is likely to have
+    # used before this one, and in Postgres it is a backspace. So `\bimmo\b`
+    # does not narrow the alternative, it deletes it: the pattern still
+    # compiles, the run still succeeds, and the companies simply never appear.
+    # A national sweep hid 5,251 firms behind exactly this and reported done.
+    if args.name_like and re.search(r"\\[bB]", args.name_like):
+        print("warning: \\b is a backspace in Postgres regex, not a word "
+              "boundary — that alternative will match nothing. Use \\m and "
+              "\\M for the start and end of a word.", file=sys.stderr)
     conn = db.open_db(_database_url(settings, args.fixture))
     run_id = db.start_run(conn, "hydrate" + (":fixture" if args.fixture else ""), vars(args))
     try:
@@ -1520,8 +1529,9 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument(
         "--name-like",
         default="",
-        help="only companies whose name matches this regex, which is how a "
-             "national run stays inside the politeness budget",
+        help="only companies whose name matches this POSIX regex, which is how "
+             "a national run stays inside the politeness budget. Word "
+             "boundaries are \\m and \\M; \\b is a backspace and matches nothing",
     )
     p.add_argument(
         "--bulk",
