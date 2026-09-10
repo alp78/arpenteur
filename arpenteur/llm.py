@@ -114,6 +114,21 @@ class Research:
 
 
 class AnthropicProvider:
+    """The metered Messages API. Billed per token against API credit.
+
+    THIS IS NOT A SUBSCRIPTION PATH, AND IT USED TO CLAIM TO BE. Constructing
+    the client with no key was labelled "subscription" here on the theory that
+    the SDK would find the OAuth profile and the calls would draw on a Claude
+    plan. They do not. `api.anthropic.com/v1/messages` bills the API account
+    whatever credential opens it, and a Max plan does not fund it: the address
+    cascade's search tier failed with "credit balance is too low" on a machine
+    whose subscription was working perfectly, and the message was read as a
+    broken key rather than as the two ledgers they are.
+
+    So this class no longer pretends. A subscription is a different transport,
+    not a different credential on this one — see `ClaudeCodeProvider`.
+    """
+
     name = "anthropic"
 
     def __init__(self, api_key: str | None = None) -> None:
@@ -126,12 +141,11 @@ class AnthropicProvider:
             self.client = Anthropic(api_key=api_key)
             self.credential = "api key"
         else:
-            # No api_key argument: the SDK resolves the credential itself,
-            # finding the OAuth profile written by `ant auth login`. The
-            # subscription token is short-lived and refreshed by the SDK, so
-            # it must never be copied into this process or into .env.
+            # Still allowed: the SDK reads ANTHROPIC_API_KEY from the
+            # environment. Named for what it is rather than for what it was
+            # hoped to be.
             self.client = Anthropic()
-            self.credential = "subscription"
+            self.credential = "api key from the environment"
 
     def complete(self, *, system: str, user: str, model: str, max_tokens: int) -> str:
         message = self.client.messages.create(
@@ -365,6 +379,220 @@ class AnthropicProvider:
         raise RuntimeError("research did not finish after 4 continuations")
 
 
+class ClaudeCodeProvider:
+    """A Claude subscription, reached through the Claude Code CLI.
+
+    **Why a subprocess and not an SDK call.** A Claude plan and API credit are
+    separate accounts, and the Messages API can only be paid for by the second.
+    The only transport that spends a subscription is the one the subscription
+    was sold with: `claude -p`, which authenticates with the OAuth login and
+    draws on the plan's quota. There is no header that turns an API call into a
+    subscription call, which is exactly the thing the old code assumed.
+
+    **What that buys and what it costs.** Search and page-reading come with the
+    harness, so this needs no server-tool wiring. In exchange a call is a
+    process, it takes tens of seconds, and it is metered in plan quota rather
+    than francs, so the honest unit of cost is time and rate limit rather than
+    a bill.
+
+    **The flags are not decoration; each removes weight from every call.**
+
+      --restricted            drops the code-running tools and, more to the
+                              point, ignores user and project settings, so a
+                              CLAUDE.md and a memory directory do not ride
+                              along on six thousand lookups
+      --tools                 the built-in set is replaced, not merely
+                              auto-approved, so unused tool schemas leave the
+                              context
+      --system-prompt         replaces the harness prompt with the caller's
+      --strict-mcp-config     no MCP server is consulted
+      --disable-slash-commands, --no-session-persistence
+                              no skill discovery, no transcript per company
+
+    Measured on one company, the difference between a bare `claude -p` and this
+    set: 18 turns to 6, 270'000 cached tokens to 5'700, and the same answer.
+    Left as it was, a national run would have paid the whole harness context
+    once per company.
+
+    **Not `--bare`.** It is the obvious flag to reach for and it is the one
+    that breaks this: bare mode never reads OAuth credentials, so it falls back
+    to an API key and quietly bills the account this class exists to avoid.
+    """
+
+    name = "claude-code"
+    credential = "Claude subscription (claude -p)"
+
+    def __init__(self, binary: str = "claude", timeout: int = 300) -> None:
+        self.spent = Spend()
+        self.binary = binary
+        self.timeout = timeout
+
+    # --- the subprocess -------------------------------------------------------
+
+    def _run(
+        self,
+        *,
+        system: str,
+        user: str,
+        model: str,
+        schema: dict[str, Any] | None,
+        tools: str,
+    ) -> dict[str, Any]:
+        import subprocess
+        import tempfile
+
+        argv = [
+            self.binary, "-p", user,
+            "--output-format", "json",
+            "--tools", tools,
+            "--restricted", "--strict-mcp-config",
+            "--disable-slash-commands", "--no-session-persistence",
+            "--permission-mode", "auto", "--permission-prompts", "none",
+        ]
+        if system:
+            argv += ["--system-prompt", system]
+        if model:
+            argv += ["--model", model]
+        if schema is not None:
+            argv += ["--json-schema", json.dumps(schema)]
+
+        # Run somewhere with no project of its own. `--restricted` already
+        # ignores project settings, and a neutral directory means the file
+        # tools are confined to a scratch it cannot damage.
+        with tempfile.TemporaryDirectory(prefix="arpenteur-llm-") as cwd:
+            try:
+                done = subprocess.run(
+                    argv, cwd=cwd, capture_output=True, text=True,
+                    timeout=self.timeout,
+                )
+            except FileNotFoundError as exc:
+                raise RuntimeError(
+                    f"{self.binary!r} is not installed, and llm.auth_mode is "
+                    "'subscription'. Install it with:\n"
+                    "    npm install -g @anthropic-ai/claude-code\n"
+                    "then sign in with:  claude   (once, interactively)"
+                ) from exc
+            except subprocess.TimeoutExpired as exc:
+                raise RuntimeError(
+                    f"the subscription call did not finish in {self.timeout}s"
+                ) from exc
+
+        if done.returncode != 0:
+            detail = (done.stderr or done.stdout or "").strip()[:400]
+            raise RuntimeError(f"claude -p exited {done.returncode}: {detail}")
+        try:
+            payload = json.loads(done.stdout)
+        except (ValueError, json.JSONDecodeError) as exc:
+            raise RuntimeError(
+                f"claude -p returned no JSON: {done.stdout[:300]!r}"
+            ) from exc
+        # A failed run still exits 0 and reports itself in the payload, which
+        # is documented behaviour and easy to read straight past.
+        if payload.get("is_error") or payload.get("subtype") != "success":
+            raise RuntimeError(
+                f"claude -p failed ({payload.get('subtype')}): "
+                f"{str(payload.get('result'))[:300]}"
+            )
+        self._record(payload)
+        return payload
+
+    def _record(self, payload: dict[str, Any]) -> None:
+        usage = payload.get("usage") or {}
+        self.spent.calls += 1
+        # Cache reads and writes are input tokens that were paid for; leaving
+        # them out would under-report a run by an order of magnitude, which is
+        # the whole failure `Spend` was written to stop.
+        self.spent.input_tokens += (
+            int(usage.get("input_tokens") or 0)
+            + int(usage.get("cache_read_input_tokens") or 0)
+            + int(usage.get("cache_creation_input_tokens") or 0)
+        )
+        self.spent.output_tokens += int(usage.get("output_tokens") or 0)
+
+    @staticmethod
+    def _tool_counts(payload: dict[str, Any]) -> tuple[int, int]:
+        """Searches and fetches, from wherever this transport reports them.
+
+        `usage.server_tool_use` is the API's counter and reads zero here: the
+        harness searches with its own client-side tool, so nothing goes through
+        the server tool that counter describes. The real figure is per model in
+        `modelUsage`, and it is summed rather than taken from one entry because
+        a single run uses more than one model — a small one does the harness's
+        own housekeeping while the named model does the work.
+
+        Fetches have no equivalent field, so they are reported as zero rather
+        than estimated from the turn count. A made-up number here would end up
+        in a cost report looking like a measurement.
+        """
+        server = (payload.get("usage") or {}).get("server_tool_use") or {}
+        searches = int(server.get("web_search_requests") or 0)
+        for entry in (payload.get("modelUsage") or {}).values():
+            if isinstance(entry, dict):
+                searches += int(entry.get("webSearchRequests") or 0)
+        return searches, int(server.get("web_fetch_requests") or 0)
+
+    # --- the Provider protocol ------------------------------------------------
+
+    def complete(self, *, system: str, user: str, model: str, max_tokens: int) -> str:
+        payload = self._run(
+            system=system, user=user, model=model, schema=None, tools="",
+        )
+        return str(payload.get("result") or "")
+
+    def complete_json(
+        self, *, system: str, user: str, model: str, max_tokens: int,
+        schema: dict[str, Any], effort: str = "",
+    ) -> dict[str, Any]:
+        payload = self._run(
+            system=system, user=user, model=model, schema=schema, tools="",
+        )
+        data = payload.get("structured_output")
+        if isinstance(data, dict):
+            return data
+        # The harness can answer in prose when a schema is awkward; the same
+        # salvage the API path uses rather than losing the call.
+        return extract_json(str(payload.get("result") or ""))
+
+    def research(
+        self, *, system: str, user: str, model: str, max_tokens: int,
+        schema: dict[str, Any], max_searches: int,
+    ) -> Research:
+        """Search the web and read pages, on the subscription's quota.
+
+        `max_searches` is a request rather than a cap: the harness owns its own
+        loop and takes no budget argument, so the number is put to the model in
+        words. That is weaker than the API path, where the tool definition
+        enforces it, and it is the honest limitation of this transport.
+        """
+        asked = system
+        if max_searches:
+            asked = (
+                f"{system}\n\nWork within about {max_searches} searches and as "
+                "few page reads as will answer the question."
+            ).strip()
+        payload = self._run(
+            system=asked, user=user, model=model, schema=schema,
+            tools="WebSearch,WebFetch",
+        )
+        data = payload.get("structured_output")
+        if not isinstance(data, dict):
+            data = extract_json(str(payload.get("result") or "")) or {}
+        searches, fetches = self._tool_counts(payload)
+        usage = payload.get("usage") or {}
+        return Research(
+            data=data,
+            searches=searches,
+            fetches=fetches,
+            input_tokens=(
+                int(usage.get("input_tokens") or 0)
+                + int(usage.get("cache_read_input_tokens") or 0)
+                + int(usage.get("cache_creation_input_tokens") or 0)
+            ),
+            output_tokens=int(usage.get("output_tokens") or 0),
+            turns=int(payload.get("num_turns") or 1),
+        )
+
+
 class InfomaniakProvider:
     """Placeholder for the sovereign path: open models served from Switzerland.
 
@@ -402,49 +630,77 @@ class InfomaniakProvider:
 
 
 def _has_local_profile() -> bool:
-    """Is there an `ant auth login` profile on this machine?
+    """Is there a Claude sign-in on this machine?
 
-    Checked before constructing a client so a missing sign-in reads as
-    "run ant auth login" rather than as the SDK's generic auth error. The
-    location follows the SDK's own convention, ANTHROPIC_CONFIG_DIR first.
+    Checked before constructing a client so a missing sign-in reads as "sign
+    in" rather than as a generic auth error. Two locations, because the two
+    tools that can hold a subscription login write to different places: the
+    Claude Code CLI keeps one credentials file, `ant auth login` a directory of
+    profiles. Either is enough.
     """
     import os
     from pathlib import Path
 
+    if (Path.home() / ".claude" / ".credentials.json").is_file():
+        return True
     configured = os.environ.get("ANTHROPIC_CONFIG_DIR")
     base = Path(configured) if configured else Path.home() / ".config" / "anthropic"
     credentials = base / "credentials"
     return credentials.is_dir() and any(credentials.glob("*.json"))
 
 
-SETUP_HELP = """No Anthropic credential found.
+def _claude_cli() -> str | None:
+    """The Claude Code binary, or None when it is not installed."""
+    import shutil
 
-Either set ANTHROPIC_API_KEY in .env (console.anthropic.com), or sign in
-with a Claude subscription:
+    return shutil.which("claude")
 
-    ant auth login
 
-Sourcing and hydration need neither; only profile and draft call a model."""
+SETUP_HELP = """No Claude credential found.
+
+The two ways to pay draw on different accounts and are not interchangeable.
+
+  A Claude subscription, which is the default and costs plan quota:
+
+      npm install -g @anthropic-ai/claude-code
+      claude            # once, to sign in
+
+  Or API credit, which costs money per token:
+
+      ANTHROPIC_API_KEY=... in .env   (console.anthropic.com)
+
+Sourcing and hydration need neither; only profile, draft and the address
+search call a model."""
 
 
 def get_provider(settings: Any) -> Provider:
     choice = settings.llm.provider
     if choice == "anthropic":
         llm = settings.llm
-        # An api_key wins when the mode allows it, because it is the explicit
-        # one: it was put in .env on purpose. Subscription is the fallback.
+        # Subscription first, and that ordering is the point of this change.
+        # The two modes are separate accounts, not two keys for one: a plan
+        # cannot pay for the Messages API and API credit cannot be spent from a
+        # plan. Preferring the subscription means the default run costs quota
+        # and time rather than money, and the API stays available for whoever
+        # wants to buy speed with it.
+        if llm.uses_subscription:
+            binary = _claude_cli()
+            if binary and _has_local_profile():
+                return ClaudeCodeProvider(binary)
+            if llm.auth_mode == "subscription":
+                raise RuntimeError(
+                    "llm.auth_mode is 'subscription' but the Claude Code CLI "
+                    "is not installed. Install it with:\n"
+                    "    npm install -g @anthropic-ai/claude-code\n"
+                    "then sign in once by running: claude"
+                    if not binary else
+                    "llm.auth_mode is 'subscription' but no Claude sign-in was "
+                    "found. Run `claude` once and sign in."
+                )
         if llm.uses_api_key and llm.api_key:
             return AnthropicProvider(llm.api_key)
-        if llm.uses_subscription:
-            if not _has_local_profile():
-                raise RuntimeError(
-                    "llm.auth_mode is 'subscription' but no Claude sign-in was "
-                    "found. Run: ant auth login"
-                    if llm.auth_mode == "subscription"
-                    else SETUP_HELP
-                )
-            return AnthropicProvider()
-        # auth_mode = "api_key" with nothing in .env.
+        if llm.auth_mode == "auto":
+            raise RuntimeError(SETUP_HELP)
         raise RuntimeError(
             "llm.auth_mode is 'api_key' but ANTHROPIC_API_KEY is not set; "
             "see .env.example"

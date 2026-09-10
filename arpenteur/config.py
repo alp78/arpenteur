@@ -180,7 +180,12 @@ class LlmConfig:
     # draw on different accounts, and a deployment that meant "my Claude
     # subscription" must not quietly fall through to billing an API key that
     # happens to be in the environment.
-    auth_mode: str = "auto"
+    #
+    # Defaults to the subscription. A plan cannot pay for the Messages API and
+    # API credit cannot be drawn from a plan, so this is a choice of transport
+    # and not merely of credential — `subscription` runs the Claude Code CLI,
+    # `api_key` calls the Messages API.
+    auth_mode: str = "subscription"
     api_key: str | None = None
 
     @property
@@ -189,10 +194,10 @@ class LlmConfig:
 
     @property
     def uses_subscription(self) -> bool:
-        """True when a local `ant auth login` profile may be used.
+        """True when a local Claude sign-in may be used.
 
-        The SDK finds that profile itself, from ~/.config/anthropic. Nothing
-        here reads it: the credential never passes through this process.
+        The CLI holds that credential and refreshes it. Nothing here reads it:
+        it never passes through this process or into .env.
         """
         return self.auth_mode in ("subscription", "auto")
 

@@ -117,15 +117,22 @@ contact = "arpenteur (contact: alexis@peringer.ch)"
 
 [llm]
 provider = "anthropic"
-# How the model is paid for.
-#   auto         an ANTHROPIC_API_KEY if one is set, otherwise a local Claude
-#                sign-in (ant auth login). The sensible default when published.
-#   subscription only the local sign-in. Never touches an API key, even if one
-#                is present in the environment.
-#   api_key      only ANTHROPIC_API_KEY. Right for a server, where falling back
-#                to whatever profile the deploy user happens to have would be
-#                a surprise.
-auth_mode = "auto"
+# How the model is paid for, and it is a choice of transport rather than of
+# credential. A Claude plan cannot pay for the Messages API and API credit
+# cannot be drawn from a plan, so the two modes take different roads:
+#
+#   subscription the Claude Code CLI (`claude -p`), spending plan quota. Needs
+#                `npm install -g @anthropic-ai/claude-code` and one sign-in.
+#                Slower — a search is tens of seconds — and costs no money.
+#   api_key      the Messages API, billed per token to ANTHROPIC_API_KEY.
+#                Faster and parallel, and the right answer for a server.
+#   auto         subscription if the CLI is installed and signed in, otherwise
+#                the API key.
+#
+# Set to the subscription deliberately: the address cascade's search tier runs
+# once per company over thousands of companies, and on the API that is a bill
+# rather than a wait.
+auth_mode = "subscription"
 classify_model = "claude-haiku-4-5"
 draft_model = "claude-sonnet-5"
 # The enrich stage searches and reads the open web through Anthropic's hosted
