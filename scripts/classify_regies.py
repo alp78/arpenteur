@@ -89,6 +89,42 @@ PROPERTY = re.compile(
 
 BANDS = ("regie-core", "regie-letting", "regie-brokerage", "regie-owner")
 
+# The Swiss single-property vehicle, and the one shape the purpose text cannot
+# be trusted on.
+#
+# "Société Immobilière Acacias-Lièvre B SA" owns one building. Its registered
+# purpose is a notary's list — "achat, vente, construction, exploitation et
+# gérance d'immeubles" — and `gérance` there means managing the building it
+# owns, not managing anyone else's. On the text alone it is indistinguishable
+# from an agency, and 198 of them were sitting in the core band on that word.
+#
+# THE TEXT CANNOT SETTLE IT, SO THE NAME DOES. Reading the purposes side by
+# side, no wording separates the two shapes: GRANGE Immobilier SA, a large
+# Geneva agency, says "gérance d'immeubles, promotion, courtage, achat, vente"
+# — the same verbs in the same order. What separates them is the naming
+# convention: `Société immobilière` followed by a place or a building is how
+# Switzerland names a holding vehicle, and agencies do not use it.
+#
+# Nearly French-only in practice: 198 of these against two German forms and no
+# Italian ones, which is why the pattern is not symmetrical across languages.
+VEHICLE_NAME = re.compile(
+    r"^\s*(?:soci[eé]t[eé]\s+immobili[eè]re|immobiliengesellschaft"
+    r"|societ[aà]\s+immobiliare)",
+    re.IGNORECASE,
+)
+
+# The escape hatch, and it is deliberately narrow. A vehicle that really does
+# manage for other people says so in words that the boilerplate never uses:
+# third parties by name, condominium administration, letting management as a
+# service. `courtage` and `promotion` are NOT here — they sit inside the same
+# notarial list as `gérance` and separate nothing.
+FOR_OTHERS = re.compile(
+    r"pour\s+(?:le\s+compte\s+)?(?:de\s+)?tiers|\bde\s+tiers\b"
+    r"|f[uü]r\s+Dritte|di\s+terzi|copropri[eé]t|\bPPE\b|stockwerkeigentum"
+    r"|condomini|gestion\s+locative|r[eé]gie\s+immobili[eè]re",
+    re.IGNORECASE,
+)
+
 # A name that presents the firm as a property professional. Not evidence of
 # what it does, which is the purpose's job, but evidence that it says so on the
 # door: a shortlist sorted on band alone puts an architecture practice that
@@ -187,6 +223,15 @@ def grade(purpose: str, name: str) -> tuple[str, str] | None:
         return None
     named = bool(TRADE_NAME.search(fold(name or "")))
     agrees = "name agrees" if named else "name is silent"
+    # A holding vehicle is graded on its name before its purpose, because its
+    # purpose is boilerplate that reads like an agency's. The one thing that
+    # overrides the name is the company saying, in terms the boilerplate does
+    # not use, that it acts for other people.
+    if VEHICLE_NAME.search(name or "") and not FOR_OTHERS.search(purpose or ""):
+        return "regie-owner", (
+            "named as a single-property vehicle and the purpose never says it "
+            "acts for third parties, so the gérance is of its own building"
+        )
     if _near(CORE, text):
         return "regie-core", f"purpose names management of property for others, {agrees}"
     if _near(LETTING, text):
