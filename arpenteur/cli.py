@@ -127,6 +127,7 @@ def cmd_hydrate(args: argparse.Namespace) -> int:
             # that is already the whole of it.
             cantons=None if args.fixture else settings.cantons,
             legal_forms=None if args.fixture else settings.legal_forms,
+            name_like=args.name_like or None,
             limit=args.limit,
             bulk=args.bulk,
             fixture=args.fixture,
@@ -1516,6 +1517,12 @@ def build_parser() -> argparse.ArgumentParser:
     p = sub.add_parser("hydrate", help="fetch detail for companies missing it")
     territory_flags(p)
     p.add_argument("--limit", type=int)
+    p.add_argument(
+        "--name-like",
+        default="",
+        help="only companies whose name matches this regex, which is how a "
+             "national run stays inside the politeness budget",
+    )
     p.add_argument(
         "--bulk",
         action="store_true",

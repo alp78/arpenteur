@@ -616,7 +616,8 @@ def hunt_one(
                     continue
                 if not mailcheck.page_confirms(
                     web.visible_text(probe), company["name"],
-                    seat=company["legal_seat"] or "", places=places or frozenset(),
+                    seat=company["legal_seat"] or "", domain=candidate_domain,
+                    places=places or frozenset(),
                 ):
                     tried.append(
                         {"what": candidate_domain, "why": "page does not name this firm"}

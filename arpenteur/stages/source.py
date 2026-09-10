@@ -187,6 +187,7 @@ def hydrate_pending(
     zefix: ZefixClient | FixtureZefixClient | None = None,
     cantons: list[str] | None = None,
     legal_forms: list[str] | None = None,
+    name_like: str | None = None,
     limit: int | None = None,
     bulk: bool = False,
     fixture: bool = False,
@@ -198,6 +199,13 @@ def hydrate_pending(
     than it is worked. `purpose` only arrives with this call, so a territory
     cannot be classified until it is hydrated, and hydrating by id order would
     spend the whole polite budget on whichever canton happens to sort first.
+
+    `name_like` is the filter that makes a national run possible at all. The
+    register cannot be searched by activity, so finding every rental agency in
+    Switzerland would otherwise mean hydrating half a million companies, which
+    is a fifty-five hour run and precisely the mass querying Zefix asks users
+    to renounce. A name pattern narrows that to a few per cent, and the purpose
+    text those calls return is what actually decides the activity.
 
     Two kinds of work arrive here. A company the sweep found but never fetched
     in detail, and a company the sync stage marked stale because a FOSC notice
@@ -212,6 +220,9 @@ def hydrate_pending(
     if legal_forms:
         where.append(f"legal_form_uid IN ({','.join(['%s'] * len(legal_forms))})")
         params.extend(legal_forms)
+    if name_like:
+        where.append("name ~* %s")
+        params.append(name_like)
     sql = (
         f"SELECT uid, stale_since FROM core.company WHERE {' AND '.join(where)} "
         "ORDER BY stale_since IS NULL, last_mutation_date DESC, id"

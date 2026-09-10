@@ -209,6 +209,17 @@ TRADE_WORDS = frozenset({
     "treuhand", "fiduciaire", "fiduciaria", "consulting", "conseil",
     "services", "service", "partners", "partner", "invest", "investment",
     "finance", "capital", "management", "bau", "construction",
+    # Generic business nouns. The danger is not that they appear in a name but
+    # that they are the only word left in one: "A.M.Y Office Sàrl" reduces to
+    # `office`, and a page at office.ch contains the word "office", so the
+    # confirmation passes on a tautology. Live run produced `info@office.ch`,
+    # `info@commerces.ch` and `lotten@bergman.com`, none of them the firm's.
+    "office", "commerce", "commerces", "bureau", "buro", "centre", "center",
+    "atelier", "boutique", "maison", "haus", "casa", "home", "solutions",
+    "solution", "concept", "concepts", "project", "projects", "projekt",
+    "swiss", "suisse", "schweiz", "svizzera", "international", "global",
+    "expert", "experts", "expertise", "team", "trading", "commercial",
+    "developpement", "development", "entwicklung", "sviluppo", "holdings",
 })
 
 
@@ -270,8 +281,11 @@ def domain_candidates(
     # register the surname, and "Bernard Nicod SA" is nicod.ch.
     if len(words) > 1:
         offer(words[-1], alone=True)
-    offer("".join(words))
-    offer("-".join(words))
+    # `alone` when there is only one word, because then the compound *is* that
+    # word and would otherwise slip past the trade-word guard: "A.M.Y Office
+    # Sàrl" reduces to ["office"] and offered `office.ch`.
+    offer("".join(words), alone=len(words) == 1)
+    offer("-".join(words), alone=len(words) == 1)
     if len(words) > 1:
         offer(words[0], alone=True)
         offer("".join(words[:2]))
@@ -316,8 +330,25 @@ def distinctive_words(
     return sorted(dict.fromkeys(words), key=lambda w: (-len(w), w))
 
 
+def domain_echoes_name(domain: str, name: str) -> int:
+    """How many of the firm's own name words the domain reproduces.
+
+    Corroboration that costs nothing and is often stronger than the page.
+    `celik-immobilier.ch` reproduces both words of "A.Celik immobilier Sàrl",
+    which a different Celik would not have registered; `clerc.ch` reproduces
+    one word of "A-Clerc Immobilier Sàrl" and could be any Clerc in
+    Switzerland.
+    """
+    stem = deaccent(domain or "").lower().rpartition(".")[0] or domain or ""
+    words = {
+        w for w in WORD.findall(deaccent(name or "").lower())
+        if w not in NAME_NOISE and len(w) > 2
+    }
+    return sum(1 for w in words if w in stem)
+
+
 def page_confirms(
-    page_text: str, name: str, *, seat: str = "",
+    page_text: str, name: str, *, seat: str = "", domain: str = "",
     places: frozenset[str] = frozenset(),
 ) -> bool:
     """Whether this page belongs to the firm whose domain was guessed.
@@ -346,4 +377,26 @@ def page_confirms(
     #
     # Capped at three, because a long registered name is mostly description and
     # a site rarely prints all of it on one page.
-    return all(word in haystack for word in wanted[:3])
+    if not all(word in haystack for word in wanted[:3]):
+        return False
+    # And the town, when one name-word is all the evidence there is.
+    #
+    # A single distinctive word makes the check above a tautology: a site at
+    # `clerc.ch` contains "clerc" whoever owns it. Requiring the registered
+    # commune as well makes it two independent facts agreeing, and a Swiss firm
+    # prints its address on its own site. The cost is a rejected site that does
+    # not, which is the right way round: a missing address is a gap and a wrong
+    # one gets written to.
+    if len(wanted) == 1:
+        # Unless the domain already reproduces two words of the name, in which
+        # case the domain is the second fact and the town is not needed. That
+        # matters for a real site with no content on it: `celik-immobilier.ch`
+        # is a parked page naming neither a town nor an address, and it is
+        # still plainly that firm's domain.
+        if domain and domain_echoes_name(domain, name) >= 2:
+            return True
+        if not seat:
+            return False
+        town = [w for w in WORD.findall(deaccent(seat).lower()) if len(w) > 3]
+        return any(w in haystack for w in town) if town else False
+    return True

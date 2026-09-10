@@ -415,6 +415,16 @@ ai-adopter = "Purpose text mentions software, automation, digital products or AI
 compliance-sector = "Regulated activity: health, finance, insurance, legal, public mandates, personal data at the centre."
 lean-startup = "Recently registered, small capital, product or technology purpose rather than trade or services."
 
+# Who performs a flat handover, graded by how central it is to the business.
+# The distinction that matters is managing property for somebody else: a firm
+# that administers buildings runs an entry and an exit inspection on every
+# tenancy, a broker sees one at a sale, and a company that merely owns a
+# building has its agency do them.
+regie-core = "The registered purpose names management of property for third parties: gérance, administration d'immeubles, Liegenschaftsverwaltung, Bewirtschaftung, amministrazione di immobili."
+regie-letting = "Lets property without naming management: location, Vermietung, locazione. Hands flats over, but administration may sit elsewhere."
+regie-brokerage = "Brokerage, sale or development only: courtage, promotion, Vermittlung, Makler. Sees a handover occasionally rather than weekly."
+regie-owner = "Holds or invests in property and names no management or letting activity. The handovers happen, but an agency runs them."
+
 # What line of business a company is in, which is a different question from how
 # it fits a campaign. Exactly one per company, chosen from this list and never
 # invented, so `restaurants in Vaud` is a filter rather than a search for the
