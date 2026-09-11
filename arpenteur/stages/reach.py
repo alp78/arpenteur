@@ -523,8 +523,14 @@ def hunt_one(
     places: frozenset[str] | None = None,
     allow_search: bool = True,
     allow_inference: bool = True,
+    search_when: Callable[[Row], bool] | None = None,
 ) -> Hunt:
-    """Run the cascade for one company and stop at the first tier that answers."""
+    """Run the cascade for one company and stop at the first tier that answers.
+
+    `search_when` decides whether this company is worth the paid tier. A
+    company it refuses is not a failure and not settled: the cascade records
+    `partial`, so a later run with a different policy picks it up again.
+    """
     mx_cache = mx_cache if mx_cache is not None else {}
     tried: list[dict[str, str]] = []
     domain = _host(url) if url else None
@@ -553,7 +559,25 @@ def hunt_one(
                         where=where)
 
     # --- tier 2: search the web for the site, then read it --------------------
-    if allow_search and provider is not None:
+    #
+    # WHY THIS TIER IS GATED AND THE FREE ONES ARE NOT. Every other tier costs
+    # a DNS lookup or a page fetch. This one spawns a process, loads a model
+    # and bills a turn whether or not it finds anything, so it is the only tier
+    # where being called on a hopeless company has a price.
+    #
+    # Measured over one national run: 6,438 companies reached this tier, 765 of
+    # them ran a search that returned something, and the other 5,673 paid the
+    # same startup to learn that a firm with no web presence has no web
+    # presence. That is 88% of the spend buying nothing, and it is not a tuning
+    # problem — it is this tier being asked a question the cheap ones already
+    # answered.
+    #
+    # `search_when` is the caller's policy rather than a rule written here,
+    # because what makes a company worth searching for is a survey question and
+    # not a property of the cascade. Default None keeps the old behaviour.
+    if allow_search and provider is not None and (
+        search_when is None or search_when(company)
+    ):
         try:
             data, used, _tokens = _search_for_site(
                 provider, company, model=model, max_tokens=max_tokens
@@ -678,11 +702,38 @@ def hunt_one(
     ]
     if missing:
         for name in missing:
-            tried.append({"what": f"the {name} tier", "why": "it did not run"})
+            why = "it did not run"
+            if name == "search" and allow_search and provider is not None:
+                # Skipped on purpose, which is a different fact from switched
+                # off or crashed, and the one a later run needs: this company
+                # was judged not worth a paid search, on evidence that may
+                # change. Saying so is what stops the policy hardening into a
+                # permanent exclusion nobody remembers making.
+                why = "not worth a paid search under the current policy"
+            tried.append({"what": f"the {name} tier", "why": why})
         return Hunt("partial", None, domain, [], "", pages, searches, tried,
                     note="ran without the " + " or ".join(missing) + " tier")
     return Hunt("none", None, domain, [], "", pages, searches, tried,
                 note="every tier ran")
+
+
+# A NOTE ON GATING THIS TIER, BECAUSE THE OBVIOUS GATE IS A TRAP.
+#
+# 88% of paid calls on one national run bought nothing, so restricting tier 2
+# to companies that look promising is the natural fix. The natural signal is a
+# known website: the cheap tiers already have a domain, they failed anyway, and
+# a search can read what a fetch could not.
+#
+# Measured against the real queue, that gate skips 5,612 of 5,618 companies.
+# Only six companies without an address have a website on file — because tier 2
+# is the tier that *discovers* websites, and gating it on already having one
+# switches it off completely while appearing to be a refinement.
+#
+# The cost is real and the gate is not the answer to it. Ordering is: take the
+# addresses a directory publishes first, which costs crawling instead of quota
+# and fills `intel.site` as a side effect, and let the paid tier work on what
+# is left. `search_when` stays available for a caller that wants to bound a run
+# on its own terms.
 
 
 def _host(url: str) -> str | None:
@@ -720,6 +771,7 @@ def hunt_all(
     refresh: bool = False,
     allow_search: bool = True,
     allow_inference: bool = True,
+    search_when: Callable[[Row], bool] | None = None,
     dry_run: bool = False,
     log: Callable[[str], None] = print,
 ) -> dict[str, Any]:
@@ -817,7 +869,7 @@ def hunt_all(
                     provider=provider, model=model,
                     language=_language_of(company["canton"]),
                     mx_cache=mx_cache, places=places, allow_search=allow_search,
-                    allow_inference=allow_inference,
+                    allow_inference=allow_inference, search_when=search_when,
                 )
             except Exception as exc:  # noqa: BLE001
                 stats["failed"] += 1
