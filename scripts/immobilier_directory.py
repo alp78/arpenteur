@@ -28,8 +28,10 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import sys
 import time
+import unicodedata
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
@@ -46,6 +48,20 @@ from arpenteur.stages import reach  # noqa: E402
 class Hunt:
     def __init__(self, **kw: object) -> None:
         self.__dict__.update(kw)
+
+
+def _plain(text: str) -> str:
+    """A name with only case, accents and punctuation normalised.
+
+    Keeps the legal form and trade words that `match_key` strips: they are
+    noise when reaching across two spellings of one firm, and the entire signal
+    when telling two firms of the same family apart.
+    """
+    folded = "".join(
+        ch for ch in unicodedata.normalize("NFKD", text or "")
+        if not unicodedata.combining(ch)
+    )
+    return " ".join(re.sub(r"[^A-Za-z0-9]+", " ", folded).lower().split())
 
 
 def crawl(out: Path, *, pace: float = 1.2, limit: int = 0, log=print) -> int:
@@ -100,14 +116,24 @@ def match(path: Path, *, dry_run: bool, log=print) -> int:
     settings = load_settings()
     conn = db.open_db(settings.database_url)
 
+    # Two keys, failing in opposite directions. `match_key` strips legal forms
+    # and trade vocabulary so "Regie Naef SA" can meet "Naef Immobilier"; that
+    # same stripping is what collides "Böni Immobilien AG" with "Böni Holding
+    # AG", and what loses a register entry whose distinguishing word was
+    # `Verwaltungs`. An exact name match needs no tiebreak, so it is tried
+    # first and the loose key is the fallback.
     index: dict[tuple[str, str], list[dict]] = {}
+    exact: dict[tuple[str, str], list[dict]] = {}
     for row in conn.execute(
         "SELECT id, uid, name, canton FROM core.company"
         " WHERE status = 'ACTIVE' AND legal_form_uid IN ('0106','0107','0108')"
     ):
+        company = dict(row)
+        canton = row["canton"] or ""
         key = im.match_key(row["name"])
         if key:
-            index.setdefault((key, row["canton"] or ""), []).append(dict(row))
+            index.setdefault((key, canton), []).append(company)
+        exact.setdefault((_plain(row["name"]), canton), []).append(company)
 
     mx: dict[str, bool] = {}
     matched = ambiguous = unmatched = kept = refused = sited = 0
@@ -119,14 +145,24 @@ def match(path: Path, *, dry_run: bool, log=print) -> int:
         # The registered name first, the trading name second. "abc geneve sarl"
         # under the logo is what the register holds; "ABC GENEVE Swiss Real
         # Estate" over the door is not.
+        canton = record["canton"] or ""
+        names = [n for n in (record.get("filed_name"), record.get("name")) if n]
         hits: list[dict] = []
-        for candidate in (record.get("filed_name"), record.get("name")):
-            key = im.match_key(candidate or "")
-            if not key:
-                continue
-            hits = index.get((key, record["canton"] or ""), [])
-            if hits:
+        # Exact on either spelling before loose on either, so a firm whose
+        # registered name is carried verbatim is never sent to a tiebreak.
+        for candidate in names:
+            found = exact.get((_plain(candidate), canton), [])
+            if len(found) == 1:
+                hits = found
                 break
+        if not hits:
+            for candidate in names:
+                key = im.match_key(candidate)
+                if not key:
+                    continue
+                hits = index.get((key, canton), [])
+                if hits:
+                    break
         if not hits:
             unmatched += 1
             continue
