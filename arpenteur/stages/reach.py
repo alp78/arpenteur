@@ -881,12 +881,20 @@ def hunt_all(
             stats["searches"] += hunt.searches
             stats["addresses"] += len(hunt.addresses)
             for address in hunt.addresses:
+                # A consumer mailbox is kept and suppressed rather than
+                # dropped. The firm published it, so discarding it would lose
+                # the fact that this is the only address it offers; but it
+                # reaches a named individual rather than a desk, and an
+                # outreach export must not pick it up by default.
+                private = mailcheck.is_personal(address)
+                stats["personal"] = stats.get("personal", 0) + int(private)
                 stats["new"] += db.save_contact(
                     conn, company_id=company["id"], kind="email", value=address,
                     source_url=hunt.where.get(address) or (
                         f"https://{hunt.domain}" if hunt.domain else None
                     ),
                     method=hunt.method or "inferred",
+                    suppressed=private,
                 )
             scout_store.save_address_hunt(conn, int(company["id"]), hunt)
             conn.commit()

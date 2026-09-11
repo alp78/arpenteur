@@ -56,6 +56,41 @@ ROLE_PARTS_BY_LANGUAGE = {
     "rm": ("info", "contact", "kontakt"),
 }
 
+# Consumer mail providers. An address here belongs to a person, not to a
+# company, whatever the company publishes it as.
+#
+# WHY THIS IS A CATEGORY AND NOT A QUALITY JUDGEMENT. A one-person régie that
+# prints `arben72@msn.com` on its own website really has published it as its
+# business contact, so `published` is the honest provenance and the address is
+# not a mistake. What it is not is a role address: `info@naef.ch` reaches a
+# desk and survives the person leaving, while this reaches a named individual's
+# private mailbox. Under the nLPD those are different kinds of data, and a cold
+# approach to one is not the same act as a cold approach to the other.
+#
+# Swiss-specific entries matter as much as the global ones: `bluewin.ch` is the
+# Swisscom consumer mailbox and is the second most common of these in the
+# survey, ahead of every provider except Gmail.
+FREE_MAIL = frozenset({
+    "gmail.com", "googlemail.com", "hotmail.com", "hotmail.ch", "hotmail.fr",
+    "hotmail.it", "hotmail.de", "outlook.com", "outlook.fr", "outlook.de",
+    "live.com", "live.fr", "msn.com", "yahoo.com", "yahoo.fr", "yahoo.de",
+    "yahoo.it", "icloud.com", "me.com", "mac.com", "aol.com", "protonmail.com",
+    "proton.me", "gmx.ch", "gmx.net", "gmx.de", "gmx.at", "web.de",
+    "bluewin.ch", "bluemail.ch", "sunrise.ch", "hispeed.ch", "vtxnet.ch",
+    "netplus.ch", "romandie.com", "worldcom.ch", "freesurf.ch",
+})
+
+
+def is_personal(address: str) -> bool:
+    """True when the address is at a consumer mail provider.
+
+    Used to keep a private mailbox out of an outreach export without throwing
+    the fact away: the row is suppressed, not deleted, so the survey still
+    records that this is the only address the firm publishes.
+    """
+    return domain_of(address) in FREE_MAIL
+
+
 # An address that reaches a mailbox nobody reads for this purpose, or that
 # belongs to the site's tooling. Rejected before anything is stored.
 NOT_A_CONTACT = frozenset({

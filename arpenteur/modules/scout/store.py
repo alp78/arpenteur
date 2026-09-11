@@ -1566,12 +1566,19 @@ def save_contact(
     conn: Connection, *, company_id: int, kind: str, value: str,
     person_id: int | None = None, source_url: str | None = None,
     method: str | None = None, status: str | None = None,
+    suppressed: bool = False,
 ) -> int:
     """Store an address. Returns 1 when it is new, 0 when already held.
 
     Existence is checked before the write rather than inferred from the
     statement afterwards: an upsert that conflicts reports nothing reliable
     about whether the row was there, and the count is what a run reports.
+
+    `suppressed` applies on insert only. It is the caller's judgement — this
+    store has no opinion about which mailboxes are private, and acquiring one
+    would mean importing the address vocabulary from `sources`, which is a
+    dependency the module rules forbid. A row an operator later un-suppresses
+    by hand stays that way: a sweep must not undo a decision it cannot see.
     """
     known = conn.execute(
         "SELECT 1 FROM core.contact WHERE company_id = %s AND kind = %s AND value = %s",
@@ -1580,15 +1587,16 @@ def save_contact(
     conn.execute(
         """
         INSERT INTO core.contact (person_id, company_id, kind, value, status,
-                                  source_url, method, fetched_at)
-        VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+                                  source_url, method, fetched_at, suppressed)
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
         ON CONFLICT (company_id, kind, value) DO UPDATE SET
             status = COALESCE(excluded.status, contact.status),
             source_url = COALESCE(excluded.source_url, contact.source_url),
             method = COALESCE(excluded.method, contact.method),
             fetched_at = excluded.fetched_at
         """,
-        (person_id, company_id, kind, value, status, source_url, method, now()),
+        (person_id, company_id, kind, value, status, source_url, method, now(),
+         suppressed),
     )
     return 0 if known else 1
 
