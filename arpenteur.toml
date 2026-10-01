@@ -244,13 +244,17 @@ reach = 0.10
 relationship = 0.10
 
 [issuer]
-name = ""
-street = ""
-building = ""
-postcode = ""
-town = ""
+name = "Alexis Peringer"
+street = "Chemin du Trabandan"
+building = "17"
+postcode = "1006"
+town = "Lausanne"
 country = "CH"
-iban = ""
+# Compte BCV du mandat. IBAN ordinaire, institution 00767 : la partie paiement
+# prend une référence RF ou aucune, jamais une référence QR.
+iban = "CH25 0076 7000 R570 7595 3"
+# Vide tant que l'assujettissement n'a pas commencé, ce qui fait écrire
+# l'exonération en toutes lettres plutôt qu'un taux de zéro.
 vat_number = ""
 # Printed under the total. Payment terms, and anything a client's accounts
 # payable department needs in order to pay without telephoning.
