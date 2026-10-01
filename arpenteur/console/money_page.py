@@ -223,6 +223,7 @@ def invoices_page(
         if r["status"] in ("issued", "part_paid", "overdue")
     )
     body = [
+        _ledger_tabs("/invoices"),
         "<h1>Invoices</h1>",
         '<p class="lede">The ledger: drafts, credit notes and settled ones '
         'included. "Was that ever raised" gets asked at least as often as '
@@ -231,7 +232,7 @@ def invoices_page(
         f'{ui.stat(len(invoices), "shown")}</div>',
         ui.toolbar(
             ui.text_field("q", "Search", value=q,
-                          placeholder="A number, a client, a company")
+                          placeholder="A reference, a rank, a client")
             + ui.select_field("status", "State", INVOICE_STATES, chosen=status,
                               blank="Any state"),
             action="/invoices", target="#ledger", push=True,
@@ -255,7 +256,9 @@ def invoice_row(row: Row) -> str:
         and row["status"] in ("issued", "part_paid", "overdue")
     )
     return (
-        f"<tr><td><a href='/invoice/{row['id']}'>{esc(row['number'])}</a></td>"
+        f"<tr><td><a href='/invoice/{row['id']}'>"
+        f"{esc(row['reference'] or 'draft')}</a>"
+        f"<div class='dim small'>{esc(row['number'] or 'unnumbered')}</div></td>"
         f"<td><a href='/client/{row['client_id']}'>{esc(row['company_name'])}</a>"
         f"<div class='dim small'>{esc(row['client_code'])}</div></td>"
         f"<td>{state_tag(row['status'])}</td>"
@@ -271,11 +274,115 @@ def invoice_row(row: Row) -> str:
 
 def _invoice_table(rows: list[str]) -> str:
     return ui.table(
-        ["invoice", "client", "state", "total", "owed", "issued", "due"],
+        ["reference", "client", "state", "total", "owed", "issued", "due"],
         rows, caption="Invoices, newest first", numeric=["total", "owed"],
         empty_text="No invoice matches. Invoices are raised from a client's "
                    "page or from an accepted quote.",
     )
+
+
+def _ledger_tabs(current: str) -> str:
+    """Two readings of the same rows: what is owed, and whether any is missing."""
+    return ui.tabs(
+        [("/invoices", "Ledger"), ("/invoices/register", "Register")], current
+    )
+
+
+def register_page(
+    rows: list[Row], gaps: list[str], *, year: str = "", chrome: Any = None,
+) -> str:
+    """The series by rank, which is the one view that can show something missing.
+
+    The ledger answers what is owed. This answers whether anything left the
+    building without being written down, which is the question CO art. 957a
+    al. 2 asks when it demands that entries stay traceable. So it is ordered by
+    the rank and not by the date, and a skipped rank gets a row of its own
+    rather than being quietly stepped over.
+    """
+    missing = set(gaps)
+    drawn: list[str] = []
+    for row in rows:
+        while missing and min(missing) < str(row["number"]):
+            drawn.append(_gap_row(min(missing)))
+            missing.discard(min(missing))
+        drawn.append(_register_row(row))
+    for rank in sorted(missing):
+        drawn.append(_gap_row(rank))
+
+    billed = sum(float(r["gross_total"] or 0) for r in rows)
+    owed = sum(float(r["owed"] or 0) for r in rows
+               if r["status"] in ("issued", "part_paid", "overdue"))
+    body = [
+        _ledger_tabs("/invoices/register"),
+        "<h1>Register</h1>",
+        '<p class="lede">Every invoice that was issued, in rank order. The rank '
+        "is the register's and never appears on the document; the reference is "
+        "what the client quotes. A rank with no invoice is shown rather than "
+        "skipped, because a series that hides its holes proves nothing.</p>",
+        f'<div class="acts">{ui.stat(_num(billed), "billed")}'
+        f'{ui.stat(_num(owed), "still owed", emphasis=bool(owed))}'
+        f'{ui.stat(len(rows), "documents")}'
+        f'{ui.stat(len(gaps), "gaps", emphasis=bool(gaps))}</div>',
+        ui.table(
+            ["rank", "reference", "client", "work", "issued", "due", "paid",
+             "total", "owed"],
+            drawn, caption="The series, oldest first",
+            numeric=["total", "owed"],
+            empty_text="Nothing issued yet. A draft has no rank and is not in "
+                       "the series until it is issued.",
+        ),
+        f'<p class="dim small"><a href="/invoices/register.csv{"?year=" + esc(year) if year else ""}">'
+        "Download as CSV</a></p>",
+    ]
+    return page("Register", "".join(body), chrome, css=STYLES)
+
+
+def _register_row(row: Row) -> str:
+    owed = row["owed"]
+    work = row["project_name"] or row["project_code"] or ""
+    return (
+        f"<tr><td class='small'>{esc(row['number'])}</td>"
+        f"<td><a href='/invoice/{row['id']}'>{esc(row['reference'])}</a></td>"
+        f"<td><a href='/client/{row['client_id']}'>{esc(row['company_name'])}</a>"
+        f"<div class='dim small'>{esc(row['client_code'])}</div></td>"
+        f"<td class='small'>{esc(work) if work else '&mdash;'}</td>"
+        f"<td class='small'>{_day(row['issued_on']) if row['issued_on'] else '&mdash;'}</td>"
+        f"<td class='small'>{_day(row['due_on']) if row['due_on'] else '&mdash;'}</td>"
+        f"<td class='small'>{_day(row['paid_on']) if row['paid_on'] else state_tag(row['status'])}</td>"
+        f"<td class='n'>{_num(row['gross_total'])}</td>"
+        f"<td class='n'>{_num(owed) if owed and float(owed) else '&mdash;'}</td></tr>"
+    )
+
+
+def _gap_row(rank: str) -> str:
+    """A rank nothing claims. Usually an issue that rolled back after taking one."""
+    return (
+        f"<tr class='gap'><td class='small'>{esc(rank)}</td>"
+        "<td colspan='8' class='dim small'>No document carries this rank. "
+        "A number is drawn outside the transaction, so an issue that failed "
+        "consumed one. Note why, here or in the accounts.</td></tr>"
+    )
+
+
+def register_csv(rows: list[Row]) -> str:
+    """The same series, for a spreadsheet. Separators and quoting by the csv module."""
+    import csv
+    import io
+
+    out = io.StringIO()
+    writer = csv.writer(out, delimiter=";")
+    writer.writerow(["rank", "reference", "client", "company", "work",
+                     "issued", "due", "paid", "currency", "net", "vat",
+                     "total", "received", "owed", "state"])
+    for row in rows:
+        writer.writerow([
+            row["number"], row["reference"], row["client_code"],
+            row["company_name"], row["project_name"] or row["project_code"] or "",
+            row["issued_on"] or "", row["due_on"] or "", row["paid_on"] or "",
+            row["currency"], row["net_total"], row["vat_total"],
+            row["gross_total"], row["paid_total"], row["owed"], row["status"],
+        ])
+    return out.getvalue()
 
 
 # --- the quote on screen ---------------------------------------------------------
@@ -327,7 +434,15 @@ def invoices_panel(invoices: list[Row], client_id: int) -> str:
             css="lines",
         )
         + f'<form method="post" action="/client/{client_id}/invoices">'
-          '<button type="submit">Start an invoice</button></form></section>'
+        + ui.text_field("what", "What it bills", placeholder="expertise",
+                        hint="Joined to the client code to make the reference "
+                             "the client quotes, such as FBG-EXPERTISE. No date "
+                             "and no rank: those belong in the register.")
+        + ui.checkbox("series", "One of several",
+                      hint="Numbers it from the first, FBG-SEANCE-01, for work "
+                           "that recurs. A client receiving several needs to see "
+                           "which one they are paying.")
+        + '<button type="submit">Start an invoice</button></form></section>'
     )
 
 

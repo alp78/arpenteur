@@ -156,7 +156,7 @@ def test_a_sent_version_offers_no_control_that_would_rearrange_it(
 
 
 def test_an_issued_invoice_refuses_to_be_rearranged(client, conn) -> None:
-    invoice_id = sales.create_invoice(conn, 1)
+    invoice_id = sales.create_invoice(conn, 1, reference=sales.next_invoice_reference(conn, 1, "work"))
     for label in ("Relevé", "Plan"):
         sales.add_invoice_line(conn, invoice_id, {"label": label, "unit_price": 100})
     sales.recompute_invoice(conn, invoice_id, vat_rate=8.1)
@@ -172,7 +172,7 @@ def test_an_issued_invoice_refuses_to_be_rearranged(client, conn) -> None:
 
 
 def test_a_draft_invoice_can_be_rearranged(client, conn) -> None:
-    invoice_id = sales.create_invoice(conn, 1)
+    invoice_id = sales.create_invoice(conn, 1, reference=sales.next_invoice_reference(conn, 1, "work"))
     for label in ("Relevé", "Plan"):
         sales.add_invoice_line(conn, invoice_id, {"label": label, "unit_price": 100})
     conn.commit()

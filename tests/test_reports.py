@@ -308,7 +308,10 @@ def test_aged_debt_shows_what_is_not_yet_due_as_a_negative(db_path):
     conn = db.open_db(db_path)
     company_id = _company(conn, "CHE1", "Bois-Gentil")
     client_id = db.promote_to_client(conn, company_id)
-    invoice_id = sales.create_invoice(conn, client_id)
+    invoice_id = sales.create_invoice(
+        conn, client_id,
+        reference=sales.next_invoice_reference(conn, client_id, "work"),
+    )
     sales.add_invoice_line(conn, invoice_id, {"label": "Diagnostic",
                                               "unit_price": 3600})
     sales.recompute_invoice(conn, invoice_id, vat_rate=None)

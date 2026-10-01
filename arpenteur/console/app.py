@@ -976,6 +976,36 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         finally:
             conn.close()
 
+    # Declared before /invoice/{invoice_id} is reached and before the .csv
+    # sibling, because routes match in order and "register.csv" is not an int.
+    @app.get("/invoices/register.csv", response_class=PlainTextResponse)
+    def invoice_register_csv(request: Request) -> PlainTextResponse:
+        conn = connect()
+        try:
+            rows = sales_store.register(
+                conn, year=request.query_params.get("year", "")
+            )
+            return PlainTextResponse(
+                money_view.register_csv(rows), media_type="text/csv",
+                headers={"Content-Disposition":
+                         'attachment; filename="register.csv"'},
+            )
+        finally:
+            conn.close()
+
+    @app.get("/invoices/register", response_class=HTMLResponse)
+    def invoice_register(request: Request) -> HTMLResponse:
+        year = request.query_params.get("year", "")
+        conn = connect()
+        try:
+            rows = sales_store.register(conn, year=year)
+            return HTMLResponse(money_view.register_page(
+                rows, sales_store.register_gaps(rows), year=year,
+                chrome=at("/invoices"),
+            ))
+        finally:
+            conn.close()
+
     @app.get("/quote/{quote_id}", response_class=HTMLResponse)
     def one_quote(quote_id: int, request: Request) -> HTMLResponse:
         conn = connect()
@@ -1165,11 +1195,39 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             conn.close()
 
     @app.post("/client/{client_id}/invoices")
-    def start_invoice(client_id: int) -> RedirectResponse:
+    def start_invoice(
+        client_id: int, what: str = Form(""), series: str = Form(""),
+    ) -> RedirectResponse:
+        """A draft, named for the work it bills.
+
+        The reference is asked for here rather than at issue because it is how
+        the work is already spoken about, and because an invoice that reached
+        the issue button without one would stop there.
+        """
         conn = connect()
         try:
-            invoice_id = sales_store.create_invoice(conn, client_id)
+            invoice_id = sales_store.create_invoice(
+                conn, client_id,
+                reference=sales_store.next_invoice_reference(
+                    conn, client_id, what or "work", series=bool(series)),
+            )
             conn.commit()
+        finally:
+            conn.close()
+        return RedirectResponse(f"/invoice/{invoice_id}", status_code=303)
+
+    @app.post("/invoice/{invoice_id}/reference")
+    def rename_invoice(invoice_id: int, reference: str = Form("")) -> RedirectResponse:
+        conn = connect()
+        try:
+            try:
+                sales_store.set_invoice_reference(conn, invoice_id, reference)
+                conn.commit()
+            except ValueError as refus:
+                return RedirectResponse(
+                    f"/invoice/{invoice_id}?note={quote(str(refus))}",
+                    status_code=303,
+                )
         finally:
             conn.close()
         return RedirectResponse(f"/invoice/{invoice_id}", status_code=303)
@@ -1190,6 +1248,10 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             invoice_id = sales_store.create_invoice(
                 conn, int(quote["client_id"]), project_id=quote["project_id"],
                 quote_id=quote_id,
+                # Named after the quote it bills, which is what the client has
+                # been reading the whole time.
+                reference=sales_store.next_invoice_reference(
+                    conn, int(quote["client_id"]), str(quote["code"]).split("-")[-1]),
             )
             for line in sales_store.lines_for(conn, int(latest["id"])):
                 sales_store.add_invoice_line(conn, invoice_id, {

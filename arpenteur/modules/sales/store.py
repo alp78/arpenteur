@@ -26,6 +26,8 @@ transactions and a rollback leaves a hole nobody can explain to an auditor.
 
 from __future__ import annotations
 
+import re
+import unicodedata
 from datetime import date
 from decimal import Decimal
 from typing import Any, Sequence
@@ -598,8 +600,11 @@ def all_invoices(
         where.append("i.status = %s")
         args.append(status)
     if q:
-        where.append("(i.number ILIKE %s OR co.name ILIKE %s OR c.code ILIKE %s)")
-        args += [f"%{q}%"] * 3
+        where.append(
+            "(i.number ILIKE %s OR i.reference ILIKE %s OR co.name ILIKE %s"
+            " OR c.code ILIKE %s)"
+        )
+        args += [f"%{q}%"] * 4
     args.append(limit)
     return conn.execute(
         "SELECT i.*, c.code AS client_code, co.name AS company_name,"
@@ -613,6 +618,56 @@ def all_invoices(
         " LIMIT %s",
         tuple(args),
     ).fetchall()
+
+
+def register(conn: Connection, *, year: str = "") -> list[Row]:
+    """The series in rank order, oldest first, drafts excluded.
+
+    A register answers one question that the ledger does not: whether anything
+    is missing. So it is ordered by the rank and never by the date, it leaves
+    out drafts because an unnumbered document is not in the series, and the
+    caller is expected to read the ranks as a run rather than as a set.
+    """
+    where = ["i.number IS NOT NULL"]
+    args: list[Any] = []
+    if year:
+        where.append("i.number LIKE %s")
+        args.append(f"{year}-%")
+    return conn.execute(
+        "SELECT i.id, i.client_id, i.number, i.reference, i.status, i.issued_on, i.due_on,"
+        "       i.paid_on, i.currency, i.net_total, i.vat_total, i.gross_total,"
+        "       i.paid_total, (i.gross_total - i.paid_total) AS owed,"
+        "       c.code AS client_code, co.name AS company_name,"
+        "       p.code AS project_code, p.name AS project_name"
+        "  FROM commercial.invoice i"
+        "  JOIN crm.client c ON c.id = i.client_id"
+        "  JOIN core.company co ON co.id = c.company_id"
+        "  LEFT JOIN crm.project p ON p.id = i.project_id"
+        f" WHERE {' AND '.join(where)}"
+        " ORDER BY i.number, i.id",
+        tuple(args),
+    ).fetchall()
+
+
+def register_gaps(rows: Sequence[Row]) -> list[str]:
+    """The ranks the series skips, which is the only thing a register is for.
+
+    A burnt number is not an error: `nextval` stands outside the transaction, so
+    an issue that rolled back consumed one. It still has to be visible, because
+    the alternative is a reader who cannot tell a rollback from a withdrawal.
+    """
+    seen: dict[str, set[int]] = {}
+    for row in rows:
+        year, _, rank = str(row["number"]).partition("-")
+        if rank.isdigit():
+            seen.setdefault(year, set()).add(int(rank))
+    missing: list[str] = []
+    for year in sorted(seen):
+        ranks = seen[year]
+        for n in range(min(ranks), max(ranks)):
+            if n not in ranks:
+                missing.append(f"{year}-{n:04d}")
+    return missing
 
 
 def pipeline_value(conn: Connection) -> list[Row]:
@@ -633,15 +688,100 @@ def pipeline_value(conn: Connection) -> list[Row]:
 def create_invoice(
     conn: Connection, client_id: int, *, project_id: int | None = None,
     quote_id: int | None = None, currency: str = "CHF", note: str = "",
+    reference: str = "",
 ) -> int:
-    """A draft invoice. It has no number until it is issued."""
+    """A draft invoice. It has no number until it is issued.
+
+    The reference may be set here and the number may not, which is the whole
+    difference between them: the reference is how the work is already spoken
+    about, and the number is the rank in a series that a draft has not joined.
+    """
     made = conn.execute(
         "INSERT INTO commercial.invoice (client_id, project_id, quote_id,"
-        " status, currency, note, created_at)"
-        " VALUES (%s, %s, %s, 'draft', %s, %s, %s) RETURNING id",
-        (client_id, project_id, quote_id, currency, note or None, now()),
+        " status, currency, note, reference, created_at)"
+        " VALUES (%s, %s, %s, 'draft', %s, %s, %s, %s) RETURNING id",
+        (client_id, project_id, quote_id, currency, note or None,
+         reference.strip() or None, now()),
     ).fetchone()
     return int(made["id"])
+
+
+def next_invoice_reference(
+    conn: Connection, client_id: int, slug: str, *, series: bool = False,
+) -> str:
+    """A reference for a client's invoice: FBG-EXPERTISE, or FBG-SEANCE-01.
+
+    The client code and the object, folded the way `make_code` folds a company
+    name, because the same string is read down a telephone and typed into a
+    bank form. No date and no rank in the issuer's series: those say how the
+    issuer's year is going, which is not what the recipient is being told.
+
+    `series=True` numbers it from the first one, for work that recurs: a client
+    who will receive several sessions needs to see which one they are paying,
+    and `FBG-SEANCE` followed by `FBG-SEANCE-2` reads as a correction of the
+    first rather than as the second of a set. The count is of this client's
+    invoices for this object, which they already know, and says nothing about
+    the practice as a whole.
+
+    Without `series`, a suffix on collision rather than a refusal, so an
+    unforeseen second invoice for the same object is named rather than blocked.
+    The uniqueness that counts is the index, since nothing here holds a lock.
+    """
+    held = conn.execute(
+        "SELECT code FROM crm.client WHERE id = %s", (client_id,)
+    ).fetchone()
+    if held is None:
+        raise ValueError(f"no client {client_id}")
+    folded = unicodedata.normalize("NFKD", slug)
+    ascii_only = "".join(c for c in folded if not unicodedata.combining(c))
+    words = [w for w in re.split(r"[^A-Za-z0-9]+", ascii_only) if w]
+    base = f"{held['code']}-{'-'.join(words).upper()}" if words else str(held["code"])
+    if not series:
+        return _free_reference(conn, base)
+    rangs = [
+        int(m.group(1))
+        for row in conn.execute(
+            "SELECT reference FROM commercial.invoice WHERE reference LIKE %s",
+            (f"{base}-%",),
+        )
+        if (m := re.fullmatch(rf"{re.escape(base)}-(\d+)", row["reference"] or ""))
+    ]
+    return f"{base}-{max(rangs, default=0) + 1:02d}"
+
+
+def _free_reference(conn: Connection, base: str) -> str:
+    """`base`, or the first free suffix of it."""
+    taken = {
+        row["reference"]
+        for row in conn.execute(
+            "SELECT reference FROM commercial.invoice WHERE reference IS NOT NULL"
+        )
+    }
+    if base not in taken:
+        return base
+    for n in range(2, 100):
+        candidate = f"{base}-{n}"
+        if candidate not in taken:
+            return candidate
+    raise RuntimeError(f"cannot find a free reference from {base!r}")
+
+
+def set_invoice_reference(conn: Connection, invoice_id: int, reference: str) -> None:
+    """Rename a draft. An issued invoice keeps the reference the client holds."""
+    held = conn.execute(
+        "SELECT status FROM commercial.invoice WHERE id = %s", (invoice_id,)
+    ).fetchone()
+    if held is None:
+        raise ValueError(f"no invoice {invoice_id}")
+    if held["status"] != "draft":
+        raise ValueError(
+            "this invoice has been issued. Its reference is what the client "
+            "quotes and what the payment will carry, so it cannot be renamed."
+        )
+    conn.execute(
+        "UPDATE commercial.invoice SET reference = %s WHERE id = %s",
+        (reference.strip() or None, invoice_id),
+    )
 
 
 def add_invoice_line(conn: Connection, invoice_id: int, row: dict[str, Any]) -> int:
@@ -716,14 +856,20 @@ def next_invoice_number(conn: Connection, *, on: date | None = None) -> str:
 def issue_invoice(
     conn: Connection, invoice_id: int, *, issued_on: date | None = None,
     days: int = 30, qr_iban: str = "", customer_ref: str = "",
-    by: str | None = None,
+    with_reference: bool = True, by: str | None = None,
 ) -> Row:
     """Allocate a number, fix the dates, and compute the payment reference.
 
-    The reference is derived from the number and the account: a QR-IBAN takes a
-    QR reference, an ordinary IBAN an RF creditor reference. `money.qr_payload`
-    refuses the mismatched combinations, and this computes the right one so the
-    refusal is never reached in normal use.
+    The payment reference is derived from the number and the account: a QR-IBAN
+    takes a QR reference, an ordinary IBAN an RF creditor reference.
+    `money.qr_payload` refuses the mismatched combinations, and this computes
+    the right one so the refusal is never reached in normal use.
+
+    `with_reference=False` records the account and leaves the payment reference
+    null, for an invoice whose payment part is produced by the bank rather than
+    here. BCV-net emits one with reference type NON, and a derived RF reference
+    stored beside it would be a number the register holds and no document
+    carries, which is the kind of disagreement a reconciliation is built on.
     """
     held = conn.execute(
         "SELECT * FROM commercial.invoice WHERE id = %s", (invoice_id,)
@@ -734,11 +880,16 @@ def issue_invoice(
         raise ValueError(f"invoice {held['number']} has already been issued")
     if not invoice_lines(conn, invoice_id):
         raise ValueError("an invoice with no lines is not a document")
+    if not held["reference"]:
+        raise ValueError(
+            "an invoice with no reference is not a document: the client has "
+            "nothing to quote, and the number is the register's, not theirs."
+        )
 
     when = issued_on or date.today()
     number = next_invoice_number(conn, on=when)
     reference = ""
-    if qr_iban:
+    if qr_iban and with_reference:
         if not money.iban_is_valid(qr_iban):
             raise ValueError(
                 f"{qr_iban} does not pass the IBAN check digits. An invoice "
@@ -821,6 +972,9 @@ def credit_invoice(
         conn, int(held["client_id"]), project_id=held["project_id"],
         quote_id=held["quote_id"], currency=held["currency"],
         note=reason or f"Credit note for {held['number']}",
+        # Named after what it reverses, because that is the only thing the
+        # client has to match it against. Without one it could not be issued.
+        reference=_free_reference(conn, f"{held['reference']}-CREDIT"),
     )
     for line in invoice_lines(conn, invoice_id):
         add_invoice_line(conn, note_id, {
