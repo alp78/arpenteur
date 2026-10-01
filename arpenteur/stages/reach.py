@@ -539,6 +539,10 @@ def hunt_one(
     # on the way out. It decides whether an empty result may call itself
     # settled, so it is set only where the call returns.
     searched = False
+    # Whether it was entered at all. `searched` alone cannot tell a tier that
+    # was never tried from one that was tried and raised, and reporting the
+    # second as the first blames a policy for a timeout.
+    attempted = False
 
     # --- tier 1: the site we already know about -------------------------------
     if url:
@@ -578,6 +582,7 @@ def hunt_one(
     if allow_search and provider is not None and (
         search_when is None or search_when(company)
     ):
+        attempted = True
         try:
             data, used, _tokens = _search_for_site(
                 provider, company, model=model, max_tokens=max_tokens
@@ -702,9 +707,17 @@ def hunt_one(
     ]
     if missing:
         for name in missing:
+            if name == "search" and attempted:
+                # Tried and it raised. The exception is already in `tried` with
+                # its own reason, so a second line here would only restate it —
+                # and the line this used to write blamed a policy that was
+                # never set, for what was usually a timeout. A record that
+                # contradicts itself is worse than a terse one: the next reader
+                # has to decide which half to believe.
+                continue
             why = "it did not run"
-            if name == "search" and allow_search and provider is not None:
-                # Skipped on purpose, which is a different fact from switched
+            if name == "search" and search_when is not None and not search_when(company):
+                # Refused on purpose, which is a different fact from switched
                 # off or crashed, and the one a later run needs: this company
                 # was judged not worth a paid search, on evidence that may
                 # change. Saying so is what stops the policy hardening into a

@@ -436,3 +436,39 @@ def test_an_unfinished_company_is_selected_again_and_a_settled_one_is_not(
         settings, conn, allow_search=False, dry_run=True, log=lambda _m: None
     )
     assert stats["considered"] == 1
+
+
+def test_a_search_that_timed_out_is_not_reported_as_a_policy_skip(no_mx) -> None:
+    """A record that contradicts itself is worse than a terse one.
+
+    The cascade used to write two lines for one event: the real exception, and
+    then "not worth a paid search under the current policy" — a policy that was
+    never set, blamed for what was nearly always a timeout. A later reader had
+    to pick which half to believe, and the wrong half exonerates the run.
+    """
+    provider = FakeProvider(
+        raises=RuntimeError("the subscription call did not finish in 300s")
+    )
+    hunt = reach.hunt_one(FakeClient({}), ANON, agent="test", provider=provider)
+    reasons = [t["why"] for t in hunt.tried]
+    assert any("did not finish in 300s" in r for r in reasons), (
+        "the real failure must still be recorded"
+    )
+    assert not any("policy" in r for r in reasons), (
+        "a failed search must not be reported as a deliberate skip"
+    )
+    assert hunt.outcome == "partial"
+
+
+def test_a_policy_refusal_still_says_so(no_mx) -> None:
+    """The other half of the same distinction: a company the caller declined to
+    spend on is recorded as declined, so widening the policy later can find it."""
+    provider = FakeProvider({"website": None, "emails": [], "confidence": 0.0,
+                             "reasoning": ""})
+    hunt = reach.hunt_one(
+        FakeClient({}), ANON, agent="test", provider=provider,
+        search_when=lambda _c: False,
+    )
+    assert provider.calls == 0, "the policy must prevent the call, not follow it"
+    assert any("policy" in t["why"] for t in hunt.tried)
+    assert hunt.outcome == "partial"
