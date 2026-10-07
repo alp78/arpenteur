@@ -493,6 +493,34 @@ def _occupied(conn: kernel_db.Connection) -> dict[str, int]:
     return {k: v for k, v in counts(conn).items() if v}
 
 
+def _attachments_in(
+    zf: zipfile.ZipFile, base: Path
+) -> list[tuple[str, Path]]:
+    """The archive's attachments, each checked to stay inside `base`.
+
+    A zip member carries whatever name was written into it, and `base / name`
+    honours that name rather than questioning it: `attachments/../../x` climbs
+    out of the data directory, and `attachments//etc/cron.d/x` is an absolute
+    path that discards `base` entirely. Both are refused here, by name, before
+    the database is touched, because an import is run against a file that
+    arrived from somewhere else.
+    """
+    root = base.resolve()
+    out: list[tuple[str, Path]] = []
+    for name in zf.namelist():
+        if not name.startswith(ATTACHMENTS) or name.endswith("/"):
+            continue
+        target = base / name[len(ATTACHMENTS):]
+        if not target.resolve().is_relative_to(root):
+            raise WorkspaceError(
+                f"the workspace holds an attachment named {name!r}, which "
+                f"would be written to {target.resolve()}, outside {root}. "
+                "Refusing the import: a file that does this was built to do it."
+            )
+        out.append((name, target))
+    return out
+
+
 def _standing(url: str) -> dict[str, int]:
     """What the target already holds, where there is a target at all.
 
@@ -547,17 +575,25 @@ def import_(
             "Importing replaces all of it. Pass --force to go ahead."
         )
 
-    _recreate(url, collate=manifest.collate, ctype=manifest.ctype)
-
     with zipfile.ZipFile(path) as zf:
-        # Unpacked to a real file first. `ZipFile.open` hands back a stream
-        # with no file descriptor behind it, which `subprocess` cannot pass to
-        # a child, and a custom-format archive wants to be seekable anyway.
+        # Everything able to refuse has to refuse before the database is
+        # dropped. Resolving the binary and unpacking the dump after the drop
+        # is how a machine without `pg_restore`, or a truncated archive, ends
+        # up with an empty database and an exception instead of the data it
+        # started with.
+        tool = _tool("pg_restore")
+        base = att.root_for(settings.data_dir)
+        members = _attachments_in(zf, base) if with_attachments else []
+
+        # `ZipFile.open` hands back a stream with no file descriptor behind
+        # it, which `subprocess` cannot pass to a child, and a custom-format
+        # archive wants to be seekable anyway.
         staged = Path(path).with_suffix(".tmp-restore")
         try:
             with zf.open(DUMP) as source, staged.open("wb") as sink:
                 shutil.copyfileobj(source, sink)
-            tool = _tool("pg_restore")
+
+            _recreate(url, collate=manifest.collate, ctype=manifest.ctype)
             with staged.open("rb") as source:
                 _run(
                     [*tool.command, "--dbname", tool.dsn(url), "--no-owner",
@@ -566,15 +602,11 @@ def import_(
                 )
         finally:
             staged.unlink(missing_ok=True)
-        if with_attachments:
-            base = att.root_for(settings.data_dir)
-            for name in zf.namelist():
-                if not name.startswith(ATTACHMENTS) or name.endswith("/"):
-                    continue
-                target = base / name[len(ATTACHMENTS):]
-                target.parent.mkdir(parents=True, exist_ok=True)
-                with zf.open(name) as source, target.open("wb") as sink:
-                    shutil.copyfileobj(source, sink)
+
+        for name, target in members:
+            target.parent.mkdir(parents=True, exist_ok=True)
+            with zf.open(name) as source, target.open("wb") as sink:
+                shutil.copyfileobj(source, sink)
 
     conn = kernel_db.connect(url)
     try:

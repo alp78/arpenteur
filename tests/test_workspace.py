@@ -515,3 +515,78 @@ def test_an_unreachable_server_is_not_mistaken_for_an_empty_one(settings_for):
             "postgresql://arpenteur:arpenteur@127.0.0.1:1/arpenteur"
         )
     assert "not reachable" in str(caught.value)
+
+
+def test_an_attachment_that_climbs_out_of_the_data_directory_is_refused(
+    source, settings_for, tmp_path
+):
+    """A zip member carries whatever name was written into it."""
+    out = tmp_path / "w.arpw"
+    conn = kernel_db.connect(source)
+    try:
+        workspace.export(settings_for(source), conn, out)
+    finally:
+        conn.close()
+
+    doctored = tmp_path / "evil.arpw"
+    with zipfile.ZipFile(out) as src, zipfile.ZipFile(doctored, "w") as dst:
+        for item in src.infolist():
+            dst.writestr(item, src.read(item.filename))
+        dst.writestr("attachments/../../../tmp/escaped.pdf", b"out")
+
+    with pytest.raises(workspace.WorkspaceError) as caught:
+        workspace.import_(settings_for(_dsn_for("arpenteur_ws_dst")), doctored)
+    assert "outside" in str(caught.value)
+    assert not Path("/tmp/escaped.pdf").exists()
+
+
+def test_an_absolute_attachment_name_is_refused(source, settings_for, tmp_path):
+    """`base / "/etc/x"` is `/etc/x`: the base is discarded, not joined."""
+    out = tmp_path / "w.arpw"
+    conn = kernel_db.connect(source)
+    try:
+        workspace.export(settings_for(source), conn, out)
+    finally:
+        conn.close()
+
+    doctored = tmp_path / "abs.arpw"
+    with zipfile.ZipFile(out) as src, zipfile.ZipFile(doctored, "w") as dst:
+        for item in src.infolist():
+            dst.writestr(item, src.read(item.filename))
+        dst.writestr("attachments//tmp/arpenteur-absolute-probe", b"out")
+
+    with pytest.raises(workspace.WorkspaceError) as caught:
+        workspace.import_(settings_for(_dsn_for("arpenteur_ws_dst")), doctored)
+    assert "outside" in str(caught.value)
+    assert not Path("/tmp/arpenteur-absolute-probe").exists()
+
+
+def test_a_missing_restore_binary_leaves_the_database_alone(
+    source, settings_for, tmp_path, monkeypatch
+):
+    """Nothing destructive may run before everything that can refuse has."""
+    out = tmp_path / "w.arpw"
+    conn = kernel_db.connect(source)
+    try:
+        workspace.export(settings_for(source), conn, out)
+    finally:
+        conn.close()
+
+    real = workspace.shutil.which
+
+    def absent(name, *a, **k):
+        return None if name in ("pg_restore", "docker") else real(name, *a, **k)
+
+    monkeypatch.setattr(workspace.shutil, "which", absent)
+    with pytest.raises(workspace.WorkspaceError) as caught:
+        workspace.import_(settings_for(source), out, force=True)
+    assert "pg_restore" in str(caught.value)
+
+    # The three companies are still there, which is the whole point.
+    conn = kernel_db.connect(source)
+    try:
+        assert conn.execute(
+            "SELECT count(*) AS n FROM core.company"
+        ).fetchone()["n"] == 3
+    finally:
+        conn.close()
