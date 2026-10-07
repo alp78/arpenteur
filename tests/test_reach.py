@@ -7,6 +7,8 @@ row that lands can answer where the address came from.
 
 from __future__ import annotations
 
+import os
+import time
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -499,3 +501,86 @@ def test_the_search_fallback_does_not_reinstate_another_firms_address():
     # A subdomain is still the firm's own.
     mine, _ = reach.own_domain_only(["info@mail.roydermakler.ch"], "roydermakler.ch")
     assert mine == ["info@mail.roydermakler.ch"]
+
+
+# --- stopping a long run between companies ------------------------------------
+#
+# A national run is hours long and the operator edits the code while it goes.
+# Python loads a module once, so the worker keeps the code it imported: on
+# 07.10.2026 a domain rule was fixed 29 minutes after two shards had loaded
+# `reach`, and the run then filed addresses that rule was written to reject
+# for another six hours without a word. `stop_when` is the hook that lets the
+# worker notice; these pin that it stops cleanly and that it stops between
+# companies rather than inside one.
+
+
+def test_a_run_stops_when_asked_and_says_why(monkeypatch, settings, conn) -> None:
+    db.upsert_company(
+        conn,
+        {"uid": "CHE3", "name": "Deuxieme SA", "canton": "GE", "status": "ACTIVE",
+         "hydrated": True, "method": "zefix"},
+    )
+    conn.commit()
+    monkeypatch.setattr(reach, "_client", lambda _s: FakeClient(PAGES))
+    said: list[str] = []
+    stats = reach.hunt_all(
+        settings, conn, allow_search=False, log=said.append,
+        stop_when=lambda: "the module changed underneath me",
+    )
+    assert stats["considered"] == 2
+    assert stats["stopped"] == "the module changed underneath me"
+    # Nothing was hunted, so nothing was written: the stop is asked before the
+    # first company, not after it.
+    assert conn.execute("SELECT count(*) AS n FROM core.contact").fetchone()["n"] == 0
+    assert any("stopping after 0 of 2" in line for line in said)
+
+
+def test_a_stop_keeps_the_companies_already_settled(monkeypatch, settings, conn) -> None:
+    """The point of stopping between companies: the work already committed
+    stays committed, and the rest stays in the queue."""
+    db.upsert_company(
+        conn,
+        {"uid": "CHE3", "name": "Zzz Derniere SA", "canton": "GE", "status": "ACTIVE",
+         "hydrated": True, "method": "zefix"},
+    )
+    conn.commit()
+    monkeypatch.setattr(reach, "_client", lambda _s: FakeClient(PAGES))
+    calls: list[int] = []
+
+    def after_one() -> str | None:
+        calls.append(1)
+        return "enough" if len(calls) > 1 else None
+
+    stats = reach.hunt_all(
+        settings, conn, allow_search=False, log=lambda _m: None,
+        stop_when=after_one,
+    )
+    assert stats["stopped"] == "enough"
+    settled = conn.execute(
+        "SELECT count(*) AS n FROM intel.address_hunt"
+    ).fetchone()["n"]
+    assert settled == 1, "the first company commits, the second is never touched"
+
+
+def test_the_worker_notices_a_module_edited_under_it(tmp_path, monkeypatch) -> None:
+    """`source_watch` is the production `stop_when`, and it is worth a test of
+    its own because the fault it guards against is silent by nature."""
+    import sys as _sys
+    from types import ModuleType
+
+    _sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
+    from limen_hunt import source_watch
+
+    source = tmp_path / "pretend_stage.py"
+    source.write_text("x = 1\n")
+    fake = ModuleType("arpenteur_pretend")
+    fake.__file__ = str(source)
+    monkeypatch.setitem(_sys.modules, "arpenteur_pretend", fake)
+
+    watch = source_watch()
+    assert watch() is None, "an untouched tree is not a reason to stop"
+
+    os.utime(source, (time.time() + 120, time.time() + 120))
+    reason = watch()
+    assert reason is not None and "arpenteur_pretend" in reason
+    assert "old code" in reason

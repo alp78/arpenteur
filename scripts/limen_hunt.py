@@ -34,6 +34,7 @@ import argparse
 import sys
 import threading
 import time
+from collections.abc import Callable
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
@@ -77,6 +78,50 @@ def queue(conn, *, bands: list[str], shard: int, of: int,
            WHERE {' AND '.join(where)}
         ) t WHERE MOD(rn, %s) = %s""", (bands, of, shard)).fetchall()
     return [int(r["id"]) for r in rows]
+
+
+def source_watch() -> Callable[[], str | None]:
+    """Report the first loaded module whose file has changed since import.
+
+    The same argument as the heartbeat below, for the same reason. Python reads
+    a module once, so editing a stage mid-run leaves the worker on the code it
+    loaded while the git log and the working tree both say otherwise, and
+    nothing announces the difference. On 07.10.2026 a domain rule was fixed at
+    18:43 and these shards had loaded `reach` at 18:14: the run then spent six
+    hours filing addresses the fix was written to reject.
+
+    Stopping is the right answer rather than warning. A warning goes to a log
+    that is read when something already looks wrong, which is exactly what did
+    not happen. Stopping costs almost nothing: each company commits on its own
+    and the queue is read from the database, so the operator restarts and the
+    run picks up where it left off, on the new code.
+    """
+    watched: dict[str, tuple[Path, float]] = {}
+    for name, module in list(sys.modules.items()):
+        if not name.startswith("arpenteur"):
+            continue
+        spec = getattr(module, "__file__", None)
+        if not spec:
+            continue
+        path = Path(spec)
+        try:
+            watched[name] = (path, path.stat().st_mtime)
+        except OSError:
+            continue
+
+    def changed() -> str | None:
+        for name, (path, was) in watched.items():
+            try:
+                now = path.stat().st_mtime
+            except OSError:
+                return f"{name} has gone from disk"
+            if now != was:
+                return (f"{name} was edited "
+                        f"{(now - was) / 60:.0f} min after this worker loaded it, "
+                        "so the run is on the old code")
+        return None
+
+    return changed
 
 
 def heartbeat(state: dict, every: int, log) -> threading.Thread:
@@ -147,6 +192,7 @@ def main() -> int:
         stats = reach.hunt_all(
             settings, conn, company_ids=ids,
             allow_search=not args.no_search, log=log,
+            stop_when=source_watch(),
         )
     finally:
         state["done"] = True

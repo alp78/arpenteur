@@ -801,6 +801,7 @@ def hunt_all(
     search_when: Callable[[Row], bool] | None = None,
     dry_run: bool = False,
     log: Callable[[str], None] = print,
+    stop_when: Callable[[], str | None] = lambda: None,
 ) -> dict[str, Any]:
     """Run the cascade over a selection, cheapest tier first, one pass.
 
@@ -808,6 +809,13 @@ def hunt_all(
     nothing was found. That is the point of the negative: without it the tier
     that costs money is paid for again on the next run, for the same companies,
     for the same nothing.
+
+    `stop_when` is asked before each company and returns a reason to stop, or
+    None to carry on. It exists so a caller can end a long run between
+    companies rather than inside one: every company commits on its own, so a
+    stop here leaves no half-written firm, and the queue is read from the
+    database, so a restart resumes. `scripts/limen_hunt.py` uses it to stop
+    when a module it loaded has been edited underneath it.
     """
     where = ["c.status = 'ACTIVE'"]
     params: list[Any] = []
@@ -890,6 +898,11 @@ def hunt_all(
     )
     with _client(settings) as client:
         for index, company in enumerate(companies, 1):
+            halt = stop_when()
+            if halt:
+                stats["stopped"] = halt
+                log(f"  stopping after {index - 1} of {len(companies)}: {halt}")
+                break
             try:
                 hunt = hunt_one(
                     client, company, agent=agent, url=company["url"],
