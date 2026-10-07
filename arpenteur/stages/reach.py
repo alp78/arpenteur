@@ -615,12 +615,26 @@ def hunt_one(
                     tried.append({"what": site, "why": reading.refused})
             if said:
                 # The page could not be read but the search saw addresses on
-                # it. Kept, marked as the weaker thing it is.
-                ranked = rank_addresses(said)
-                return Hunt("search", 2, domain, ranked, "published", pages,
-                            searches, tried,
-                            note="reported by search, page not readable",
-                            where={a: site for a in ranked})
+                # it. Kept, marked as the weaker thing it is, and held to the
+                # same domain rule as a page that was read. Without that rule
+                # this branch reinstates exactly what the branch above refused:
+                # `roydermakler.ch` was found for Rocskai Immobilien GmbH, its
+                # page was read, its two `follow.immo` addresses were set aside
+                # as another firm's, and this fallback filed them anyway.
+                hearsay, outside = own_domain_only(
+                    said, _host(site) if site else domain
+                )
+                if outside:
+                    tried.append({
+                        "what": f"{len(outside)} address(es) the search reported",
+                        "why": "not this company's domain",
+                    })
+                if hearsay:
+                    ranked = rank_addresses(hearsay)
+                    return Hunt("search", 2, domain, ranked, "published", pages,
+                                searches, tried,
+                                note="reported by search, page not readable",
+                                where={a: site for a in ranked})
         except Exception as exc:  # noqa: BLE001
             tried.append({"what": "web search", "why": f"{type(exc).__name__}: {exc}"})
 

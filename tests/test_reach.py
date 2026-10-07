@@ -472,3 +472,30 @@ def test_a_policy_refusal_still_says_so(no_mx) -> None:
     assert provider.calls == 0, "the policy must prevent the call, not follow it"
     assert any("policy" in t["why"] for t in hunt.tried)
     assert hunt.outcome == "partial"
+
+
+def test_the_search_fallback_does_not_reinstate_another_firms_address():
+    """What the page rejected, the hearsay branch must not file.
+
+    Rocskai Immobilien GmbH of Düdingen: the search found `roydermakler.ch`,
+    its page was read, and its two `follow.immo` addresses were set aside as
+    belonging to a third company. The fallback for an unreadable page then
+    filed them anyway, which is the one outcome `own_domain_only` exists to
+    prevent: a gap is a gap, a wrong address is acted on by a mail merge.
+    """
+    mine, theirs = reach.own_domain_only(
+        ["marion@follow.immo", "roydermakler@follow.immo"], "roydermakler.ch"
+    )
+    assert mine == []
+    assert len(theirs) == 2
+
+    # The firm's own address among other people's survives the same filter.
+    mine, theirs = reach.own_domain_only(
+        ["info@roydermakler.ch", "marion@follow.immo"], "roydermakler.ch"
+    )
+    assert mine == ["info@roydermakler.ch"]
+    assert theirs == ["marion@follow.immo"]
+
+    # A subdomain is still the firm's own.
+    mine, _ = reach.own_domain_only(["info@mail.roydermakler.ch"], "roydermakler.ch")
+    assert mine == ["info@mail.roydermakler.ch"]
