@@ -157,6 +157,13 @@ class LlmConfig:
     batch_size: int
     enrich_model: str = ""
     enrich_max_searches: int = 4
+    # How long one `claude -p` call may take before it is given up on. The
+    # address hunt's web search is the slow caller: a company lookup is two
+    # searches and several page reads, and it was measured on 07.10.2026 still
+    # running past 290s, where it had been finishing inside 60s. A call that is
+    # abandoned leaves the firm `partial` and spends the quota anyway, so the
+    # ceiling is set high enough to collect an answer rather than a timeout.
+    subscription_timeout: int = 600
     enrich_max_tokens: int = 8000
     match_model: str = ""
     match_max_tokens: int = 4000
@@ -565,6 +572,7 @@ def load_settings(root: Path | None = None) -> Settings:
             batch_size=int(llm_raw.get("batch_size", 20)),
             enrich_model=llm_raw.get("enrich_model", ""),
             enrich_max_searches=int(llm_raw.get("enrich_max_searches", 4)),
+            subscription_timeout=int(llm_raw.get("subscription_timeout", 600)),
             enrich_max_tokens=int(llm_raw.get("enrich_max_tokens", 8000)),
             match_model=llm_raw.get("match_model", ""),
             match_max_tokens=int(llm_raw.get("match_max_tokens", 4000)),

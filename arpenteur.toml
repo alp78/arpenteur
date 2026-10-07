@@ -142,6 +142,11 @@ enrich_model = "claude-sonnet-5"
 # Bounds per company. Each search is billed, so this is the cost dial: four
 # searches is enough to find a Swiss SME's site and read its main pages.
 enrich_max_searches = 4
+
+# Seconds one subscription call may take. Raised from 300 on 07.10.2026,
+# when a company lookup in the address hunt was measured still running at
+# 290s and recording a timeout instead of an address.
+subscription_timeout = 600
 enrich_max_tokens = 8000
 # The match stage reads campaign.md and one company's whole file together and
 # takes a position on it. Judgement rather than extraction, so not the cheap

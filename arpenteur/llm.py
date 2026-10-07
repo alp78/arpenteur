@@ -422,7 +422,7 @@ class ClaudeCodeProvider:
     name = "claude-code"
     credential = "Claude subscription (claude -p)"
 
-    def __init__(self, binary: str = "claude", timeout: int = 300) -> None:
+    def __init__(self, binary: str = "claude", timeout: int = 600) -> None:
         self.spent = Spend()
         self.binary = binary
         self.timeout = timeout
@@ -686,7 +686,7 @@ def get_provider(settings: Any) -> Provider:
         if llm.uses_subscription:
             binary = _claude_cli()
             if binary and _has_local_profile():
-                return ClaudeCodeProvider(binary)
+                return ClaudeCodeProvider(binary, llm.subscription_timeout)
             if llm.auth_mode == "subscription":
                 raise RuntimeError(
                     "llm.auth_mode is 'subscription' but the Claude Code CLI "
