@@ -7,13 +7,14 @@ stays short, and `arpenteur --help` prints the whole pipeline in one screen.
 from __future__ import annotations
 
 import argparse
+import datetime as dt
 import re
 import sys
 from pathlib import Path
 from typing import Any
 
 from . import attachments as att
-from . import db, dossier, markdown
+from . import db, dossier, markdown, workspace
 # Notes are new and the storage façade is meant to shrink, so this one reaches
 # for the module store it means rather than growing the shim.
 from .modules.clients import store as clients_store
@@ -209,6 +210,81 @@ def cmd_legal_forms(args: argparse.Namespace) -> int:
         mark = "*" if uid in chosen else " "
         print(f"{mark}{uid:5} {str(tag or ''):8} {label or ''}")
     print(f"\n* in survey.legal_forms. Territory: {settings.territory.describe()}")
+    return 0
+
+
+def cmd_workspace(args: argparse.Namespace) -> int:
+    """Carry an installation between machines, or inspect a file that claims to.
+
+    `export` writes one file. `inspect` reads its manifest without unpacking
+    it. `import` replaces this installation's data with the file's, and
+    refuses a database that already holds anything unless told plainly.
+    """
+    settings = load_settings()
+
+    if args.action == "inspect":
+        if not args.path:
+            print("error: inspect wants a path", file=sys.stderr)
+            return 1
+        manifest = workspace.inspect(Path(args.path[0]))
+        print(f"{Path(args.path[0]).name}\n")
+        print(manifest.describe())
+        problems = workspace.check_compatible(manifest)
+        print()
+        if problems:
+            print("this build cannot import it:")
+            for line in problems:
+                print(f"  - {line}")
+            return 1
+        print("compatible with this build")
+        for table, n in sorted(manifest.counts.items()):
+            print(f"  {table:28} {n:>9,}")
+        return 0
+
+    if args.action == "export":
+        out = Path(args.out) if args.out else Path(
+            f"arpenteur-{dt.date.today().isoformat()}.arpw"
+        )
+        conn = db.open_db(settings.database_url)
+        try:
+            report = workspace.export(
+                settings, conn, out,
+                with_secrets=args.with_secrets,
+                with_attachments=not args.no_attachments,
+                note=args.note,
+            )
+        finally:
+            conn.close()
+        size = report.bytes_written / 1048576
+        print(f"{report.path}  {size:.1f} MB")
+        assert report.manifest is not None
+        print(report.manifest.describe())
+        if not args.with_secrets:
+            print(
+                "\n.env was left out, so the Zefix and Infomaniak passwords are "
+                "not in this file. Pass --with-secrets to include it."
+            )
+        print(
+            "\nThis file holds personal data and, where a client has sent "
+            "documents, material under NDA. Encrypt it before it travels:\n"
+            f"  gpg -c --cipher-algo AES256 {report.path.name}"
+        )
+        return 0
+
+    if not args.path:
+        print("error: import wants a path", file=sys.stderr)
+        return 1
+    report = workspace.import_(
+        settings, Path(args.path[0]),
+        force=args.force,
+        with_attachments=not args.no_attachments,
+    )
+    print(f"imported {report.path.name}")
+    for name in report.migrated:
+        print(f"  migrated {name}")
+    print(f"  {len(report.verified)} table(s) verified against the manifest")
+    total = sum(found for _expected, found in report.verified.values())
+    print(f"  {total:,} rows")
     return 0
 
 
@@ -1321,8 +1397,6 @@ def cmd_dossier(args: argparse.Namespace) -> int:
                               ("Pricing", "pricing_json"),
                               ("Risks", "risks_json"),
                               ("Open questions", "questions_json")):
-            import json as _json
-
             try:
                 items = row[column] or []
             except ValueError:
@@ -1811,6 +1885,31 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--tag", help="comma separated")
     p.add_argument("--pin", action="store_true", help="keep it at the top")
     p.set_defaults(func=cmd_note)
+
+    p = sub.add_parser(
+        "workspace",
+        help="carry this installation's data to another machine, as one file",
+    )
+    p.add_argument(
+        "action", choices=("export", "inspect", "import"),
+        help="write a workspace file, read its manifest, or restore from it",
+    )
+    p.add_argument("path", nargs="*", default=[], help="the file, for inspect and import")
+    p.add_argument("--out", default="", help="where export writes; defaults to the date")
+    p.add_argument(
+        "--with-secrets", action="store_true",
+        help="include .env, which holds the Zefix and Infomaniak passwords",
+    )
+    p.add_argument(
+        "--no-attachments", action="store_true",
+        help="leave out the documents clients have sent",
+    )
+    p.add_argument("--note", default="", help="a line recorded in the manifest")
+    p.add_argument(
+        "--force", action="store_true",
+        help="let import replace a database that already holds data",
+    )
+    p.set_defaults(func=cmd_workspace)
 
     p = sub.add_parser(
         "docs", help="the client's documents, and the folders they are filed in"
