@@ -13,7 +13,7 @@ row factory converts on the way out, because every caller here formats a stamp
 rather than computing with one.
 
 **JSON columns arrive parsed.** `site.offerings` is a real list now, not a
-string that has to be json.loads-ed. Writers wrap with `db.json_param`, which
+string that has to be json.loads-ed. Writers wrap with `json_param`, which
 is required rather than optional: psycopg refuses to guess whether a dict means
 json, hstore or a composite.
 
