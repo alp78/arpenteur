@@ -335,7 +335,7 @@ def test_filing_teaches_the_address_and_the_domain(db_path):
         free_domains=mail.FREE_MAIL,
     )
     assert "n.gunzinger@fbg.ch" in learned and "fbg.ch" in learned
-    held = {(l["kind"], l["value"]) for l in clients.links_for(conn, company_id)}
+    held = {(k["kind"], k["value"]) for k in clients.links_for(conn, company_id)}
     assert ("domain", "fbg.ch") in held
     # And the operator's own address is not learned as the client's.
     assert ("address", "alexis@peringer.ch") not in held
@@ -349,7 +349,7 @@ def test_filing_a_free_mail_message_learns_the_person_not_the_provider(db_path):
     email_id = _queue(conn, from_email="gerant@bluewin.ch")
     clients.file_email(conn, email_id, client_id=client_id, own_domains=OWN,
                        free_domains=mail.FREE_MAIL)
-    held = {(l["kind"], l["value"]) for l in clients.links_for(conn, company_id)}
+    held = {(k["kind"], k["value"]) for k in clients.links_for(conn, company_id)}
     assert ("address", "gerant@bluewin.ch") in held
     assert ("domain", "bluewin.ch") not in held
     conn.close()

@@ -39,7 +39,7 @@ from typing import Any, Callable
 
 from .. import db
 from ..config import Settings
-from ..kernel.db import Connection, Row
+from ..kernel.db import Connection
 from ..llm import Spend, get_provider
 from . import advise
 

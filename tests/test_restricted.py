@@ -19,7 +19,7 @@ from pathlib import Path
 import pytest
 
 from arpenteur import db
-from arpenteur.kernel.db import Connection, Row
+from arpenteur.kernel.db import Connection
 from arpenteur.stages import enrich
 
 

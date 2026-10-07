@@ -18,7 +18,7 @@ from types import SimpleNamespace
 import pytest
 
 from arpenteur import db
-from arpenteur.kernel.db import Connection, Row
+from arpenteur.kernel.db import Connection
 from arpenteur.config import Territory
 from arpenteur.sources.zefix import Company, Mutation
 from arpenteur.stages import sync

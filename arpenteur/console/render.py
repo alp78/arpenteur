@@ -16,6 +16,7 @@ import json
 from dataclasses import dataclass, replace
 from typing import Any, Iterable
 
+from ..kernel.db import Row
 from ..kernel.modules import Nav
 from .assets import CONSOLE_JS_URL
 from . import ui
@@ -542,10 +543,18 @@ def pills(items: Iterable[str], manual: Iterable[str] = ()) -> str:
 
 
 def band(row: Row | None) -> str:
-    if row is None or row["score"] is None:
+    """One company's score, starred when a person set it rather than a model.
+
+    Read with `.get`, because this is called with rows from four different
+    queries and a missing column has to render as "not hand-set" rather than
+    as a 500. Two of those queries did not select `source`, which took out
+    `/company/{id}` and `/party/{id}` for any company sharing an officer with
+    a scored one.
+    """
+    if row is None or row.get("score") is None:
         return '<span class="dim">&mdash;</span>'
-    name = row["band"] or "low"
-    mark = " *" if row["source"] == "manual" else ""
+    name = row.get("band") or "low"
+    mark = " *" if row.get("source") == "manual" else ""
     return f'<span class="band-{esc(name)}">{row["score"]}{esc(mark)}</span>'
 
 

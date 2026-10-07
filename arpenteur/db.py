@@ -18,10 +18,12 @@ entries belonged. `record_event` and friends still point at it.
 
 from __future__ import annotations
 
-from typing import Any
-
 from .kernel import db as _kernel
-from .kernel.db import Connection, Row, json_param, migrate, now, versions
+from .kernel.db import Connection
+# Reached as `db.now` and `db.versions` through this module, which is why they
+# look unused here: 12 call sites in the console, the CLI and the advise stage
+# for the first, one in the CLI for the second.
+from .kernel.db import now, versions  # noqa: F401
 from .modules.clients import store as _clients
 from .modules.scout import store as _scout
 

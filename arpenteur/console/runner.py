@@ -32,7 +32,7 @@ from typing import Any, Callable
 
 from .. import db
 from ..config import Settings
-from ..kernel.db import Connection, Row
+from ..kernel.db import Connection
 from ..stages import (
     boundaries, enrich, geocode, mail, match, people, profile, reach,
     resolve, source, sync,

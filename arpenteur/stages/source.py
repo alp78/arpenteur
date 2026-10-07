@@ -13,7 +13,7 @@ from typing import Any, Callable
 
 from .. import db
 from ..config import Settings
-from ..kernel.db import Connection, Row
+from ..kernel.db import Connection
 from ..http import PoliteClient
 from ..sources.zefix import ZefixClient, walk_prefixes
 from ..sources.zefix_fixture import (
@@ -144,10 +144,19 @@ def _run_zefix(
             if done:
                 log(f"{canton}/{label}: resuming, {len(done)} prefixes already done")
 
-            def search(pattern: str, _form: dict[str, Any] = form) -> list[Any]:
+            # Both loop variables are bound as defaults rather than captured.
+            # `walk_prefixes` calls this within the iteration, so a captured
+            # `canton` would read correctly at present; binding it is what keeps
+            # that true if the walk is ever deferred or run in parallel, where
+            # the closure would otherwise search the last canton of the loop.
+            def search(
+                pattern: str,
+                _form: dict[str, Any] = form,
+                _canton: str = canton,
+            ) -> list[Any]:
                 stats["searched"] += 1
                 return zefix.search(
-                    name=pattern, canton=canton, legal_form_id=_form["id"]
+                    name=pattern, canton=_canton, legal_form_id=_form["id"]
                 )
 
             for prefix, companies, refused in walk_prefixes(

@@ -32,7 +32,6 @@ and the wrong site would poison the fit score and the draft that follows it.
 from __future__ import annotations
 
 import copy
-import json
 from typing import Any, Callable
 
 from .. import db

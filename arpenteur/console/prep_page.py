@@ -12,12 +12,11 @@ makes the ticking worth doing.
 
 from __future__ import annotations
 
-import json
 from typing import Any
 
 from ..stages.prep import CATEGORIES, CATEGORY_LABELS
 from .clients import STYLES as CLIENT_STYLES
-from ..kernel.db import Connection, Row
+from ..kernel.db import Row
 from .render import esc, page
 
 STYLES = """

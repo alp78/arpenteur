@@ -123,3 +123,20 @@ def test_a_missing_sector_is_not_invented() -> None:
     """
     reply = '[{"uid": "CHE-1", "segments": [{"segment": "sme-owner"}]}]'
     assert parse_reply(reply, set(SEGMENTS), set(SECTORS))["CHE-1"].sector is None
+
+
+def test_a_json_object_wrapped_in_prose_is_not_mistaken_for_its_first_array():
+    """`[` was tried before `{` regardless of which opened first.
+
+    A reply like `Réponse : {"signals":[...],"score":7}` came back as the
+    inner array, so the caller read a list where it expected the object. The
+    subscription provider returns prose-wrapped JSON often enough to matter.
+    """
+    from arpenteur.llm import extract_json
+
+    assert extract_json('Réponse : {"signals":["a","b"],"score":7}') == {
+        "signals": ["a", "b"], "score": 7
+    }
+    assert extract_json("Here you go: [1,2,3]") == [1, 2, 3]
+    assert extract_json('```json\n{"a":1}\n```') == {"a": 1}
+    assert extract_json('{"a":1}') == {"a": 1}

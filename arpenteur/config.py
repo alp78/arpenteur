@@ -8,11 +8,11 @@ prints a secret, including in exception messages.
 
 from __future__ import annotations
 
-import json
 import os
 import tomllib
 from dataclasses import dataclass, field, replace
 from pathlib import Path
+from typing import Any
 
 
 def project_root() -> Path:

@@ -11,7 +11,6 @@ never been asked for.
 
 from __future__ import annotations
 
-import json
 import re
 import tomllib
 from dataclasses import replace
@@ -21,7 +20,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from arpenteur import db
-from arpenteur.kernel.db import Connection, Row
+from arpenteur.kernel.db import Connection
 from arpenteur.config import load_settings
 from arpenteur.console.app import create_app
 
@@ -416,7 +415,7 @@ def test_no_label_in_the_console_names_nothing(client) -> None:
     """
     for url, body in _pages(client).items():
         labels = re.findall(r"<label(?:\s[^>]*)?>", body)
-        unbound = [l for l in labels if "for=" not in l and "class=" not in l]
+        unbound = [tag for tag in labels if "for=" not in tag and "class=" not in tag]
         wrapping = len(re.findall(
             r"<label(?:\s[^>]*)?>(?:(?!</label>).)*?<(?:input|select|textarea)",
             body, re.S,

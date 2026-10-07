@@ -202,8 +202,12 @@ def verify(
 # Words that are in a registered name and never in the domain somebody chose
 # for it. Legal forms first, then the filler a register keeps and a domain
 # drops.
+# Spelt without punctuation because `WORD` is `[a-z0-9]+`: "S.A.R.L." arrives
+# here as four separate tokens, so a dotted entry could never match one. The
+# single letters it does produce are dropped by the length filter at each call
+# site instead.
 NAME_NOISE = frozenset({
-    "sa", "s.a", "ag", "sarl", "s.a.r.l", "sagl", "gmbh", "sagl", "llc", "ltd",
+    "sa", "ag", "sarl", "sagl", "gmbh", "llc", "ltd",
     "societe", "société", "society", "gesellschaft", "societa", "società",
     "cooperative", "coopérative", "genossenschaft", "cooperativa",
     "holding", "group", "groupe", "gruppe", "gruppo",

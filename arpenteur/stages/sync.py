@@ -38,7 +38,7 @@ from typing import Any, Callable
 from .. import db
 from ..config import Settings
 from ..config import Territory
-from ..kernel.db import Connection, Row
+from ..kernel.db import Connection
 from ..sources.zefix import ZefixClient
 from .source import _client
 

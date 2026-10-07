@@ -735,10 +735,18 @@ def extract_json(text: str) -> Any:
         except json.JSONDecodeError:
             pass
 
-    for opener, closer in (("[", "]"), ("{", "}")):
-        start = text.find(opener)
+    # Whichever bracket opens first, because the outermost value is the reply.
+    # Trying "[" before "{" regardless of position read the first array inside
+    # an object: `Réponse : {"signals":["a","b"],"score":7}` came back as
+    # `["a","b"]`, which the caller then treated as the whole answer.
+    openers = sorted(
+        (text.find(o), o, c)
+        for o, c in (("[", "]"), ("{", "}"))
+        if text.find(o) != -1
+    )
+    for start, _opener, closer in openers:
         end = text.rfind(closer)
-        if start != -1 and end > start:
+        if end > start:
             try:
                 return json.loads(text[start : end + 1])
             except json.JSONDecodeError:

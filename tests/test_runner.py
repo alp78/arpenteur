@@ -15,14 +15,13 @@ from __future__ import annotations
 
 import threading
 import time
-from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
 from fastapi.testclient import TestClient
 
 from arpenteur import db
-from arpenteur.kernel.db import Connection, Row
+from arpenteur.kernel.db import Connection
 from arpenteur.config import Territory
 from arpenteur.console import runner as runner_module
 from arpenteur.console.app import create_app

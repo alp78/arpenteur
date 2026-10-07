@@ -351,3 +351,39 @@ def test_a_table_can_be_scrolled_from_a_keyboard() -> None:
     three columns nobody can reach."""
     html = ui.table(["a", "b"], ["<tr><td>1</td><td>2</td></tr>"])
     assert '<div class="scroller" tabindex="0">' in html
+
+
+def test_a_multi_select_keeps_every_choice(monkeypatch):
+    """Picking three cantons must sweep three, not the last one.
+
+    `dict(await request.form())` kept only the final value for a repeated key,
+    so the sweep form's cantons and legal forms collapsed to one each while
+    `runner.coerce`, which tests for a list, never received one.
+    """
+    from arpenteur.console import runner
+
+    stage = runner.STAGES["source"]
+    got = runner.coerce(stage, {"canton": ["FR", "GE", "VD"]})
+    assert got["cantons"] == ["FR", "GE", "VD"]
+    # A single choice still arrives as a one-item list, not a bare string.
+    assert runner.coerce(stage, {"canton": "VD"})["cantons"] == ["VD"]
+
+
+def test_a_score_renders_without_the_source_column():
+    """Two queries feeding `band()` never selected `source`.
+
+    `/company/{id}` and `/party/{id}` raised KeyError for any company sharing
+    an officer with a scored one, which is a 500 on an ordinary page.
+    """
+    from arpenteur.console import render
+    from arpenteur.kernel.db import Record
+
+    assert "72" in render.band(Record({"score": 72, "band": "high"}))
+    assert "*" in render.band(
+        Record({"score": 72, "band": "high", "source": "manual"})
+    )
+    assert "*" not in render.band(
+        Record({"score": 72, "band": "high", "source": "model"})
+    )
+    assert "mdash" in render.band(Record({}))
+    assert "mdash" in render.band(None)

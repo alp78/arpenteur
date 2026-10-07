@@ -16,14 +16,13 @@ otherwise quietly rot back into the common shape:
 
 from __future__ import annotations
 
-from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
 from fastapi.testclient import TestClient
 
 from arpenteur import db
-from arpenteur.kernel.db import Connection, Row
+from arpenteur.kernel.db import Connection
 from arpenteur.config import Territory
 from arpenteur.console.app import create_app
 

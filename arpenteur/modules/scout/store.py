@@ -233,8 +233,8 @@ _LIST_JOINS = (
 def search_companies(
     conn: Connection, *, q: str = "", canton: str = "", segment: str = "",
     sector: str = "", band: str = "", state: str = "", stage: str = "",
-    limit: int = 200,
-) -> tuple[list[Row], int]:
+    limit: int = 200, with_total: bool = True,
+) -> tuple[list[Row], int | None]:
     """The survey list, and how many rows the filter actually matched.
 
     The name search is trigram similarity, and everything about how it is
@@ -312,6 +312,12 @@ def search_companies(
         """,
         params + ([q] if "similarity(" in order else []) + [limit],
     ).fetchall()
+    if not with_total:
+        # The count repeats all four joins over the whole table, and on a
+        # trigram search of two or three characters that is half the cost of
+        # the call. The command palette shows six rows and never prints a
+        # total, so it asks for None rather than paying for a number it drops.
+        return rows, None
     total = conn.execute(
         f"SELECT COUNT(*) AS n {_LIST_JOINS} WHERE {clause}", params
     ).fetchone()["n"]
@@ -319,11 +325,27 @@ def search_companies(
 
 
 def cantons_present(conn: Connection) -> list[str]:
+    """The cantons the survey holds companies in, as 26 index lookups.
+
+    `SELECT DISTINCT canton` reads all 598'036 rows to find 26 values, because
+    Postgres has no loose index scan of its own. Walking `company_canton_idx`
+    with a recursive query asks it for one minimum at a time and costs 0.6 ms
+    against 28, which matters because five pages call this on every load.
+    """
     return [
         row["canton"]
         for row in conn.execute(
-            "SELECT DISTINCT canton FROM core.company"
-            " WHERE canton IS NOT NULL ORDER BY canton"
+            """
+            WITH RECURSIVE step AS (
+                SELECT min(canton) AS canton
+                  FROM core.company WHERE canton IS NOT NULL
+                UNION ALL
+                SELECT (SELECT min(c.canton) FROM core.company c
+                         WHERE c.canton > step.canton AND c.canton IS NOT NULL)
+                  FROM step WHERE step.canton IS NOT NULL
+            )
+            SELECT canton FROM step WHERE canton IS NOT NULL ORDER BY canton
+            """
         )
     ]
 
@@ -1144,7 +1166,7 @@ def parties(
 def roles_for_party(conn: Connection, party_id: int) -> list[Row]:
     return conn.execute(
         """SELECT r.*, c.name, c.uid, c.canton, c.status,
-                  f.score, f.band, pr.state
+                  f.score, f.band, f.source, pr.state
              FROM core.party_role r
              JOIN core.company c ON c.id = r.company_id
              LEFT JOIN intel.fit f ON f.company_id = c.id
@@ -1178,7 +1200,7 @@ def board_overlap(conn: Connection, company_id: int, *, limit: int = 40) -> list
     """
     return conn.execute(
         """SELECT other.company_id, c.name, c.uid, c.canton,
-                  f.score, f.band, pr.state,
+                  f.score, f.band, f.source, pr.state,
                   array_agg(DISTINCT p.full_name ORDER BY p.full_name) AS people,
                   COUNT(DISTINCT p.id) AS shared,
                   -- Whether anyone shared is still in post at both ends. A
@@ -1194,7 +1216,8 @@ def board_overlap(conn: Connection, company_id: int, *, limit: int = 40) -> list
              LEFT JOIN intel.fit f ON f.company_id = c.id
              LEFT JOIN intel.prospect pr ON pr.company_id = c.id
             WHERE mine.company_id = %s
-            GROUP BY other.company_id, c.name, c.uid, c.canton, f.score, f.band, pr.state
+            GROUP BY other.company_id, c.name, c.uid, c.canton,
+                     f.score, f.band, f.source, pr.state
             ORDER BY current DESC, shared DESC, f.score DESC NULLS LAST, c.name
             LIMIT %s""",
         (company_id, limit),

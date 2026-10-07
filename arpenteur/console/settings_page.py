@@ -18,7 +18,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from ..kernel.db import Connection, Row
+from ..kernel.db import Row
 from . import ui
 from .render import esc, page
 
@@ -297,7 +297,7 @@ def settings_page(
         "<p class='what'>Fetched from the register rather than typed from "
         "memory, so a code that changes there stops being silently wrong here."
         "</p></div><footer><button>Refresh from the register</button>"
-        f"<span class='hint'>One request. "
+        "<span class='hint'>One request. "
         + (
             f"Last fetched {esc(catalogue_when)}, {len(catalogue)} forms."
             if catalogue

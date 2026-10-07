@@ -38,7 +38,7 @@ from .. import attachments as att
 from .. import attribution, db, dossier
 from .. import markdown as md
 from ..kernel import modules as module_registry
-from ..kernel.db import Connection, Row
+from ..kernel.db import Connection
 from ..modules.clients import store as clients_store
 from ..modules.geo import store as geo_store
 from ..modules.analytics import store as analytics_store
@@ -309,7 +309,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             conn.close()
 
     @app.post("/company/{company_id}/notes", response_class=HTMLResponse)
-    def add_note(
+    def add_company_note(
         company_id: int,
         body: str = Form(""),
         kind: str = Form("note"),
@@ -775,7 +775,18 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     @app.post("/run/{name}")
     async def start_run(name: str, request: Request) -> RedirectResponse:
-        form = dict(await request.form())
+        # Repeated keys are kept as lists. `dict()` over the form keeps only
+        # the last value for a key, and a multi-select posts one value per
+        # selection, so picking FR, GE and VD swept VD alone. `runner.coerce`
+        # already tests for a list; it was never given one.
+        posted = await request.form()
+        form: dict[str, Any] = {}
+        for key, value in posted.multi_items():
+            if key not in form:
+                form[key] = value
+                continue
+            held = form[key]
+            form[key] = [*held, value] if isinstance(held, list) else [held, value]
         try:
             run_id = runner.start(name, form)
         except (ValueError, RuntimeError) as exc:
@@ -1978,7 +1989,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             conn.close()
 
     @app.post("/client/{client_id}/notes")
-    async def add_note(client_id: int, request: Request) -> RedirectResponse:
+    async def add_client_note(client_id: int, request: Request) -> RedirectResponse:
         """A note pasted into the form, or a Markdown file uploaded.
 
         A file keeps its name as the source path, so importing it again updates
@@ -2836,7 +2847,9 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             # looking unfinished.
             groups: list[tuple[str, str, list[tuple[str, str, str]]]] = []
 
-            companies, _total = scout_store.search_companies(conn, q=q, limit=6)
+            companies, _ = scout_store.search_companies(
+                conn, q=q, limit=6, with_total=False
+            )
             groups.append(("Companies", "company", [
                 (f"/company/{r['id']}", r["name"], r["canton"] or "")
                 for r in companies

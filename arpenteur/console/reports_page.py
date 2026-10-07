@@ -22,7 +22,6 @@ from __future__ import annotations
 from typing import Any
 
 from ..kernel.db import Row
-from ..modules.analytics import store as analytics
 from . import ui
 from .render import esc, page
 

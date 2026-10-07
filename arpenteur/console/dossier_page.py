@@ -21,7 +21,7 @@ from __future__ import annotations
 import json
 from typing import Any
 
-from ..kernel.db import Connection, Row
+from ..kernel.db import Row
 from .. import dossier as vocab
 from ..attachments import KINDS as ATTACHMENT_KINDS
 from ..attachments import KIND_LABELS

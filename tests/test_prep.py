@@ -20,7 +20,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from arpenteur import db
-from arpenteur.kernel.db import Connection, Row
+from arpenteur.kernel.db import Connection
 from arpenteur.config import EFFORTS, load_settings
 from arpenteur.console.app import create_app
 from arpenteur.stages import advise, prep

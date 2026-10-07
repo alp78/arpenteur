@@ -15,7 +15,6 @@ writer not to know them.
 
 from __future__ import annotations
 
-import json
 from pathlib import Path
 from types import SimpleNamespace
 from typing import Any
@@ -23,7 +22,7 @@ from typing import Any
 import pytest
 
 from arpenteur import db
-from arpenteur.kernel.db import Connection, Row
+from arpenteur.kernel.db import Connection
 from arpenteur.config import Settings
 from arpenteur.stages import match
 

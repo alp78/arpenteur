@@ -39,7 +39,6 @@ pay again for what is in front of it.
 from __future__ import annotations
 
 import hashlib
-import json
 from typing import Any, Callable
 
 from .. import attachments as att

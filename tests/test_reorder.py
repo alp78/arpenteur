@@ -272,6 +272,6 @@ def test_an_untouched_dossier_reads_in_the_order_the_page_shows_it(conn) -> None
 
 def test_the_route_reorders_a_group(client, conn) -> None:
     names = _group("organisation")
-    reply = client.post(f"/dossier/1/order", data={"order": list(reversed(names))})
+    reply = client.post("/dossier/1/order", data={"order": list(reversed(names))})
     assert reply.status_code == 200
     assert reply.json()["sections"] == len(names)

@@ -789,7 +789,7 @@ def quote_print(
         f'<h1 class="doc">Offer {esc(quote["code"])}'
         + (f" &middot; version {shown['version']}" if shown["version"] > 1 else "")
         + "</h1>",
-        f'<p class="doc-meta">'
+        '<p class="doc-meta">'
         + (f'Valid until {_day(shown["valid_until"])}. '
            if shown["valid_until"] else "")
         + "</p>",

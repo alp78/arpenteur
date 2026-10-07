@@ -14,7 +14,6 @@ whose inputs cannot be reconstructed six months later.
 from __future__ import annotations
 
 import io
-import json
 import zipfile
 from pathlib import Path
 
@@ -22,7 +21,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from arpenteur import attachments as att
-from arpenteur.kernel.db import Connection, Row
+from arpenteur.kernel.db import Connection
 from arpenteur import db, dossier
 from arpenteur.config import load_settings
 from arpenteur.console.app import create_app
