@@ -523,6 +523,52 @@ as text and holds no foreign key precisely so a later module can log to it. The
 board's existing "how long has this sat here" query dates these cards with no
 new code, and the history outlives the programme if it is deleted.
 
+### Tracking what was sent and what came back
+
+Nothing here sends mail. Every message leaves from the operator's own client,
+and `arpenteur mail` reads it back out of the Sent folder with the rest of the
+mailbox. What this half adds is the record that joins the two directions and
+says where each firm stands.
+
+```bash
+uv run arpenteur programme ledger  LIMEN               # every firm, every status
+uv run arpenteur programme ledger  LIMEN --flag silent # written to, nothing back
+uv run arpenteur programme history LIMEN CHE-123.456.789
+uv run arpenteur answers                               # read the replies
+uv run arpenteur programme answer  LIMEN CHE-123.456.789 \
+    --platform android --account tester@gmail.com --window-ok
+```
+
+**One row holds every status, because four tables held them separately.** What
+went out is counted from `intel.draft.sent_at`, what came back from
+`crm.email_message`, whether the address survived from `core.contact.status`,
+and the stage from the member. A firm reading `3 out, 0 in, address failed` was
+never reached, and on a board that one looks identical to a firm which ignored
+three messages.
+
+**Marking a draft sent moves the card.** The console's `Mark as sent` writes
+`sent_at` and moves the member to `contacted` on the programme named by
+`[enrol] programme`, inserting it when the firm was never a member. It moves
+forward only: a second message to a firm at `testing` says nothing about its
+stage.
+
+**A reply is read and proposed, never filed.** `arpenteur answers` reads the
+platform and the tester's account out of each reply and reports them against a
+member. A person accepts the reading from the status page or from `programme
+answer`. Agreement to the dated window is asked rather than read, because a
+reply declining the dates carries the same words as one accepting them.
+
+**A refusal is honoured on sight.** A reply asking to be left alone suppresses
+the address, which is the one thing this stage writes. Honouring it is doing
+what the firm asked rather than filing a conclusion about them, and the message
+promises it in writing.
+
+**The tester's account lives on the member and nowhere else.** `core.contact`
+holds addresses taken from public registers and public websites. A Google
+account volunteered in a reply is different in kind, so it sits on the
+programme member, where the send list cannot read it and deleting the programme
+deletes it.
+
 ## Notes
 
 Your own writing about a client, in Markdown, written in whatever editor is

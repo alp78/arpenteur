@@ -38,6 +38,7 @@ from .stages import (
     sync,
     verify,
 )
+from .stages import answers as answers_stage
 from .stages import bounces as bounce_stage
 
 
@@ -385,6 +386,33 @@ def cmd_bounces(args: argparse.Namespace) -> int:
         stats = bounce_stage.run(
             settings, conn, folder=args.folder, limit=args.limit,
             since=since, dry_run=args.dry_run,
+        )
+    except Exception as exc:
+        conn.rollback()
+        db.finish_run(conn, run_id, error=str(exc))
+        print(f"error: {exc}", file=sys.stderr)
+        return 1
+    db.finish_run(conn, run_id, stats)
+    return 0
+
+
+def cmd_answers(args: argparse.Namespace) -> int:
+    """Read the replies to the enrolment message and say what each one holds.
+
+    Nothing is recorded against a member here. The platform and the account
+    come back as a proposal, and `arpenteur programme answer` or the programme
+    page is where a person accepts one. The single exception is a refusal,
+    which suppresses the address on sight, because the message this campaign
+    sends promises that in writing.
+    """
+    settings = load_settings()
+    conn = db.open_db(settings.database_url)
+    run_id = db.start_run(conn, "answers", vars(args))
+    try:
+        stats = answers_stage.run(
+            settings, conn, programme=args.programme,
+            from_stage=args.from_stage, limit=args.limit,
+            dry_run=args.dry_run,
         )
     except Exception as exc:
         conn.rollback()
@@ -1459,6 +1487,119 @@ def cmd_programme(args: argparse.Namespace) -> int:
               "an audit.state_change row, so the board can date the card.")
         return close(0)
 
+    if args.action == "ledger":
+        flag = (args.flag or "").strip().lower()
+        if flag and flag not in clients_store.LEDGER_FLAGS:
+            print(f"error: unknown flag {flag!r}. One of: "
+                  + ", ".join(clients_store.LEDGER_FLAGS), file=sys.stderr)
+            return close(1)
+        rows = clients_store.campaign_ledger(
+            conn, programme_id, stage=args.stage, canton=args.canton,
+            flag=flag, limit=args.limit if args.limit > 25 else 1000,
+        )
+        tally = clients_store.ledger_tally(conn, programme_id)
+        print(f"{programme['code']} — {tally['members']} member(s), "
+              f"{tally['answered']} answered, {tally['silent']} silent, "
+              f"{tally['failed']} undeliverable, {tally['refused']} refused, "
+              f"{tally['enrollable']} enrollable")
+        if not rows:
+            print("  nothing matches")
+            return close(0)
+        print(f"  {'stage':<12} {'firm':<34} {'ct':<3} {'out':>3} {'in':>3} "
+              f"{'last in':<11} enrolment")
+        for row in rows:
+            last = row["last_inbound"]
+            enrolment = ""
+            if row["platform"]:
+                enrolment = row["platform"]
+                if row["tester_account"]:
+                    enrolment += f" {row['tester_account']}"
+                if row["window_ok"] is True:
+                    enrolment += " dates ok"
+                elif row["window_ok"] is False:
+                    enrolment += " dates refused"
+            elif row["refused"]:
+                enrolment = "asked to stop"
+            elif row["failed"]:
+                enrolment = "address failed"
+            print(f"  {row['stage']:<12} {row['company_name'][:34]:<34} "
+                  f"{(row['canton'] or ''):<3} {row['sent']:>3} "
+                  f"{row['inbound']:>3} "
+                  f"{(last.date().isoformat() if last else ''):<11} {enrolment}")
+        return close(0)
+
+    if args.action == "history":
+        if not rest:
+            print("error: name the company, by UID or name", file=sys.stderr)
+            return close(1)
+        try:
+            company = _find_company(conn, rest[0])
+        except RuntimeError as exc:
+            print(f"error: {exc}", file=sys.stderr)
+            return close(1)
+        rows = clients_store.history_for(conn, int(company["id"]))
+        print(f"{company['name']} — {len(rows)} message(s)")
+        if not rows:
+            print("  nothing. `arpenteur mail` reads the mailbox; a message is "
+                  "attributed by a published address, a learnt link, or the "
+                  "domain.")
+        for row in rows:
+            when = row["sent_at"]
+            arrow = "->" if row["direction"] == "out" else "<-"
+            who = (row["from_email"] or "") if row["direction"] == "in" else (
+                ", ".join(row["to_emails"] or [])
+            )
+            print(f"  {(when.date().isoformat() if when else ''):<11} {arrow} "
+                  f"{who[:34]:<34} {(row['state'] or ''):<9} "
+                  f"{(row['subject'] or '')[:40]}")
+        return close(0)
+
+    if args.action == "answer":
+        if not rest:
+            print("error: name the company, by UID or name", file=sys.stderr)
+            return close(1)
+        try:
+            company = _find_company(conn, rest[0])
+        except RuntimeError as exc:
+            print(f"error: {exc}", file=sys.stderr)
+            return close(1)
+        found = conn.execute(
+            "SELECT id FROM crm.programme_member"
+            " WHERE programme_id = %s AND company_id = %s",
+            (programme_id, int(company["id"])),
+        ).fetchone()
+        if found is None:
+            print(f"error: {company['name']} is not a member of "
+                  f"{programme['code']}. Add it first: arpenteur programme "
+                  f"add {programme['code']} {company['uid']}", file=sys.stderr)
+            return close(1)
+        window = None
+        if args.window_ok:
+            window = True
+        elif args.window_no:
+            window = False
+        try:
+            clients_store.record_answer(
+                conn, int(found["id"]), platform=args.platform,
+                account=args.account, window_ok=window,
+                stage=args.to_stage, by="cli:answer", note=args.why,
+            )
+        except ValueError as exc:
+            print(f"error: {exc}", file=sys.stderr)
+            conn.rollback()
+            return close(1)
+        conn.commit()
+        said = []
+        if args.platform:
+            said.append(args.platform)
+        if args.account:
+            said.append(args.account)
+        if window is not None:
+            said.append("dates accepted" if window else "dates refused")
+        print(f"{company['name']}: recorded {', '.join(said) or 'the answer'}, "
+              f"now at '{args.to_stage}'")
+        return close(0)
+
     if args.action == "add":
         if not rest:
             print("error: name at least one company, by UID or name",
@@ -2159,6 +2300,29 @@ def build_parser() -> argparse.ArgumentParser:
     p.set_defaults(func=cmd_bounces)
 
     p = sub.add_parser(
+        "answers",
+        help="read the replies to the enrolment message and propose what each "
+             "one enrols",
+    )
+    p.add_argument(
+        "--programme", default="",
+        help="the programme code, or [enrol] programme from arpenteur.toml",
+    )
+    p.add_argument(
+        "--from-stage", dest="from_stage", default="contacted",
+        help="the stage whose members are read (default contacted)",
+    )
+    p.add_argument(
+        "--limit", type=int, default=200,
+        help="how many messages to read (default 200)",
+    )
+    p.add_argument(
+        "--dry-run", action="store_true",
+        help="report everything, suppress nothing",
+    )
+    p.set_defaults(func=cmd_answers)
+
+    p = sub.add_parser(
         "workspace",
         help="carry this installation's data to another machine, as one file",
     )
@@ -2215,10 +2379,11 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument(
         "action",
         choices=("list", "new", "show", "add", "bring-in", "move", "say",
-                 "stages", "replies"),
+                 "stages", "replies", "ledger", "history", "answer"),
         help="list them; start one; show one; add companies; add a shortlist "
              "from the survey; move a member; keep what a member said; read or "
-             "rewrite the stages; list who has written back",
+             "rewrite the stages; list who has written back; read the status "
+             "of every member; read one firm's mail; record what one answered",
     )
     p.add_argument(
         "rest", nargs="*", default=[],
@@ -2249,6 +2414,27 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument(
         "--yes", action="store_true",
         help="for replies: apply the moves, having read the list",
+    )
+    p.add_argument(
+        "--flag", default="",
+        help="for ledger: one of " + ", ".join(clients_store.LEDGER_FLAGS),
+    )
+    p.add_argument("--stage", default="", help="for ledger: one stage only")
+    p.add_argument(
+        "--platform", default="", choices=("", "ios", "android"),
+        help="for answer: which store track the tester enrols on",
+    )
+    p.add_argument(
+        "--account", default="",
+        help="for answer: the tester's Google account, which Android needs",
+    )
+    p.add_argument(
+        "--window-ok", dest="window_ok", action="store_true",
+        help="for answer: the tester accepted the dated window",
+    )
+    p.add_argument(
+        "--window-no", dest="window_no", action="store_true",
+        help="for answer: the tester declined the dated window",
     )
     p.set_defaults(func=cmd_programme)
 

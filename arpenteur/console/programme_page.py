@@ -298,7 +298,9 @@ def programme_page(
            if programme["what"] else "")
         + f'<p class="dim">{esc(programme["status"])}'
         + (f' · {esc(dates)}' if dates else "")
-        + f' · {len(members)} member(s)</p>'
+        + f' · {len(members)} member(s)'
+        + f' · <a href="/programme/{programme["id"]}/ledger">status of every'
+          ' firm</a></p>'
         + banner
         + f'<div class="lane"><div class="board">{columns}</div></div>'
         + _bring_in(programme["id"], sectors, cantons)

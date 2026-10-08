@@ -50,6 +50,7 @@ from ..sources import geoadmin
 from ..sources import mail as mail_source
 from ..stages import (
     advise,
+    answers as answers_stage,
     draft as draft_stage,
     geocode,
     mail as mail_stage,
@@ -68,6 +69,7 @@ from . import map_page as map_view_page
 from . import notes_page as notes_view
 from . import people_page as people_view_page
 from . import draft_page as draft_view
+from . import ledger_page as ledger_view
 from . import programme_page as programme_view
 from . import dossier_page as dossier_view
 from . import prep_page as prep_view
@@ -1794,12 +1796,35 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     @app.post("/draft/{draft_id}/sent")
     def draft_was_sent(draft_id: int) -> RedirectResponse:
+        """Record that a message left, and move the card that says so.
+
+        Two records of one fact, which is why they are written together.
+        `intel.draft.sent_at` says this proposal was sent; the programme card
+        says the firm has been contacted. Writing only the first is what left
+        the campaign's own tracker empty while messages went out.
+        """
+        said = "Recorded as sent."
         with db.open_db(settings.database_url) as conn:
-            scout_store.mark_draft_sent(conn, draft_id)
+            row = scout_store.mark_draft_sent(conn, draft_id)
+            code = settings.enrol.programme
+            if row is not None and code:
+                found = clients_store.programme_by_code(conn, code)
+                if found is None:
+                    said += (
+                        f" No programme called {code}, so no card moved."
+                        " `arpenteur programme list` names the ones there are."
+                    )
+                else:
+                    _member, moved = clients_store.note_contacted(
+                        conn, int(found["id"]), int(row["company_id"]),
+                        address=row["address"] or "", by="console:sent",
+                    )
+                    said += (
+                        f" {code} card moved to contacted." if moved
+                        else f" On {code} already, past contacted."
+                    )
             conn.commit()
-        return RedirectResponse(
-            "/drafts?note=" + quote("Recorded as sent."), status_code=303
-        )
+        return RedirectResponse("/drafts?note=" + quote(said), status_code=303)
 
     @app.post("/draft/{draft_id}/refuse")
     def refuse_one_draft(
@@ -1824,6 +1849,9 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     def programme_shell(body: str) -> HTMLResponse:
         return HTMLResponse(programme_view.shell(body, at("/programmes")))
+
+    def ledger_shell(body: str) -> HTMLResponse:
+        return HTMLResponse(ledger_view.shell(body, at("/programmes")))
 
     @app.get("/programmes", response_class=HTMLResponse)
     def programmes_list(request: Request) -> HTMLResponse:
@@ -1890,6 +1918,92 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             )
         finally:
             conn.close()
+
+    @app.get("/programme/{programme_id}/ledger", response_class=HTMLResponse)
+    def programme_ledger(programme_id: int, request: Request) -> HTMLResponse:
+        """Every firm's status, with the answers stage's reading beside it.
+
+        The reading is computed per request and stored nowhere. It is a
+        proposal, so caching it would turn a guess into a record, and the whole
+        point is that a person accepts it.
+        """
+        args = request.query_params
+        conn = connect()
+        try:
+            row = clients_store.programme(conn, programme_id)
+            if row is None:
+                return HTMLResponse("<h1>Not found</h1>", status_code=404)
+            flag = args.get("flag", "")
+            rows = clients_store.campaign_ledger(
+                conn, programme_id, flag=flag, stage=args.get("stage", ""),
+            )
+            readings = {
+                item.member_id: item.reading
+                for item in answers_stage.propose(
+                    conn, programme_id, own_domains=settings.mail.domains
+                )
+            }
+            return ledger_shell(
+                ledger_view.ledger_page(
+                    row, rows,
+                    clients_store.ledger_tally(conn, programme_id),
+                    readings=readings, flag=flag, stage=args.get("stage", ""),
+                    note=args.get("note", ""), error=args.get("error", ""),
+                )
+            )
+        finally:
+            conn.close()
+
+    @app.get("/member/{member_id}/history", response_class=HTMLResponse)
+    def member_history(member_id: int, request: Request) -> HTMLResponse:
+        conn = connect()
+        try:
+            row = clients_store.member(conn, member_id)
+            if row is None:
+                return HTMLResponse("<h1>Not found</h1>", status_code=404)
+            return ledger_shell(
+                ledger_view.history_page(
+                    row,
+                    clients_store.history_for(conn, int(row["company_id"])),
+                    note=request.query_params.get("note", ""),
+                )
+            )
+        finally:
+            conn.close()
+
+    @app.post("/member/{member_id}/answer")
+    def member_answered(
+        member_id: int, platform: str = Form(""), account: str = Form(""),
+        window_ok: str = Form(""), stage: str = Form("replied"),
+    ) -> RedirectResponse:
+        """Accept a reading of what one firm answered.
+
+        The checkbox is absent from the form when it is unticked, which here
+        means "nobody said" rather than "declined". So an unticked box leaves
+        `window_ok` as it was, and declining the dates is recorded from the
+        command line, where it can be said rather than left out.
+        """
+        with db.open_db(settings.database_url) as conn:
+            row = clients_store.member(conn, member_id)
+            if row is None:
+                return RedirectResponse("/programmes", status_code=303)
+            back = f"/programme/{row['programme_id']}/ledger"
+            try:
+                clients_store.record_answer(
+                    conn, member_id, platform=platform, account=account,
+                    window_ok=True if window_ok else None, stage=stage,
+                    by="console:answer",
+                )
+            except ValueError as exc:
+                conn.rollback()
+                return RedirectResponse(
+                    f"{back}?error=" + quote(str(exc)), status_code=303
+                )
+            conn.commit()
+        return RedirectResponse(
+            f"{back}?note=" + quote(f"Recorded for {row['company_name']}."),
+            status_code=303,
+        )
 
     @app.post("/programme/{programme_id}/move")
     def move_member(

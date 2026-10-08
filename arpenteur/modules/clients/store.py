@@ -1369,6 +1369,283 @@ def members_who_replied(
     ).fetchall()
 
 
+def unread_answers(
+    conn: Connection, programme_id: int, *, from_stage: str = "contacted",
+    limit: int = 200,
+) -> list[Row]:
+    """One row per inbound message a member has sent since it was contacted.
+
+    `members_who_replied` counts messages, which answers who to look at.
+    Classifying what they said needs the message, so this returns the rows
+    themselves, newest last per firm, with the body the mail stage stored.
+
+    A body is present only for a message somebody accepted into the record, so
+    a message still sitting in the queue comes back with an empty one. That is
+    the right behaviour rather than a gap to fill: reading the text of an
+    unaccepted message would be the mail stage's rule broken from a second
+    place.
+    """
+    return conn.execute(
+        """
+        SELECT e.id AS message_id, e.subject, e.body, e.from_email,
+               e.from_name, e.sent_at, e.state, e.folder,
+               m.id AS member_id, m.stage, m.updated_at, m.platform,
+               m.tester_account, m.answer_message_id,
+               co.id AS company_id, co.name AS company_name, co.canton
+          FROM crm.programme_member m
+          JOIN core.company co ON co.id = m.company_id
+          JOIN crm.email_message e ON e.company_id = m.company_id
+         WHERE m.programme_id = %s AND m.stage = %s
+           AND e.direction = 'in'
+           AND (m.updated_at IS NULL OR e.sent_at > m.updated_at)
+         ORDER BY e.sent_at
+         LIMIT %s
+        """,
+        (programme_id, from_stage, limit),
+    ).fetchall()
+
+
+def addresses_of(
+    conn: Connection, company_ids: Sequence[int]
+) -> dict[int, frozenset[str]]:
+    """The email addresses the survey holds, per company.
+
+    Read when an answer is searched for the tester's own account, to rule out
+    the one the firm published. A reply quotes the message it answers, so the
+    mailbox written to appears in nearly every body and would otherwise be
+    offered as the tester's Google account.
+    """
+    if not company_ids:
+        return {}
+    rows = conn.execute(
+        "SELECT company_id, lower(value) AS value FROM core.contact"
+        " WHERE kind = 'email' AND company_id = ANY(%s)",
+        (list(company_ids),),
+    ).fetchall()
+    held: dict[int, set[str]] = {}
+    for row in rows:
+        held.setdefault(int(row["company_id"]), set()).add(str(row["value"]))
+    return {key: frozenset(value) for key, value in held.items()}
+
+
+def note_contacted(
+    conn: Connection, programme_id: int, company_id: int, *,
+    address: str = "", by: str = "draft", stage: str = "contacted",
+) -> tuple[int, bool]:
+    """Record that a message went out to this firm, member or not yet.
+
+    Called when a person marks a draft sent, which is the only moment this
+    program learns that a message left. It inserts the member when the firm was
+    never on the programme, because a send list selects from the survey and not
+    from the membership, so the first contact is often also the first the
+    programme hears of the firm.
+
+    It moves forward and never back. A member already past the first stage
+    keeps where it is: marking a second draft sent to a firm at `testing` says
+    nothing about its stage, and walking that card back to `contacted` would
+    lose the only record of how far it got.
+    """
+    member_id, existed = add_member(
+        conn, programme_id, company_id,
+        contact=address.strip() or None,
+    )
+    stages = _stages_of(conn, programme_id)
+    if stage not in stages:
+        raise ValueError(_no_such_stage(stage, stages))
+    row = conn.execute(
+        "SELECT stage, contact FROM crm.programme_member WHERE id = %s",
+        (member_id,),
+    ).fetchone()
+    here = str(row["stage"]) if row else stages[0]
+    moved = False
+    if here == stages[0] and here != stage:
+        move_member(conn, member_id, stage, by=by,
+                    reason=f"message sent to {address}" if address else "message sent")
+        moved = True
+    if address.strip() and row is not None and not row["contact"]:
+        conn.execute(
+            "UPDATE crm.programme_member SET contact = %s WHERE id = %s",
+            (address.strip(), member_id),
+        )
+    return member_id, moved
+
+
+def record_answer(
+    conn: Connection, member_id: int, *,
+    platform: str = "", account: str = "", window_ok: bool | None = None,
+    message_id: int | None = None, answered_at: Any = None,
+    stage: str = "replied", by: str = "console", note: str = "",
+) -> Row | None:
+    """Write what a firm answered, and move the card to it.
+
+    The platform and the account are the two facts a store test track needs,
+    so they sit on the member. The text of the answer is cited by
+    `answer_message_id` and never copied: it is already in
+    `crm.email_message`, and a second copy would be the one that drifts.
+
+    `window_ok` stays untouched when it arrives as None. A reply names the
+    platform in a word and accepts the dates in a sentence, so the dates are
+    confirmed by the person reading rather than inferred from a token.
+    """
+    row = conn.execute(
+        "SELECT id, stage FROM crm.programme_member WHERE id = %s", (member_id,)
+    ).fetchone()
+    if row is None:
+        return None
+    platform = (platform or "").strip().lower()
+    if platform and platform not in ("ios", "android"):
+        raise ValueError(
+            f"Unknown platform {platform!r}. A store test track is either "
+            "'ios' or 'android'."
+        )
+    sets: dict[str, Any] = {"answered_at": answered_at or now()}
+    if platform:
+        sets["platform"] = platform
+    if account.strip():
+        sets["tester_account"] = account.strip()
+    if window_ok is not None:
+        sets["window_ok"] = window_ok
+    if message_id is not None:
+        sets["answer_message_id"] = message_id
+    columns = ", ".join(f"{key} = %s" for key in sets)
+    conn.execute(
+        f"UPDATE crm.programme_member SET {columns} WHERE id = %s",
+        (*sets.values(), member_id),
+    )
+    if stage and stage != row["stage"]:
+        move_member(conn, member_id, stage, by=by,
+                    reason=note.strip() or "answered")
+    return row
+
+
+def history_for(
+    conn: Connection, company_id: int, *, limit: int = 200
+) -> list[Row]:
+    """Every message to and from one firm, oldest first.
+
+    Both directions in one list, because the question a reviewer asks is what
+    happened in order. The Sent folder arrives with the inbox, so a message the
+    operator wrote from their own client is here with `direction = 'out'`
+    without this program having sent anything.
+    """
+    return conn.execute(
+        """
+        SELECT id, direction, sent_at, subject, from_email, to_emails,
+               state, folder, match_method, decided_at
+          FROM crm.email_message
+         WHERE company_id = %s
+         ORDER BY sent_at NULLS LAST, id
+         LIMIT %s
+        """,
+        (company_id, limit),
+    ).fetchall()
+
+
+# The vocabulary a ledger row can be narrowed to. Each one is a question the
+# operator asks out loud while the campaign runs, which is why they are named
+# rather than left to a free-text filter.
+LEDGER_FLAGS = ("answered", "silent", "failed", "refused", "enrollable")
+
+
+def campaign_ledger(
+    conn: Connection, programme_id: int, *, stage: str = "", canton: str = "",
+    flag: str = "", limit: int = 1000,
+) -> list[Row]:
+    """One row per member, holding every status the campaign has about it.
+
+    Four tables answer "where does this firm stand" and no query joined them,
+    so the answer was four queries and a join done by eye. What goes out lives
+    in `intel.draft.sent_at`, what came back in `crm.email_message`, whether
+    the address survived in `core.contact.status`, and the stage on the member.
+
+    Reading `intel.draft` and `core.contact` from here is the direction the
+    module boundary permits, the one `match_company` and `bring_in_members`
+    already take.
+    """
+    where = ["m.programme_id = %s"]
+    params: list[Any] = [programme_id]
+    if stage:
+        where.append("m.stage = %s")
+        params.append(stage)
+    if canton:
+        where.append("co.canton = ANY(%s)")
+        params.append([c.strip().upper() for c in canton.split(",") if c.strip()])
+    # The flag reads the computed columns, so it is applied outside the select
+    # rather than beside the other two. Writing it as a HAVING over the
+    # aggregates would push the whole query into a GROUP BY it does not need.
+    having = {
+        "answered": "x.inbound > 0",
+        "silent": "x.sent > 0 AND x.inbound = 0",
+        "failed": "x.failed > 0",
+        "refused": "x.refused > 0",
+        # Every gate reads `x`, the subquery, and never `m`. The inner aliases
+        # are out of scope out here, which the first version of this learned
+        # from Postgres on the first live run.
+        "enrollable": "x.platform IS NOT NULL",
+    }.get(flag, "")
+    gate = f" WHERE {having}" if having else ""
+    params.append(limit)
+    return conn.execute(
+        f"""
+        SELECT * FROM (
+          SELECT m.id AS member_id, m.stage, m.updated_at, m.contact,
+                 m.platform, m.tester_account, m.window_ok, m.answered_at,
+                 m.answer_message_id,
+                 co.id AS company_id, co.name AS company_name, co.uid,
+                 co.canton, co.legal_seat,
+                 (SELECT COUNT(*) FROM intel.draft d
+                   WHERE d.company_id = m.company_id AND d.sent_at IS NOT NULL)
+                     AS sent,
+                 (SELECT MAX(d.sent_at) FROM intel.draft d
+                   WHERE d.company_id = m.company_id AND d.sent_at IS NOT NULL)
+                     AS last_sent,
+                 (SELECT COUNT(*) FROM intel.draft d
+                   WHERE d.company_id = m.company_id AND d.sent_at IS NULL
+                     AND d.refused_at IS NULL) AS pending,
+                 (SELECT COUNT(*) FROM crm.email_message e
+                   WHERE e.company_id = m.company_id AND e.direction = 'in')
+                     AS inbound,
+                 (SELECT MAX(e.sent_at) FROM crm.email_message e
+                   WHERE e.company_id = m.company_id AND e.direction = 'in')
+                     AS last_inbound,
+                 (SELECT COUNT(*) FROM core.contact k
+                   WHERE k.company_id = m.company_id AND k.kind = 'email'
+                     AND k.status = 'bounced') AS failed,
+                 (SELECT COUNT(*) FROM core.contact k
+                   WHERE k.company_id = m.company_id AND k.kind = 'email'
+                     AND k.suppressed) AS refused,
+                 (SELECT COUNT(*) FROM crm.programme_feedback f
+                   WHERE f.member_id = m.id) AS feedback
+            FROM crm.programme_member m
+            JOIN core.company co ON co.id = m.company_id
+           WHERE {' AND '.join(where)}
+        ) x{gate}
+         ORDER BY x.last_inbound DESC NULLS LAST, x.company_name
+         LIMIT %s
+        """,
+        tuple(params),
+    ).fetchall()
+
+
+def ledger_tally(conn: Connection, programme_id: int) -> dict[str, int]:
+    """The ledger counted by flag, for the heading above it."""
+    rows = campaign_ledger(conn, programme_id, limit=100000)
+    tally = {key: 0 for key in LEDGER_FLAGS}
+    tally["members"] = len(rows)
+    for row in rows:
+        if row["inbound"]:
+            tally["answered"] += 1
+        elif row["sent"]:
+            tally["silent"] += 1
+        if row["failed"]:
+            tally["failed"] += 1
+        if row["refused"]:
+            tally["refused"] += 1
+        if row["platform"]:
+            tally["enrollable"] += 1
+    return tally
+
+
 def update_member(conn: Connection, member_id: int, **fields: Any) -> None:
     allowed = {"contact", "note"}
     sets = {k: v for k, v in fields.items() if k in allowed and v is not None}

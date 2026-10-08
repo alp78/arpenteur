@@ -93,6 +93,20 @@ def _folded(text: str) -> str:
     return mailcheck.deaccent(text or "").lower()
 
 
+def refusal_token(text: str) -> str:
+    """The refusal token this text carries, or an empty string.
+
+    Split out of `refusal_in` so the answers stage can read a refusal from a
+    body already stored in the database, where no `Message` survives to parse.
+    One vocabulary, reachable from both sides.
+    """
+    folded = _folded(text)
+    for token in REFUSALS:
+        if re.search(rf"(?<![a-z]){re.escape(token)}(?![a-z])", folded):
+            return token
+    return ""
+
+
 def refusal_in(
     message: Message, *, known: frozenset[str] | None = None
 ) -> Refusal | None:
@@ -109,22 +123,15 @@ def refusal_in(
     )
     subject = _folded(message.get("subject") or "")
 
-    hit, where = "", ""
-    for token in REFUSALS:
-        if re.search(rf"(?<![a-z]){re.escape(token)}(?![a-z])", subject):
-            hit, where = token, "the subject"
-            break
+    hit, where = refusal_token(subject), "the subject"
     if not hit:
         # Only the visible text, and only its opening. A refusal is short and
         # sits at the top; the same word thirty lines down is in a quoted
         # thread or a signature block.
         for part in _text_parts(message)[:2]:
-            opening = _folded(part)[:400]
-            for token in REFUSALS:
-                if re.search(rf"(?<![a-z]){re.escape(token)}(?![a-z])", opening):
-                    hit, where = token, "the opening of the message"
-                    break
+            hit = refusal_token(_folded(part)[:400])
             if hit:
+                where = "the opening of the message"
                 break
     if not hit:
         return None
