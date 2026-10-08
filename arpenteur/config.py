@@ -114,6 +114,44 @@ class IssuerConfig:
 
 
 @dataclass(frozen=True)
+class EnrolConfig:
+    """The links and the dates a tester enrolment message has to carry.
+
+    Held in settings rather than in the brief because the brief is read into a
+    prompt and these must never reach one. The brief tells the model not to
+    write a web address; this is where the address actually comes from.
+    """
+
+    ios_link: str = ""
+    android_window_start: str = ""
+    android_window_end: str = ""
+    # How many testers Google wants across one continuous window. A setting
+    # rather than a constant because it is Google's number, not ours, and it
+    # has changed once already.
+    android_testers: int = 12
+    android_days: int = 14
+
+    @property
+    def ready(self) -> bool:
+        return bool(
+            self.ios_link
+            and self.android_window_start
+            and self.android_window_end
+        )
+
+    def missing(self) -> list[str]:
+        gaps = []
+        if not self.ios_link:
+            gaps.append("enrol.ios_link, the public TestFlight URL")
+        if not self.android_window_start or not self.android_window_end:
+            gaps.append(
+                "enrol.android_window_start and enrol.android_window_end, "
+                "the two dates that bound the testing window"
+            )
+        return gaps
+
+
+@dataclass(frozen=True)
 class MailConfig:
     """Where correspondence is read from. There is no send half, deliberately.
 
@@ -318,6 +356,13 @@ class Settings:
     # survey whose arpenteur.toml predates the [sectors] block still loads;
     # the profile stage then applies segments alone, as it always did.
     sectors: dict[str, str] = field(default_factory=dict)
+    # What the draft stage writes into a message itself rather than asking a
+    # model for. A URL a model produces is a URL a model invented: the first
+    # TestFlight link it wrote was plausible, well-formed and nowhere near the
+    # real one. The dates matter for the same reason, since Google counts
+    # twelve testers across one continuous window and a model asked for "a
+    # fortnight" supplies a different fortnight to every recipient.
+    enrol: EnrolConfig = field(default_factory=lambda: EnrolConfig())
     data_dir: Path = field(init=False)
 
     def __post_init__(self) -> None:
@@ -586,6 +631,7 @@ def load_settings(root: Path | None = None) -> Settings:
             api_key=os.environ.get("ANTHROPIC_API_KEY") or None,
         ),
         mail=_mail(raw.get("mail") or {}),
+        enrol=_enrol(raw.get("enrol") or {}),
         issuer=_issuer(raw.get("issuer") or {}),
         catalogue=_catalogue(raw.get("rates") or {}),
         card_note=str(((raw.get("rates") or {}).get("card_note") or {}).get("text", "")).strip(),
@@ -653,6 +699,16 @@ def _env(*names: str) -> str:
         if value:
             return value.strip()
     return ""
+
+
+def _enrol(raw: dict) -> EnrolConfig:
+    return EnrolConfig(
+        ios_link=str(raw.get("ios_link", "") or "").strip(),
+        android_window_start=str(raw.get("android_window_start", "") or "").strip(),
+        android_window_end=str(raw.get("android_window_end", "") or "").strip(),
+        android_testers=int(raw.get("android_testers", 12)),
+        android_days=int(raw.get("android_days", 14)),
+    )
 
 
 def _mail(raw: dict) -> MailConfig:

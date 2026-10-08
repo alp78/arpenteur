@@ -215,10 +215,103 @@ def build_prompt(
     ])
 
 
-def compose(body: str, *, language: str, address: str) -> str:
-    """The model's text with the opt-out added, in the recipient's language."""
-    sentence = OPT_OUT.get(language, OPT_OUT["fr"]).format(address=address)
-    return f"{body.rstrip()}\n\n{sentence}\n"
+# The enrolment block, per language. Everything factual in it is substituted
+# from settings, so no sentence here depends on a model having got a URL or a
+# date right.
+ENROL = {
+    "fr": (
+        "Comment participer\n"
+        "\n"
+        "iOS, sans condition. Ouvrez ce lien, installez TestFlight, "
+        "ajoutez-y Limen : {ios_link}\n"
+        "\n"
+        "Android, sous deux conditions. Google exige {testers} testeurs "
+        "pendant {days} jours continus avant qu'une application paraisse à "
+        "son catalogue. Il nous faut donc l'adresse de votre compte Google, "
+        "sans laquelle Google ne vous ouvre pas la version de test, et votre "
+        "accord pour garder l'application du {start} au {end} en l'ouvrant "
+        "sur vos états des lieux réels. Ni séance de test, ni rapport.\n"
+        "\n"
+        "Pour vous inscrire, répondez à ce courriel avec le nom de votre "
+        "régie, la plateforme retenue, et l'adresse de votre compte Google "
+        "s'il s'agit d'Android."
+    ),
+    "de": (
+        "So nehmen Sie teil\n"
+        "\n"
+        "iOS, ohne Bedingung. Öffnen Sie diesen Link, installieren Sie "
+        "TestFlight, fügen Sie Limen hinzu: {ios_link}\n"
+        "\n"
+        "Android, unter zwei Bedingungen. Google verlangt {testers} Tester "
+        "über {days} zusammenhängende Tage, bevor eine App in den Store "
+        "kommt. Wir benötigen daher die Adresse Ihres Google-Kontos, ohne die "
+        "Google Ihnen die Testversion nicht freigibt, und Ihr "
+        "Einverständnis, die App vom {start} bis zum {end} zu behalten und "
+        "bei Ihren echten Abnahmen zu öffnen. Keine Testsitzung, kein "
+        "Bericht.\n"
+        "\n"
+        "Antworten Sie zur Anmeldung auf diese E-Mail mit dem Namen Ihrer "
+        "Verwaltung, der gewählten Plattform und bei Android der Adresse "
+        "Ihres Google-Kontos."
+    ),
+    "it": (
+        "Come partecipare\n"
+        "\n"
+        "iOS, senza condizioni. Apra questo link, installi TestFlight, "
+        "aggiunga Limen: {ios_link}\n"
+        "\n"
+        "Android, a due condizioni. Google richiede {testers} tester per "
+        "{days} giorni continuativi prima che un'applicazione compaia nel "
+        "suo catalogo. Ci serve quindi l'indirizzo del suo account Google, "
+        "senza il quale Google non le apre la versione di prova, e il suo "
+        "accordo a conservare l'applicazione dal {start} al {end} aprendola "
+        "durante i suoi verbali reali. Nessuna sessione di test, nessun "
+        "rapporto.\n"
+        "\n"
+        "Per iscriversi, risponda a questa e-mail con il nome della sua "
+        "agenzia, la piattaforma scelta e, per Android, l'indirizzo del suo "
+        "account Google."
+    ),
+}
+
+# What a reviewer cannot miss. A draft whose link is unset must be unsendable
+# by inspection, not merely wrong.
+PLACEHOLDER = "[[ MANQUE : {what} ]]"
+
+
+def enrol_block(enrol: Any, language: str) -> str:
+    """The enrolment instructions, with the links and dates substituted.
+
+    Composed here for the reason the opt-out is: a model asked for a
+    TestFlight URL writes a plausible, well-formed one that goes nowhere, and
+    a recipient who tries it once files the message as a scam. Google's window
+    has to be the same two dates for every recipient, which a model asked for
+    "a fortnight" cannot do either.
+    """
+    template = ENROL.get(language, ENROL["fr"])
+    return template.format(
+        ios_link=enrol.ios_link or PLACEHOLDER.format(what="lien TestFlight"),
+        start=enrol.android_window_start or PLACEHOLDER.format(what="date de début"),
+        end=enrol.android_window_end or PLACEHOLDER.format(what="date de fin"),
+        testers=enrol.android_testers,
+        days=enrol.android_days,
+    )
+
+
+def compose(
+    body: str, *, language: str, address: str, enrol: Any | None = None
+) -> str:
+    """The model's text, then the enrolment block, then the opt-out.
+
+    Only the first of the three comes from a model. The order is the reading
+    order a recipient needs: why they are being written to, what to do, how to
+    refuse.
+    """
+    parts = [body.rstrip()]
+    if enrol is not None:
+        parts.append(enrol_block(enrol, language))
+    parts.append(OPT_OUT.get(language, OPT_OUT["fr"]).format(address=address))
+    return "\n\n".join(parts) + "\n"
 
 
 def save(
@@ -283,6 +376,18 @@ def run(
         )
     opt_out_address = settings.mail.user
 
+    # Reported before any model call, because a draft carrying a placeholder
+    # cannot be sent and a run that produced twenty-five of them wasted
+    # twenty-five calls.
+    gaps_in_enrol = settings.enrol.missing()
+    stats["enrol_missing"] = gaps_in_enrol
+    if gaps_in_enrol:
+        log("These are unset in arpenteur.toml [enrol]:")
+        for gap in gaps_in_enrol:
+            log(f"  - {gap}")
+        log("Each draft will carry a visible [[ MANQUE : ... ]] marker in "
+            "its place, so none of them can be sent as it stands.")
+
     rows: list[Row] = scout_store.send_list(
         conn, desk_parts=desk_parts, segments=segments, cantons=cantons
     )
@@ -322,7 +427,7 @@ def run(
         )
         body = compose(
             str(reply.get("body") or ""), language=language,
-            address=opt_out_address,
+            address=opt_out_address, enrol=settings.enrol,
         )
         save(
             conn, int(row["company_id"]), address=row["address"],

@@ -481,3 +481,18 @@ education = "Schools, teaching, vocational and language training, coaching, chil
 personal-services = "Services to individuals: hairdressing, beauty, wellbeing, cleaning, security, repair, funeral services, domestic work."
 non-profit = "An association, foundation or cooperative whose purpose is charitable, cultural, sporting, religious, professional or otherwise not for profit."
 other = "The purpose text does not place the company in any sector above, or describes something too general to place."
+
+# What a tester-enrolment message carries that a model must never write.
+#
+# A URL a model produces is a URL a model invented, and a plausible, well-formed
+# TestFlight link that goes nowhere is worse than no link: the recipient tries
+# it once and files the message as a scam. The dates are here for the same
+# reason. Google counts its twelve testers across one continuous window, so
+# every recipient has to be given the same two dates, and a model asked for
+# "a fortnight" supplies a different fortnight each time.
+[enrol]
+ios_link = ""
+android_window_start = ""
+android_window_end = ""
+android_testers = 12
+android_days = 14

@@ -72,10 +72,17 @@ def conn(db_path) -> Connection:
 
 def _settings(tmp_path, brief: str = BRIEF_FULL, *, mail: bool = True):
     (tmp_path / draft.BRIEF).write_text(brief, encoding="utf-8")
+    from arpenteur.config import EnrolConfig
+
     return SimpleNamespace(
         root=tmp_path,
         mail=SimpleNamespace(configured=mail, user="alexis@peringer.ch"),
         llm=SimpleNamespace(enrich_model="test-model", enrich_max_tokens=2000),
+        enrol=EnrolConfig(
+            ios_link="https://testflight.apple.com/join/abc123",
+            android_window_start="20 octobre 2026",
+            android_window_end="3 novembre 2026",
+        ),
     )
 
 
@@ -259,3 +266,93 @@ def test_only_verified_addresses_are_drafted_for(conn, tmp_path, monkeypatch) ->
     }
     assert "info@regie-ge.ch" not in held
     assert len(held) == 2
+
+
+# --- the links and dates are injected, never generated ------------------------
+#
+# The brief forbids the model from writing a web address. These pin the reason:
+# a URL a model produces is a URL it invented, and Google's window has to be
+# the same two dates for all twelve testers or the count never closes.
+
+
+def _enrol(**kw):
+    from arpenteur.config import EnrolConfig
+
+    return EnrolConfig(**kw)
+
+
+FULL_ENROL = dict(
+    ios_link="https://testflight.apple.com/join/abc123",
+    android_window_start="20 octobre 2026",
+    android_window_end="3 novembre 2026",
+)
+
+
+@pytest.mark.parametrize("language,marker", [
+    ("fr", "Comment participer"),
+    ("de", "So nehmen Sie teil"),
+    ("it", "Come partecipare"),
+])
+def test_the_enrolment_block_is_written_in_the_recipients_language(
+    language, marker
+) -> None:
+    body = draft.compose("Texte.", language=language, address="a@b.ch",
+                         enrol=_enrol(**FULL_ENROL))
+    assert marker in body
+    assert "https://testflight.apple.com/join/abc123" in body
+
+
+def test_both_platforms_and_their_conditions_appear(language="fr") -> None:
+    body = draft.compose("Texte.", language=language, address="a@b.ch",
+                         enrol=_enrol(**FULL_ENROL))
+    assert "iOS, sans condition" in body
+    assert "Android, sous deux conditions" in body
+    assert "compte Google" in body
+    assert "20 octobre 2026" in body and "3 novembre 2026" in body
+
+
+def test_googles_own_numbers_come_from_settings() -> None:
+    """Twelve and fourteen are Google's, not ours, and have changed once."""
+    body = draft.compose("Texte.", language="fr", address="a@b.ch",
+                         enrol=_enrol(android_testers=20, android_days=21,
+                                      **FULL_ENROL))
+    assert "20 testeurs" in body
+    assert "21 jours" in body
+
+
+def test_the_commitment_is_stated_as_the_light_thing_it_is() -> None:
+    """Google checks the app is installed and used. Saying so is what keeps a
+    true condition from reading as a fortnight of unpaid work."""
+    body = draft.compose("Texte.", language="fr", address="a@b.ch",
+                         enrol=_enrol(**FULL_ENROL))
+    assert "Ni séance de test, ni rapport" in body
+
+
+def test_a_missing_link_leaves_a_marker_a_reviewer_cannot_miss() -> None:
+    body = draft.compose("Texte.", language="fr", address="a@b.ch",
+                         enrol=_enrol())
+    assert "[[ MANQUE : lien TestFlight ]]" in body
+    assert "[[ MANQUE : date de début ]]" in body
+    assert "https://" not in body, "no invented URL stands in for the real one"
+
+
+def test_the_unset_settings_are_named_before_any_model_call(
+    conn, tmp_path, monkeypatch
+) -> None:
+    provider = FakeProvider()
+    monkeypatch.setattr(draft, "get_provider", lambda _s: provider)
+    settings = _settings(tmp_path)
+    settings.enrol = _enrol()
+    said: list[str] = []
+    stats = draft.run(settings, conn, desk_parts=DESKS, limit=1, log=said.append)
+    assert stats["enrol_missing"]
+    assert any("ios_link" in line for line in said)
+    assert any("MANQUE" in line for line in said)
+
+
+def test_the_three_parts_arrive_in_reading_order() -> None:
+    """Why they are written to, what to do, how to refuse."""
+    body = draft.compose("Pourquoi.", language="fr", address="a@b.ch",
+                         enrol=_enrol(**FULL_ENROL))
+    assert body.index("Pourquoi.") < body.index("Comment participer")
+    assert body.index("Comment participer") < body.index("ne souhaitez plus")
