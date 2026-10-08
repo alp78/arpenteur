@@ -1781,6 +1781,122 @@ def send_list(
     ).fetchall()
 
 
+# --- drafts awaiting a person ------------------------------------------------
+#
+# `intel.draft` holds proposals. Three timestamps carry the whole state and no
+# status column exists on purpose: `created_at` says it was written,
+# `reviewed_at` that somebody read it, `sent_at` that it left. A draft with
+# none of the last two is the queue.
+
+
+def drafts_awaiting(
+    conn: Connection, *, limit: int = 100, language: str = "",
+    reviewed: bool | None = False,
+) -> list[Row]:
+    """The review queue, oldest first.
+
+    Oldest first because a draft goes stale: the brief it was written against
+    can be rewritten under it, and `brief_digest` is what says so. Reviewing
+    newest-first leaves the stale ones at the bottom for ever.
+    """
+    where = ["d.sent_at IS NULL"]
+    params: list[Any] = []
+    if reviewed is True:
+        where.append("d.reviewed_at IS NOT NULL")
+    elif reviewed is False:
+        where.append("d.reviewed_at IS NULL")
+    if language:
+        where.append("d.language = %s")
+        params.append(language)
+    params.append(int(limit))
+    return conn.execute(
+        f"""
+        SELECT d.*, c.name AS company_name, c.uid, c.canton, c.legal_seat
+          FROM intel.draft d
+          JOIN core.company c ON c.id = d.company_id
+         WHERE {' AND '.join(where)}
+         ORDER BY d.created_at
+         LIMIT %s
+        """,
+        tuple(params),
+    ).fetchall()
+
+
+def draft(conn: Connection, draft_id: int) -> Row | None:
+    return conn.execute(
+        "SELECT d.*, c.name AS company_name, c.uid, c.canton, c.legal_seat,"
+        "       c.purpose"
+        "  FROM intel.draft d JOIN core.company c ON c.id = d.company_id"
+        " WHERE d.id = %s",
+        (draft_id,),
+    ).fetchone()
+
+
+def draft_tally(conn: Connection) -> dict[str, int]:
+    row = conn.execute(
+        """
+        SELECT count(*) FILTER (WHERE sent_at IS NULL AND reviewed_at IS NULL)
+                   AS awaiting,
+               count(*) FILTER (WHERE sent_at IS NULL AND reviewed_at IS NOT NULL)
+                   AS approved,
+               count(*) FILTER (WHERE sent_at IS NOT NULL) AS sent,
+               count(DISTINCT brief_digest) AS briefs
+          FROM intel.draft
+        """
+    ).fetchone()
+    return {k: int(row[k] or 0) for k in ("awaiting", "approved", "sent", "briefs")}
+
+
+def stale_drafts(conn: Connection, digest: str) -> int:
+    """How many unsent drafts were written against a different brief.
+
+    The number `match` makes visible for scores and this makes visible for
+    messages. A draft and the brief it quotes can disagree without either
+    saying so, and the digest is the only thing that catches it.
+    """
+    row = conn.execute(
+        "SELECT count(*) AS n FROM intel.draft"
+        " WHERE sent_at IS NULL AND coalesce(brief_digest, '') <> %s",
+        (digest,),
+    ).fetchone()
+    return int(row["n"] or 0)
+
+
+def review_draft(conn: Connection, draft_id: int) -> Row | None:
+    """Record that a person read it. Not that it was sent."""
+    return conn.execute(
+        "UPDATE intel.draft SET reviewed_at = %s WHERE id = %s RETURNING *",
+        (now(), draft_id),
+    ).fetchone()
+
+
+def unreview_draft(conn: Connection, draft_id: int) -> Row | None:
+    return conn.execute(
+        "UPDATE intel.draft SET reviewed_at = NULL WHERE id = %s RETURNING *",
+        (draft_id,),
+    ).fetchone()
+
+
+def mark_draft_sent(conn: Connection, draft_id: int) -> Row | None:
+    """Record that it left, which only a person can know.
+
+    Nothing in this program sends mail, so `sent_at` is set by the operator
+    after their own client sent it. It is also what retires the row from the
+    one-per-mailbox index, so a later approach to the same firm is a new
+    proposal rather than an edit of this one.
+    """
+    return conn.execute(
+        "UPDATE intel.draft SET sent_at = %s, reviewed_at ="
+        " coalesce(reviewed_at, %s) WHERE id = %s RETURNING *",
+        (now(), now(), draft_id),
+    ).fetchone()
+
+
+def drop_draft(conn: Connection, draft_id: int) -> int:
+    done = conn.execute("DELETE FROM intel.draft WHERE id = %s", (draft_id,))
+    return int(getattr(done, "rowcount", 0) or 0)
+
+
 def contacts_for(conn: Connection, company_id: int) -> list[Row]:
     return conn.execute(
         "SELECT * FROM core.contact WHERE company_id = %s ORDER BY id",

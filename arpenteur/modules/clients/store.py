@@ -1330,6 +1330,45 @@ def move_member(
     return row
 
 
+def members_who_replied(
+    conn: Connection, programme_id: int, *, from_stage: str = "contacted"
+) -> list[Row]:
+    """Members sitting at `from_stage` who have written since they got there.
+
+    A proposal, not a move. `members_for` says why: nothing in this schema
+    files itself, and a stage that advanced because a message arrived would be
+    the first thing that did. So this returns the cards a person should look
+    at, and the move stays an act somebody takes.
+
+    "Since they got there" is what separates a reply from an old thread. The
+    comparison is against `updated_at`, which `move_member` sets, so a company
+    that wrote last year and was contacted yesterday does not appear.
+    """
+    return conn.execute(
+        """
+        SELECT m.id, m.company_id, m.stage, m.updated_at,
+               co.name AS company_name, co.uid, co.canton,
+               e.last_inbound, e.inbound, e.subject, e.from_email
+          FROM crm.programme_member m
+          JOIN core.company co ON co.id = m.company_id
+          JOIN LATERAL (
+            SELECT MAX(x.sent_at) AS last_inbound,
+                   COUNT(*) AS inbound,
+                   (ARRAY_AGG(x.subject ORDER BY x.sent_at DESC))[1] AS subject,
+                   (ARRAY_AGG(x.from_email ORDER BY x.sent_at DESC))[1]
+                       AS from_email
+              FROM crm.email_message x
+             WHERE x.company_id = m.company_id AND x.direction = 'in'
+               AND x.sent_at > m.updated_at
+          ) e ON TRUE
+         WHERE m.programme_id = %s AND m.stage = %s
+           AND e.last_inbound IS NOT NULL
+         ORDER BY e.last_inbound DESC
+        """,
+        (programme_id, from_stage),
+    ).fetchall()
+
+
 def update_member(conn: Connection, member_id: int, **fields: Any) -> None:
     allowed = {"contact", "note"}
     sets = {k: v for k, v in fields.items() if k in allowed and v is not None}

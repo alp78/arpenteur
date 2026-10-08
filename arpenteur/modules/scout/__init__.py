@@ -28,6 +28,7 @@ MODULE = Module(
         Nav("Survey", "/", group="survey", order=110),
         Nav("Board", "/board", group="survey", order=120),
         Nav("People", "/people", group="survey", order=130),
+        Nav("Drafts", "/drafts", group="survey", order=140),
     ),
     removable=False,
 )

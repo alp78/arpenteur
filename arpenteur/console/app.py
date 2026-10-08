@@ -48,7 +48,15 @@ from ..modules.scout import store as scout_store
 from ..config import Settings, load_settings
 from ..sources import geoadmin
 from ..sources import mail as mail_source
-from ..stages import advise, geocode, mail as mail_stage, match, prep, source
+from ..stages import (
+    advise,
+    draft as draft_stage,
+    geocode,
+    mail as mail_stage,
+    match,
+    prep,
+    source,
+)
 from . import assets, ui
 from . import board as board_view
 from . import clients as clients_view
@@ -59,6 +67,7 @@ from . import reports_page as reports_view
 from . import map_page as map_view_page
 from . import notes_page as notes_view
 from . import people_page as people_view_page
+from . import draft_page as draft_view
 from . import programme_page as programme_view
 from . import dossier_page as dossier_view
 from . import prep_page as prep_view
@@ -1713,6 +1722,93 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             return RedirectResponse(target, status_code=303)
         finally:
             conn.close()
+
+    # --- drafts -----------------------------------------------------------------
+    #
+    # The review surface for what `arpenteur draft` proposes. Reading them was
+    # a psql session, which is how a queue of twenty-five goes out unread.
+
+    def draft_shell(body: str) -> HTMLResponse:
+        return HTMLResponse(draft_view.shell(body, at("/drafts")))
+
+    @app.get("/drafts", response_class=HTMLResponse)
+    def drafts_queue(
+        request: Request, language: str = "", note: str = "",
+    ) -> HTMLResponse:
+        with db.open_db(settings.database_url) as conn:
+            rows = scout_store.drafts_awaiting(
+                conn, limit=200, language=language.strip().lower() or "",
+            )
+            tally = scout_store.draft_tally(conn)
+            # The digest of the brief on disk now, so a draft written against
+            # an older one is named rather than left looking current.
+            try:
+                digest = draft_stage.brief_digest(
+                    draft_stage.brief_text(settings)
+                )
+                stale = scout_store.stale_drafts(conn, digest)
+            except Exception:
+                stale = 0
+            return draft_shell(
+                draft_view.queue_page(
+                    rows, tally, note=note, stale=stale,
+                    language=language.strip().lower(),
+                )
+            )
+
+    @app.get("/draft/{draft_id}", response_class=HTMLResponse)
+    def one_draft(
+        request: Request, draft_id: int, note: str = "",
+    ) -> HTMLResponse:
+        with db.open_db(settings.database_url) as conn:
+            row = scout_store.draft(conn, draft_id)
+            if row is None:
+                return HTMLResponse("<h1>Not found</h1>", status_code=404)
+            return draft_shell(draft_view.one_page(row, note=note))
+
+    @app.post("/draft/{draft_id}/review")
+    def approve_draft(draft_id: int) -> RedirectResponse:
+        with db.open_db(settings.database_url) as conn:
+            row = scout_store.draft(conn, draft_id)
+            if row is not None and draft_view.flawed(row):
+                # Belt as well as braces: the page withholds the button, and
+                # the route refuses the request anyway, because a form can be
+                # posted without the page that drew it.
+                conn.rollback()
+                return RedirectResponse(
+                    f"/draft/{draft_id}?note="
+                    + quote("This draft carries a [[ MANQUE ]] marker and "
+                            "cannot be approved."),
+                    status_code=303,
+                )
+            scout_store.review_draft(conn, draft_id)
+            conn.commit()
+        return RedirectResponse("/drafts", status_code=303)
+
+    @app.post("/draft/{draft_id}/unreview")
+    def unapprove_draft(draft_id: int) -> RedirectResponse:
+        with db.open_db(settings.database_url) as conn:
+            scout_store.unreview_draft(conn, draft_id)
+            conn.commit()
+        return RedirectResponse(f"/draft/{draft_id}", status_code=303)
+
+    @app.post("/draft/{draft_id}/sent")
+    def draft_was_sent(draft_id: int) -> RedirectResponse:
+        with db.open_db(settings.database_url) as conn:
+            scout_store.mark_draft_sent(conn, draft_id)
+            conn.commit()
+        return RedirectResponse(
+            "/drafts?note=" + quote("Recorded as sent."), status_code=303
+        )
+
+    @app.post("/draft/{draft_id}/drop")
+    def discard_draft(draft_id: int) -> RedirectResponse:
+        with db.open_db(settings.database_url) as conn:
+            scout_store.drop_draft(conn, draft_id)
+            conn.commit()
+        return RedirectResponse(
+            "/drafts?note=" + quote("Discarded."), status_code=303
+        )
 
     # --- programmes -------------------------------------------------------------
     #

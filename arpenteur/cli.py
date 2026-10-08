@@ -1413,6 +1413,52 @@ def cmd_programme(args: argparse.Namespace) -> int:
         print(f"stages: {', '.join(kept)}")
         return close(0)
 
+    if args.action == "replies":
+        # A proposal, and the accept is the flag.
+        #
+        # `members_for` states the rule this honours: nothing in this schema
+        # files itself, and a stage that advanced because a message arrived
+        # would be the first thing that did. So the move stays an act somebody
+        # takes; what changes is that taking it for twenty-five cards no longer
+        # means twenty-five drags. The operator reads the list, then says yes.
+        found = clients_store.members_who_replied(
+            conn, programme_id, from_stage=args.from_stage
+        )
+        if not found:
+            print(f"No member at '{args.from_stage}' has written since being "
+                  "moved there.")
+            return close(0)
+        for row in found:
+            when = row["last_inbound"]
+            print(f"  {row['company_name'][:34]:36} "
+                  f"{(row['from_email'] or '')[:30]:32} "
+                  f"{when.date().isoformat() if when else '':10} "
+                  f"{(row['subject'] or '')[:36]}")
+        print()
+        if not args.yes:
+            print(f"{len(found)} member(s) would move from "
+                  f"'{args.from_stage}' to '{args.to_stage}'.")
+            print("Nothing has moved. Pass --yes to apply, having read the "
+                  "list: an inbound message is a prompt to move the card "
+                  "rather than a reply, and an out-of-office is both.")
+            return close(0)
+        moved = 0
+        for row in found:
+            try:
+                clients_store.move_member(
+                    conn, int(row["id"]), args.to_stage, by="cli:replies",
+                    reason=f"inbound mail from {row['from_email'] or 'the firm'}",
+                )
+            except ValueError as exc:
+                print(f"error: {exc}", file=sys.stderr)
+                conn.rollback()
+                return close(1)
+            moved += 1
+        conn.commit()
+        print(f"{moved} member(s) moved to '{args.to_stage}'. Each move wrote "
+              "an audit.state_change row, so the board can date the card.")
+        return close(0)
+
     if args.action == "add":
         if not rest:
             print("error: name at least one company, by UID or name",
@@ -2168,10 +2214,11 @@ def build_parser() -> argparse.ArgumentParser:
     )
     p.add_argument(
         "action",
-        choices=("list", "new", "show", "add", "bring-in", "move", "say", "stages"),
+        choices=("list", "new", "show", "add", "bring-in", "move", "say",
+                 "stages", "replies"),
         help="list them; start one; show one; add companies; add a shortlist "
              "from the survey; move a member; keep what a member said; read or "
-             "rewrite the stages",
+             "rewrite the stages; list who has written back",
     )
     p.add_argument(
         "rest", nargs="*", default=[],
@@ -2191,6 +2238,18 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--canton", default="", help="comma separated, for bring-in")
     p.add_argument("--band", default="", help="fit band, for bring-in")
     p.add_argument("--limit", type=int, default=25, help="how many, for bring-in")
+    p.add_argument(
+        "--from-stage", dest="from_stage", default="contacted",
+        help="for replies: the stage to look at (default contacted)",
+    )
+    p.add_argument(
+        "--to-stage", dest="to_stage", default="replied",
+        help="for replies: where they move (default replied)",
+    )
+    p.add_argument(
+        "--yes", action="store_true",
+        help="for replies: apply the moves, having read the list",
+    )
     p.set_defaults(func=cmd_programme)
 
     p = sub.add_parser(
