@@ -491,6 +491,10 @@ other = "The purpose text does not place the company in any sector above, or des
 # every recipient has to be given the same two dates, and a model asked for
 # "a fortnight" supplies a different fortnight each time.
 [enrol]
+# Which bands the campaign writes to, when --segment names none. regie-core is
+# the band whose registered purpose names managing property for third parties,
+# so a handover happens at every tenancy; regie-letting sees them occasionally.
+segments = ["regie-core"]
 ios_link = ""
 android_window_start = ""
 android_window_end = ""

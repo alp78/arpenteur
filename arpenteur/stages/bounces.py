@@ -1,8 +1,18 @@
-"""Read delivery failures out of the mailbox and record them against addresses.
+"""Read what inbound mail says about an address: it failed, or it refused.
 
-The half of verification a DNS sweep cannot reach. `verify` establishes that a
-domain takes mail; this establishes whether the mailbox at it exists, which is
-only ever answered by having tried.
+Two facts arrive in the same mailbox and both belong to `core.contact`.
+
+**A failure** is the half of verification a DNS sweep cannot reach. `verify`
+establishes that a domain takes mail; this establishes whether the mailbox at
+it exists, which is only ever answered by having tried.
+
+**A refusal** is the promise the outreach makes in writing. Every message
+`draft` composes ends with "répondez « STOP » à cette adresse et votre adresse
+sera retirée de nos listes", and for a while nothing in this program kept it:
+the sentence was composed deterministically, appended to every draft, and
+honoured by no code at all. A written undertaking that no routine performs is
+worse than no undertaking, so the word is read here and `suppressed` is set,
+which is the flag `send_list` and every selection through it already obey.
 
 **Nothing is sent from here.** The send happens through the operator's own
 provider, from the CSV `sendlist` writes, for the reason `stages/mail.py` gives
@@ -47,6 +57,7 @@ def run(
     stats: dict[str, Any] = {
         "messages": 0, "reports": 0, "addresses": 0,
         bounce.BOUNCED: 0, bounce.DEFERRED: 0, "unmatched": 0,
+        bounce.REFUSED: 0, "suppressed": 0,
     }
     if not settings.mail.configured:
         log("No mailbox is configured. Set MAIL_IMAP_SERVER, MAIL_IMAP_USER "
@@ -66,6 +77,7 @@ def run(
     )
 
     found: list[bounce.Failure] = []
+    refusals: dict[str, bounce.Refusal] = {}
     with factory() as box:
         uids = box.uids(folder, since=since)
         if limit:
@@ -75,17 +87,29 @@ def run(
         # the sender already marks as a failure. The mail stage's rule, and the
         # reason it matters here is the same: this is somebody's own mailbox.
         for head in box.headers(folder, uids):
-            if not bounce.looks_like_report(
-                head.subject, head.sender.email if head.sender else ""
-            ):
+            sender = head.sender.email if head.sender else ""
+            report = bounce.looks_like_report(head.subject, sender)
+            # A refusal does not announce itself in the envelope the way a
+            # failure notice does, so the screen cannot skip on the subject
+            # alone: a reply from a real person with "STOP" in the body has an
+            # ordinary subject. Anything from an address the survey holds is
+            # therefore read, which is a narrow enough gate to keep the mail
+            # stage's rule and wide enough to catch the promise.
+            from_us = sender.strip().lower() in known
+            if not (report or from_us):
                 continue
             raw = box.raw(folder, head.uid)
             if not raw:
                 continue
-            failures = bounce.failures_in(message_from_bytes(raw), known=known)
+            message = message_from_bytes(raw)
+            failures = bounce.failures_in(message, known=known)
             if failures:
                 stats["reports"] += 1
                 found.extend(failures)
+                continue
+            refused = bounce.refusal_in(message, known=known)
+            if refused is not None:
+                refusals.setdefault(refused.address, refused)
 
     # Latest wins per address, and a permanent failure is never replaced by a
     # transient one: a mailbox that answered 550 once and 450 later is gone.
@@ -108,10 +132,26 @@ def run(
         stats["addresses"] += rows
         if not rows:
             stats["unmatched"] += 1
+    for refused in sorted(refusals.values(), key=lambda r: r.address):
+        stats[bounce.REFUSED] += 1
+        log(f"  stop {refused.address:<42} {refused.token} in {refused.where}")
+        if dry_run:
+            continue
+        rows = scout_store.suppress_address(
+            conn, refused.address,
+            note=f"refused: {refused.token!r} in {refused.where}",
+        )
+        stats["suppressed"] += rows
+
     if not dry_run:
         conn.commit()
 
     log(f"  {stats['messages']} message(s) read, {stats['reports']} report(s), "
-        f"{stats[bounce.BOUNCED]} permanent, {stats[bounce.DEFERRED]} transient"
+        f"{stats[bounce.BOUNCED]} permanent, {stats[bounce.DEFERRED]} transient, "
+        f"{stats[bounce.REFUSED]} refusal(s)"
         + (" (dry run, nothing written)" if dry_run else ""))
+    if stats[bounce.REFUSED] and not dry_run:
+        log("A refusal is never undone by a later run finding the address "
+            "published again: a person said no, and rediscovering it is not "
+            "consent.")
     return stats

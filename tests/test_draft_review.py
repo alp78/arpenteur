@@ -103,7 +103,8 @@ def test_the_tally_separates_approved_from_sent(conn) -> None:
     scout_store.mark_draft_sent(conn, b)
     conn.commit()
     tally = scout_store.draft_tally(conn)
-    assert tally == {"awaiting": 0, "approved": 1, "sent": 1, "briefs": 1}
+    assert tally == {"awaiting": 0, "approved": 1, "sent": 1, "refused": 0,
+                     "briefs": 1}
 
 
 def test_a_draft_written_against_an_older_brief_is_counted(conn) -> None:
@@ -246,3 +247,88 @@ def test_a_move_dates_the_card(conn, programme) -> None:
     assert rows and rows[0]["to_state"] == "replied"
     assert rows[0]["from_state"] == "contacted"
     assert rows[0]["by"] == "cli:replies"
+
+
+# --- a refusal is kept, not deleted -------------------------------------------
+#
+# Discarding deleted the row, which lost the reason and, worse, the fact. The
+# stage selects from the send list, so a deleted proposal is indistinguishable
+# from one never written: the next run proposed the same message to the same
+# mailbox and the reviewer refused it again.
+
+
+def test_a_refused_draft_leaves_the_queue_but_stays_on_file(conn) -> None:
+    one = _draft(conn, 1, GOOD, address="info@alpha.ch")
+    scout_store.refuse_draft(conn, one, reason="ton trop commercial")
+    conn.commit()
+    assert scout_store.drafts_awaiting(conn) == []
+    row = scout_store.draft(conn, one)
+    assert row is not None
+    assert row["refused_at"] is not None
+    assert row["refused_reason"] == "ton trop commercial"
+
+
+def test_a_refusal_counts_as_read(conn) -> None:
+    one = _draft(conn, 1, GOOD, address="info@alpha.ch")
+    row = scout_store.refuse_draft(conn, one)
+    conn.commit()
+    assert row["reviewed_at"] is not None, "somebody read it to refuse it"
+
+
+def test_the_tally_separates_refused_from_sent(conn) -> None:
+    a = _draft(conn, 1, GOOD, address="info@alpha.ch")
+    b = _draft(conn, 2, GOOD, address="info@beta.ch")
+    scout_store.refuse_draft(conn, a, reason="x")
+    scout_store.mark_draft_sent(conn, b)
+    conn.commit()
+    tally = scout_store.draft_tally(conn)
+    assert tally["refused"] == 1 and tally["sent"] == 1
+    assert tally["awaiting"] == 0 and tally["approved"] == 0
+
+
+def test_a_refused_mailbox_is_named_so_a_new_run_skips_it(conn) -> None:
+    one = _draft(conn, 1, GOOD, address="info@alpha.ch")
+    assert scout_store.refused_addresses(conn) == frozenset()
+    scout_store.refuse_draft(conn, one, reason="x")
+    conn.commit()
+    assert scout_store.refused_addresses(conn) == frozenset({"info@alpha.ch"})
+
+
+def test_the_page_says_why_it_was_refused(conn) -> None:
+    one = _draft(conn, 1, GOOD, address="info@alpha.ch")
+    scout_store.refuse_draft(conn, one, reason="ton trop commercial")
+    conn.commit()
+    html = draft_page.one_page(scout_store.draft(conn, one))
+    assert "ton trop commercial" in html
+    assert "will not propose this mailbox again" in html
+
+
+def test_a_refused_draft_does_not_block_a_second_proposal_row(conn) -> None:
+    """The unique index covers unsent, unrefused drafts. A refusal must block a
+    new identical proposal, which the stage does by address; the index must not
+    also refuse the insert outright, or a later approach could never be
+    recorded at all."""
+    one = _draft(conn, 1, GOOD, address="info@alpha.ch")
+    scout_store.refuse_draft(conn, one, reason="x")
+    conn.commit()
+    again = _draft(conn, 1, GOOD, address="info@alpha.ch")
+    assert again != one
+
+
+# --- the prose the brief proscribes -------------------------------------------
+
+
+def test_a_proscribed_turn_is_named_on_the_page(conn) -> None:
+    """The first live draft wrote « Nous restons à votre disposition », where
+    `rester` stands in for the verb of the act."""
+    body = "Madame, Monsieur,\n\nNous restons à votre disposition."
+    one = _draft(conn, 1, body, address="info@alpha.ch")
+    html = draft_page.one_page(scout_store.draft(conn, one))
+    assert "The brief proscribes" in html
+    assert "rester" in html
+
+
+def test_a_clean_body_draws_no_prose_banner(conn) -> None:
+    one = _draft(conn, 1, GOOD, address="info@alpha.ch")
+    html = draft_page.one_page(scout_store.draft(conn, one))
+    assert "The brief proscribes" not in html

@@ -1801,13 +1801,18 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             "/drafts?note=" + quote("Recorded as sent."), status_code=303
         )
 
-    @app.post("/draft/{draft_id}/drop")
-    def discard_draft(draft_id: int) -> RedirectResponse:
+    @app.post("/draft/{draft_id}/refuse")
+    def refuse_one_draft(
+        draft_id: int, reason: str = Form(""),
+    ) -> RedirectResponse:
         with db.open_db(settings.database_url) as conn:
-            scout_store.drop_draft(conn, draft_id)
+            scout_store.refuse_draft(conn, draft_id, reason=reason)
             conn.commit()
         return RedirectResponse(
-            "/drafts?note=" + quote("Discarded."), status_code=303
+            "/drafts?note="
+            + quote("Refused, and kept: a later run will not propose that "
+                    "mailbox again."),
+            status_code=303,
         )
 
     # --- programmes -------------------------------------------------------------

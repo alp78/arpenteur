@@ -56,6 +56,92 @@ _DAEMONS = frozenset({
 })
 
 
+# A refusal, which is a different fact from a failure. The mailbox works; the
+# person behind it has said not to write again.
+REFUSED = "refused"
+
+# What a refusal looks like in the four languages the survey writes in. The
+# message itself asks for « STOP », so that word carries most of them, and the
+# rest are what people send instead without reading the instruction.
+#
+# WHY THE LIST IS WIDE AND THE MATCH IS LENIENT. The two errors are not
+# symmetric. Suppressing an address that did not ask costs one contact out of
+# twelve thousand. Failing to suppress one that did ask breaks the promise the
+# message makes in writing, which is the thing UWG art. 3 al. 1 let. o is
+# about. So a plausible refusal is honoured and reported, never held back
+# pending certainty.
+REFUSALS = (
+    "stop", "unsubscribe", "desinscription", "desinscrire", "desabonner",
+    "desabonnement", "retirez-moi", "retirer mon adresse", "ne plus recevoir",
+    "ne nous ecrivez plus", "ne m'ecrivez plus", "pas interesse",
+    "abmelden", "abbestellen", "austragen", "keine weiteren",
+    "nicht mehr schreiben", "kein interesse",
+    "cancellami", "disiscrizione", "non scrivete piu", "non interessato",
+)
+
+
+@dataclass(frozen=True)
+class Refusal:
+    """One mailbox that asked not to be written to again."""
+
+    address: str
+    token: str
+    where: str
+
+
+def _folded(text: str) -> str:
+    return mailcheck.deaccent(text or "").lower()
+
+
+def refusal_in(
+    message: Message, *, known: frozenset[str] | None = None
+) -> Refusal | None:
+    """Whether this message is somebody asking to be left alone.
+
+    Read from the sender rather than from the body's own quoted addresses: a
+    refusal is made by whoever sent it, and the quoted original carries the
+    address we wrote to. Both are checked, because a reply from a colleague's
+    mailbox refuses on the firm's behalf and is the one the operator means.
+    """
+    sender = (message.get("from") or "")
+    at = sender.rpartition("<")[2].partition(">")[0].strip().lower() or (
+        sender.strip().lower()
+    )
+    subject = _folded(message.get("subject") or "")
+
+    hit, where = "", ""
+    for token in REFUSALS:
+        if re.search(rf"(?<![a-z]){re.escape(token)}(?![a-z])", subject):
+            hit, where = token, "the subject"
+            break
+    if not hit:
+        # Only the visible text, and only its opening. A refusal is short and
+        # sits at the top; the same word thirty lines down is in a quoted
+        # thread or a signature block.
+        for part in _text_parts(message)[:2]:
+            opening = _folded(part)[:400]
+            for token in REFUSALS:
+                if re.search(rf"(?<![a-z]){re.escape(token)}(?![a-z])", opening):
+                    hit, where = token, "the opening of the message"
+                    break
+            if hit:
+                break
+    if not hit:
+        return None
+
+    if known is not None and at in known:
+        return Refusal(at, hit, where)
+    # The sender is not an address the survey holds, which happens whenever a
+    # colleague answers. The address we wrote to is quoted in the reply, so it
+    # is taken from there.
+    for part in _text_parts(message):
+        for raw in re.findall(r"[\w.+-]+@[\w.-]+\.\w+", part):
+            candidate = raw.strip().lower()
+            if known is None or candidate in known:
+                return Refusal(candidate, hit, where)
+    return None
+
+
 @dataclass(frozen=True)
 class Failure:
     """One mailbox that could not be reached, and how certainly."""

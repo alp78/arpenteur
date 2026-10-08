@@ -122,6 +122,12 @@ class EnrolConfig:
     write a web address; this is where the address actually comes from.
     """
 
+    # Which bands this campaign writes to. A setting rather than a flag
+    # default, because it is a property of the campaign and not of the stage:
+    # `limen.md` argues that a firm whose purpose names managing property for
+    # third parties runs a handover weekly, while one that only lets property
+    # sees them occasionally, and sweeping both dilutes the ask.
+    segments: tuple[str, ...] = ()
     ios_link: str = ""
     android_window_start: str = ""
     android_window_end: str = ""
@@ -703,6 +709,9 @@ def _env(*names: str) -> str:
 
 def _enrol(raw: dict) -> EnrolConfig:
     return EnrolConfig(
+        segments=tuple(
+            str(s).strip() for s in (raw.get("segments") or []) if str(s).strip()
+        ),
         ios_link=str(raw.get("ios_link", "") or "").strip(),
         android_window_start=str(raw.get("android_window_start", "") or "").strip(),
         android_window_end=str(raw.get("android_window_end", "") or "").strip(),

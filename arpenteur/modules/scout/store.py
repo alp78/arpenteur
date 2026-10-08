@@ -1726,6 +1726,59 @@ def addresses_held(conn: Connection) -> frozenset[str]:
     )
 
 
+def suppress_address(
+    conn: Connection, address: str, *, note: str
+) -> int:
+    """Honour a refusal. Returns how many rows it covered.
+
+    `suppressed` is already the flag every selection reads, so a refusal needs
+    no new column: `send_list` takes only unsuppressed rows and the draft
+    stage selects through it. The verdict is recorded beside it so the record
+    says why, and `toggle_suppressed` states the rule this relies on, that a
+    later run finding the address published again never clears it.
+
+    Scoped to the address across every company holding it. The same mailbox
+    can sit under two firms after a merge, and a person who said no said it
+    once.
+    """
+    done = conn.execute(
+        """
+        UPDATE core.contact
+           SET suppressed = TRUE, status = %s, status_note = %s,
+               status_at = %s
+         WHERE kind = 'email' AND lower(value) = %s
+        """,
+        ("refused", note, now(), address.strip().lower()),
+    )
+    return int(getattr(done, "rowcount", 0) or 0)
+
+
+def refuse_draft(
+    conn: Connection, draft_id: int, *, reason: str = ""
+) -> Row | None:
+    """Turn a proposal down and keep it.
+
+    Deleting it lost the reason and, worse, the fact: `draft` selects from the
+    send list, so a deleted proposal is indistinguishable from one never
+    written and the next run proposes the same message to the same mailbox.
+    """
+    return conn.execute(
+        "UPDATE intel.draft SET refused_at = %s, refused_reason = %s,"
+        " reviewed_at = coalesce(reviewed_at, %s) WHERE id = %s RETURNING *",
+        (now(), reason.strip() or None, now(), draft_id),
+    ).fetchone()
+
+
+def refused_addresses(conn: Connection) -> frozenset[str]:
+    """Mailboxes holding a refused proposal, which a new run must not re-draft."""
+    return frozenset(
+        r["address"] for r in conn.execute(
+            "SELECT DISTINCT lower(address) AS address FROM intel.draft"
+            " WHERE refused_at IS NOT NULL AND address IS NOT NULL"
+        )
+    )
+
+
 def send_list(
     conn: Connection, *, desk_parts: tuple[str, ...],
     segments: list[str] | None = None, cantons: list[str] | None = None,
@@ -1751,14 +1804,20 @@ def send_list(
     the company name as well: `actimmo@actimmo-ge.ch` is in no vocabulary and
     is still a desk.
     """
-    where = ["k.kind = 'email'", "NOT k.suppressed", "k.status = ANY(%s)",
-             "c.status = 'ACTIVE'"]
-    params: list[object] = [list(statuses)]
+    # Built in the order the placeholders appear in the statement, not in the
+    # order the arguments arrive. The JOIN's `%s` sits textually before the
+    # WHERE's, so binding `statuses` first made `k.status = ANY(...)` read the
+    # segment list: every selection narrowed by band returned nothing, and no
+    # test caught it because none passed `segments`.
     join = ""
+    params: list[object] = []
     if segments:
         join = ("JOIN intel.segment g ON g.company_id = c.id"
                 " AND g.segment = ANY(%s)")
         params.append(list(segments))
+    where = ["k.kind = 'email'", "NOT k.suppressed", "k.status = ANY(%s)",
+             "c.status = 'ACTIVE'"]
+    params.append(list(statuses))
     if cantons:
         where.append("c.canton = ANY(%s)")
         params.append([x.strip().upper() for x in cantons])
@@ -1799,7 +1858,7 @@ def drafts_awaiting(
     can be rewritten under it, and `brief_digest` is what says so. Reviewing
     newest-first leaves the stale ones at the bottom for ever.
     """
-    where = ["d.sent_at IS NULL"]
+    where = ["d.sent_at IS NULL", "d.refused_at IS NULL"]
     params: list[Any] = []
     if reviewed is True:
         where.append("d.reviewed_at IS NOT NULL")
@@ -1835,16 +1894,20 @@ def draft(conn: Connection, draft_id: int) -> Row | None:
 def draft_tally(conn: Connection) -> dict[str, int]:
     row = conn.execute(
         """
-        SELECT count(*) FILTER (WHERE sent_at IS NULL AND reviewed_at IS NULL)
-                   AS awaiting,
-               count(*) FILTER (WHERE sent_at IS NULL AND reviewed_at IS NOT NULL)
-                   AS approved,
-               count(*) FILTER (WHERE sent_at IS NOT NULL) AS sent,
-               count(DISTINCT brief_digest) AS briefs
+        SELECT count(*) FILTER (WHERE sent_at IS NULL AND refused_at IS NULL
+                                  AND reviewed_at IS NULL)        AS awaiting,
+               count(*) FILTER (WHERE sent_at IS NULL AND refused_at IS NULL
+                                  AND reviewed_at IS NOT NULL)    AS approved,
+               count(*) FILTER (WHERE sent_at IS NOT NULL)        AS sent,
+               count(*) FILTER (WHERE refused_at IS NOT NULL)     AS refused,
+               count(DISTINCT brief_digest)                        AS briefs
           FROM intel.draft
         """
     ).fetchone()
-    return {k: int(row[k] or 0) for k in ("awaiting", "approved", "sent", "briefs")}
+    return {
+        k: int(row[k] or 0)
+        for k in ("awaiting", "approved", "sent", "refused", "briefs")
+    }
 
 
 def stale_drafts(conn: Connection, digest: str) -> int:
@@ -1856,7 +1919,8 @@ def stale_drafts(conn: Connection, digest: str) -> int:
     """
     row = conn.execute(
         "SELECT count(*) AS n FROM intel.draft"
-        " WHERE sent_at IS NULL AND coalesce(brief_digest, '') <> %s",
+        " WHERE sent_at IS NULL AND refused_at IS NULL"
+        "   AND coalesce(brief_digest, '') <> %s",
         (digest,),
     ).fetchone()
     return int(row["n"] or 0)

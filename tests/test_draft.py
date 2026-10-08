@@ -356,3 +356,109 @@ def test_the_three_parts_arrive_in_reading_order() -> None:
                          enrol=_enrol(**FULL_ENROL))
     assert body.index("Pourquoi.") < body.index("Comment participer")
     assert body.index("Comment participer") < body.index("ne souhaitez plus")
+
+
+# --- the campaign's own bands, and the refusals it must respect ---------------
+
+
+def test_the_campaign_bands_are_the_default(conn, tmp_path, monkeypatch) -> None:
+    """A stage that swept every band by default would contradict the brief it
+    is reading, which argues the core band runs a handover weekly."""
+    from arpenteur.config import EnrolConfig
+
+    provider = FakeProvider()
+    monkeypatch.setattr(draft, "get_provider", lambda _s: provider)
+    settings = _settings(tmp_path)
+    settings.enrol = EnrolConfig(segments=("regie-core",), **FULL_ENROL)
+    asked: dict[str, object] = {}
+    real = draft.scout_store.send_list
+
+    def spy(conn_, **kw):
+        asked.update(kw)
+        return real(conn_, **kw)
+
+    monkeypatch.setattr(draft.scout_store, "send_list", spy)
+    said: list[str] = []
+    draft.run(settings, conn, desk_parts=DESKS, limit=1, log=said.append)
+    assert asked["segments"] == ["regie-core"]
+    assert any("regie-core" in line for line in said)
+
+
+def test_an_explicit_segment_overrides_the_setting(conn, tmp_path, monkeypatch) -> None:
+    from arpenteur.config import EnrolConfig
+
+    provider = FakeProvider()
+    monkeypatch.setattr(draft, "get_provider", lambda _s: provider)
+    settings = _settings(tmp_path)
+    settings.enrol = EnrolConfig(segments=("regie-core",), **FULL_ENROL)
+    asked: dict[str, object] = {}
+    real = draft.scout_store.send_list
+    monkeypatch.setattr(
+        draft.scout_store, "send_list",
+        lambda conn_, **kw: (asked.update(kw), real(conn_, **kw))[1],
+    )
+    draft.run(settings, conn, desk_parts=DESKS, limit=1,
+              segments=["regie-letting"], log=lambda _m: None)
+    assert asked["segments"] == ["regie-letting"]
+
+
+def test_a_refused_mailbox_is_not_drafted_for_again(conn, tmp_path, monkeypatch) -> None:
+    """The reason a refusal is kept rather than deleted. A deleted proposal is
+    indistinguishable from one never written."""
+    provider = FakeProvider()
+    monkeypatch.setattr(draft, "get_provider", lambda _s: provider)
+    draft.run(_settings(tmp_path), conn, desk_parts=DESKS, log=lambda _m: None)
+    one = conn.execute(
+        "SELECT id FROM intel.draft WHERE address = 'info@regie-ge.ch'"
+    ).fetchone()
+    scout_store.refuse_draft(conn, int(one["id"]), reason="ton")
+    conn.commit()
+
+    said: list[str] = []
+    stats = draft.run(_settings(tmp_path), conn, desk_parts=DESKS, log=said.append)
+    assert any("was refused" in line for line in said)
+    held = {
+        r["address"] for r in conn.execute(
+            "SELECT address FROM intel.draft WHERE refused_at IS NULL"
+        )
+    }
+    assert "info@regie-ge.ch" not in held
+    assert stats["drafted"] == 2
+
+
+# --- the prose the brief proscribes -------------------------------------------
+
+
+@pytest.mark.parametrize("text,fault", [
+    ("Nous restons à votre disposition.", "rester"),
+    ("Il est utile, et il est simple.", ", et"),
+    ("Vous pouvez acheter ce service.", "acheter"),
+    ("un; deux; trois", "semicolons"),
+])
+def test_a_proscribed_turn_is_named(text, fault) -> None:
+    found = draft.prose_faults(text)
+    assert found and any(fault in said for said in found)
+
+
+def test_clean_french_passes() -> None:
+    assert draft.prose_faults(
+        "Madame, Monsieur,\n\nLimen est une application mobile. "
+        "Elle sert aux états des lieux.\n\nMeilleures salutations."
+    ) == []
+
+
+def test_the_faults_are_counted_over_a_run(conn, tmp_path, monkeypatch) -> None:
+    class Sloppy(FakeProvider):
+        def complete_json(self, **kw):
+            self.prompts.append(kw["user"])
+            return {"subject": "Limen",
+                    "body": "Nous restons à votre disposition.",
+                    "missing": []}
+
+    monkeypatch.setattr(draft, "get_provider", lambda _s: Sloppy())
+    said: list[str] = []
+    stats = draft.run(_settings(tmp_path), conn, desk_parts=DESKS, limit=2,
+                      log=said.append)
+    assert stats["prose"]
+    assert sum(stats["prose"].values()) == 2
+    assert any("proscribes these" in line for line in said)

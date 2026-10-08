@@ -210,3 +210,50 @@ def test_the_send_list_narrows_by_canton(conn, firms) -> None:
                resolve=lambda _d, **_k: (verify.DELIVERABLE, "MX"))
     rows = scout_store.send_list(conn, desk_parts=DESKS, cantons=["ge"])
     assert [r["canton"] for r in rows] == ["GE"]
+
+
+def test_the_send_list_narrows_by_segment(conn, firms) -> None:
+    """The bug this pins: the JOIN's placeholder sits textually before the
+    WHERE's, and binding the arguments in arrival order made
+    `k.status = ANY(...)` read the segment list. Every selection narrowed by
+    band returned nothing, on 2'450 real firms, and no test passed `segments`
+    so nothing said so."""
+    _add(conn, 1, "info@naef.ch", method="published")
+    _add(conn, 2, "info@burri.ch", method="published")
+    conn.execute(
+        "INSERT INTO intel.segment (company_id, segment, confidence, source)"
+        " VALUES (1, 'regie-core', 0.9, 'model'),"
+        "        (2, 'regie-letting', 0.8, 'model')"
+    )
+    conn.commit()
+    verify.run(conn, log=lambda _m: None,
+               resolve=lambda _d, **_k: (verify.DELIVERABLE, "MX"))
+
+    core = scout_store.send_list(
+        conn, desk_parts=DESKS, segments=["regie-core"]
+    )
+    assert [r["address"] for r in core] == ["info@naef.ch"]
+
+    both = scout_store.send_list(
+        conn, desk_parts=DESKS, segments=["regie-core", "regie-letting"]
+    )
+    assert len(both) == 2
+
+
+def test_segment_and_canton_together_bind_in_the_right_order(conn, firms) -> None:
+    """Two optional placeholders, one in the JOIN and one in the WHERE, which
+    is where an ordering mistake hides."""
+    _add(conn, 1, "info@naef.ch", method="published")
+    _add(conn, 2, "info@burri.ch", method="published")
+    conn.execute(
+        "INSERT INTO intel.segment (company_id, segment, confidence, source)"
+        " VALUES (1, 'regie-core', 0.9, 'model'),"
+        "        (2, 'regie-core', 0.8, 'model')"
+    )
+    conn.commit()
+    verify.run(conn, log=lambda _m: None,
+               resolve=lambda _d, **_k: (verify.DELIVERABLE, "MX"))
+    rows = scout_store.send_list(
+        conn, desk_parts=DESKS, segments=["regie-core"], cantons=["ge"]
+    )
+    assert [r["canton"] for r in rows] == ["GE"]

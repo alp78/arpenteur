@@ -35,6 +35,7 @@ forbids filling the gaps.
 from __future__ import annotations
 
 import hashlib
+import re
 from pathlib import Path
 from typing import Any, Callable
 
@@ -44,6 +45,31 @@ from ..llm import get_provider
 from ..modules.scout import store as scout_store
 
 BRIEF = "limen.md"
+
+# The prose faults the brief names, checked on what came back.
+#
+# WHY HERE AND NOT BY THE VAULT'S CHECKER. That checker lives outside this
+# repository and runs on files a person writes, which a generated message is
+# not. The brief lists these four turns as proscribed and a model told not to
+# use a construction uses it anyway: the first live draft wrote « Nous restons
+# à votre disposition », where `rester` stands in for the verb of the act. So
+# the brief states the rule and this enforces it, which is the pattern a
+# repeated prose fault earns.
+#
+# Flagged, never rewritten. Editing a model's sentence here would put this
+# stage in the business of writing French, and a reviewer who is shown the
+# fault fixes it better than a regex does.
+PROSE_FAULTS = (
+    (r"\b(?:reste|restent|restons|restez|restait|resteront)\b",
+     "« rester » stands in for the verb of the act"),
+    (r",\s+et\s+(?:il|elle|ils|elles|nous|vous|je|on|ce|cela|c'est|le|la|les)\b",
+     "« , et » splices two clauses"),
+    (r"\b(?:acheter|achat|achète|achetez)\b.{0,40}?"
+     r"(?:service|prestation|abonnement|licence)",
+     "« acheter » applied to a service"),
+    (r";[^;\n]{0,120};",
+     "a chain of semicolons"),
+)
 
 # The cap, and the reason it exists. Lifted with `--yes`, which the CLI makes
 # the operator type rather than imply.
@@ -118,6 +144,20 @@ def brief_text(settings: Settings) -> str:
 
 def brief_digest(text: str) -> str:
     return hashlib.sha256(text.encode("utf-8")).hexdigest()[:16]
+
+
+def prose_faults(text: str) -> list[str]:
+    """Which of the brief's proscribed turns this body uses.
+
+    Reported on the row and on the review page, so the reviewer reads a named
+    fault rather than hunting for it. A clean result is not a guarantee that
+    the French is good; it is a guarantee that these four are absent.
+    """
+    found: list[str] = []
+    for pattern, said in PROSE_FAULTS:
+        if re.search(pattern, text, re.IGNORECASE):
+            found.append(said)
+    return found
 
 
 def gaps_in(brief: str) -> list[str]:
@@ -325,7 +365,7 @@ def save(
                                  model, brief_digest)
         VALUES (%s, %s, %s, %s, %s, %s, %s)
         ON CONFLICT (company_id, address) WHERE sent_at IS NULL
-          AND address IS NOT NULL
+          AND refused_at IS NULL AND address IS NOT NULL
         DO UPDATE SET language = excluded.language,
                       subject = excluded.subject,
                       body = excluded.body,
@@ -388,14 +428,32 @@ def run(
         log("Each draft will carry a visible [[ MANQUE : ... ]] marker in "
             "its place, so none of them can be sent as it stands.")
 
+    # The campaign's own bands when the caller named none. A stage that swept
+    # both bands by default would contradict the brief it is reading.
+    wanted = segments or list(settings.enrol.segments) or None
+    if wanted and not segments:
+        log(f"Writing to {', '.join(wanted)} (arpenteur.toml [enrol] "
+            "segments). Pass --segment to widen.")
     rows: list[Row] = scout_store.send_list(
-        conn, desk_parts=desk_parts, segments=segments, cantons=cantons
+        conn, desk_parts=desk_parts, segments=wanted, cantons=cantons
     )
     stats["selected"] = len(rows)
     if not rows:
         log("Nothing selected. `verify` has to have run: the send list takes "
             "only addresses with a current deliverable verdict.")
         return stats
+
+    # A refused proposal blocks a second identical one. Deleting it used to
+    # lose the fact as well as the reason, so the next run proposed the same
+    # message to the same mailbox and the reviewer refused it again.
+    refused = scout_store.refused_addresses(conn)
+    if refused:
+        before = len(rows)
+        rows = [r for r in rows if (r["address"] or "").lower() not in refused]
+        if before != len(rows):
+            log(f"{before - len(rows)} mailbox(es) skipped: a proposal to them "
+                "was refused and the refusal is kept.")
+            stats["selected"] = len(rows)
 
     capped = rows[:limit] if limit else rows
     if len(capped) < len(rows) and not confirmed:
@@ -436,10 +494,23 @@ def run(
         )
         conn.commit()
         stats["drafted"] += 1
+        faults = prose_faults(body)
+        for fault in faults:
+            stats.setdefault("prose", {})
+            stats["prose"][fault] = stats["prose"].get(fault, 0) + 1
         for item in reply.get("missing") or []:
             stats["missing"][str(item)] = stats["missing"].get(str(item), 0) + 1
         log(f"  {row['canton']:<3} {row['name'][:34]:36} {language}  "
             f"{reply.get('subject', '')[:40]}")
+
+    if stats.get("prose"):
+        log("\nThe brief proscribes these, and they came back anyway:")
+        for fault, count in sorted(
+            stats["prose"].items(), key=lambda kv: -kv[1]
+        ):
+            log(f"  {count:>4}  {fault}")
+        log("Shown on each draft's page. Not rewritten here: a reviewer who "
+            "is told the fault fixes it better than a regex does.")
 
     if stats["missing"]:
         log("\nThe model reported these gaps while writing:")

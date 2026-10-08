@@ -350,3 +350,146 @@ def test_an_unconfigured_mailbox_says_so_rather_than_failing(conn, tmp_path) -> 
     stats = bounces.run(settings, conn, log=said.append)
     assert stats["messages"] == 0
     assert any("No mailbox is configured" in line for line in said)
+
+
+# --- the promise the message makes --------------------------------------------
+#
+# Every draft ends with "répondez « STOP » à cette adresse et votre adresse
+# sera retirée de nos listes". The sentence was composed deterministically,
+# appended to every message, and honoured by no code at all. A written
+# undertaking that no routine performs is worse than no undertaking.
+
+STOP_PLAIN = """From: Jean Dupont <info@regie-x.ch>
+To: alexis@peringer.ch
+Subject: Re: Limen
+Content-Type: text/plain; charset=utf-8
+
+STOP
+"""
+
+STOP_SUBJECT = """From: Marie <location@regie-x.ch>
+To: alexis@peringer.ch
+Subject: Désinscription
+Content-Type: text/plain; charset=utf-8
+
+Merci de me retirer.
+"""
+
+STOP_GERMAN = """From: Hans <info@regie-y.ch>
+To: alexis@peringer.ch
+Subject: Re: Limen
+Content-Type: text/plain; charset=utf-8
+
+Bitte abmelden. Danke.
+"""
+
+STOP_FROM_COLLEAGUE = """From: Secretariat <secretariat@autre.ch>
+To: alexis@peringer.ch
+Subject: Re: Limen
+Content-Type: text/plain; charset=utf-8
+
+Stop. Merci de retirer info@regie-x.ch de vos listes.
+"""
+
+INTERESTED = """From: Jean Dupont <info@regie-x.ch>
+To: alexis@peringer.ch
+Subject: Re: Limen
+Content-Type: text/plain; charset=utf-8
+
+Bonjour, cela nous interesse. Mon compte Google est jean.dupont@gmail.com.
+Nous arretons nos autres essais pour celui-ci.
+"""
+
+
+@pytest.mark.parametrize("raw,expected", [
+    (STOP_PLAIN, "info@regie-x.ch"),
+    (STOP_SUBJECT, "location@regie-x.ch"),
+    (STOP_GERMAN, "info@regie-y.ch"),
+])
+def test_a_refusal_is_read_whatever_word_it_uses(raw, expected) -> None:
+    found = bounce.refusal_in(message_from_string(raw), known=HELD)
+    assert found is not None
+    assert found.address == expected
+
+
+def test_a_refusal_sent_by_a_colleague_names_the_address_we_wrote_to() -> None:
+    """A reply arrives from a mailbox the survey does not hold, quoting the one
+    it does. Refusing the colleague's address would leave the firm on the list."""
+    found = bounce.refusal_in(
+        message_from_string(STOP_FROM_COLLEAGUE), known=HELD
+    )
+    assert found is not None
+    assert found.address == "info@regie-x.ch"
+
+
+def test_an_interested_reply_is_not_a_refusal() -> None:
+    """It contains "arretons", which is not one of the tokens, and it is the
+    reply the whole campaign is for."""
+    assert bounce.refusal_in(message_from_string(INTERESTED), known=HELD) is None
+
+
+def test_an_ordinary_reply_is_not_a_refusal() -> None:
+    assert bounce.refusal_in(message_from_string(ORDINARY), known=HELD) is None
+
+
+def test_a_refusal_suppresses_the_address_everywhere_it_sits(conn) -> None:
+    """The same mailbox can sit under two firms after a merge, and a person who
+    said no said it once."""
+    db.upsert_company(conn, {
+        "uid": "CHE9", "name": "Régie X Succursale", "canton": "VD",
+        "status": "ACTIVE", "hydrated": True, "method": "zefix",
+    })
+    conn.commit()
+    scout_store.save_contact(
+        conn, company_id=2, kind="email", value="info@regie-x.ch",
+        method="published",
+    )
+    conn.commit()
+    rows = scout_store.suppress_address(
+        conn, "info@regie-x.ch", note="refused: 'stop' in the subject"
+    )
+    conn.commit()
+    assert rows == 2
+    held = conn.execute(
+        "SELECT suppressed, status FROM core.contact WHERE value = %s",
+        ("info@regie-x.ch",),
+    ).fetchall()
+    assert all(r["suppressed"] for r in held)
+    assert all(r["status"] == "refused" for r in held)
+
+
+def test_a_refused_address_leaves_the_send_list(conn) -> None:
+    verify.run(conn, log=lambda _m: None,
+               resolve=lambda _d, **_k: (verify.DELIVERABLE, "MX"))
+    assert len(scout_store.send_list(conn, desk_parts=("info", "location"))) == 1
+    scout_store.suppress_address(conn, "info@regie-x.ch", note="refused")
+    scout_store.suppress_address(conn, "location@regie-x.ch", note="refused")
+    conn.commit()
+    assert scout_store.send_list(conn, desk_parts=("info", "location")) == []
+
+
+def test_the_stage_honours_a_refusal_end_to_end(conn, tmp_path) -> None:
+    from arpenteur.stages import bounces
+
+    box = FakeMailbox([STOP_PLAIN, ORDINARY])
+    stats = bounces.run(_settings(tmp_path), conn, log=lambda _m: None,
+                        open_mailbox=lambda: box)
+    assert stats[bounce.REFUSED] == 1
+    assert stats["suppressed"] == 1
+    row = conn.execute(
+        "SELECT suppressed FROM core.contact WHERE value = 'info@regie-x.ch'"
+    ).fetchone()
+    assert row["suppressed"] is True
+
+
+def test_a_dry_run_honours_nothing_and_says_so(conn, tmp_path) -> None:
+    from arpenteur.stages import bounces
+
+    box = FakeMailbox([STOP_PLAIN])
+    stats = bounces.run(_settings(tmp_path), conn, dry_run=True,
+                        log=lambda _m: None, open_mailbox=lambda: box)
+    assert stats[bounce.REFUSED] == 1 and stats["suppressed"] == 0
+    row = conn.execute(
+        "SELECT suppressed FROM core.contact WHERE value = 'info@regie-x.ch'"
+    ).fetchone()
+    assert row["suppressed"] is False

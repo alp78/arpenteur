@@ -28,6 +28,7 @@ from datetime import date
 from typing import Any
 
 from ..kernel.db import Row
+from ..stages.draft import prose_faults
 from . import ui
 from .ui import esc
 from .render import page
@@ -142,6 +143,7 @@ def _tally(tally: dict[str, int]) -> str:
             ("awaiting", "awaiting review"),
             ("approved", "approved, not sent"),
             ("sent", "sent"),
+            ("refused", "refused"),
             ("briefs", "brief versions"),
         )
     )
@@ -205,12 +207,21 @@ def one_page(row: Row, *, note: str = "") -> str:
         acts.append(_post(f"/draft/{row['id']}/unreview", "Undo approval"))
     else:
         acts.append(_post(f"/draft/{row['id']}/review", "Approve"))
-    acts.append(_post(f"/draft/{row['id']}/drop", "Discard"))
-    state = (
-        "sent " + _ago(row["sent_at"]) if row["sent_at"]
-        else ("approved " + _ago(row["reviewed_at"]) if reviewed
-              else "awaiting review")
+    acts.append(
+        f'<form method="post" action="/draft/{row["id"]}/refuse" '
+        'style="display:inline-flex;gap:.4rem">'
+        '<input name="reason" placeholder="why, for the next run" '
+        'style="width:16rem">'
+        '<button type="submit">Refuse</button></form>'
     )
+    if row["sent_at"]:
+        state = "sent " + _ago(row["sent_at"])
+    elif row["refused_at"]:
+        state = "refused " + _ago(row["refused_at"])
+    elif reviewed:
+        state = "approved " + _ago(row["reviewed_at"])
+    else:
+        state = "awaiting review"
     return (
         '<div class="one-draft">'
         f'<a href="/drafts">&larr; drafts</a>'
@@ -224,6 +235,24 @@ def one_page(row: Row, *, note: str = "") -> str:
         f'<span>{esc(row["model"] or "")}</span>'
         "</div>"
         + (ui.banner(note, kind="good") if note else "")
+        + (
+            ui.banner(
+                "The brief proscribes "
+                + "; ".join(prose_faults(row["body"] or ""))
+                + ". Fix it in the message you send, or tighten the brief's "
+                "registre section and draft again.",
+                kind="warn",
+            )
+            if prose_faults(row["body"] or "") else ""
+        )
+        + (
+            ui.banner(
+                f"Refused: {row['refused_reason'] or 'no reason recorded'}. "
+                "A later run will not propose this mailbox again.",
+                kind="warn",
+            )
+            if row["refused_at"] else ""
+        )
         + f'<div class="subject">{esc(row["subject"] or "(no subject)")}</div>'
         f'<pre class="body">{body}</pre>'
         f'<div class="acts">{"".join(acts)}</div>'
