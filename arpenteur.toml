@@ -491,9 +491,12 @@ other = "The purpose text does not place the company in any sector above, or des
 # every recipient has to be given the same two dates, and a model asked for
 # "a fortnight" supplies a different fortnight each time.
 [enrol]
+# The first invitation asks for a reply. Installation details are given after
+# interest is expressed; do not append them to the initial message.
+include_in_draft = false
 # Which bands the campaign writes to, when --segment names none. regie-core is
 # the band whose registered purpose names managing property for third parties,
-# so a handover happens at every tenancy; regie-letting sees them occasionally.
+# while a regie-letting company may delegate handovers to another firm.
 segments = ["regie-core"]
 # The programme whose cards this campaign moves. `arpenteur programme
 # list` names the ones that exist.

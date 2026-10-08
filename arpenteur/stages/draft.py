@@ -242,8 +242,8 @@ def build_prompt(
         "## What to write",
         "",
         f"One email in {language}, to {address}, which is a mailbox at this "
-        "firm and may be a desk rather than a person: do not open with a "
-        "personal name unless the address itself carries one.",
+        "firm and may be a desk rather than a person. Use a neutral greeting; "
+        "do not infer a person's identity from the email address.",
         "",
         "Write from the brief and from the purpose text above. The purpose "
         "text is the one thing you know this firm does, so what you say about "
@@ -251,7 +251,7 @@ def build_prompt(
         "'À compléter', leave it out and list it in `missing`.",
         "",
         "Do not write a closing opt-out sentence: one is appended afterwards.",
-        "Do not write a signature block: the sender is not yet decided.",
+        "Do not write a signature block: one is appended when sending.",
     ])
 
 
@@ -341,14 +341,14 @@ def enrol_block(enrol: Any, language: str) -> str:
 def compose(
     body: str, *, language: str, address: str, enrol: Any | None = None
 ) -> str:
-    """The model's text, then the enrolment block, then the opt-out.
+    """The model's text, optional enrolment instructions, then the opt-out.
 
     Only the first of the three comes from a model. The order is the reading
     order a recipient needs: why they are being written to, what to do, how to
     refuse.
     """
     parts = [body.rstrip()]
-    if enrol is not None:
+    if enrol is not None and enrol.include_in_draft:
         parts.append(enrol_block(enrol, language))
     parts.append(OPT_OUT.get(language, OPT_OUT["fr"]).format(address=address))
     return "\n\n".join(parts) + "\n"
@@ -419,7 +419,9 @@ def run(
     # Reported before any model call, because a draft carrying a placeholder
     # cannot be sent and a run that produced twenty-five of them wasted
     # twenty-five calls.
-    gaps_in_enrol = settings.enrol.missing()
+    gaps_in_enrol = (
+        settings.enrol.missing() if settings.enrol.include_in_draft else []
+    )
     stats["enrol_missing"] = gaps_in_enrol
     if gaps_in_enrol:
         log("These are unset in arpenteur.toml [enrol]:")

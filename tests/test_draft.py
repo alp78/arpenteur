@@ -288,6 +288,44 @@ FULL_ENROL = dict(
 )
 
 
+@pytest.mark.parametrize("language", ["fr", "de", "it"])
+@pytest.mark.parametrize("enrol_fields", [{}, FULL_ENROL])
+def test_an_initial_invitation_keeps_the_opt_out_without_registration(
+    language, enrol_fields
+) -> None:
+    from arpenteur.config import _enrol as read_enrol
+
+    enrol = read_enrol({"include_in_draft": False, **enrol_fields})
+    body = draft.compose(
+        "An invitation to reply.", language=language, address="a@b.ch",
+        enrol=enrol,
+    )
+    assert body == (
+        "An invitation to reply.\n\n"
+        + draft.OPT_OUT[language].format(address="a@b.ch") + "\n"
+    )
+
+
+def test_invitation_drafts_do_not_require_installation_settings(
+    conn, tmp_path, monkeypatch
+) -> None:
+    provider = FakeProvider()
+    monkeypatch.setattr(draft, "get_provider", lambda _s: provider)
+    settings = _settings(tmp_path)
+    settings.enrol = _enrol(include_in_draft=False)
+    said: list[str] = []
+    stats = draft.run(settings, conn, desk_parts=DESKS, log=said.append)
+
+    assert stats["drafted"] == 3
+    assert stats["enrol_missing"] == []
+    assert not any("MANQUE" in line for line in said)
+    rows = conn.execute("SELECT body, sent_at FROM intel.draft").fetchall()
+    assert all("MANQUE" not in row["body"] for row in rows)
+    assert all("TestFlight" not in row["body"] for row in rows)
+    assert all("STOP" in row["body"] for row in rows)
+    assert all(row["sent_at"] is None for row in rows)
+
+
 @pytest.mark.parametrize("language,marker", [
     ("fr", "Comment participer"),
     ("de", "So nehmen Sie teil"),
@@ -362,8 +400,8 @@ def test_the_three_parts_arrive_in_reading_order() -> None:
 
 
 def test_the_campaign_bands_are_the_default(conn, tmp_path, monkeypatch) -> None:
-    """A stage that swept every band by default would contradict the brief it
-    is reading, which argues the core band runs a handover weekly."""
+    """Drafting respects the campaign's chosen audience rather than widening
+    it to every firm that happens to have a deliverable address."""
     from arpenteur.config import EnrolConfig
 
     provider = FakeProvider()

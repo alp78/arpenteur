@@ -1,14 +1,17 @@
-# The Limen approach, one template per language
+# The Limen invitation
 
-Three files, one per language the survey writes in. Copy the block between the
-two rules into a mail client, delete the band variant that does not apply, and
-send it. `arpenteur send` can post one instead, and it refuses any address that
-asked to be left alone.
+Three templates introduce Alexis, explain why he is building Limen and invite
+a reply from someone who conducts property handovers.
 
-## Region is language, and the code already decides it
+Copy the block between the two rules into a mail client. Keep one band
+paragraph, remove its label and add your signature. If using `arpenteur send`,
+the signature comes from `signature.html`. Address a person by name only when
+their identity and role have been verified; the neutral greeting also works
+for an agency's shared mailbox.
 
-`stages.draft.language_of` maps a canton to one of the three, so the region a
-firm sits in picks its template with no further judgement.
+## Language and recipient
+
+`stages.draft.language_of` supplies these canton-based defaults:
 
 | Template | Cantons |
 |---|---|
@@ -16,79 +19,64 @@ firm sits in picks its template with no further judgement.
 | [it.md](it.md) | TI |
 | [de.md](de.md) | every other canton |
 
-## Two variants per template, one per band
+Use the recipient's known correspondence language when adapting a message
+manually. German uses Swiss Standard German spelling.
 
-`limen.md` argues the distinction and the templates carry it. A firm whose
-registered purpose names managing property for third parties conducts a handover
-at every tenancy, so the message may say the tool touches its weekly work. A
-firm that only lets property sees handovers occasionally, and the same sentence
-addressed to it is false. Keep the variant that matches the band
-`intel.segment` holds and delete the other.
+For `regie-core`, invite someone from the agency's team to try Limen. For
+`regie-letting`, ask conditionally whether the recipient conducts its own
+handovers: a letting company may delegate them. The registered purpose helps
+choose the recipient and the variant. It does not establish their handover
+frequency, current tools or difficulties, and it does not belong in the
+opening sentence. A verified detail about a recipient can replace the band
+paragraph if it explains the relevance of the invitation.
 
-## Where the product sentences come from
+## The reason for the project
 
-The application's own pages, which the owner wrote and which are live:
+Alexis explained the motivation on 2026-10-08: handovers follow similar steps,
+yet forms, detail and participants' experience vary. An omission or an unclear
+description can later become a point of disagreement. Limen aims to give the
+tenant and the landlord or agency a common process and the same clear record.
 
-- `src/content/apps/limen/fr.mdx` in the PERINGER repository
-- the same directory's `de.mdx` and `it.mdx`
+Alexis also confirmed use on phones and tablets, signatures on screen and
+digital sharing of the signed document. The other product facts are recorded
+in [limen.md](../../limen.md), originally drawn from the application pages at
+`src/content/apps/limen/{fr,de,it}.mdx` in the PERINGER repository. These emails
+are new adaptations in each language, not quotations of those pages.
 
-Every product sentence in these templates restates one of those pages in that
-page's own language. No template claims a feature its page does not, and the
-German and Italian are the owner's own wording rather than a translation of the
-French.
+Present the concern as the founder's motivation. Do not invent a personal
+dispute or suggest that the recipient mishandles handovers. A shared record
+does not imply remote collaboration between devices, automatic distribution,
+an official standard or a guarantee against disputes or abuse of rights.
 
-## The enrolment route is the website form
+## The invitation and the reply
 
-Both platforms go through one form, which already asks for the platform and the
-account address and already explains why Google needs one.
+The first message has one next step: reply to receive the details for trying
+Limen. The trial is free. Feedback goes to the developer and helps him choose
+improvements. Ask whether the workflow fits real visits and which details are
+missing. Do not promise payment, free access after release, implementation of
+every request or a particular amount of the tester's time.
+
+After an interested reply, explain platform availability, installation and
+the actual participation requirements before asking the person to commit. The
+website form is the enrolment route at that point:
 
 - French: https://peringer.ch/applications/limen/#testeurs
 - German: https://peringer.ch/applications/limen/de/#testeurs
 - Italian: https://peringer.ch/applications/limen/it/#testeurs
 
-The `#testeurs` anchor is hardcoded in `AppPage.astro` for every language, so
-the German and Italian links keep the French word. That is correct rather than
-an oversight.
+The `#testeurs` anchor is the same in each language. Confirm current build
+availability before sending installation details. The previous brief recorded
+an iOS build awaiting Apple's external beta review; it is not evidence of the
+current release status. No public TestFlight link belongs in these invitations.
 
-Routing through the form instead of asking for a reply means the four facts
-`limen.md` wants arrive in one structured place, and it means the message does
-not have to carry a store link at all.
+## Keep generated drafts consistent
 
-## The TestFlight link stays out, and here is the condition for adding it
+`arpenteur draft` reads [limen.md](../../limen.md), not these template files.
+The brief follows the same approach. In `arpenteur.toml`,
+`[enrol] include_in_draft = false` keeps the fixed installation block out of
+the initial invitation. The opt-out is still appended by the draft stage.
+Review existing drafts against the new brief before using them.
 
-As recorded on 2026-10-01 in the vault's `apple/limen.md`, the iOS build sits at
-`READY_FOR_BETA_SUBMISSION`: attaching it to an external group over the API
-wrote the relationship without creating a Beta App Review submission. The public
-join link works anyway, against a build Apple has not approved.
-
-The application's own page withholds that link for this reason and promises it
-by mail once Apple has released the test version. The templates say the same.
-
-Add the link to all three templates only once a submission exists and Apple has
-approved it. Sending it to hundreds of agencies before then would enrol people
-against a build that may yet be refused, and the first impression of Limen would
-be a store error.
-
-## The closing offer, and why it is written as a fact
-
-`peringer/prospect-email-style.md` settles the register: a differentiator
-presented as a structural characteristic is verifiable, and the same thing
-presented as a claim about character reads as a pitch. So the closing sentence
-names what is built and the condition under which it applies. It promises no
-availability, no rate and no timescale, which none of these messages can know.
-
-## What no template states
-
-**No price**
-
-The test costs nothing, which each message says. The published version's price
-turns on an agreement that is not yet active, so no figure appears anywhere.
-
-**No saving in francs or hours**
-
-No measurement over real handovers exists. Producing one is what the test is
-for, and `limen.md` forbids the claim until it does.
-
-**No other agency**
-
-Neither as a reference nor as an example, which `limen.md` also forbids.
+The first message carries no second offer for custom software, feature list,
+store quota, account request, measured savings claim or customer reference.
+The sender's broader work is already described in the signature.

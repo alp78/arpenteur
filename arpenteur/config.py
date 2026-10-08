@@ -115,7 +115,7 @@ class IssuerConfig:
 
 @dataclass(frozen=True)
 class EnrolConfig:
-    """The links and the dates a tester enrolment message has to carry.
+    """Campaign routing and optional tester enrolment instructions.
 
     Held in settings rather than in the brief because the brief is read into a
     prompt and these must never reach one. The brief tells the model not to
@@ -124,9 +124,8 @@ class EnrolConfig:
 
     # Which bands this campaign writes to. A setting rather than a flag
     # default, because it is a property of the campaign and not of the stage:
-    # `limen.md` argues that a firm whose purpose names managing property for
-    # third parties runs a handover weekly, while one that only lets property
-    # sees them occasionally, and sweeping both dilutes the ask.
+    # `limen.md` distinguishes property managers from letting companies,
+    # which may delegate their handovers to someone else.
     segments: tuple[str, ...] = ()
     # The programme whose members this campaign tracks. Marking a draft sent
     # moves a card on it, and the answers stage reads its replies, so without
@@ -140,6 +139,9 @@ class EnrolConfig:
     # has changed once already.
     android_testers: int = 12
     android_days: int = 14
+    # An initial invitation can ask for a reply before presenting the store
+    # instructions. Other campaigns keep the existing enrolment block.
+    include_in_draft: bool = True
 
     @property
     def ready(self) -> bool:
@@ -775,6 +777,7 @@ def _enrol(raw: dict) -> EnrolConfig:
         android_window_end=str(raw.get("android_window_end", "") or "").strip(),
         android_testers=int(raw.get("android_testers", 12)),
         android_days=int(raw.get("android_days", 14)),
+        include_in_draft=bool(raw.get("include_in_draft", True)),
     )
 
 
