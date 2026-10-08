@@ -1624,6 +1624,114 @@ def save_contact(
     return 0 if known else 1
 
 
+def domains_to_check(
+    conn: Connection, *, stale_after_days: int = 30, refresh: bool = False
+) -> list[str]:
+    """The distinct mail domains whose verdict is missing or old.
+
+    One row per domain rather than per address, because the check is a DNS
+    lookup and DNS answers about a domain: 12'111 addresses in this bank sit at
+    5'139 domains, so asking per address would be two and a half times the
+    queries for the same answers.
+    """
+    if refresh:
+        return [
+            r["domain"] for r in conn.execute(
+                "SELECT DISTINCT lower(split_part(value, '@', 2)) AS domain"
+                "  FROM core.contact WHERE kind = 'email' ORDER BY 1"
+            )
+        ]
+    return [
+        r["domain"] for r in conn.execute(
+            """
+            SELECT DISTINCT lower(split_part(value, '@', 2)) AS domain
+              FROM core.contact
+             WHERE kind = 'email'
+               AND (status IS NULL OR status_at IS NULL
+                    OR status_at < now() - make_interval(days => %s))
+             ORDER BY 1
+            """,
+            (stale_after_days,),
+        )
+    ]
+
+
+def save_domain_verdict(
+    conn: Connection, domain: str, *, status: str, note: str
+) -> int:
+    """Write one domain's verdict to every address at it. Returns the count.
+
+    The verdict is about the domain, so it is stored on each address at that
+    domain rather than in a table of its own. A domain table would be the
+    normalised shape and would also be a second place for an address to exist,
+    which is how a send list and a verdict list come to disagree.
+    """
+    done = conn.execute(
+        """
+        UPDATE core.contact
+           SET status = %s, status_note = %s, status_at = %s
+         WHERE kind = 'email' AND lower(split_part(value, '@', 2)) = %s
+        """,
+        (status, note, now(), domain.strip().lower()),
+    )
+    return int(getattr(done, "rowcount", 0) or 0)
+
+
+def send_list(
+    conn: Connection, *, desk_parts: tuple[str, ...],
+    segments: list[str] | None = None, cantons: list[str] | None = None,
+    statuses: tuple[str, ...] = ("deliverable",),
+) -> list[Row]:
+    """One address per firm, the desk address where there is one.
+
+    Ordering decides which address a firm contributes, and it is the whole
+    point of the query: a desk address is preferred over a named person's,
+    because writing to `info@` about a product is a different act in law from
+    writing to an employee by name. A firm with only a named mailbox still
+    appears, so the caller can see the count and decide, rather than having it
+    silently dropped.
+
+    `desk_parts` is passed in for the reason `save_contact` gives for
+    `suppressed`: knowing which local parts are desks would mean importing the
+    address vocabulary from `sources`, and `scout` may not depend on it. The
+    caller owns that list and this query only orders by it.
+
+    `desk_local` reports whether the chosen address's local part was in that
+    list, which is a fact about the ordering and not the verdict. Whether a
+    mailbox reaches a desk or a person is `mailcheck.mailbox_kind`, which needs
+    the company name as well: `actimmo@actimmo-ge.ch` is in no vocabulary and
+    is still a desk.
+    """
+    where = ["k.kind = 'email'", "NOT k.suppressed", "k.status = ANY(%s)",
+             "c.status = 'ACTIVE'"]
+    params: list[object] = [list(statuses)]
+    join = ""
+    if segments:
+        join = ("JOIN intel.segment g ON g.company_id = c.id"
+                " AND g.segment = ANY(%s)")
+        params.append(list(segments))
+    if cantons:
+        where.append("c.canton = ANY(%s)")
+        params.append([x.strip().upper() for x in cantons])
+    return conn.execute(
+        f"""
+        SELECT DISTINCT ON (c.id)
+               c.id AS company_id, c.uid, c.name, c.canton, c.legal_seat,
+               k.value AS address, k.method, k.status, k.source_url,
+               split_part(k.value, '@', 1) = ANY(%s) AS desk_local
+          FROM core.contact k
+          JOIN core.company c ON c.id = k.company_id
+          {join}
+         WHERE {' AND '.join(where)}
+         ORDER BY c.id,
+                  (split_part(k.value, '@', 1) = ANY(%s)) DESC,
+                  (k.method = 'published') DESC,
+                  length(k.value), k.value
+        """,
+        (list(desk_parts), *params, list(desk_parts)),
+    ).fetchall()
+
+
 def contacts_for(conn: Connection, company_id: int) -> list[Row]:
     return conn.execute(
         "SELECT * FROM core.contact WHERE company_id = %s ORDER BY id",

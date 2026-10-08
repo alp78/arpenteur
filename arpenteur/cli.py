@@ -18,6 +18,8 @@ from . import db, dossier, markdown, workspace
 # Notes are new and the storage façade is meant to shrink, so this one reaches
 # for the module store it means rather than growing the shim.
 from .modules.clients import store as clients_store
+from .modules.scout import store as scout_store
+from .sources import mailcheck
 from .config import load_settings
 from .stages import (
     advise,
@@ -34,6 +36,7 @@ from .stages import (
     resolve,
     source,
     sync,
+    verify,
 )
 
 
@@ -210,6 +213,123 @@ def cmd_legal_forms(args: argparse.Namespace) -> int:
         mark = "*" if uid in chosen else " "
         print(f"{mark}{uid:5} {str(tag or ''):8} {label or ''}")
     print(f"\n* in survey.legal_forms. Territory: {settings.territory.describe()}")
+    return 0
+
+
+def _desk_parts() -> tuple[str, ...]:
+    """Every local part that reaches a desk rather than a named person.
+
+    The union of the generic heads and all four language sets, so `verwaltung`,
+    `segreteria` and `administration` count as desks and not as people. Built
+    here rather than in the store, which may not import `sources`.
+    """
+    parts = set(mailcheck.ROLE_PARTS) | set(mailcheck.DESK_FUNCTIONS)
+    for group in mailcheck.ROLE_PARTS_BY_LANGUAGE.values():
+        parts.update(group)
+    return tuple(sorted(parts))
+
+
+def cmd_verify(args: argparse.Namespace) -> int:
+    """Record what can be established about each address without sending.
+
+    One DNS answer per domain, written to every address at it. A dead domain
+    is the one certain verdict; a live one says the domain takes mail and says
+    nothing about the mailbox, which only a send settles.
+    """
+    settings = load_settings()
+    conn = db.open_db(settings.database_url)
+    run_id = db.start_run(conn, "verify", vars(args))
+    try:
+        stats = verify.run(
+            conn,
+            refresh=args.refresh,
+            stale_after_days=args.stale_after,
+            limit=args.limit,
+            dry_run=args.dry_run,
+        )
+    except Exception as exc:
+        # The rollback is what lets `finish_run` write: without it the failed
+        # statement leaves the transaction aborted, the error text is lost and
+        # the run row stays `running` for ever.
+        conn.rollback()
+        db.finish_run(conn, run_id, error=str(exc))
+        print(f"error: {exc}", file=sys.stderr)
+        return 1
+    db.finish_run(conn, run_id, stats)
+    if args.dry_run:
+        print("(dry run, nothing written)")
+    return 0
+
+
+def cmd_sendlist(args: argparse.Namespace) -> int:
+    """One address per firm, ready for a staged send.
+
+    A desk address wins over a named person's where the firm has both. That
+    ordering is the point: writing to `info@` about a product and writing to an
+    employee by name are different acts under the nLPD and the UWG, so the
+    second is reported separately rather than mixed in.
+    """
+    settings = load_settings()
+    conn = db.open_db(settings.database_url)
+    rows = scout_store.send_list(
+        conn,
+        desk_parts=_desk_parts(),
+        segments=[s.strip() for s in args.segment.split(",") if s.strip()]
+        if args.segment else None,
+        cantons=[c.strip() for c in args.canton.split(",") if c.strip()]
+        if args.canton else None,
+        statuses=tuple(
+            s.strip() for s in args.status.split(",") if s.strip()
+        ),
+    )
+    conn.close()
+
+    # The store picked one address per firm by the desk vocabulary. Labelling
+    # it is the caller's job, because the three-way answer needs the company
+    # name and `scout` may not import the address vocabulary to read it.
+    kind = {
+        r["address"]: mailcheck.mailbox_kind(r["address"], r["name"])
+        for r in rows
+    }
+    desks = [r for r in rows if kind[r["address"]] == mailcheck.DESK]
+    people = [r for r in rows if kind[r["address"]] == mailcheck.PERSON]
+    unclear = [r for r in rows if kind[r["address"]] == mailcheck.UNCLEAR]
+
+    if args.out:
+        import csv
+
+        out = Path(args.out)
+        with out.open("w", newline="", encoding="utf-8") as handle:
+            writer = csv.writer(handle)
+            writer.writerow(
+                ["uid", "name", "canton", "seat", "address", "mailbox",
+                 "method", "status", "source_url"]
+            )
+            for r in rows:
+                writer.writerow([
+                    r["uid"], r["name"], r["canton"], r["legal_seat"] or "",
+                    r["address"], kind[r["address"]],
+                    r["method"] or "", r["status"] or "", r["source_url"] or "",
+                ])
+        print(f"{out}  {len(rows):,} firm(s)")
+    else:
+        mark = {mailcheck.DESK: "  ", mailcheck.PERSON: " !",
+                mailcheck.UNCLEAR: " ?"}
+        for r in rows[: args.limit or 40]:
+            print(f"{mark[kind[r['address']]]} {r['canton']:<3} "
+                  f"{r['name'][:38]:40} {r['address']}")
+        if not args.out and len(rows) > (args.limit or 40):
+            print(f"   ... {len(rows) - (args.limit or 40):,} more")
+
+    print(f"\n{len(rows):,} firm(s) reachable")
+    print(f"  {len(desks):,} at a desk address")
+    print(f"  {len(people):,} at a named person (!)")
+    print(f"  {len(unclear):,} neither clearly (?)")
+    if people or unclear:
+        print("\nOnly the first group is a desk. Writing to an identified")
+        print("individual is a different act under the nLPD and UWG Art.")
+        print("3(1)(o), and the unclear group has not been established")
+        print("either way, so neither belongs in a first send by default.")
     return 0
 
 
@@ -1885,6 +2005,36 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--tag", help="comma separated")
     p.add_argument("--pin", action="store_true", help="keep it at the top")
     p.set_defaults(func=cmd_note)
+
+    p = sub.add_parser(
+        "verify",
+        help="check every address as far as DNS can settle it, and record it",
+    )
+    p.add_argument(
+        "--refresh", action="store_true",
+        help="re-check every domain, not only the ones with a stale verdict",
+    )
+    p.add_argument(
+        "--stale-after", type=int, default=30, metavar="DAYS",
+        help="how old a verdict may be before it is checked again (default 30)",
+    )
+    p.add_argument("--limit", type=int, default=0, help="stop after N domains")
+    p.add_argument("--dry-run", action="store_true", help="list, resolve nothing")
+    p.set_defaults(func=cmd_verify)
+
+    p = sub.add_parser(
+        "sendlist",
+        help="one address per firm, desk address preferred, for a staged send",
+    )
+    p.add_argument("--segment", default="", help="comma separated")
+    p.add_argument("--canton", default="", help="comma separated")
+    p.add_argument(
+        "--status", default="deliverable",
+        help="which verdicts to accept (default deliverable; add maybe to widen)",
+    )
+    p.add_argument("--out", default="", help="write a CSV here instead of printing")
+    p.add_argument("--limit", type=int, default=0, help="how many to print")
+    p.set_defaults(func=cmd_sendlist)
 
     p = sub.add_parser(
         "workspace",

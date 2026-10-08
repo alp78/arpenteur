@@ -56,6 +56,35 @@ ROLE_PARTS_BY_LANGUAGE = {
     "rm": ("info", "contact", "kontakt"),
 }
 
+# The desks a firm runs that are not the switchboard. A régie prints a mailbox
+# per function, and `locations@`, `courtage@` and `bewirtschaftung@` reach a
+# department exactly as `info@` does.
+#
+# WHY THIS IS SEPARATE FROM ROLE_PARTS. Those are the heads an inference tries
+# when it has to guess a mailbox, and guessing `courtage@` for a firm that has
+# no brokerage desk wastes a probe. These are only ever recognised, never
+# guessed, so the list can be as wide as the language allows.
+#
+# Kept because the alternative was measured: with only ROLE_PARTS, the send
+# list filed 590 addresses as reaching a named person, and `locations@
+# agenceacc.ch` and `courtage@imogroup-geneve.ch` were among them. A send that
+# skips those loses real desks; a send that treats them as people misreads what
+# the nLPD asks about.
+DESK_FUNCTIONS = frozenset({
+    # French
+    "location", "locations", "gerance", "gerances", "courtage", "vente",
+    "ventes", "administration", "direction", "comptabilite", "facturation",
+    "technique", "accueil", "agence", "immobilier", "regie",
+    # German
+    "vermietung", "bewirtschaftung", "verwaltung", "verkauf", "buchhaltung",
+    "empfang", "liegenschaften", "immobilien", "mieten", "service",
+    # Italian
+    "locazione", "locazioni", "amministrazione", "segreteria", "vendite",
+    "immobili",
+    # Shared, and the abbreviations a domain keeps
+    "immo", "office", "team", "support", "rent", "sales",
+})
+
 # Consumer mail providers. An address here belongs to a person, not to a
 # company, whatever the company publishes it as.
 #
@@ -384,6 +413,47 @@ def domain_echoes_name(domain: str, name: str) -> int:
         if w not in NAME_NOISE and len(w) > 2
     }
     return sum(1 for w in words if w in stem)
+
+
+DESK = "desk"
+PERSON = "person"
+UNCLEAR = "unclear"
+
+
+def mailbox_kind(address: str, name: str = "") -> str:
+    """Whether this address reaches a desk, a named person, or something unclear.
+
+    The distinction the nLPD and UWG Art. 3(1)(o) turn on, and the reason it is
+    three values and not two. `info@naef.ch` reaches a function and survives the
+    person leaving. `silvia.vigo@regiegraber.ch` reaches an identified
+    individual. `aa@afadesign.com` is neither, and calling it either would be
+    the program asserting something it cannot see.
+
+    A measured binary got both ends wrong. Reading only `ROLE_PARTS`, the send
+    list called `locations@agenceacc.ch` a person, and it also called
+    `actimmo@actimmo-ge.ch` one, which is the firm's own name as a mailbox.
+    """
+    local = (address or "").strip().lower().partition("@")[0]
+    if not local:
+        return UNCLEAR
+    if local in ROLE_PARTS or local in DESK_FUNCTIONS:
+        return DESK
+    bare = deaccent(local)
+    # A dotted or hyphenated local part made of two name-shaped halves is a
+    # person: `prenom.nom`, and `l.moillen` with an initial. Checked before the
+    # name echo, because a one-person firm's own name is also its owner's and
+    # `andre.nogueira@andrehomes.ch` reaches André, not a desk.
+    halves = [h for h in re.split(r"[._-]", bare) if h]
+    if len(halves) >= 2 and all(h.isalpha() for h in halves):
+        if any(len(h) == 1 for h in halves) or len(halves) == 2:
+            if not any(h in ROLE_PARTS or h in DESK_FUNCTIONS for h in halves):
+                return PERSON
+    # One word that reproduces the firm's own name is the company mailbox:
+    # `cabinet@somn-ambul.ch`, `actimmo@actimmo-ge.ch`.
+    words = distinctive_words(name) if name else []
+    if words and any(word in bare for word in words):
+        return DESK
+    return UNCLEAR
 
 
 def page_confirms(
