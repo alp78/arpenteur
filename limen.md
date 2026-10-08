@@ -13,33 +13,36 @@ destinataire.
 
 ## Faits établis et lacunes de ce brief
 
-Tout ce qui figure sous « À compléter » est absent du dépôt. Aucune
-fonctionnalité, aucun prix, aucune référence client n'y apparaît. Rien ici n'en
-invente. Un message qui annonce une fonctionnalité inexistante se rattrape dès
-la première réponse. Or cette campagne ne cherche rien d'autre que des
-réponses.
+Les faits du produit proviennent de la page publiée de l'application, que
+l'expéditeur a rédigée en cinq langues. Rien ici n'en invente. Aucune
+fonctionnalité absente de cette page n'atteint un message. Un message qui
+annonce une fonctionnalité inexistante se rattrape dès la première réponse. Or
+cette campagne ne cherche rien d'autre que des réponses.
 
-Deux faits seulement proviennent du plan de travail versionné. Limen est une
-application mobile, destinée aux états des lieux de logements en Suisse.
+Ce qui subsiste sous « À compléter » est absent du dépôt comme de la page. Aucun
+prix, aucune référence client n'y apparaît.
 
 ---
 
 ## Le produit
 
-Une application mobile destinée aux états des lieux de logements en Suisse.
+Ces faits proviennent de la page de l'application, que l'expéditeur a rédigée en
+cinq langues. Le brief n'en ajoute aucun. L'étape `draft` n'en invente aucun non
+plus.
 
-**À compléter avant tout envoi**
+- Limen enregistre l'état des lieux d'entrée ou de sortie d'un logement, jusqu'au constat PDF signé.
+- Les deux parties se servent d'un seul téléphone, celle qui saisit déclarant quelle partie elle représente.
+- Chaque pièce reçoit une marque de contrôle, sans grille de surfaces intactes à cocher.
+- Chaque constatation peut inclure une description, des photographies, une imputation des frais, un délai de réparation ainsi qu'un coût estimé.
+- Un niveau cantonal couvre les règles qui changent d'un canton à l'autre, dont le RULV vaudois ainsi que la formule officielle du loyer initial.
+- L'export produit un PDF A4, les photographies figurant en annexe numérotée.
+- L'application fonctionne sur Android dès sa version 10 et sur iPhone dès iOS 17.
+- La recherche d'adresses de swisstopo est le seul service réseau de l'application, de sorte que le constat ne quitte l'appareil que si son utilisateur décide de l'exporter.
+- L'utilisateur choisit entre cinq langues, autant pour l'application que pour le PDF exporté.
+- Les deux magasins diffusent une version de test, dont l'accès est gratuit.
 
-- Ce que l'application exécute pendant un état des lieux, en une phrase qui
-  décrit un geste plutôt qu'une intention
-- Ce qu'elle produit à la fin
-- La forme sous laquelle la régie le reçoit.
-- Les appareils qui l'exécutent
-- La nécessité d'une connexion au lieu de l'inspection
-- L'hébergement des données, question que posera toute régie qui détient des
-  données de locataires
-- Soit le prix, soit le modèle de prix, soit l'absence de prix à ce stade
-- L'état de développement : prototype, version testable, application publiée
+Le prix de la version publiée dépend d'un accord encore pendant, si bien que le
+message n'annonce aucun chiffre.
 
 ## Les destinataires
 
@@ -62,11 +65,14 @@ Le message énonce cette différence. Écrire à une gérance que l'outil s'adre
 
 ## L'objet du premier message
 
-Le message propose une inscription comme testeur. Il ne propose rien d'autre,
-ni entretien, ni démonstration, ni rendez-vous. Il sollicite une réponse à
-cette adresse.
+Le message propose une inscription comme testeur. Son dernier paragraphe énonce
+une seule autre offre: le développement d'applications mobiles et de logiciels
+sur mesure. Cette offre se pose en caractéristique de structure plutôt qu'en
+argument de vente. Le message ne propose ni entretien, ni démonstration, ni
+rendez-vous.
 
-Cette réponse énonce quatre points :
+Le formulaire de la page de l'application recueille l'inscription, ainsi que les
+quatre points utiles :
 
 - le nom de la régie
 - la plateforme retenue, soit iOS, soit Android
@@ -83,11 +89,15 @@ Ces conditions appartiennent aux magasins d'applications. Le message les
 énonce telles quelles, leur raison comprise : une exigence expliquée se lit
 comme une exigence, une exigence muette se lit comme une manœuvre.
 
-**iOS, sans condition**
+**iOS, sans condition de durée**
 
 Le testeur recourt à TestFlight, l'outil d'Apple réservé aux versions de test.
-Il ouvre un lien, télécharge TestFlight, ensuite y ajoute Limen. Aucune adresse
-ne nous est transmise. Aucune durée n'est exigée.
+Aucune durée minimale ne lui est imposée.
+
+Le message n'écrit pas le lien public TestFlight. Apple n'a pas encore validé la
+version de test, de sorte que ce lien ouvre une version non validée. Le testeur
+indique l'adresse de son compte Apple au formulaire, puis reçoit l'invitation
+d'Apple une fois la validation obtenue.
 
 **Android, sous deux conditions**
 
@@ -114,9 +124,11 @@ Google à zéro. Le message annonce une période datée, que le testeur accepte.
 
 **À compléter**
 
-- Le lien public TestFlight
 - Les deux dates qui bornent la période de quatorze jours
 - Ce que le testeur reçoit en retour
+
+Le lien public TestFlight ne figure plus sous cette rubrique. Il existe déjà,
+quoique retenu jusqu'à la validation d'Apple.
 
 ## Les interdits du message
 
@@ -124,15 +136,17 @@ Google à zéro. Le message annonce une période datée, que le testeur accepte.
 - Il ne cite aucune autre régie, ni comme référence ni comme exemple
 - Il ne se compare à aucun produit désigné
 - Il n'annonce ni économie chiffrée ni gain de temps chiffré, faute de mesure.
-- Il ne dépasse pas deux cents mots avant la signature.
+- Il ne dépasse pas trois cents mots avant la signature.
 - Il n'écrit aucune adresse web de lui-même : les liens sont ajoutés après lui.
 
 ## L'expéditeur
 
+Alexis Peringer signe le message. Une réponse arrive à `alexis@peringer.ch`,
+boîte que l'étape `bounces` lit déjà.
+
 **À compléter**
 
-La personne qui signe, sa fonction, ainsi que l'adresse à laquelle une réponse
-arrive.
+La fonction qui accompagne la signature.
 
 ## Le registre de langue
 
