@@ -334,6 +334,35 @@ def cmd_sendlist(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_draft(args: argparse.Namespace) -> int:
+    """Propose one message per firm, for a person to judge.
+
+    Nothing is sent. Rows land in `intel.draft` with `sent_at` null, which is
+    the stage's first design constraint and the reason there is no send half
+    anywhere in this program.
+    """
+    settings = load_settings()
+    conn = db.open_db(settings.database_url)
+    run_id = db.start_run(conn, "draft", vars(args))
+    try:
+        stats = draft.run(
+            settings, conn,
+            desk_parts=_desk_parts(),
+            segments=_split(args.segment),
+            cantons=_split(args.canton),
+            limit=args.limit,
+            confirmed=args.yes,
+            dry_run=args.dry_run,
+        )
+    except Exception as exc:
+        conn.rollback()
+        db.finish_run(conn, run_id, error=str(exc))
+        print(f"error: {exc}", file=sys.stderr)
+        return 1
+    db.finish_run(conn, run_id, stats)
+    return 0
+
+
 def cmd_bounces(args: argparse.Namespace) -> int:
     """Read delivery failures out of the mailbox and record them.
 
@@ -1695,11 +1724,6 @@ def cmd_modules(args: argparse.Namespace) -> int:
     return 0
 
 
-def cmd_stub(args: argparse.Namespace) -> int:
-    {"draft": draft}[args.command].run()
-    return 0
-
-
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="arpenteur",
@@ -2176,9 +2200,24 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--dry-run", action="store_true", help="say what it would do")
     p.set_defaults(func=cmd_resolve)
 
-    sub.add_parser(
-        "draft", help="propose messages for review (not built yet)"
-    ).set_defaults(func=cmd_stub)
+    p = sub.add_parser(
+        "draft", help="propose one message per firm, for review; sends nothing"
+    )
+    p.add_argument("--segment", default="", help="comma separated")
+    p.add_argument("--canton", default="", help="comma separated")
+    p.add_argument(
+        "--limit", type=int, default=draft.SAFE_BATCH,
+        help=f"how many to draft (default {draft.SAFE_BATCH}, the safe batch)",
+    )
+    p.add_argument(
+        "--yes", action="store_true",
+        help="acknowledge the batch size; see LCD art. 3 al. 1 let. o",
+    )
+    p.add_argument(
+        "--dry-run", action="store_true",
+        help="list what would be drafted, call no model",
+    )
+    p.set_defaults(func=cmd_draft)
 
     return parser
 
