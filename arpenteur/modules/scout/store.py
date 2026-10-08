@@ -1712,6 +1712,24 @@ def save_mailbox_verdict(
     return int(getattr(done, "rowcount", 0) or 0)
 
 
+def address_state(conn: Connection, address: str) -> Row | None:
+    """Whether this address may be written to, and why.
+
+    Read immediately before a send. `send_list` applies the same two rules in
+    bulk, and a send that trusted a list built minutes earlier would post to an
+    address a reply suppressed in between. One row, one lookup, at the last
+    moment the answer can change.
+    """
+    return conn.execute(
+        "SELECT bool_or(suppressed) AS suppressed,"
+        "       bool_or(status = 'bounced') AS failed,"
+        "       min(status) AS status, count(*) AS held"
+        "  FROM core.contact"
+        " WHERE kind = 'email' AND lower(value) = %s",
+        (address.strip().lower(),),
+    ).fetchone()
+
+
 def addresses_held(conn: Connection) -> frozenset[str]:
     """Every email address the survey holds, for matching a report against.
 
@@ -1944,10 +1962,10 @@ def unreview_draft(conn: Connection, draft_id: int) -> Row | None:
 def mark_draft_sent(conn: Connection, draft_id: int) -> Row | None:
     """Record that it left, which only a person can know.
 
-    Nothing in this program sends mail, so `sent_at` is set by the operator
-    after their own client sent it. It is also what retires the row from the
-    one-per-mailbox index, so a later approach to the same firm is a new
-    proposal rather than an edit of this one.
+    Set either by the operator after their own client sent it, or by
+    `stages/send.py` once SMTP has accepted the message. It is also what
+    retires the row from the one-per-mailbox index, so a later approach to the
+    same firm is a new proposal rather than an edit of this one.
     """
     return conn.execute(
         "UPDATE intel.draft SET sent_at = %s, reviewed_at ="

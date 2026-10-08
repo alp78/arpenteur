@@ -136,7 +136,7 @@ quoique retenu jusqu'à la validation d'Apple.
 - Il ne cite aucune autre régie, ni comme référence ni comme exemple
 - Il ne se compare à aucun produit désigné
 - Il n'annonce ni économie chiffrée ni gain de temps chiffré, faute de mesure.
-- Il ne dépasse pas trois cents mots avant la signature.
+- Il ne dépasse pas quatre cent cinquante mots avant la signature.
 - Il n'écrit aucune adresse web de lui-même : les liens sont ajoutés après lui.
 
 ## L'expéditeur

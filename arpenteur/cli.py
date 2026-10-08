@@ -39,6 +39,7 @@ from .stages import (
     verify,
 )
 from .stages import answers as answers_stage
+from .stages import send as send_stage
 from .stages import bounces as bounce_stage
 
 
@@ -338,9 +339,9 @@ def cmd_sendlist(args: argparse.Namespace) -> int:
 def cmd_draft(args: argparse.Namespace) -> int:
     """Propose one message per firm, for a person to judge.
 
-    Nothing is sent. Rows land in `intel.draft` with `sent_at` null, which is
-    the stage's first design constraint and the reason there is no send half
-    anywhere in this program.
+    Nothing is sent here. Rows land in `intel.draft` with `sent_at` null,
+    which is the stage's first design constraint: posting is a separate act,
+    performed by `arpenteur send` and only on a draft somebody approved.
     """
     settings = load_settings()
     conn = db.open_db(settings.database_url)
@@ -386,6 +387,49 @@ def cmd_bounces(args: argparse.Namespace) -> int:
         stats = bounce_stage.run(
             settings, conn, folder=args.folder, limit=args.limit,
             since=since, dry_run=args.dry_run,
+        )
+    except Exception as exc:
+        conn.rollback()
+        db.finish_run(conn, run_id, error=str(exc))
+        print(f"error: {exc}", file=sys.stderr)
+        return 1
+    db.finish_run(conn, run_id, stats)
+    return 0
+
+
+def cmd_send(args: argparse.Namespace) -> int:
+    """Post a message, or report what would be posted.
+
+    A dry run by default. The flag that sends is `--yes`, and it is named
+    rather than implied because the mistake this guards against costs one
+    message per firm on a list of 2'450.
+    """
+    settings = load_settings()
+    conn = db.open_db(settings.database_url)
+    run_id = db.start_run(conn, "send", {
+        k: v for k, v in vars(args).items() if k != "func"
+    })
+    letters: list[send_stage.Letter] = []
+    if args.to:
+        body = ""
+        if args.body_file:
+            try:
+                body = Path(args.body_file).read_text(encoding="utf-8")
+            except OSError as exc:
+                print(f"error: {exc}", file=sys.stderr)
+                return 1
+        elif args.body:
+            body = args.body
+        else:
+            body = sys.stdin.read()
+        letters.append(send_stage.Letter(
+            to=args.to, subject=args.subject, body=body,
+        ))
+    try:
+        stats = send_stage.run(
+            settings, conn, letters=letters or None,
+            draft_ids=[int(d) for d in args.draft],
+            confirm=args.yes, plain=args.plain,
         )
     except Exception as exc:
         conn.rollback()
@@ -2321,6 +2365,31 @@ def build_parser() -> argparse.ArgumentParser:
         help="report everything, suppress nothing",
     )
     p.set_defaults(func=cmd_answers)
+
+    p = sub.add_parser(
+        "send",
+        help="post an approved draft, or one message typed on the command line",
+    )
+    p.add_argument(
+        "--draft", action="append", default=[], metavar="ID",
+        help="an approved draft to post; repeatable",
+    )
+    p.add_argument("--to", default="", help="one recipient, for a one-off")
+    p.add_argument("--subject", default="", help="the subject, for a one-off")
+    p.add_argument("--body", default="", help="the text, for a one-off")
+    p.add_argument(
+        "--body-file", dest="body_file", default="",
+        help="read the text from this file; stdin when neither is given",
+    )
+    p.add_argument(
+        "--yes", action="store_true",
+        help="actually post, having read what a dry run listed",
+    )
+    p.add_argument(
+        "--plain", action="store_true",
+        help="send text only, without the formatted part",
+    )
+    p.set_defaults(func=cmd_send)
 
     p = sub.add_parser(
         "workspace",

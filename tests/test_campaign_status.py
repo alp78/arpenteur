@@ -550,8 +550,9 @@ def test_history_holds_both_directions_in_order(
 ) -> None:
     """A message the operator sent arrives from the Sent folder.
 
-    Nothing in this program sends, so an outbound row exists only because the
-    mail stage read it back out of the mailbox.
+    An outbound row exists because the mail stage read it back out of the
+    mailbox, which is also how a message `arpenteur send` posted gets
+    attributed: the send files a copy in Sent and the next import finds it.
     """
     company_id = companies["CHE200000001"]
     conn.execute(

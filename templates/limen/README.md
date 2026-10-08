@@ -2,7 +2,8 @@
 
 Three files, one per language the survey writes in. Copy the block between the
 two rules into a mail client, delete the band variant that does not apply, and
-send it. Nothing in this repository sends mail.
+send it. `arpenteur send` can post one instead, and it refuses any address that
+asked to be left alone.
 
 ## Region is language, and the code already decides it
 

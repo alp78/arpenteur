@@ -480,7 +480,7 @@ def mark_sent(
 ) -> None:
     """Record that a version went out. Arpenteur does not send it.
 
-    The whole codebase has no send path, by design and by test. This records
+    Quotes and invoices are never posted from here. This records
     that a person sent it, which is what freezes the version and moves the
     quote's own state.
     """

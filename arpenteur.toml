@@ -503,3 +503,19 @@ android_window_start = ""
 android_window_end = ""
 android_testers = 12
 android_days = 14
+
+[smtp]
+# The send half. Host, port, user and password come from .env (SMTP_SERVER,
+# SMTP_PORT, SMTP_USERNAME, SMTP_PASSWORD, SMTP_SECURITY), falling back to the
+# INFOMANIAK_* names and then to the IMAP credentials, so one mailbox at one
+# host needs nothing added here.
+# Port 587 wants starttls, port 465 wants ssl.
+security = "starttls"
+sender_name = "Alexis Peringer"
+# Empty asks the server what it calls its Sent folder.
+sent_folder = ""
+# How many messages one run may post. A review limit before a politeness one.
+per_run = 25
+# An HTML fragment appended to every message, below a thin rule. Edit it at
+# /signature in the console, or write the file by hand.
+signature_file = "signature.html"

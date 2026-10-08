@@ -15,10 +15,10 @@ text of one draft at a time rather than a grid of excerpts.
 banner and the approve button is not offered. Leaving the operator to notice a
 bracketed string inside a paragraph is how it reaches a recipient.
 
-**Approved is not sent.** Nothing in this program sends mail. `reviewed_at`
-says a person read it; `sent_at` is set afterwards, by hand, by whoever sent
-it from their own client. Collapsing the two would make the record claim
-something it cannot know.
+**Approved is not sent.** No route here posts anything. `reviewed_at` says a
+person read it; `sent_at` is set afterwards, either by hand on this page or by
+`arpenteur send`, which refuses any draft this page would not approve.
+Collapsing the two would make the record claim something nobody confirmed.
 """
 
 from __future__ import annotations

@@ -3,37 +3,67 @@
 For every canton `stages.draft.language_of` does not resolve to `fr` or `it`,
 which is the German-speaking majority of the survey.
 
-The first sentence has two variants, one per band. Keep the one that fits and
-delete the other: telling a managing agent that the tool touches its weekly work
-is exact, telling a landlord the same thing is not.
+Five movements, in this order, because a reader who does not know who is
+writing has no reason to read what follows:
+
+1. Who is writing, and why this sector.
+2. What Limen is, as an object rather than a feature list.
+3. How a handover runs with it, start to finish.
+4. Why the sender believes it helps, stated as a belief.
+5. How to enrol, and only then.
+
+The first paragraph has two variants, one per band. Keep the one that fits and
+delete the other.
 
 The product sentences restate the application's own page at
 `src/content/apps/limen/de.mdx` in the PERINGER repository, in the owner's own
-German rather than a translation of the French. Swiss orthography throughout, so
-`ss` and never `ß`.
+German rather than a translation of the French. Swiss orthography throughout,
+so `ss` and never `ß`.
+
+No signature line appears below the closing. `arpenteur send` appends the
+fragment from `signature.html`, edited at `/signature` in the console.
 
 The anchor is `#testeurs` in every language, because `AppPage.astro` hardcodes
 that id. It is not a French-only link.
 
 ---
 
-Betreff: Limen, das Übergabeprotokoll auf dem Telefon: Zugang zum Test
+Betreff: Limen, das Übergabeprotokoll auf dem Telefon
 
 Sehr geehrte Damen und Herren,
 
+Ich entwickle mobile Anwendungen als Selbständiger. Die Immobilienverwaltung
+interessiert mich seit einiger Zeit, besonders das Übergabeprotokoll, einer der
+letzten Vorgänge des Fachs, der noch auf Papier abläuft.
+
 *[Band `regie-core`]* Ihr statutarischer Zweck nennt die Verwaltung von
-Liegenschaften für Dritte, womit ein Übergabeprotokoll bei jedem Mieterwechsel
-anfällt.
+Liegenschaften für Dritte, womit dieser Vorgang bei Ihnen zu jedem
+Mieterwechsel anfällt.
 
 *[Band `regie-letting`]* Ihr statutarischer Zweck nennt die Vermietung von
 Liegenschaften, eine Tätigkeit, die ein Einzugsprotokoll und später ein
 Auszugsprotokoll verlangt.
 
-Limen hält diese Übergabe auf einem einzigen Telefon fest, bis zum
-unterschriebenen A4-PDF mit den Fotos als nummeriertem Anhang. Jede Feststellung
-erhält eine Beschreibung, die Kostenzuordnung, eine Frist zur Behebung und die
-erklärte Position der Gegenseite. Eine kantonale Ergänzung deckt die Regeln ab,
-die sich innerhalb der Schweiz unterscheiden, darunter das Waadtländer RULV.
+Limen ersetzt das Papierformular der Übergabe. Das Protokoll wird nicht mehr im
+Büro abgeschrieben: es entsteht vor Ort auf einem Telefon und ist fertig, wenn
+Sie die Wohnung verlassen.
+
+Der Ablauf hat fünf Schritte:
+
+1. Sie öffnen bei der Ankunft eine Sitzung und geben an, welche Partei Sie vertreten.
+2. Sie gehen die Räume in der Reihenfolge durch, die Ihnen passt, beschreiben die Mängel und fotografieren sie.
+3. Sie ergänzen die Unterlagen, darunter die Zählerstände und die Schlüsselübergabe.
+4. Beide Parteien unterschreiben auf dem Telefon oder verweigern die Unterschrift mit Begründung.
+5. Die App erzeugt das PDF-Protokoll, das jede Partei mitnimmt.
+
+Drei Dinge ändern sich dadurch, dass das Protokoll vor Ort fertig wird:
+
+1. Jedes Foto hängt schon an der Feststellung, die es zeigt.
+2. Die Unterschrift wird eingeholt, solange beide Parteien noch vor Ort sind.
+3. Die Unterlagen brauchen keine zweite Erfassung im Büro.
+
+Eine Zahl zur Zeitersparnis nenne ich nicht, weil sie an echten Übergaben noch
+nicht gemessen wurde. Genau das soll dieser Test leisten.
 
 Die App verlangt kein Konto und keine Anmeldung bei mir. Das ganze Protokoll
 bleibt auf dem Telefon. Die Adresssuche von swisstopo ist ihr einziger
@@ -63,10 +93,6 @@ abdecken, kann ich Ihnen eine Studie dazu anbieten.
 
 Freundliche Grüsse
 
-Alexis Peringer
-alexis@peringer.ch
-https://peringer.ch
-
 ---
 
 ## What this message withholds
@@ -84,5 +110,5 @@ turns on an agreement that is not yet active, so no figure appears.
 
 **Any saving in francs or hours**
 
-No measurement over real handovers exists yet, which is what the test is meant
-to produce.
+No measurement over real handovers exists yet, and the message says so in its
+fourth movement rather than passing over it.

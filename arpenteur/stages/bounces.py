@@ -16,7 +16,7 @@ which is the flag `send_list` and every selection through it already obey.
 
 **Nothing is sent from here.** The send happens through the operator's own
 provider, from the CSV `sendlist` writes, for the reason `stages/mail.py` gives
-for having no send path at all: a sender owns SPF, DKIM, DMARC alignment, rate
+for keeping the send half narrow: a sender owns SPF, DKIM, DMARC alignment, rate
 pacing and a suppression list, and each of those is a way to lose a domain's
 reputation permanently. What this stage reads is ordinary inbound mail.
 

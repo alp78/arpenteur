@@ -111,16 +111,25 @@ def test_no_route_transmits_anything(settings, conn) -> None:
     for word in ("send", "smtp", "transmit", "dispatch"):
         assert word not in paths, f"a route mentioning {word!r} appeared"
 
+    # Sending lives in exactly one module, so that every rule about who may be
+    # written to can be read in one place. The sweep below is what keeps that
+    # true as the package grows: a second module reaching for smtplib would
+    # put those rules somewhere nobody looks.
     root = Path(__file__).resolve().parent.parent / "arpenteur"
+    senders = []
     for path in root.rglob("*.py"):
         text = path.read_text(encoding="utf-8")
-        assert "smtplib" not in text, f"{path.name} imports an SMTP client"
-        assert "SMTP(" not in text, f"{path.name} opens an SMTP session"
-        # The IMAP commands that write to a mailbox. Arpenteur reads one, and
-        # a marked-read or moved message is a change to somebody else's record
-        # of their own correspondence.
-        for command in ('"APPEND"', '"STORE"', '"EXPUNGE"'):
-            assert command not in text, f"{path.name} writes to the mailbox"
+        if "smtplib" in text or "SMTP(" in text:
+            senders.append(path.relative_to(root).as_posix())
+        # The IMAP commands that write to a mailbox. Only the send half files a
+        # copy of what it posted; a marked-read or moved message anywhere else
+        # is a change to somebody else's record of their own correspondence.
+        if path.name != "smtp.py":
+            for command in ('"APPEND"', '"STORE"', '"EXPUNGE"'):
+                assert command not in text, f"{path.name} writes to the mailbox"
+    assert senders == ["sources/smtp.py"], (
+        f"SMTP reached from more than the send half: {senders}"
+    )
 
 
 def test_the_advice_is_labelled_as_a_draft(client) -> None:

@@ -938,8 +938,8 @@ def _fit_card(fit: Row | None) -> str:
         body.append(
             "<h2 style='margin-top:1rem'>suggested opening</h2>"
             f'<div style="white-space:pre-line">{esc(fit["advice"])}</div>'
-            '<p class="dim small">A draft for a human to rewrite. Nothing here '
-            "sends, and this tool has no send path at all.</p>"
+            '<p class="dim small">A draft for a human to rewrite. No route '
+            "here sends, and this text was never reviewed for sending.</p>"
         )
     return f'<h2>fit</h2><div class="card">{"".join(body)}</div>'
 

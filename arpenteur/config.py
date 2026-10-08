@@ -163,7 +163,7 @@ class EnrolConfig:
 
 @dataclass(frozen=True)
 class MailConfig:
-    """Where correspondence is read from. There is no send half, deliberately.
+    """Where correspondence is read from. The send half is `SmtpConfig`.
 
     The credentials are per device rather than per address at most Swiss
     hosts: Infomaniak issues one password per application, refuses the account
@@ -195,6 +195,57 @@ class MailConfig:
         if mine:
             found.add(mine.lower())
         return frozenset(found)
+
+
+@dataclass(frozen=True)
+class SmtpConfig:
+    """Where a message leaves from, for any host rather than one.
+
+    Separate from `MailConfig` because the two halves are separate
+    credentials at most hosts and separate ports at all of them, and because
+    a deployment may well read one mailbox while sending through a relay.
+
+    The credentials fall back to the IMAP ones when nothing names them, since
+    a single mailbox at a single host is the common case and duplicating the
+    password into a second variable is how the two drift apart.
+    """
+
+    host: str = ""
+    port: int = 587
+    user: str = ""
+    password: str = ""
+    # How the session is protected. Port 587 wants starttls, port 465 wants
+    # ssl, and a mismatch fails at the handshake with a TLS error.
+    security: str = "starttls"
+    # What a recipient sees, and where a reply goes. The From address has to be
+    # the authenticated mailbox or one of its aliases at nearly every host.
+    sender: str = ""
+    sender_name: str = ""
+    reply_to: str = ""
+    # Where a copy is filed. Empty means ask the server what it calls its Sent
+    # folder, which differs by host and by language.
+    sent_folder: str = ""
+    # An HTML fragment appended below a thin rule on every message. A file
+    # rather than a setting because a signature is written once, edited rarely
+    # and pasted from a rich-text editor, none of which suits a TOML string.
+    signature_file: str = "signature.html"
+    # How many messages one run may post. A review limit before a politeness
+    # one: a batch nobody reads is a batch that sends the wrong thing 25 times.
+    per_run: int = 25
+
+    @property
+    def configured(self) -> bool:
+        return bool(self.host and self.sender)
+
+    def missing(self) -> list[str]:
+        gaps = []
+        if not self.host:
+            gaps.append("SMTP_SERVER, the host that accepts the message")
+        if not self.sender:
+            gaps.append("SMTP_SENDER, the address the message comes from")
+        if not self.password:
+            gaps.append("SMTP_PASSWORD, the password for that mailbox")
+        return gaps
 
 
 @dataclass(frozen=True)
@@ -350,6 +401,7 @@ class Settings:
     # registry resolves dependencies; this is only what was asked for.
     modules: tuple[str, ...] = ()
     mail: MailConfig = field(default_factory=MailConfig)
+    smtp: SmtpConfig = field(default_factory=SmtpConfig)
     issuer: IssuerConfig = field(default_factory=IssuerConfig)
     # The rate card as rows. The prose `rate_card` above stays as what
     # the advise stage reads until a catalogue is loaded into the
@@ -641,6 +693,7 @@ def load_settings(root: Path | None = None) -> Settings:
             api_key=os.environ.get("ANTHROPIC_API_KEY") or None,
         ),
         mail=_mail(raw.get("mail") or {}),
+        smtp=_smtp(raw.get("smtp") or {}, _mail(raw.get("mail") or {})),
         enrol=_enrol(raw.get("enrol") or {}),
         issuer=_issuer(raw.get("issuer") or {}),
         catalogue=_catalogue(raw.get("rates") or {}),
@@ -722,6 +775,31 @@ def _enrol(raw: dict) -> EnrolConfig:
         android_window_end=str(raw.get("android_window_end", "") or "").strip(),
         android_testers=int(raw.get("android_testers", 12)),
         android_days=int(raw.get("android_days", 14)),
+    )
+
+
+def _smtp(raw: dict, mail: MailConfig) -> SmtpConfig:
+    """Read the send half, falling back to the read half's credentials."""
+    user = _env("SMTP_USERNAME", "INFOMANIAK_USERNAME") or mail.user
+    sender = _env("SMTP_SENDER") or str(raw.get("sender", "") or "").strip() or user
+    return SmtpConfig(
+        host=_env("SMTP_SERVER", "INFOMANIAK_SMTP_SERVER"),
+        port=int(_env("SMTP_PORT", "INFOMANIAK_SMTP_PORT") or 587),
+        user=user,
+        password=_env("SMTP_PASSWORD", "INFOMANIAK_PASSWORD") or mail.password,
+        security=(
+            _env("SMTP_SECURITY")
+            or str(raw.get("security", "") or "").strip()
+            or "starttls"
+        ).lower(),
+        sender=sender,
+        sender_name=str(raw.get("sender_name", "") or "").strip(),
+        reply_to=_env("SMTP_REPLY_TO") or str(raw.get("reply_to", "") or "").strip(),
+        sent_folder=str(raw.get("sent_folder", "") or "").strip(),
+        signature_file=str(
+            raw.get("signature_file", "signature.html") or ""
+        ).strip(),
+        per_run=int(raw.get("per_run", 25)),
     )
 
 

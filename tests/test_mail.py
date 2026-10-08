@@ -507,9 +507,14 @@ def test_the_page_explains_itself_when_no_mailbox_is_configured(db_path, build_s
     assert "No mailbox is configured" in page.text
 
 
-def test_there_is_no_way_to_send(db_path):
-    """A promise the code keeps rather than the documentation. Nothing in the
-    mail path imports smtplib, and `Mailbox` has no method that writes."""
+def test_the_read_half_still_cannot_write(db_path):
+    """The guarantee that survived Arpenteur gaining a send half.
+
+    Sending now exists, in `sources/smtp.py` and nowhere else. What this
+    asserts is the separation: the module that reads somebody's mailbox holds
+    no SMTP client and issues no command that changes a mailbox, so importing
+    correspondence still cannot mark a message read, move it or post anything.
+    """
     import inspect
 
     from arpenteur.sources import mail as source

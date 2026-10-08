@@ -10,8 +10,9 @@ family message in a client's project history within a week.
 Three rules, all of them about restraint.
 
 **Read-only, and unread stays unread.** See `sources/mail.py`: the folder is
-selected read-only and every fetch peeks. There is no send path anywhere in
-this codebase.
+selected read-only and every fetch peeks. Sending lives in `stages/send.py` and
+reaches SMTP through `sources/smtp.py` alone, so nothing on this path can post
+or alter a message.
 
 **Envelopes for everything, bodies only for what matched.** This is somebody's
 personal mailbox. A subject line is what makes the queue reviewable; the text

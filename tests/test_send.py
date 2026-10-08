@@ -1,0 +1,519 @@
+"""Posting a message, and the rules that decide whether it may be posted.
+
+Arpenteur gained a send half on the owner's instruction, which replaced a
+documented guarantee that nothing could leave. What replaces a guarantee has to
+be tested harder than what it replaced, so these are the promises:
+
+that nothing leaves without an explicit confirmation, the default being a dry
+run; that an address which asked to be left alone is never written to, checked
+at the last moment rather than trusted from a list; that a mailbox which
+returned a permanent failure is not tried again; that a draft carrying an
+unfilled marker cannot be posted from any surface; that a draft nobody approved
+cannot be posted; and that a run is capped, because a batch nobody read is a
+batch that sends the same wrong sentence twenty-five times.
+
+The SMTP session is a stand-in throughout. A test that posted real mail would
+be a test nobody dares run.
+"""
+
+from __future__ import annotations
+
+from dataclasses import replace
+from email.message import EmailMessage
+from pathlib import Path
+
+import pytest
+
+from arpenteur import db
+from arpenteur.config import MailConfig, SmtpConfig
+from arpenteur.kernel.db import Connection
+from arpenteur.modules.clients import store as clients_store
+from arpenteur.sources import smtp
+from arpenteur.stages import send as send_stage
+
+pytestmark = pytest.mark.pg
+
+
+class FakeSender:
+    """Records what it was asked to post, and refuses what it is told to."""
+
+    def __init__(self, refuse: set[str] | None = None) -> None:
+        self.posted: list[EmailMessage] = []
+        self.refuse = refuse or set()
+        self.opened = 0
+
+    def __call__(self) -> "FakeSender":
+        return self
+
+    def __enter__(self) -> "FakeSender":
+        self.opened += 1
+        return self
+
+    def __exit__(self, *exc: object) -> None:
+        return None
+
+    def post(self, message: EmailMessage) -> smtp.Posted:
+        to = str(message["To"])
+        if to in self.refuse:
+            raise smtp.SendError(f"the server refused {to}")
+        self.posted.append(message)
+        return smtp.Posted(
+            message_id=str(message["Message-ID"]), to=to,
+            subject=str(message["Subject"]),
+            at=db.now_dt() if hasattr(db, "now_dt") else __import__(
+                "datetime"
+            ).datetime.now(__import__("datetime").timezone.utc),
+        )
+
+
+@pytest.fixture
+def smtp_settings(build_settings, tmp_path: Path):
+    """Settings with a configured send half and no real credentials."""
+    return build_settings(
+        tmp_path,
+        mail=MailConfig(host="imap.test", user="me@peringer.ch", password="x"),
+        smtp=SmtpConfig(
+            host="smtp.test", port=587, user="me@peringer.ch", password="x",
+            sender="me@peringer.ch", sender_name="Me", per_run=3,
+        ),
+    )
+
+
+@pytest.fixture
+def conn(db_path: str) -> Connection:
+    connection = db.open_db(db_path)
+    row = connection.execute(
+        "INSERT INTO core.company (uid, name, canton, legal_form_uid,"
+        " legal_form_label, legal_seat, status, purpose, source_url, method,"
+        " fetched_at, first_seen, hydrated_at)"
+        " VALUES ('CHE300000001', 'Regie Test SA', 'VD', '0106', 'SA',"
+        " 'Lausanne', 'ACTIVE', 'gerance', 'https://example.test', 'zefix',"
+        " '2026-09-01', '2026-09-01', '2026-09-01') RETURNING id"
+    ).fetchone()
+    connection.execute(
+        "INSERT INTO core.contact (company_id, kind, value, source_url,"
+        " method, fetched_at) VALUES (%s, 'email', 'info@regie-test.ch',"
+        " 'https://example.test', 'website', now())",
+        (int(row["id"]),),
+    )
+    connection.commit()
+    return connection
+
+
+@pytest.fixture
+def company_id(conn: Connection) -> int:
+    return int(conn.execute("SELECT id FROM core.company").fetchone()["id"])
+
+
+def _draft(
+    conn: Connection, company_id: int, *, address: str = "info@regie-test.ch",
+    body: str = "Bonjour, ceci est le message.", reviewed: bool = True,
+    sent: bool = False, subject: str = "Limen",
+) -> int:
+    row = conn.execute(
+        "INSERT INTO intel.draft (company_id, language, subject, body, model,"
+        " address, brief_digest, reviewed_at, sent_at)"
+        " VALUES (%s, 'fr', %s, %s, 'test', %s, 'abc',"
+        f" {'now()' if reviewed else 'NULL'}, {'now()' if sent else 'NULL'})"
+        " RETURNING id",
+        (company_id, subject, body, address),
+    ).fetchone()
+    conn.commit()
+    return int(row["id"])
+
+
+# --- composing -----------------------------------------------------------------
+
+
+def test_a_message_carries_the_headers_a_receiver_expects() -> None:
+    message = smtp.compose(
+        sender="me@peringer.ch", sender_name="Me", to="you@test.ch",
+        subject="Limen", body="Bonjour",
+    )
+    assert message["To"] == "you@test.ch"
+    assert "me@peringer.ch" in message["From"]
+    assert message["Subject"] == "Limen"
+    assert message["Date"]
+    assert message["Message-ID"].endswith("@peringer.ch>")
+    assert message.get_content_type() == "text/plain"
+
+
+def test_an_empty_subject_or_body_is_refused() -> None:
+    """A message with neither reads as spam, which is the one thing to avoid."""
+    with pytest.raises(smtp.SendError, match="subject"):
+        smtp.compose(sender="a@b.ch", to="c@d.ch", subject=" ", body="x")
+    with pytest.raises(smtp.SendError, match="empty"):
+        smtp.compose(sender="a@b.ch", to="c@d.ch", subject="x", body="  ")
+
+
+def test_an_address_that_is_not_an_address_is_refused() -> None:
+    with pytest.raises(smtp.SendError, match="recipient"):
+        smtp.compose(sender="a@b.ch", to="not-an-address", subject="x", body="y")
+
+
+def test_plain_text_only() -> None:
+    """A tracked image in a cold message is what a filter looks for."""
+    message = smtp.compose(
+        sender="a@b.ch", to="c@d.ch", subject="x", body="é accentué"
+    )
+    assert not message.is_multipart()
+    assert "é accentué" in message.get_content()
+
+
+# --- the session ---------------------------------------------------------------
+
+
+def test_an_unknown_security_is_refused_before_any_socket_opens() -> None:
+    with pytest.raises(smtp.SendError, match="security"):
+        smtp.Sender("h", 25, security="tls-maybe")
+
+
+def test_a_password_is_never_offered_over_an_unprotected_session() -> None:
+    with pytest.raises(smtp.SendError, match="unprotected"):
+        smtp.Sender("h", 25, user="u", password="p", security=smtp.NONE)
+
+
+# --- the confirmation ----------------------------------------------------------
+
+
+def test_a_run_without_confirmation_posts_nothing(
+    smtp_settings, conn, company_id
+) -> None:
+    """The default, because the mistake costs one message per firm."""
+    fake = FakeSender()
+    said: list[str] = []
+    stats = send_stage.run(
+        smtp_settings, conn, draft_ids=[_draft(conn, company_id)],
+        open_sender=fake, log=said.append,
+    )
+    assert stats["sent"] == 0
+    assert fake.opened == 0, "no session is opened for a dry run"
+    assert any("Nothing was sent" in line for line in said)
+
+
+def test_confirming_posts_and_records(smtp_settings, conn, company_id) -> None:
+    draft_id = _draft(conn, company_id)
+    fake = FakeSender()
+    stats = send_stage.run(
+        smtp_settings, conn, draft_ids=[draft_id], confirm=True,
+        open_sender=fake, log=lambda _m: None,
+    )
+    assert stats["sent"] == 1
+    assert len(fake.posted) == 1
+    assert fake.posted[0]["To"] == "info@regie-test.ch"
+    row = conn.execute(
+        "SELECT sent_at FROM intel.draft WHERE id = %s", (draft_id,)
+    ).fetchone()
+    assert row["sent_at"] is not None, "the draft records that it left"
+
+
+# --- who may be written to -----------------------------------------------------
+
+
+def test_an_address_that_asked_to_be_left_alone_is_never_written_to(
+    smtp_settings, conn, company_id
+) -> None:
+    """The promise the message itself makes, kept at the last moment.
+
+    `send_list` applies the same rule in bulk, and a list built an hour ago
+    does not know about the reply that arrived since.
+    """
+    draft_id = _draft(conn, company_id)
+    conn.execute(
+        "UPDATE core.contact SET suppressed = true WHERE kind = 'email'"
+    )
+    conn.commit()
+    fake = FakeSender()
+    stats = send_stage.run(
+        smtp_settings, conn, draft_ids=[draft_id], confirm=True,
+        open_sender=fake, log=lambda _m: None,
+    )
+    assert stats["sent"] == 0
+    assert fake.posted == []
+    assert conn.execute(
+        "SELECT sent_at FROM intel.draft WHERE id = %s", (draft_id,)
+    ).fetchone()["sent_at"] is None
+
+
+def test_a_mailbox_that_failed_permanently_is_not_tried_again(
+    smtp_settings, conn, company_id
+) -> None:
+    draft_id = _draft(conn, company_id)
+    conn.execute(
+        "UPDATE core.contact SET status = 'bounced' WHERE kind = 'email'"
+    )
+    conn.commit()
+    fake = FakeSender()
+    stats = send_stage.run(
+        smtp_settings, conn, draft_ids=[draft_id], confirm=True,
+        open_sender=fake, log=lambda _m: None,
+    )
+    assert stats["sent"] == 0 and fake.posted == []
+
+
+def test_a_draft_carrying_a_marker_cannot_be_posted(
+    smtp_settings, conn, company_id
+) -> None:
+    """The console withholds approval from one of these; so does this."""
+    draft_id = _draft(
+        conn, company_id,
+        body="Bonjour, le lien est [[ MANQUE : lien TestFlight ]].",
+    )
+    fake = FakeSender()
+    stats = send_stage.run(
+        smtp_settings, conn, draft_ids=[draft_id], confirm=True,
+        open_sender=fake, log=lambda _m: None,
+    )
+    assert stats["sent"] == 0 and fake.posted == []
+
+
+def test_a_draft_nobody_approved_cannot_be_posted(
+    smtp_settings, conn, company_id
+) -> None:
+    draft_id = _draft(conn, company_id, reviewed=False)
+    fake = FakeSender()
+    stats = send_stage.run(
+        smtp_settings, conn, draft_ids=[draft_id], confirm=True,
+        open_sender=fake, log=lambda _m: None,
+    )
+    assert stats["sent"] == 0 and fake.posted == []
+
+
+def test_a_draft_already_sent_is_not_sent_twice(
+    smtp_settings, conn, company_id
+) -> None:
+    draft_id = _draft(conn, company_id, sent=True)
+    fake = FakeSender()
+    stats = send_stage.run(
+        smtp_settings, conn, draft_ids=[draft_id], confirm=True,
+        open_sender=fake, log=lambda _m: None,
+    )
+    assert stats["sent"] == 0 and fake.posted == []
+
+
+def test_every_refusal_names_the_firm_and_the_reason(
+    smtp_settings, conn, company_id
+) -> None:
+    draft_id = _draft(conn, company_id, reviewed=False)
+    said: list[str] = []
+    send_stage.run(
+        smtp_settings, conn, draft_ids=[draft_id], confirm=True,
+        open_sender=FakeSender(), log=said.append,
+    )
+    joined = " ".join(said)
+    assert "Regie Test SA" in joined
+    assert "approved" in joined
+
+
+# --- the cap -------------------------------------------------------------------
+
+
+def test_a_run_is_capped_at_per_run(smtp_settings, conn, company_id) -> None:
+    """A review limit before a politeness one."""
+    letters = [
+        send_stage.Letter(to=f"a{n}@elsewhere.test", subject="x", body="y")
+        for n in range(6)
+    ]
+    fake = FakeSender()
+    stats = send_stage.run(
+        smtp_settings, conn, letters=letters, confirm=True,
+        open_sender=fake, log=lambda _m: None,
+    )
+    assert stats["sent"] == 3, "per_run is 3 in these settings"
+    assert len(fake.posted) == 3
+
+
+# --- the programme ------------------------------------------------------------
+
+
+def test_a_sent_draft_moves_the_programme_card(
+    smtp_settings, conn, company_id
+) -> None:
+    """The same link the console's own Mark as sent makes."""
+    programme_id = clients_store.add_programme(conn, "SENDTEST", "Outreach")
+    conn.commit()
+    settings = replace(
+        smtp_settings, enrol=replace(smtp_settings.enrol, programme="SENDTEST")
+    )
+    send_stage.run(
+        settings, conn, draft_ids=[_draft(conn, company_id)], confirm=True,
+        open_sender=FakeSender(), log=lambda _m: None,
+    )
+    row = conn.execute(
+        "SELECT stage, contact FROM crm.programme_member"
+        " WHERE programme_id = %s AND company_id = %s",
+        (programme_id, company_id),
+    ).fetchone()
+    assert row is not None, "the firm joined the programme on first contact"
+    assert row["stage"] == "contacted"
+    assert row["contact"] == "info@regie-test.ch"
+
+
+# --- configuration -------------------------------------------------------------
+
+
+def test_an_unconfigured_send_half_names_what_is_missing(
+    build_settings, tmp_path, conn, company_id
+) -> None:
+    settings = build_settings(tmp_path, smtp=SmtpConfig())
+    said: list[str] = []
+    stats = send_stage.run(
+        settings, conn, draft_ids=[_draft(conn, company_id)],
+        confirm=True, open_sender=FakeSender(), log=said.append,
+    )
+    assert stats["sent"] == 0
+    joined = " ".join(said)
+    assert "SMTP_SERVER" in joined and "SMTP_SENDER" in joined
+
+
+def test_a_server_refusal_is_reported_and_does_not_stop_the_batch(
+    smtp_settings, conn, company_id
+) -> None:
+    letters = [
+        send_stage.Letter(to="bad@elsewhere.test", subject="x", body="y"),
+        send_stage.Letter(to="good@elsewhere.test", subject="x", body="y"),
+    ]
+    fake = FakeSender(refuse={"bad@elsewhere.test"})
+    stats = send_stage.run(
+        smtp_settings, conn, letters=letters, confirm=True,
+        open_sender=fake, log=lambda _m: None,
+    )
+    assert stats["sent"] == 1
+    assert stats["refused"] == 1
+    assert [str(m["To"]) for m in fake.posted] == ["good@elsewhere.test"]
+
+
+# --- the folder parser that got this wrong once -------------------------------
+
+
+def test_the_sent_folder_is_found_whether_the_name_is_quoted_or_bare() -> None:
+    """The bug that made every filed copy silently vanish.
+
+    Infomaniak lists folder names unquoted, and splitting on the last quote
+    found the separator rather than the name.
+    """
+    from arpenteur.sources import mail
+
+    bare = [b'(\\HasNoChildren \\UnMarked) "/" Sent']
+    quoted = [b'(\\HasNoChildren) "/" "Sent"']
+    assert mail.folder_names(bare) == ["Sent"]
+    assert mail.folder_names(quoted) == ["Sent"]
+    assert smtp._first_match(smtp.SENT_CANDIDATES, ["INBOX", "Sent"]) == "Sent"
+    assert smtp._first_match(smtp.SENT_CANDIDATES, ["INBOX", "Envoyés"]) == "Envoyés"
+    assert smtp._first_match(smtp.SENT_CANDIDATES, ["INBOX"]) == ""
+
+
+# --- the formatted part and the signature -------------------------------------
+
+
+def test_a_message_carries_both_a_text_and_an_html_part() -> None:
+    """What a mail client expects, and what survives a client refusing HTML."""
+    from arpenteur.sources import letter
+
+    message = smtp.compose(
+        sender="a@b.ch", to="c@d.ch", subject="x",
+        body="Bonjour,\n\nUn paragraphe.\n",
+        html=letter.render("Bonjour,\n\nUn paragraphe.\n"),
+    )
+    assert message.is_multipart()
+    kinds = [part.get_content_type() for part in message.walk()]
+    assert "text/plain" in kinds and "text/html" in kinds
+    assert kinds.index("text/plain") < kinds.index("text/html"), (
+        "text first, which is the order a client reads as a preference"
+    )
+
+
+def test_an_ordered_list_renders_as_one() -> None:
+    from arpenteur.sources import letter
+
+    html = letter.to_html("Le déroulement:\n\n1. Premier.\n2. Second.\n")
+    assert "<ol" in html and html.count("<li") == 2
+    # The numbering comes from the list rather than the text. Asserted on the
+    # item's own content, because "1." also matches the 1.1rem in the styles.
+    assert ">Premier.</li>" in html
+    assert ">1. Premier.</li>" not in html
+
+
+def test_a_bare_url_becomes_a_link_and_cannot_reopen_a_tag() -> None:
+    from arpenteur.sources import letter
+
+    html = letter.to_html("Voir https://peringer.ch/x?a=1&b=2 pour la suite.")
+    assert 'href="https://peringer.ch/x?a=1&amp;b=2"' in html
+    danger = letter.to_html('<script>alert(1)</script> et <b>gras</b>')
+    assert "<script>" not in danger
+    assert "&lt;b&gt;gras&lt;/b&gt;" in danger, "the body is escaped, not parsed"
+
+
+def test_the_font_stack_starts_with_helvetica() -> None:
+    """A Swiss letter to a Swiss reader, and no web font is guaranteed."""
+    from arpenteur.sources import letter
+
+    document = letter.render("Bonjour.")
+    assert "Helvetica" in document
+    assert "<style" not in document, "Gmail strips a style block"
+
+
+def test_a_pasted_signature_loses_its_script_and_its_handlers() -> None:
+    from arpenteur.sources import letter
+
+    pasted = (
+        '<div onclick="steal()">Alexis <b>P</b>'
+        '<script>x()</script>'
+        '<a href="javascript:bad()">bad</a>'
+        '<a href="https://peringer.ch">site</a>'
+        '<img src="https://tracker.test/p.gif">'
+        "</div>"
+    )
+    cleaned = letter.clean_signature(pasted)
+    assert "onclick" not in cleaned
+    assert "<script>" not in cleaned and "x()" not in cleaned
+    assert "javascript:" not in cleaned
+    assert 'href="https://peringer.ch"' in cleaned
+    assert "<b>P</b>" in cleaned
+
+
+def test_a_signature_round_trips_through_the_file(tmp_path: Path) -> None:
+    from arpenteur.sources import letter
+
+    path = tmp_path / "signature.html"
+    letter.store_signature(path, '<div>Alexis <i>P</i><script>x()</script></div>')
+    assert letter.load_signature(path) == "<div>Alexis <i>P</i></div>"
+    assert letter.load_signature(tmp_path / "absent.html") == ""
+
+
+def test_the_signature_reaches_both_parts(
+    smtp_settings, conn, company_id, tmp_path: Path
+) -> None:
+    """A reader whose client refuses HTML must not receive an unsigned letter."""
+    from arpenteur.sources import letter
+
+    letter.store_signature(
+        tmp_path / "signature.html", "<div>Alexis Peringer</div>"
+    )
+    settings = replace(
+        smtp_settings,
+        smtp=replace(smtp_settings.smtp, signature_file="signature.html"),
+    )
+    fake = FakeSender()
+    send_stage.run(
+        settings, conn, draft_ids=[_draft(conn, company_id)], confirm=True,
+        open_sender=fake, log=lambda _m: None,
+    )
+    message = fake.posted[0]
+    parts = {
+        part.get_content_type(): part.get_content()
+        for part in message.walk() if not part.is_multipart()
+    }
+    assert "Alexis Peringer" in parts["text/plain"]
+    assert "Alexis Peringer" in parts["text/html"]
+
+
+def test_plain_sends_one_part_only(
+    smtp_settings, conn, company_id
+) -> None:
+    fake = FakeSender()
+    send_stage.run(
+        smtp_settings, conn, draft_ids=[_draft(conn, company_id)], confirm=True,
+        plain=True, open_sender=fake, log=lambda _m: None,
+    )
+    assert not fake.posted[0].is_multipart()

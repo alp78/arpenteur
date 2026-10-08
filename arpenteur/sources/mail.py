@@ -1,11 +1,11 @@
 """Reading a mailbox over IMAP, and nothing else.
 
 There is no send path in this file and there is not meant to be one. Arpenteur
-drafts letters and refuses to post them: `draft.sent_at` stays null until a
-person acts, and a module that could open an SMTP session would make that
-promise a matter of trust rather than of what the code can do. Importing
+can post a message, and `sources/smtp.py` is the only module that may: keeping
+the two halves apart is what lets this one guarantee that reading somebody's
+mailbox cannot mark a message read, move it, or send anything. Importing
 correspondence does not require the ability to send it, so the ability is
-absent.
+absent here.
 
 Three habits are enforced here rather than left to the caller.
 
@@ -280,6 +280,24 @@ def body_from(raw: bytes, *, limit: int = 200_000) -> Body:
     return Body(text=text[:limit], kind=kind, truncated=len(text) > limit)
 
 
+def folder_names(rows: list | None) -> list[str]:
+    """The folder names in a LIST response.
+
+    Public because the send half needs the same answer to find the Sent folder,
+    and because hand-rolling it there got it wrong: a server may quote the name
+    or leave it bare, and splitting on the last quote finds the separator
+    instead of the name on every server that leaves it bare.
+    """
+    names = []
+    for row in rows or []:
+        found = _LIST_LINE.match(row if isinstance(row, bytes) else b"")
+        if not found:
+            continue
+        name = found.group("name").decode("utf-8", errors="replace")
+        names.append(name.strip('"'))
+    return names
+
+
 class Mailbox:
     """An open, read-only IMAP session.
 
@@ -332,14 +350,7 @@ class Mailbox:
         ok, rows = self.imap.list()
         if ok != "OK":
             raise MailError(f"The server refused LIST: {ok}")
-        names = []
-        for row in rows:
-            found = _LIST_LINE.match(row or b"")
-            if not found:
-                continue
-            name = found.group("name").decode("utf-8", errors="replace")
-            names.append(name.strip('"'))
-        return names
+        return folder_names(rows)
 
     def readable(self) -> list[str]:
         """Folders worth importing from, in a stable order."""

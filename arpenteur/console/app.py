@@ -7,9 +7,9 @@ label means.
 
 Two things it deliberately does not do.
 
-**It does not send.** There is no route that transmits anything to a company,
-no mail configuration, and no `sent_at` write. The draft advice is shown for a
-human to rewrite and send from their own mail client, under their own name.
+**It does not send.** No route here transmits anything to a company. Posting
+is `arpenteur send`, run deliberately from a terminal against a draft somebody
+approved, so a mis-click on a page can never reach a régie.
 Swiss law (LCD art. 3 al. 1 let. o) draws the line at *mass* advertising email
 without consent, and the defence against ever crossing it is that the software
 has no mechanism, not that nobody clicks the button.
@@ -47,10 +47,12 @@ from ..modules.sales import store as sales_store
 from ..modules.scout import store as scout_store
 from ..config import Settings, load_settings
 from ..sources import geoadmin
+from ..sources import letter as letter_source
 from ..sources import mail as mail_source
 from ..stages import (
     advise,
     answers as answers_stage,
+    send as send_stage,
     draft as draft_stage,
     geocode,
     mail as mail_stage,
@@ -70,6 +72,7 @@ from . import notes_page as notes_view
 from . import people_page as people_view_page
 from . import draft_page as draft_view
 from . import ledger_page as ledger_view
+from . import signature_page as signature_view
 from . import programme_page as programme_view
 from . import dossier_page as dossier_view
 from . import prep_page as prep_view
@@ -1918,6 +1921,39 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             )
         finally:
             conn.close()
+
+    @app.get("/signature", response_class=HTMLResponse)
+    def signature_editor(request: Request) -> HTMLResponse:
+        path = send_stage.signature_path(settings)
+        return HTMLResponse(signature_view.shell(
+            signature_view.signature_page(
+                send_stage.signature_html(settings),
+                path=str(path),
+                note=request.query_params.get("note", ""),
+                error=request.query_params.get("error", ""),
+            ),
+            at("/signature"),
+        ))
+
+    @app.post("/signature")
+    def save_signature(html: str = Form("")) -> RedirectResponse:
+        """Store what the editor produced, cleaned.
+
+        The cleaning happens in `letter.store_signature` rather than here, so
+        that a signature written straight into the file by hand is reduced by
+        the same rule on the way back out.
+        """
+        try:
+            letter_source.store_signature(
+                send_stage.signature_path(settings), html
+            )
+        except OSError as exc:
+            return RedirectResponse(
+                "/signature?error=" + quote(str(exc)), status_code=303
+            )
+        return RedirectResponse(
+            "/signature?note=" + quote("Signature saved."), status_code=303
+        )
 
     @app.get("/programme/{programme_id}/ledger", response_class=HTMLResponse)
     def programme_ledger(programme_id: int, request: Request) -> HTMLResponse:
