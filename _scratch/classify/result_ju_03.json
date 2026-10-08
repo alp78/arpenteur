@@ -1,0 +1,121 @@
+[
+ {
+  "uid": "CHE108801613",
+  "sector": "wholesale-trade",
+  "sector_confidence": 0.5,
+  "sector_rationale": "importation et exportation de pierres brutes et précieuses, de vêtements et d'appareils ménagers",
+  "segments": [
+   {"segment": "sme-owner", "confidence": 0.6, "rationale": "activité de commerce menée par une seule personne"}
+  ]
+ },
+ {
+  "uid": "CHE344800875",
+  "sector": "hospitality",
+  "sector_confidence": 0.97,
+  "sector_rationale": "exploitation d'un restaurant",
+  "segments": [
+   {"segment": "sme-owner", "confidence": 0.7, "rationale": "exploitation d'un seul établissement"}
+  ]
+ },
+ {
+  "uid": "CHE108249644",
+  "sector": "legal-accounting",
+  "sector_confidence": 0.9,
+  "sector_rationale": "tenue de comptabilités, révision, fiscalité, services qui se rattachent à une fiduciaire",
+  "segments": [
+   {"segment": "compliance-sector", "confidence": 0.7, "rationale": "révision et fiscalité, activité fiduciaire réglementée"},
+   {"segment": "sme-owner", "confidence": 0.6, "rationale": "cabinet exploité en nom propre"}
+  ]
+ },
+ {
+  "uid": "CHE319730421",
+  "sector": "hospitality",
+  "sector_confidence": 0.7,
+  "sector_rationale": "exploitation d'une agence de voyage",
+  "segments": [
+   {"segment": "sme-owner", "confidence": 0.6, "rationale": "exploitation d'une agence unique"}
+  ]
+ },
+ {
+  "uid": "CHE402803377",
+  "sector": "manufacturing",
+  "sector_confidence": 0.55,
+  "sector_rationale": "construction navale et rénovation de bateaux",
+  "segments": [
+   {"segment": "sme-owner", "confidence": 0.6, "rationale": "atelier de menuiserie exploité en nom propre"}
+  ]
+ },
+ {
+  "uid": "CHE172576788",
+  "sector": "personal-services",
+  "sector_confidence": 0.55,
+  "sector_rationale": "entretien et nettoyage des installations de chauffage",
+  "segments": [
+   {"segment": "compliance-sector", "confidence": 0.5, "rationale": "service de ramonage officiel, mandat public"},
+   {"segment": "sme-owner", "confidence": 0.6, "rationale": "service de ramonage exploité en nom propre"}
+  ]
+ },
+ {
+  "uid": "CHE330225433",
+  "sector": "wholesale-trade",
+  "sector_confidence": 0.85,
+  "sector_rationale": "commerce de fournitures pour médecins, hôpitaux et laboratoires",
+  "segments": [
+   {"segment": "sme-owner", "confidence": 0.6, "rationale": "commerce exploité en nom propre"}
+  ]
+ },
+ {
+  "uid": "CHE101479924",
+  "sector": "hospitality",
+  "sector_confidence": 0.97,
+  "sector_rationale": "exploitation du Restaurant du Cerf",
+  "segments": [
+   {"segment": "sme-owner", "confidence": 0.7, "rationale": "exploitation d'un seul restaurant"}
+  ]
+ },
+ {
+  "uid": "CHE110440559",
+  "sector": "manufacturing",
+  "sector_confidence": 0.95,
+  "sector_rationale": "fabrication de bonneterie",
+  "segments": [
+   {"segment": "sme-owner", "confidence": 0.6, "rationale": "fabrication exploitée en nom propre"}
+  ]
+ },
+ {
+  "uid": "CHE107184634",
+  "sector": "personal-services",
+  "sector_confidence": 0.5,
+  "sector_rationale": "réparation de véhicules automobiles, carrosserie",
+  "segments": [
+   {"segment": "sme-owner", "confidence": 0.6, "rationale": "exploitation d'un garage"}
+  ]
+ },
+ {
+  "uid": "CHE107232753",
+  "sector": "retail",
+  "sector_confidence": 0.95,
+  "sector_rationale": "exploitation d'un magasin d'alimentation générale",
+  "segments": [
+   {"segment": "sme-owner", "confidence": 0.7, "rationale": "exploitation d'un magasin unique"}
+  ]
+ },
+ {
+  "uid": "CHE103057847",
+  "sector": "hospitality",
+  "sector_confidence": 0.95,
+  "sector_rationale": "exploitation du bar \"Scotch-Club\"",
+  "segments": [
+   {"segment": "sme-owner", "confidence": 0.7, "rationale": "exploitation d'un seul bar"}
+  ]
+ },
+ {
+  "uid": "CHE350107452",
+  "sector": "manufacturing",
+  "sector_confidence": 0.7,
+  "sector_rationale": "torréfaction de café, transformation artisanale",
+  "segments": [
+   {"segment": "sme-owner", "confidence": 0.6, "rationale": "torréfaction artisanale en nom propre"}
+  ]
+ }
+]

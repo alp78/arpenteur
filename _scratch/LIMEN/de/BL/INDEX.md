@@ -1,0 +1,302 @@
+# BL · 290 firms
+
+
+## regie-core (175)
+
+manages property for third parties, so runs inspections routinely
+
+- [ADD - Immobilien AG](add-immobilien-ag.md) · Hersberg · `info@add-immobilien.ch`
+- [ALBO Verwaltungen und Beratungen AG](albo-verwaltungen-und-beratungen-ag.md) · Ziefen · `bolliger.rudolf@bluewin.ch`
+- [ASG Immobilien AG](asg-immobilien-ag.md) · Grellingen · `info@asg-ag.ch`
+- [AVB Immobilien GmbH](avb-immobilien-gmbh.md) · Schönenbuch · `-`
+- [AVOVA Immo GmbH](avova-immo-gmbh.md) · Bottmingen · `info@avova.ch`
+- [Achermann Vermietungs- und Verwaltungs-GmbH](achermann-vermietungs-und-verwaltungs-gmbh.md) · Aesch (BL) · `?`
+- [Ackle Immobilien GmbH](ackle-immobilien-gmbh.md) · Muttenz · `-`
+- [Adroka Immobilien AG](adroka-immobilien-ag.md) · Allschwil · `-`
+- [Alnea Immobilien AG](alnea-immobilien-ag.md) · Liestal · `-`
+- [Alser Immo AG](alser-immo-ag.md) · Augst · ``
+- [Altaso Immobilien GmbH](altaso-immobilien-gmbh.md) · Oberwil (BL) · `-`
+- [AnG Immobilien GmbH](ang-immobilien-gmbh.md) · Brislach · `?`
+- [Arbos Immobilien AG](arbos-immobilien-ag.md) · Hölstein · `?`
+- [B3 Immobilien AG](b3-immobilien-ag.md) · Liestal · `-`
+- [BEO Immobilien- und Engineeringservice GmbH](beo-immobilien-und-engineeringservice-gmbh.md) · Oberwil (BL) · `?`
+- [Baustation Immobilien AG](baustation-immobilien-ag.md) · Münchenstein · `roberto.ballinari@baustation.ch`
+- [Bebis Stockwerkeigentums-Verwaltungen GmbH](bebis-stockwerkeigentums-verwaltungen-gmbh.md) · Birsfelden · `info@bebis-immo.ch`
+- [Bidu Das Verwaltung GmbH](bidu-das-verwaltung-gmbh.md) · Allschwil · `?`
+- [Bieli Immobilien AG](bieli-immobilien-ag.md) · Laufen · `?`
+- [Birsblick Immobilien GmbH](birsblick-immobilien-gmbh.md) · Grellingen · `?`
+- [Birseck Immobilien AG](birseck-immobilien-ag.md) · Aesch (BL) · `?`
+- [Blauenstein Immobilien AG](blauenstein-immobilien-ag.md) · Münchenstein · `mb@blauenstein-immobilien.ch`
+- [BriMatt Immobilien AG](brimatt-immobilien-ag.md) · Niederdorf · `?`
+- [Brühl Immobilien AG](bruhl-immobilien-ag.md) · Ettingen · `?`
+- [Buna Immobilien GmbH](buna-immobilien-gmbh.md) · Sissach · `?`
+- [Bächle Immobilien AG](bachle-immobilien-ag.md) · Binningen · `?`
+- [Bärenmatten Immobilien AG](barenmatten-immobilien-ag.md) · Hölstein · `?`
+- [CMP Immobilien GmbH](cmp-immobilien-gmbh.md) · Pratteln · `?`
+- [CP Liegenschaften AG](cp-liegenschaften-ag.md) · Hersberg · `-`
+- [CRC Immobilien + Beratungs AG](crc-immobilien-beratungs-ag.md) · Aesch (BL) · `?`
+- [Carsta Immobilien AG](carsta-immobilien-ag.md) · Zwingen · `?`
+- [Castioni Immobilien AG](castioni-immobilien-ag.md) · Ettingen · `info@castioni.ch`
+- [DL Immo GmbH](dl-immo-gmbh.md) · Ormalingen · ``
+- [Daniela Vorpe - Immobilien + Dienstleistungen GmbH](daniela-vorpe-immobilien-dienstleistungen-gmbh.md) · Reinach (BL) · `info@danielavorpe.ch`
+- [ELAM Immobilien GmbH](elam-immobilien-gmbh.md) · Lausen · `?`
+- [EVE Immo AG](eve-immo-ag.md) · Füllinsdorf · `?`
+- [Ernst Zuber AG Immobilien](ernst-zuber-ag-immobilien.md) · Arisdorf · ``
+- [F + S Verwaltungs AG](f-s-verwaltungs-ag.md) · Birsfelden · `?`
+- [FLS Immobilien AG](fls-immobilien-ag.md) · Pratteln · ``
+- [FinTax Treuhand & Immobilien GmbH](fintax-treuhand-immobilien-gmbh.md) · Hölstein · `?`
+- [First Immo & Consulting GmbH](first-immo-consulting-gmbh.md) · Therwil · `contact@first-immo.ch`
+- [FortUna Bewirtschaftung GmbH](fortuna-bewirtschaftung-gmbh.md) · Münchenstein · `?`
+- [Frizbee Immobilien AG](frizbee-immobilien-ag.md) · Oberwil (BL) · ``
+- [GMG Verwaltungs AG](gmg-verwaltungs-ag.md) · Therwil · `?`
+- [Gebr. Bossard Immobilien AG](gebr-bossard-immobilien-ag.md) · Arlesheim · ``
+- [Golden Eyes Immo AG](golden-eyes-immo-ag.md) · Bottmingen · `?`
+- [Gotthelf-Immobilien AG](gotthelf-immobilien-ag.md) · Binningen · `?`
+- [Griffon Immobilien AG](griffon-immobilien-ag.md) · Liestal · `?`
+- [Grosspeter Immobilien AG](grosspeter-immobilien-ag.md) · Muttenz · ``
+- [Grüssen Immobilien AG](grussen-immobilien-ag.md) · Pratteln · `?`
+- [HEQU Immobilien GmbH](hequ-immobilien-gmbh.md) · Gelterkinden · ``
+- [HGH Immobilien AG](hgh-immobilien-ag.md) · Münchenstein · `?`
+- [HMD Fiechter Immobilien AG](hmd-fiechter-immobilien-ag.md) · Gelterkinden · `?`
+- [HO Immobilien AG](ho-immobilien-ag.md) · Allschwil · `?`
+- [Haliti Immobilien GmbH](haliti-immobilien-gmbh.md) · Duggingen · ``
+- [Hardmatt Immobilien AG](hardmatt-immobilien-ag.md) · Pratteln · `?`
+- [Heiligholz Immobilien AG](heiligholz-immobilien-ag.md) · Münchenstein · ``
+- [Hiram Immo AG](hiram-immo-ag.md) · Binningen · `?`
+- [Hunziker Finanz- und Verwaltungs AG](hunziker-finanz-und-verwaltungs-ag.md) · Muttenz · `?`
+- [Hänggi-Immobilien AG](hanggi-immobilien-ag.md) · Laufen · `?`
+- [I + G Immobilien Schönenbuch AG](i-g-immobilien-schonenbuch-ag.md) · Schönenbuch · ``
+- [I. & K. Immobilien GmbH](i-k-immobilien-gmbh.md) · Reinach (BL) · `?`
+- [IMMO FAMILY AG](immo-family-ag.md) · Aesch (BL) · `sven.gloor@immofamily.ch`
+- [IMMOBILIEN AG zum wildenstein](immobilien-ag-zum-wildenstein.md) · Bubendorf · ``
+- [ISKENDER Bau & Immobilien AG](iskender-bau-immobilien-ag.md) · Pratteln · `?`
+- [Immo Alno Tile AG](immo-alno-tile-ag.md) · Bubendorf · `?`
+- [Immo Birs AG](immo-birs-ag.md) · Aesch (BL) · `?`
+- [Immo Degen AG](immo-degen-ag.md) · Bubendorf · ``
+- [Immo Oser AG](immo-oser-ag.md) · Schönenbuch · `?`
+- [Immo Schmidlin GmbH](immo-schmidlin-gmbh.md) · Allschwil · ``
+- [Immo Service 22 Arboldswil GmbH](immo-service-22-arboldswil-gmbh.md) · Arboldswil · `?`
+- [Immobilien Angenstein AG](immobilien-angenstein-ag.md) · Aesch (BL) · `?`
+- [Immobilien Korina Kohler GmbH](immobilien-korina-kohler-gmbh.md) · Arlesheim · `?`
+- [Immobilien Zumbrunn AG](immobilien-zumbrunn-ag.md) · Sissach · ``
+- [Intract Immo AG](intract-immo-ag.md) · Liestal · `?`
+- [JAV Jauslin-Anker Verwaltungs AG](jav-jauslin-anker-verwaltungs-ag.md) · Muttenz · ``
+- [JG Immobilien AG](jg-immobilien-ag.md) · Itingen · `?`
+- [Johanna Lehner Immobilien-Coaching GmbH](johanna-lehner-immobilien-coaching-gmbh.md) · Bubendorf · `jl@johannalehner.ch`
+- [Jäger Immo & Partner AG](jager-immo-partner-ag.md) · Oberwil (BL) · `?`
+- [Jürg und Werner Immobilien GmbH](jurg-und-werner-immobilien-gmbh.md) · Aesch (BL) · ``
+- [Karl Striby Immobilien AG](karl-striby-immobilien-ag.md) · Ettingen · `?`
+- [Kaya Immo AG](kaya-immo-ag.md) · Biel-Benken · ``
+- [Kokon Immobilien AG](kokon-immobilien-ag.md) · Muttenz · `?`
+- [Koller & Partner Immobilien AG](koller-partner-immobilien-ag.md) · Reinach (BL) · `info@kollerpartner.ch`
+- [L&L Immobilien AG](l-l-immobilien-ag.md) · Pratteln · `?`
+- [LMC Immobilien GmbH](lmc-immobilien-gmbh.md) · Anwil · ``
+- [LangPartners Immobilien AG](langpartners-immobilien-ag.md) · Muttenz · `hello@langpartners.ch`
+- [Liebmatt Immobilien GmbH](liebmatt-immobilien-gmbh.md) · Grellingen · ``
+- [Loria Immobilien GmbH](loria-immobilien-gmbh.md) · Liestal · `hello@loria-immobilien.ch (+1)`
+- [Lotus Liegenschaften GmbH](lotus-liegenschaften-gmbh.md) · Oberwil (BL) · `?`
+- [MAG Verwaltungen GmbH](mag-verwaltungen-gmbh.md) · Reinach (BL) · `?`
+- [MAM Immobilien AG](mam-immobilien-ag.md) · Liestal · ``
+- [MATHEO Immobilien AG](matheo-immobilien-ag.md) · Therwil · `?`
+- [MC IN Immobilien AG](mc-in-immobilien-ag.md) · Arlesheim · ``
+- [ME Immo-Treuhand GmbH](me-immo-treuhand-gmbh.md) · Reinach (BL) · `?`
+- [MG Liegenschaften GmbH](mg-liegenschaften-gmbh.md) · Münchenstein · `?`
+- [MJT Immobilien AG](mjt-immobilien-ag.md) · Arlesheim · `?`
+- [Madörin Immo GmbH](madorin-immo-gmbh.md) · Kilchberg (BL) · ``
+- [Madörin und Müller Immo AG](madorin-und-muller-immo-ag.md) · Kilchberg (BL) · `?`
+- [Mangold Immobilien AG](mangold-immobilien-ag.md) · Ormalingen · ``
+- [Martensson Immobilien GmbH](martensson-immobilien-gmbh.md) · Hölstein · `silvia.guldenmann@martensson-immobilien.ch (+1)`
+- [Martina Immobilien AG](martina-immobilien-ag.md) · Giebenach · `?`
+- [Moosmatt Immobilien GmbH](moosmatt-immobilien-gmbh.md) · Rümlingen · `?`
+- [Mujota Immobilien AG](mujota-immobilien-ag.md) · Reinach (BL) · ``
+- [Müller AG Immo](muller-ag-immo.md) · Münchenstein · `?`
+- [Münger Treuhand & Immobilien AG](munger-treuhand-immobilien-ag.md) · Muttenz · `leon.wolter@muenger.swiss (+2)`
+- [NOFIBA Immobilien AG](nofiba-immobilien-ag.md) · Allschwil · ``
+- [NOV Immobilien GmbH](nov-immobilien-gmbh.md) · Liestal · `info@nov-immobilien.ch`
+- [Nenoxx Immobilien AG](nenoxx-immobilien-ag.md) · Allschwil · `?`
+- [Nikki Immobilien AG](nikki-immobilien-ag.md) · Arlesheim · `?`
+- [NovaGenetix-Immobilien AG](novagenetix-immobilien-ag.md) · Schönenbuch · ``
+- [Nubag Verwaltungen AG](nubag-verwaltungen-ag.md) · Oberwil (BL) · `?`
+- [Okeanos Immobilien AG](okeanos-immobilien-ag.md) · Binningen · ``
+- [P. Mesmer Immobilien AG](p-mesmer-immobilien-ag.md) · Muttenz · `info@mesmer.ch`
+- [Promoba Immobilien AG](promoba-immobilien-ag.md) · Sissach · `info@promoba.ch`
+- [RD Immobilien AG](rd-immobilien-ag.md) · Reinach (BL) · `?`
+- [RENKA Immobilien AG](renka-immobilien-ag.md) · Pratteln · ``
+- [RIBI-IMMO GMBH](ribi-immo-gmbh.md) · Gelterkinden · `?`
+- [RMc2 Immo AG](rmc2-immo-ag.md) · Kilchberg (BL) · ``
+- [RPB Immobilien AG](rpb-immobilien-ag.md) · Füllinsdorf · `info@rpb-immobilien.com`
+- [RSI Immobilien-Verwaltungs AG](rsi-immobilien-verwaltungs-ag.md) · Binningen · `?`
+- [Radrican Immobilien AG](radrican-immobilien-ag.md) · Füllinsdorf · `?`
+- [Rames Immobilien AG](rames-immobilien-ag.md) · Laufen · ``
+- [Rauner Immobilien GmbH](rauner-immobilien-gmbh.md) · Muttenz · `info@rauner-immobilien.ch`
+- [Residenz-Immobilien GmbH](residenz-immobilien-gmbh.md) · Frenkendorf · ``
+- [Rueff Immobilien AG](rueff-immobilien-ag.md) · Reinach (BL) · `?`
+- [Ruepp Immobilien AG](ruepp-immobilien-ag.md) · Ormalingen · `?`
+- [Russo Immo GmbH](russo-immo-gmbh.md) · Birsfelden · `info@russoimmo.ch`
+- [Römer Immobilien AG](romer-immobilien-ag.md) · Binningen · ``
+- [Rüfenacht Immobilien AG](rufenacht-immobilien-ag.md) · Laufen · `?`
+- [S&R Immobilien GmbH](s-r-immobilien-gmbh.md) · Buckten · ``
+- [SGY Immobilien AG](sgy-immobilien-ag.md) · Läufelfingen · `?`
+- [SIPRA Immobilien AG](sipra-immobilien-ag.md) · Pratteln · `?`
+- [SLZ Immobilien GmbH](slz-immobilien-gmbh.md) · Liestal · `?`
+- [SOPREM Immobilien AG](soprem-immobilien-ag.md) · Birsfelden · ``
+- [STEFAN THUMMEL IMMOBILIEN AG](stefan-thummel-immobilien-ag.md) · Muttenz · `?`
+- [STEINKUBUS Bau und Bewirtschaftung AG](steinkubus-bau-und-bewirtschaftung-ag.md) · Reigoldswil · ``
+- [Saban-Immobilien AG](saban-immobilien-ag.md) · Muttenz · `?`
+- [SalKA Immo GmbH](salka-immo-gmbh.md) · Brislach · `info@salkaimmo.ch`
+- [Salathe Immobilien Treuhand AG](salathe-immobilien-treuhand-ag.md) · Hölstein · `?`
+- [Schori Immobilien AG](schori-immobilien-ag.md) · Allschwil · ``
+- [Schudel Liegenschaften AG](schudel-liegenschaften-ag.md) · Reinach (BL) · `?`
+- [Sentioplan Immobiliendienstleistungen AG](sentioplan-immobiliendienstleistungen-ag.md) · Rünenberg · ``
+- [Skyimmobilien AG](skyimmobilien-ag.md) · Allschwil · `?`
+- [SoLe Immobilien GmbH](sole-immobilien-gmbh.md) · Thürnen · `?`
+- [Sonnenmatt Immobilien GmbH](sonnenmatt-immobilien-gmbh.md) · Tecknau · `?`
+- [Spano Liegenschaften AG](spano-liegenschaften-ag.md) · Zwingen · ``
+- [Stark Immo Invest AG](stark-immo-invest-ag.md) · Füllinsdorf · `info@stark-immo.com (+3)`
+- [Strasser Immobilien GmbH](strasser-immobilien-gmbh.md) · Oberdorf (BL) · ``
+- [Suter Immobilien Treuhand AG](suter-immobilien-treuhand-ag.md) · Binningen · `daniel.suter@suter-immo.ch (+1)`
+- [Swiss Urban Immobilien AG](swiss-urban-immobilien-ag.md) · Binningen · `info@swiss-urban.ch`
+- [TCG Immobilien GmbH](tcg-immobilien-gmbh.md) · Wahlen · `?`
+- [THUNDERBIRD IMMOBILIEN AG](thunderbird-immobilien-ag.md) · Münchenstein · `?`
+- [TIPA IMMO AG](tipa-immo-ag.md) · Bretzwil · ``
+- [TRETOR Immobilien AG](tretor-immobilien-ag.md) · Liestal · `info@tretor.ch`
+- [Terra Verde Immobilien GmbH](terra-verde-immobilien-gmbh.md) · Allschwil · ``
+- [Tiago Immobilien AG](tiago-immobilien-ag.md) · Muttenz · `?`
+- [Tiba Immo AG](tiba-immo-ag.md) · Muttenz · `?`
+- [Tinovas Immobilien GmbH](tinovas-immobilien-gmbh.md) · Liestal · `?`
+- [Tool Immo AG](tool-immo-ag.md) · Liestal · ``
+- [Tschudin Liegenschaften AG](tschudin-liegenschaften-ag.md) · Niederdorf · `?`
+- [Uhler Immo GmbH](uhler-immo-gmbh.md) · Muttenz · ``
+- [Uxor Verwaltungen AG](uxor-verwaltungen-ag.md) · Arlesheim · `?`
+- [VFR Immobilien AG](vfr-immobilien-ag.md) · Oberwil (BL) · `?`
+- [W+H Immo AG](w-h-immo-ag.md) · Münchenstein · `?`
+- [W. Graf Immobilien AG](w-graf-immobilien-ag.md) · Gelterkinden · ``
+- [WASI Immobilien AG](wasi-immobilien-ag.md) · Birsfelden · `?`
+- [Wacker Immobilien AG](wacker-immobilien-ag.md) · Aesch (BL) · ``
+- [WeBa Immobilien GmbH](weba-immobilien-gmbh.md) · Allschwil · `?`
+- [Wirz Immobilien und Beteiligungen AG](wirz-immobilien-und-beteiligungen-ag.md) · Liestal · `?`
+- [Wyss AG Immobilien](wyss-ag-immobilien.md) · Sissach · `info@wyssimmobilien.ch (+1)`
+- [Xanitas Immobilien AG](xanitas-immobilien-ag.md) · Münchenstein · ``
+- [Ziegler Immo GmbH](ziegler-immo-gmbh.md) · Liestal · `?`
+- [welcome home immobilien AG](welcome-home-immobilien-ag.md) · Binningen · `b.widmer@whimmo.ch (+4)`
+- [wunderwerk IMMOBILIEN AG](wunderwerk-immobilien-ag.md) · Pratteln · ``
+
+## regie-letting (115)
+
+lets property; the administration may sit elsewhere
+
+- [A&B IMMO Consulting AG](a-b-immo-consulting-ag.md) · Liesberg · ``
+- [A-TOWN Immobilien GmbH](a-town-immobilien-gmbh.md) · Arisdorf · ``
+- [A-Team Immobilien GmbH](a-team-immobilien-gmbh.md) · Allschwil · ``
+- [AAE Immobilien AG](aae-immobilien-ag.md) · Füllinsdorf · ``
+- [ALR Immo AG](alr-immo-ag.md) · Itingen · ``
+- [AP Immo AG](ap-immo-ag.md) · Itingen · ``
+- [ARI Immo AG](ari-immo-ag.md) · Sissach · ``
+- [AVCI Immobilien GmbH](avci-immobilien-gmbh.md) · Gelterkinden · ``
+- [Abaimmobilien AG](abaimmobilien-ag.md) · Liestal · ``
+- [Adler Wyss Immobilien GmbH](adler-wyss-immobilien-gmbh.md) · Itingen · ``
+- [Agissimmo Immobilien AG](agissimmo-immobilien-ag.md) · Frenkendorf · ``
+- [Alera Immo AG](alera-immo-ag.md) · Bubendorf · ``
+- [Alfa, Immobilien AG](alfa-immobilien-ag.md) · Münchenstein · ``
+- [Arnisa Immo AG](arnisa-immo-ag.md) · Itingen · `info@arnisa-immo.ch`
+- [AssA Verwaltung GmbH](assa-verwaltung-gmbh.md) · Münchenstein · ``
+- [Atina Verwaltung AG](atina-verwaltung-ag.md) · Pratteln · ``
+- [Basilica Immo AG](basilica-immo-ag.md) · Münchenstein · ``
+- [Basler GU & Immobilien AG](basler-gu-immobilien-ag.md) · Pratteln · ``
+- [Bifang Immobilien AG](bifang-immobilien-ag.md) · Lausen · ``
+- [Billerbeck Immobilien AG](billerbeck-immobilien-ag.md) · Allschwil · ``
+- [Birsstadt Immobilien AG](birsstadt-immobilien-ag.md) · Aesch (BL) · ``
+- [Bisser Immobilien AG](bisser-immobilien-ag.md) · Laufen · ``
+- [Bron Immo GmbH](bron-immo-gmbh.md) · Reinach (BL) · ``
+- [Buser Immo AG](buser-immo-ag.md) · Eptingen · ``
+- [CHAPLIN IMMOBILIEN AG](chaplin-immobilien-ag.md) · Pfeffingen · ``
+- [CLC Immo AG](clc-immo-ag.md) · Gelterkinden · ``
+- [CWRR Immobilien AG](cwrr-immobilien-ag.md) · Arlesheim · ``
+- [Castan Immobilien AG](castan-immobilien-ag.md) · Arlesheim · ``
+- [Cosima Immobilien AG](cosima-immobilien-ag.md) · Sissach · ``
+- [D&F Immobilien GmbH](d-f-immobilien-gmbh.md) · Binningen · ``
+- [DHT Immo AG](dht-immo-ag.md) · Zwingen · ``
+- [DRS Immobilien AG](drs-immobilien-ag.md) · Lausen · ``
+- [Da Manoya Immobilien AG](da-manoya-immobilien-ag.md) · Oberwil (BL) · ``
+- [Dresohn Immobilien AG](dresohn-immobilien-ag.md) · Pratteln · ``
+- [ELAR Immobilien GmbH](elar-immobilien-gmbh.md) · Pratteln · ``
+- [EMC PARTNER IMMOBILIEN AG](emc-partner-immobilien-ag.md) · Laufen · ``
+- [ES Immobilien AG](es-immobilien-ag.md) · Aesch (BL) · ``
+- [EfBe Immobilien AG](efbe-immobilien-ag.md) · Binningen · ``
+- [Ehrsam & Partner Immobilien AG](ehrsam-partner-immobilien-ag.md) · Pratteln · ``
+- [EySi Immobilien AG](eysi-immobilien-ag.md) · Reinach (BL) · ``
+- [FG Immobilien GmbH](fg-immobilien-gmbh.md) · Bottmingen · ``
+- [FK Immobilien AG](fk-immobilien-ag.md) · Reinach (BL) · ``
+- [FS Business Immo GmbH](fs-business-immo-gmbh.md) · Füllinsdorf · ``
+- [Felix Immobilien AG](felix-immobilien-ag.md) · Zwingen · ``
+- [GIFO Immobilien AG](gifo-immobilien-ag.md) · Gelterkinden · ``
+- [GP Immobilien AG](gp-immobilien-ag.md) · Allschwil · `?`
+- [Gass Immo AG](gass-immo-ag.md) · Oltingen · ``
+- [GiBay Immobilien AG](gibay-immobilien-ag.md) · Oberwil (BL) · ``
+- [GreenLeaf Immobilien AG](greenleaf-immobilien-ag.md) · Ettingen · ``
+- [Grollimund Liegenschaften AG](grollimund-liegenschaften-ag.md) · Muttenz · ``
+- [Hans Fischer Immo AG](hans-fischer-immo-ag.md) · Gelterkinden · ``
+- [Hasena Immobilien AG](hasena-immobilien-ag.md) · Biel-Benken · ``
+- [Heimatland Immobilien AG](heimatland-immobilien-ag.md) · Allschwil · ``
+- [Hochuli Liegenschaften AG](hochuli-liegenschaften-ag.md) · Muttenz · ``
+- [Hübelmatt Immobilien AG](hubelmatt-immobilien-ag.md) · Arlesheim · ``
+- [IMARK Immo AG](imark-immo-ag.md) · Sissach · ``
+- [IMMO Zem Wäg AG](immo-zem-wag-ag.md) · Muttenz · ``
+- [Ilisof Immobilien AG](ilisof-immobilien-ag.md) · Zwingen · ``
+- [Im Tal Immobilien GmbH](im-tal-immobilien-gmbh.md) · Zwingen · ``
+- [Immo GRIMAR AG](immo-grimar-ag.md) · Tecknau · ``
+- [Immo Stuker NW AG](immo-stuker-nw-ag.md) · Arlesheim · ``
+- [Immobilien Kägen AG](immobilien-kagen-ag.md) · Reinach (BL) · ``
+- [JGLA Immobilien AG](jgla-immobilien-ag.md) · Aesch (BL) · ``
+- [Jost Immobilien AG](jost-immobilien-ag.md) · Aesch (BL) · ``
+- [KEBU Immobilien AG](kebu-immobilien-ag.md) · Liestal · ``
+- [Kaplan Immobilienbau GmbH](kaplan-immobilienbau-gmbh.md) · Oberwil (BL) · ``
+- [Kolter Immobilien AG](kolter-immobilien-ag.md) · Münchenstein · ``
+- [Konrad Immobilien AG](konrad-immobilien-ag.md) · Biel-Benken · ``
+- [LIVENDO Immobilien GmbH](livendo-immobilien-gmbh.md) · Liestal · `?`
+- [LUX Bau & Immo AG](lux-bau-immo-ag.md) · Füllinsdorf · ``
+- [Lined Immobilien AG](lined-immobilien-ag.md) · Bubendorf · ``
+- [Litzius Immobilien-Dienste AG](litzius-immobilien-dienste-ag.md) · Arlesheim · ``
+- [Lizard Immobilien AG](lizard-immobilien-ag.md) · Schönenbuch · ``
+- [Lohag Immobilien AG](lohag-immobilien-ag.md) · Pratteln · ``
+- [Matom Immobilien AG](matom-immobilien-ag.md) · Titterten · ``
+- [Mimo Immobilien AG](mimo-immobilien-ag.md) · Muttenz · ``
+- [NIAG Immobilien AG](niag-immobilien-ag.md) · Sissach · ``
+- [NK Immobilien AG](nk-immobilien-ag.md) · Blauen · ``
+- [Newtak Immobilien GmbH](newtak-immobilien-gmbh.md) · Muttenz · `s.dallo@newtak.ch (+3)`
+- [Oggier Immo AG](oggier-immo-ag.md) · Binningen · ``
+- [Oristal Immobilien AG](oristal-immobilien-ag.md) · Liestal · ``
+- [ProTrust Immobilien AG](protrust-immobilien-ag.md) · Binningen · ``
+- [Proimmobilien GmbH](proimmobilien-gmbh.md) · Schönenbuch · ``
+- [RY Immo GmbH](ry-immo-gmbh.md) · Allschwil · ``
+- [ResomuR Immobilien AG](resomur-immobilien-ag.md) · Pfeffingen · ``
+- [Ritzimatt Immobilien AG](ritzimatt-immobilien-ag.md) · Laufen · ``
+- [Rudolf Senn Immobilien AG](rudolf-senn-immobilien-ag.md) · Muttenz · ``
+- [SRE Immobilien AG](sre-immobilien-ag.md) · Binningen · ``
+- [SWISSAURA Immo AG](swissaura-immo-ag.md) · Reinach (BL) · ``
+- [Schwarzbuben Immobilien AG](schwarzbuben-immobilien-ag.md) · Laufen · ``
+- [Schweizer Immobilienbau GmbH](schweizer-immobilienbau-gmbh.md) · Pratteln · ``
+- [Shetec Immobilien AG](shetec-immobilien-ag.md) · Zwingen · ``
+- [Speen Immobilien AG](speen-immobilien-ag.md) · Arlesheim · ``
+- [Spiegelfeld Immobilien AG](spiegelfeld-immobilien-ag.md) · Binningen · ``
+- [Stöcklin Immobilien AG](stocklin-immobilien-ag.md) · Binningen · ``
+- [Swiss Immo Pool AG](swiss-immo-pool-ag.md) · Itingen · ``
+- [T&S Immobilien AG](t-s-immobilien-ag.md) · Sissach · ``
+- [Terraluk Immobilien AG](terraluk-immobilien-ag.md) · Laufen · ``
+- [Thomas Kamber Immobilien AG](thomas-kamber-immobilien-ag.md) · Sissach · ``
+- [Treu-Immobilien GmbH](treu-immobilien-gmbh.md) · Sissach · ``
+- [Unimmo Immobilien GmbH](unimmo-immobilien-gmbh.md) · Reinach (BL) · ``
+- [Valo Immobilien GmbH](valo-immobilien-gmbh.md) · Binningen · ``
+- [Veron Immobilien AG](veron-immobilien-ag.md) · Ziefen · ``
+- [Via Immobilien GmbH](via-immobilien-gmbh.md) · Münchenstein · ``
+- [W. Häring Verwaltungs AG](w-haring-verwaltungs-ag.md) · Liestal · ``
+- [WANNERPARTNER IMMOBILIEN GmbH](wannerpartner-immobilien-gmbh.md) · Pratteln · ``
+- [Winter Immobilien AG](winter-immobilien-ag.md) · Münchenstein · ``
+- [Yanik Immobilien GmbH](yanik-immobilien-gmbh.md) · Muttenz · ``
+- [ZWH Immo AG](zwh-immo-ag.md) · Wittinsburg · ``
+- [atp immobilien AG](atp-immobilien-ag.md) · Arboldswil · ``
+- [cfga-immobilien gmbh](cfga-immobilien-gmbh.md) · Liestal · ``
+- [df2 immobilien ag](df2-immobilien-ag.md) · Itingen · ``
+- [immo ileisa ag](immo-ileisa-ag.md) · Therwil · ``
+- [mmsi Immobilien AG](mmsi-immobilien-ag.md) · Lupsingen · ``
+- [mooi IMMO ag](mooi-immo-ag.md) · Liestal · ``

@@ -1,0 +1,159 @@
+# NW · 147 firms
+
+
+## regie-core (88)
+
+manages property for third parties, so runs inspections routinely
+
+- [11a Immobilien AG](11a-immobilien-ag.md) · Beckenried · `-`
+- [AGROVIA Immobilien GmbH](agrovia-immobilien-gmbh.md) · Hergiswil (NW) · `-`
+- [AMG-Immo AG](amg-immo-ag.md) · Ennetbürgen · `info@amgimmo.com`
+- [Acheregg Immobilien AG](acheregg-immobilien-ag.md) · Stansstad · `-`
+- [Achermann Immobilien AG](achermann-immobilien-ag.md) · Ennetbürgen · `-`
+- [Achermann Walter Immobilien AG](achermann-walter-immobilien-ag.md) · Buochs · `-`
+- [Adagio Immobilien AG](adagio-immobilien-ag.md) · Stansstad · ``
+- [Agora Immobilien AG](agora-immobilien-ag.md) · Ennetbürgen · `info@agora-immobilien.ch`
+- [Alinda Immobilien AG](alinda-immobilien-ag.md) · Emmetten · `-`
+- [Allmend Liegenschaften AG](allmend-liegenschaften-ag.md) · Hergiswil (NW) · `-`
+- [Alte Gasse Immobilien AG](alte-gasse-immobilien-ag.md) · Ennetbürgen · ``
+- [Ambauen Immobilien AG](ambauen-immobilien-ag.md) · Beckenried · `info@ambauen.ch`
+- [Aptus Immo GmbH](aptus-immo-gmbh.md) · Ennetbürgen · `info@aptus-immo.ch`
+- [B Immo AG](b-immo-ag.md) · Hergiswil (NW) · `?`
+- [B.C. Verwaltungs- und Investment AG](b-c-verwaltungs-und-investment-ag.md) · Stansstad · `?`
+- [BIZUN Immobilien AG](bizun-immobilien-ag.md) · Ennetbürgen · `info@bizun.ch (+1)`
+- [BW Immobilien AG](bw-immobilien-ag.md) · Hergiswil (NW) · ``
+- [Banau Immobilien AG](banau-immobilien-ag.md) · Hergiswil (NW) · `-`
+- [BeWü Immobilien AG](bewu-immobilien-ag.md) · Emmetten · ``
+- [Bircher Immobilien AG](bircher-immobilien-ag.md) · Stansstad · `?`
+- [Bornstein Immobilien AG](bornstein-immobilien-ag.md) · Hergiswil (NW) · `info@bornstein-immobilien.com`
+- [Bossard Immobilien-Treuhand AG](bossard-immobilien-treuhand-ag.md) · Stansstad · `info@bossard-immobilien.ch`
+- [Brändli Immobilien AG](brandli-immobilien-ag.md) · Stansstad · ``
+- [Buy & Sale Immo AG](buy-sale-immo-ag.md) · Hergiswil (NW) · `info@buy.ch`
+- [Bächler Immobilien GmbH](bachler-immobilien-gmbh.md) · Hergiswil (NW) · ``
+- [Bürli Immobilien AG](burli-immobilien-ag.md) · Hergiswil (NW) · `?`
+- [C-Real Immobilien GmbH](c-real-immobilien-gmbh.md) · Hergiswil (NW) · `?`
+- [CAG Immobilien AG](cag-immobilien-ag.md) · Stans · `?`
+- [Construct Immobilien AG](construct-immobilien-ag.md) · Hergiswil (NW) · `?`
+- [D-Tect Immobilien AG](d-tect-immobilien-ag.md) · Emmetten · `-`
+- [DGW Immobilien AG](dgw-immobilien-ag.md) · Hergiswil (NW) · ``
+- [DHCH Immobilien AG](dhch-immobilien-ag.md) · Hergiswil (NW) · `-`
+- [DSK Immobiliendienste GmbH](dsk-immobiliendienste-gmbh.md) · Emmetten · `-`
+- [Domino Verwaltungs AG](domino-verwaltungs-ag.md) · Hergiswil (NW) · `?`
+- [Duss Immo Promotion AG](duss-immo-promotion-ag.md) · Buochs · ``
+- [EM Immobilienbewertungen GmbH](em-immobilienbewertungen-gmbh.md) · Beckenried · `em@em-immobilienbewertungen.ch`
+- [Elmi Immobilien AG](elmi-immobilien-ag.md) · Hergiswil (NW) · ``
+- [FS Immobilien & Investment AG](fs-immobilien-investment-ag.md) · Stans · `?`
+- [Freienhof Immobilien AG](freienhof-immobilien-ag.md) · Hergiswil (NW) · `?`
+- [GMG Immo Service & Verwaltungs AG](gmg-immo-service-verwaltungs-ag.md) · Hergiswil (NW) · `contact@gmgimmo.com`
+- [Gebau Verwaltungs AG](gebau-verwaltungs-ag.md) · Hergiswil (NW) · ``
+- [Gebr. Leuthold Immobilien AG](gebr-leuthold-immobilien-ag.md) · Stans · `info@gebr-leuthold.ch`
+- [Glauser & Wenk Immobilien GmbH](glauser-wenk-immobilien-gmbh.md) · Stansstad · ``
+- [Gobo Immobilien AG](gobo-immobilien-ag.md) · Hergiswil (NW) · `?`
+- [H-Immo AG](h-immo-ag.md) · Hergiswil (NW) · `?`
+- [HAVO Immobilien AG](havo-immobilien-ag.md) · Hergiswil (NW) · `info@havo.ch (+2)`
+- [HUVO Verwaltungs AG](huvo-verwaltungs-ag.md) · Hergiswil (NW) · ``
+- [Harbewa Immobilien AG](harbewa-immobilien-ag.md) · Hergiswil (NW) · `?`
+- [Hostatt Immobilien AG](hostatt-immobilien-ag.md) · Stans · ``
+- [Huta Immobilien AG](huta-immobilien-ag.md) · Ennetbürgen · `info@huta.ch`
+- [Immo Koch AG](immo-koch-ag.md) · Stansstad · `info@immokoch.com`
+- [Immo N&D GmbH](immo-n-d-gmbh.md) · Stans · `?`
+- [Immo Villiger AG](immo-villiger-ag.md) · Hergiswil (NW) · ``
+- [Immo WECO AG](immo-weco-ag.md) · Hergiswil (NW) · `?`
+- [Jud Bau + Verwaltungs AG](jud-bau-verwaltungs-ag.md) · Hergiswil (NW) · ``
+- [K. Bucher Immobilien-Treuhand AG](k-bucher-immobilien-treuhand-ag.md) · Oberdorf (NW) · `?`
+- [Kei-da Immobilien AG](kei-da-immobilien-ag.md) · Dallenwil · `?`
+- [Kniri Immobilien AG](kniri-immobilien-ag.md) · Stans · `?`
+- [Krummenacher Immobilien AG](krummenacher-immobilien-ag.md) · Hergiswil (NW) · ``
+- [L & S Immo GmbH](l-s-immo-gmbh.md) · Stans · `?`
+- [L+G Immo GmbH](l-g-immo-gmbh.md) · Ennetmoos · ``
+- [LLM Immobilien AG](llm-immobilien-ag.md) · Hergiswil (NW) · `info@llm-immobilien.ch`
+- [LMS Immo AG](lms-immo-ag.md) · Hergiswil (NW) · `?`
+- [Lawil Immo AG](lawil-immo-ag.md) · Buochs · `?`
+- [M. Mathis Immo AG](m-mathis-immo-ag.md) · Wolfenschiessen · ``
+- [M4 Immobilien AG](m4-immobilien-ag.md) · Hergiswil (NW) · `?`
+- [MARO Immobilien AG](maro-immobilien-ag.md) · Stansstad · ``
+- [MEFA Immobilien AG](mefa-immobilien-ag.md) · Hergiswil (NW) · `?`
+- [MO Immo AG](mo-immo-ag.md) · Buochs · `?`
+- [Modern Immobilien AG](modern-immobilien-ag.md) · Stansstad · `?`
+- [Murer Immo AG](murer-immo-ag.md) · Beckenried · ``
+- [Noma Immobilien und Verwaltung AG](noma-immobilien-und-verwaltung-ag.md) · Emmetten · `noma@noma-immobilien.ch`
+- [OWZ Immobilien AG](owz-immobilien-ag.md) · Hergiswil (NW) · `?`
+- [RCA Immobilien AG](rca-immobilien-ag.md) · Beckenried · ``
+- [Redwood Immobilien AG](redwood-immobilien-ag.md) · Hergiswil (NW) · `?`
+- [Schweizerhof Immobilien AG](schweizerhof-immobilien-ag.md) · Hergiswil (NW) · `?`
+- [Stöckli Immobilien AG](stockli-immobilien-ag.md) · Stans · `?`
+- [TRENOVA LIEGENSCHAFTEN AG](trenova-liegenschaften-ag.md) · Hergiswil (NW) · ``
+- [Töngi Immobilien GmbH](tongi-immobilien-gmbh.md) · Stans · `?`
+- [Vogesen Immobilien AG](vogesen-immobilien-ag.md) · Hergiswil (NW) · ``
+- [WISE Immobilien GmbH](wise-immobilien-gmbh.md) · Stans · `?`
+- [Walter Brun Immobilien AG](walter-brun-immobilien-ag.md) · Stans · `?`
+- [Wilan Immobilien AG](wilan-immobilien-ag.md) · Hergiswil (NW) · `?`
+- [Wolfisberg Immobilien AG](wolfisberg-immobilien-ag.md) · Stans · ``
+- [World Immobilien GmbH](world-immobilien-gmbh.md) · Hergiswil (NW) · `?`
+- [Z'graggen Immobilien AG](z-graggen-immobilien-ag.md) · Hergiswil (NW) · ``
+- [acht immo gmbh](acht-immo-gmbh.md) · Ennetbürgen · `info@acht-immo.ch`
+- [curo immo ag](curo-immo-ag.md) · Beckenried · `?`
+
+## regie-letting (59)
+
+lets property; the administration may sit elsewhere
+
+- [1 x 1 Immobilien AG](1-x-1-immobilien-ag.md) · Buochs · ``
+- [Ammann Immobilien Stansstad AG](ammann-immobilien-stansstad-ag.md) · Stansstad · ``
+- [Argo Schweiz Immobilien AG](argo-schweiz-immobilien-ag.md) · Stans · ``
+- [BALMA Immobilien AG](balma-immobilien-ag.md) · Hergiswil (NW) · ``
+- [Birrer's Immobilien AG](birrer-s-immobilien-ag.md) · Stans · ``
+- [Brülisauer Immobilien & Finanz GmbH](brulisauer-immobilien-finanz-gmbh.md) · Ennetmoos · ``
+- [Bünter Immobilien AG](bunter-immobilien-ag.md) · Oberdorf (NW) · ``
+- [DALOSTA IMMO AG](dalosta-immo-ag.md) · Stansstad · ``
+- [Der Italiener Immobilien AG](der-italiener-immobilien-ag.md) · Stans · ``
+- [Duplex Immobilien GmbH](duplex-immobilien-gmbh.md) · Beckenried · ``
+- [EURO-IMMO AG](euro-immo-ag.md) · Oberdorf (NW) · ``
+- [Engelsburg Immobilien AG](engelsburg-immobilien-ag.md) · Hergiswil (NW) · ``
+- [Exklusiv Immobilien und Vermarktungs GmbH](exklusiv-immobilien-und-vermarktungs-gmbh.md) · Hergiswil (NW) · ``
+- [FG Invest Immobilien AG](fg-invest-immobilien-ag.md) · Ennetbürgen · ``
+- [Flugfeld Immobilien AG](flugfeld-immobilien-ag.md) · Ennetbürgen · ``
+- [Frey Liegenschaften AG](frey-liegenschaften-ag.md) · Ennetbürgen · ``
+- [G50 Immobilien AG](g50-immobilien-ag.md) · Stans · ``
+- [GATAG Immobilien AG](gatag-immobilien-ag.md) · Ennetbürgen · ``
+- [GO-Immobilien GmbH](go-immobilien-gmbh.md) · Dallenwil · ``
+- [GSSH Immobilien GmbH](gssh-immobilien-gmbh.md) · Stans · ``
+- [Goper Immobilien GmbH](goper-immobilien-gmbh.md) · Stansstad · ``
+- [Grapha Immobilien AG](grapha-immobilien-ag.md) · Hergiswil (NW) · ``
+- [HAWETA Immobilien GmbH](haweta-immobilien-gmbh.md) · Stans · ``
+- [Hochmuth Immobilien AG](hochmuth-immobilien-ag.md) · Stansstad · ``
+- [I & B Immobilien und Beratungen AG](i-b-immobilien-und-beratungen-ag.md) · Hergiswil (NW) · ``
+- [Imdall AG Immobilien Dallenwil](imdall-ag-immobilien-dallenwil.md) · Dallenwil · ``
+- [Jenny Steiger Immobilien AG](jenny-steiger-immobilien-ag.md) · Stansstad · ``
+- [Joel Steiger Immobilien AG](joel-steiger-immobilien-ag.md) · Stansstad · ``
+- [KPA Immobilien AG](kpa-immobilien-ag.md) · Ennetbürgen · ``
+- [Kiser Immo AG](kiser-immo-ag.md) · Ennetbürgen · ``
+- [Kurz Immobilien AG](kurz-immobilien-ag.md) · Stans · ``
+- [LG Verwaltungsservice GmbH](lg-verwaltungsservice-gmbh.md) · Hergiswil (NW) · ``
+- [Lussi-Immobilien AG](lussi-immobilien-ag.md) · Oberdorf (NW) · ``
+- [MMB Immobilien AG](mmb-immobilien-ag.md) · Ennetbürgen · ``
+- [Medina Immo GmbH](medina-immo-gmbh.md) · Hergiswil (NW) · ``
+- [Odermatt Verwaltungs AG](odermatt-verwaltungs-ag.md) · Dallenwil · ``
+- [Pargger Immobilien AG](pargger-immobilien-ag.md) · Stans · ``
+- [Paul Baumann Immobilien GmbH](paul-baumann-immobilien-gmbh.md) · Ennetmoos · ``
+- [Pilatus Swiss Immobilien AG](pilatus-swiss-immobilien-ag.md) · Hergiswil (NW) · ``
+- [Privilege Immobilien AG](privilege-immobilien-ag.md) · Hergiswil (NW) · ``
+- [Pro Mac Immobilien Management GmbH](pro-mac-immobilien-management-gmbh.md) · Hergiswil (NW) · ``
+- [R.D.L. Immobilien AG](r-d-l-immobilien-ag.md) · Hergiswil (NW) · `?`
+- [Scheuber Immobilien AG](scheuber-immobilien-ag.md) · Stans · ``
+- [Schuler Immo AG](schuler-immo-ag.md) · Buochs · ``
+- [Sigg & Co. Immobilien AG](sigg-co-immobilien-ag.md) · Stans · ``
+- [Sonnag Immobilien AG](sonnag-immobilien-ag.md) · Hergiswil (NW) · ``
+- [Starkl Vieli Immobilien AG](starkl-vieli-immobilien-ag.md) · Dallenwil · ``
+- [Stockhausen Immobilien AG](stockhausen-immobilien-ag.md) · Stans · ``
+- [Swiss Immobilien Hergiswil GmbH](swiss-immobilien-hergiswil-gmbh.md) · Hergiswil (NW) · `?`
+- [TOC Immobilien AG](toc-immobilien-ag.md) · Ennetmoos · ``
+- [V2R Immobilien AG](v2r-immobilien-ag.md) · Stans · ``
+- [Voho Liegenschaften GmbH](voho-liegenschaften-gmbh.md) · Beckenried · ``
+- [Woge Immobilien AG](woge-immobilien-ag.md) · Hergiswil (NW) · ``
+- [WohnArt Immo AG](wohnart-immo-ag.md) · Stansstad · ``
+- [Würsch Immobilien GmbH](wursch-immobilien-gmbh.md) · Beckenried · ``
+- [YVA Immobilien GmbH](yva-immobilien-gmbh.md) · Ennetbürgen · ``
+- [YaMa Immo GmbH](yama-immo-gmbh.md) · Hergiswil (NW) · ``
+- [bühlmann immobilien ag](buhlmann-immobilien-ag.md) · Hergiswil (NW) · ``
+- [casa panorama immobilien gmbh](casa-panorama-immobilien-gmbh.md) · Hergiswil (NW) · `info@casapanorama.ch`

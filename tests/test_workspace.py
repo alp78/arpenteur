@@ -590,3 +590,84 @@ def test_a_missing_restore_binary_leaves_the_database_alone(
         ).fetchone()["n"] == 3
     finally:
         conn.close()
+
+
+# --- the harvests beside the database -----------------------------------------
+#
+# The data directory holds three things of three different kinds: client
+# attachments, the scraped `*.jsonl` directory harvests, and an HTTP cache that
+# was 3.4 GB across 64'610 files on the machine this was built for. Only the
+# first two are worth carrying, and the difference matters: a directory that
+# has since changed its markup cannot be harvested again, while the cache is
+# refetchable by definition.
+
+
+def test_the_harvests_travel_but_the_cache_does_not(source, settings_for, tmp_path):
+    root = tmp_path / "src"
+    data = root / "data"
+    (data / "http-cache" / "ab").mkdir(parents=True)
+    (data / "http-cache" / "ab" / "deadbeef").write_bytes(b"x" * 4096)
+    (data / "http-cache" / "ab" / "cached.jsonl").write_text("{}\n")
+    (data / "immobilier.jsonl").write_text('{"name": "Regie SA"}\n')
+    (data / "isektor.jsonl").write_text('{"name": "Immo AG"}\n')
+    (data / "arpenteur.sqlite3").write_bytes(b"SQLite format 3\0")
+
+    settings = settings_for(source, root)
+    out = tmp_path / "w.arpw"
+    conn = kernel_db.connect(source)
+    try:
+        report = workspace.export(settings, conn, out)
+    finally:
+        conn.close()
+
+    assert report.manifest is not None
+    assert report.manifest.harvests == 2, "the two top-level jsonl files, no more"
+    with zipfile.ZipFile(out) as zf:
+        held = zf.namelist()
+    assert "harvests/immobilier.jsonl" in held
+    assert "harvests/isektor.jsonl" in held
+    # The cache is the whole reason the glob does not descend.
+    assert not any("deadbeef" in n for n in held)
+    assert not any("cached.jsonl" in n for n in held)
+    # The SQLite file is from before the move to Postgres and carries no live
+    # data, so it is not an omission.
+    assert not any("sqlite3" in n for n in held)
+
+
+def test_harvest_files_reads_only_the_top_level(tmp_path):
+    (tmp_path / "http-cache").mkdir()
+    (tmp_path / "http-cache" / "buried.jsonl").write_text("{}\n")
+    (tmp_path / "attachments").mkdir()
+    (tmp_path / "attachments" / "also-buried.jsonl").write_text("{}\n")
+    (tmp_path / "immoscout.jsonl").write_text("{}\n")
+    found = workspace.harvest_files(tmp_path)
+    assert [p.name for p in found] == ["immoscout.jsonl"]
+
+
+def test_a_harvest_that_writes_outside_the_data_directory_is_refused(tmp_path):
+    """The same guard as the attachments, which is the point of one function.
+
+    `harvests/` is a second prefix an archive can carry, so it is a second way
+    to climb out of the data directory, and it would have been a second place
+    to forget the check."""
+    base = tmp_path / "data"
+    base.mkdir()
+    path = tmp_path / "evil.arpw"
+    with zipfile.ZipFile(path, "w") as zf:
+        zf.writestr("harvests/../../etc/cron.d/evil", "* * * * * root sh\n")
+    with zipfile.ZipFile(path) as zf:
+        with pytest.raises(workspace.WorkspaceError) as caught:
+            workspace._members_in(zf, workspace.HARVESTS, base)
+    assert "outside" in str(caught.value)
+    assert "built to do it" in str(caught.value)
+
+
+def test_an_absolute_harvest_name_is_refused(tmp_path):
+    base = tmp_path / "data"
+    base.mkdir()
+    path = tmp_path / "evil.arpw"
+    with zipfile.ZipFile(path, "w") as zf:
+        zf.writestr("harvests//etc/cron.d/evil", "* * * * * root sh\n")
+    with zipfile.ZipFile(path) as zf:
+        with pytest.raises(workspace.WorkspaceError):
+            workspace._members_in(zf, workspace.HARVESTS, base)

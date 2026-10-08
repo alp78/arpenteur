@@ -1,0 +1,36 @@
+# Triago Immobilien AG
+
+| | |
+|---|---|
+| UID | `CHE221048485` |
+| Legal form | Société anonyme |
+| Canton | AG (de) |
+| Registered seat | Seon |
+| Address | Aarauerstrasse 4, 5703 Seon |
+| Register status | ACTIVE |
+
+## Relevance for Limen
+
+**regie-letting** — lets property; the administration may sit elsewhere
+
+purpose names letting but not administration, name agrees
+
+## Where to write
+
+- not looked for yet
+
+No website resolved.
+
+## What the register says it does
+
+> Erwerb, Halten, Vermieten und Veräussern von Liegenschaften sowie Finanzierungen aller Art, insbesondere Immobilienleasing; kann sich an anderen Unternehmen beteiligen Zweigniederlassungen und Tochtergesellschaften errichten sowie Grundeigentum erwerben, belasten, verwalten und veräussern.
+
+## Sources
+
+- Register entry: https://www.zefix.admin.ch/fr/search/entity/list?name=CHE221048485&directLink=true
+- Grading: rule over the registered purpose, see `scripts/classify_regies.py`
+- Addresses: none held
+- Cascade: `intel.address_hunt`, outcome `not run`
+
+The register carries no warranty and has no legal effect; only the certified
+cantonal excerpt and the FOSC publication text are binding.

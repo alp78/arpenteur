@@ -1,0 +1,833 @@
+# VD · 821 firms
+
+
+## regie-core (647)
+
+manages property for third parties, so runs inspections routinely
+
+- [2D IMMOBILIER SA](2d-immobilier-sa.md) · Penthalaz · `-`
+- [3A Immo SA](3a-immo-sa.md) · Lausanne · `info@3aimmo.ch`
+- [4B Immo Sàrl](4b-immo-sarl.md) · Sainte-Croix · `-`
+- [4D Immobilier SA](4d-immobilier-sa.md) · Gland · `-`
+- [4G Immo Sàrl](4g-immo-sarl.md) · Sainte-Croix · `vincent@concretise.ch`
+- [A-immobilier Sàrl](a-immobilier-sarl.md) · Denges · `contact@a-immobilier.ch`
+- [A.Celik immobilier Sàrl](a-celik-immobilier-sarl.md) · Blonay - Saint-Légier · `info@celik-immobilier.ch`
+- [A.E.M. Immobilier & Gestion Sàrl](a-e-m-immobilier-gestion-sarl.md) · Payerne · `-`
+- [A1 Solutions Sàrl](a1-solutions-sarl.md) · Montreux · `-`
+- [A2Z Sàrl](a2z-sarl.md) · Essertines-sur-Yverdon · `-`
+- [A3PY Sàrl](a3py-sarl.md) · Lausanne · `-`
+- [A8clo Sàrl](a8clo-sarl.md) · Oron · `info@a8clo.ch`
+- [AA CONSTRUCTIONS & ING. Sàrl](aa-constructions-ing-sarl.md) · Le Vaud · `-`
+- [AAE Immo SA](aae-immo-sa.md) · Nyon · `-`
+- [AB Immobilier Management SA](ab-immobilier-management-sa.md) · Payerne · `-`
+- [AB Immobilier SA](ab-immobilier-sa.md) · Croy · `-`
+- [ABF Swiss Agency Sàrl](abf-swiss-agency-sarl.md) · Vevey · `contact@urbanskate.ch`
+- [ABOX SERVICE Sàrl](abox-service-sarl.md) · Romanel-sur-Lausanne · `info@abox.ch`
+- [ABT Immobilier SA](abt-immobilier-sa.md) · Assens · `contact@abtimmobilier.com (+1)`
+- [ABYHEIM Sàrl](abyheim-sarl.md) · Vallorbe · `-`
+- [AC Assurance Sàrl](ac-assurance-sarl.md) · Rolle · `-`
+- [ACM Immobilier Sàrl](acm-immobilier-sarl.md) · Echallens · `?`
+- [AFINA SA Société fiduciaire et immobilière](afina-sa-societe-fiduciaire-et-immobiliere.md) · Lausanne · `-`
+- [AGB Immo Management SA](agb-immo-management-sa.md) · Lausanne · `-`
+- [AGOODDAY relocation & real estate Sàrl](agoodday-relocation-real-estate-sarl.md) · Genolier · `roberta@agoodday.ch`
+- [AJAMI IMMO SA](ajami-immo-sa.md) · Crans (VD) · `-`
+- [AK étoile immo SA](ak-etoile-immo-sa.md) · Jorat-Mézières · `-`
+- [AK2C Sàrl](ak2c-sarl.md) · Montreux · `kenny@ak2c.ch`
+- [ALBE Immobilier SA](albe-immobilier-sa.md) · Denges · `-`
+- [ALERT SWISS SECURITE Sàrl](alert-swiss-securite-sarl.md) · Bursinel · `-`
+- [ALTIMMA Société Immobilière SA](altimma-societe-immobiliere-sa.md) · Lonay · `-`
+- [ALVAZZI IMMOBILIER SA](alvazzi-immobilier-sa.md) · Orbe · `info@alvazzi-immobilier.ch`
+- [AM3 Office SA](am3-office-sa.md) · Cugy (VD) · `marthe.amy@am3office.ch`
+- [ANIMA - Architecture & Immobilier SA](anima-architecture-immobilier-sa.md) · Pully · `secretariat@anima-architecture.com`
+- [ARCAAL IMMO SA](arcaal-immo-sa.md) · Payerne · `-`
+- [ARG Immobilier SA](arg-immobilier-sa.md) · Bretigny-sur-Morrens · `-`
+- [ARGRAMAT IMMO INVEST SA](argramat-immo-invest-sa.md) · Payerne · `info@argramat.ch`
+- [ARIMCO Sàrl](arimco-sarl.md) · Préverenges · `info@arimco.ch`
+- [ARLA immobilier Sàrl](arla-immobilier-sarl.md) · Payerne · `?`
+- [AS Immobilier SARL](as-immobilier-sarl.md) · Le Mont-sur-Lausanne · `contact@as-immobilier.ch`
+- [ATHOS Immobilier Sàrl](athos-immobilier-sarl.md) · Luins · `-`
+- [ATM Immobilier SA](atm-immobilier-sa.md) · Yverdon-les-Bains · `-`
+- [AV élite immo Sàrl](av-elite-immo-sarl.md) · Faoug · `-`
+- [AXIHOME SA](axihome-sa.md) · Blonay - Saint-Légier · `info@axihome.ch (+1)`
+- [AZ Real Estate Sàrl](az-real-estate-sarl.md) · Grandson · `valerie@arbez-realestate.ch`
+- [Abinova Sàrl](abinova-sarl.md) · Avenches · `weyermann01@gmail.com`
+- [Acheter.immo Sàrl](acheter-immo-sarl.md) · Pailly · `vanessa.trallero@acheter.immo`
+- [Ad Valorem Real Estate Sàrl](ad-valorem-real-estate-sarl.md) · Mont-sur-Rolle · `contact@ad-valorem.ch`
+- [Aeternalis Immo Sàrl](aeternalis-immo-sarl.md) · Nyon · ``
+- [Agence Immo-Fid Sàrl](agence-immo-fid-sarl.md) · Féchy · `info@agence-immo.ch`
+- [Agence Immobilière Moillen SA](agence-immobiliere-moillen-sa.md) · Ormont-Dessus · `l.moillen@immobilier-moillen.ch`
+- [Agence Méridienne Sàrl, gérance et courtage](agence-meridienne-sarl-gerance-et-courtage.md) · La Sarraz · `info@agence-meridienne.ch`
+- [Agence immobilière François Schneeberger SA](agence-immobiliere-francois-schneeberger-sa.md) · Aigle · `?`
+- [Agence immobilière Françoise Jolivet Sàrl](agence-immobiliere-francoise-jolivet-sarl.md) · Gingins · `contact@agencefj.ch`
+- [Agence immobilière combière S.A.](agence-immobiliere-combiere-s-a.md) · Le Lieu · `-`
+- [Allinvest Immobilier SA](allinvest-immobilier-sa.md) · Ogens · `-`
+- [Aloha Urba Immo Sàrl](aloha-urba-immo-sarl.md) · Chavornay · `-`
+- [Alperia Immobilier Sàrl](alperia-immobilier-sarl.md) · Ollon · `info@alperia-immobilier.ch`
+- [Alpha Immobilier BC Sàrl](alpha-immobilier-bc-sarl.md) · Yverdon-les-Bains · `?`
+- [Altea Immo Sàrl](altea-immo-sarl.md) · Bourg-en-Lavaux · `info@alteaimmo.com`
+- [Alunni Immobilier SA](alunni-immobilier-sa.md) · Crissier · `-`
+- [Amma Immo Sàrl](amma-immo-sarl.md) · Yverdon-les-Bains · `info@amma.immo (+3)`
+- [Amorimmo Sàrl](amorimmo-sarl.md) · La Rippe · `info@amorimmo.ch`
+- [Apogée Properties Sàrl](apogee-properties-sarl.md) · Pully · `yael@apogeeproperties.ch`
+- [Arnaud Group Immo SA](arnaud-group-immo-sa.md) · Lausanne · `?`
+- [Art Stone Développement SA](art-stone-developpement-sa.md) · Ormont-Dessus · `lmanzoni@art-stone.ch`
+- [ArteFACT.Immo SA](artefact-immo-sa.md) · Renens (VD) · ``
+- [At-Home Régie immobilière SA](at-home-regie-immobiliere-sa.md) · Lausanne · `info@regieathome.ch`
+- [Atelier 94 Architecture SA](atelier-94-architecture-sa.md) · Arzier-Le Muids · `info@atelier94.ch (+1)`
+- [Auto Style Immo Sàrl](auto-style-immo-sarl.md) · Epalinges · `info@auto-style.ch`
+- [Avdic Immobilier Sàrl](avdic-immobilier-sarl.md) · Aigle · `?`
+- [BAKI Immo SA](baki-immo-sa.md) · Payerne · `baki-immo@hotmail.com`
+- [BCB Immobilier SA](bcb-immobilier-sa.md) · Ollon · `?`
+- [BHS Immobilier SA](bhs-immobilier-sa.md) · Romanel-sur-Lausanne · `info@bhs-immobilier.ch`
+- [BLD Immobilier SA](bld-immobilier-sa.md) · Lutry · `info@bldimmobilier.ch (+1)`
+- [BMF Immo SA](bmf-immo-sa.md) · Corseaux · `-`
+- [BQ Immo SA](bq-immo-sa.md) · Crissier · ``
+- [BRM Immobilier SA](brm-immobilier-sa.md) · Echallens · `?`
+- [BRODARD Immobilier SA](brodard-immobilier-sa.md) · Lausanne · `virginie@brodardimmobilier.ch`
+- [BS Immo-Concept Sàrl](bs-immo-concept-sarl.md) · Nyon · `?`
+- [BSQUARE Immo SA](bsquare-immo-sa.md) · Lausanne · `-`
+- [BTR Immobilier SA](btr-immobilier-sa.md) · Lausanne · `?`
+- [BUGNON Immobilier Sàrl](bugnon-immobilier-sarl.md) · Payerne · `office@immobilier-broye.ch`
+- [BURGY Immobilier Sàrl](burgy-immobilier-sarl.md) · Senarclens · `-`
+- [BWH fiduciaire & gérance Sàrl](bwh-fiduciaire-gerance-sarl.md) · Avenches · `info@bwh-fiduciaire.ch`
+- [Baltisberger Immobilier SA](baltisberger-immobilier-sa.md) · Denges · `?`
+- [BatiPro Immobilier et Business SA](batipro-immobilier-et-business-sa.md) · Lonay · `?`
+- [BauMe immo SA](baume-immo-sa.md) · Hautemorges · ``
+- [Beja Immobilier SA](beja-immobilier-sa.md) · Lausanne · `?`
+- [Beqa Immo SA](beqa-immo-sa.md) · Renens (VD) · `?`
+- [Bertrand Morisod SA](bertrand-morisod-sa.md) · Aigle · `bm@bertrand-morisod.ch`
+- [Bma-Immo Sàrl](bma-immo-sarl.md) · Hautemorges · `?`
+- [Bobst Régie Immobilière SA](bobst-regie-immobiliere-sa.md) · Yverdon-les-Bains · `?`
+- [Bosquets S.A. Régie Immobilière](bosquets-s-a-regie-immobiliere.md) · La Sarraz · `?`
+- [Bula Immobilier SA](bula-immobilier-sa.md) · Moudon · `?`
+- [C & C Immobilier SA](c-c-immobilier-sa.md) · Vevey · `?`
+- [C20 Immo SA](c20-immo-sa.md) · Yverdon-les-Bains · `-`
+- [CARA immobilier Sàrl](cara-immobilier-sarl.md) · Vich · `?`
+- [CERCLE IMMO SUISSE SARL](cercle-immo-suisse-sarl.md) · Mies · `info@cercle-immo-suisse.ch`
+- [CH Gérance Suisse SA](ch-gerance-suisse-sa.md) · Nyon · `?`
+- [CH Top Immo Sàrl](ch-top-immo-sarl.md) · Bex · ``
+- [CHABLOZ IMMOBILIER SA](chabloz-immobilier-sa.md) · Château-d'Oex · `?`
+- [CIE IMMO SA](cie-immo-sa.md) · Lonay · `info@cieimmo.ch`
+- [CMD Immobilier SA](cmd-immobilier-sa.md) · Romanel-sur-Lausanne · `stephanie.calame@cmd-immobilier.ch (+1)`
+- [CODIMMO SA](codimmo-sa.md) · Echallens · `info@codimmo.ch`
+- [CR Immobilier Sàrl](cr-immobilier-sarl.md) · Corcelles-près-Payerne · `info@crgroupsa.ch (+1)`
+- [CTJ Immobilier SA](ctj-immobilier-sa.md) · Forel (Lavaux) · `?`
+- [CZ Immo Sàrl](cz-immo-sarl.md) · Mont-sur-Rolle · ``
+- [Canorégie SA](canoregie-sa.md) · Assens · `?`
+- [Capital Immobilier SA](capital-immobilier-sa.md) · Lausanne · `?`
+- [Carema Immobilier SA](carema-immobilier-sa.md) · Nyon · `?`
+- [Carrel Immobilier Sàrl](carrel-immobilier-sarl.md) · Nyon · `contact@carrelimmo.ch`
+- [Carron&Leppert Immobilier Sàrl](carron-leppert-immobilier-sarl.md) · Chardonne · `-`
+- [Cava Immobilier SA](cava-immobilier-sa.md) · Montilliez · `?`
+- [Ced immo Sàrl](ced-immo-sarl.md) · Echichens · `?`
+- [Cenaj Immobiliers Sàrl](cenaj-immobiliers-sarl.md) · Aigle · `-`
+- [Cerise Immobilier SA](cerise-immobilier-sa.md) · Ollon · `info@cerise-immobilier.ch`
+- [Christe Immobilier Sàrl](christe-immobilier-sarl.md) · Yverdon-les-Bains · `?`
+- [Cl. Jaccard Immobilier SA](cl-jaccard-immobilier-sa.md) · Perroy · `?`
+- [Claessens Immo Sàrl](claessens-immo-sarl.md) · Aubonne · `?`
+- [Cofimo & Co SA](cofimo-co-sa.md) · Montreux · `o.coeytaux@cofimo.ch`
+- [Compagnie Vaudoise Immobilière SA](compagnie-vaudoise-immobiliere-sa.md) · Echandens · `-`
+- [Comptacart Sàrl](comptacart-sarl.md) · Aubonne · `c.gallaz@comptacart.ch`
+- [Cozy Co. Sàrl](cozy-co-sarl.md) · Pully · `info@cozyco.ch`
+- [CrazYmmO Sàrl](crazymmo-sarl.md) · Nyon · `crazymmo@crazymmo.ch`
+- [Crisafo Immobilier SA](crisafo-immobilier-sa.md) · Lausanne · `?`
+- [Crnic-Immo SA](crnic-immo-sa.md) · Cossonay · `-`
+- [Cyther Immobilier SA](cyther-immobilier-sa.md) · Luins · `fdk@cytherimmo.ch`
+- [Cytisia Immo Sàrl](cytisia-immo-sarl.md) · Luins · ``
+- [D HOMES SA](d-homes-sa.md) · Lausanne · `info@dhomes.ch`
+- [D&G Immobilier Sàrl](d-g-immobilier-sarl.md) · Daillens · `-`
+- [DAB Immobilier Sàrl](dab-immobilier-sarl.md) · Penthéréaz · `-`
+- [DB IMMOBILIER Sàrl](db-immobilier-sarl.md) · Arzier-Le Muids · `?`
+- [DCC IMMO SA](dcc-immo-sa.md) · Pully · ``
+- [DG22 IMMOBILIER SA](dg22-immobilier-sa.md) · Morges · `info@dg22immobilier.ch (+1)`
+- [DIM Immo SA](dim-immo-sa.md) · Lausanne · ``
+- [DM Immobilier Sàrl](dm-immobilier-sarl.md) · Le Chenit · `info@dm-immobilier.ch`
+- [DMN Immobiliers SA](dmn-immobiliers-sa.md) · Penthaz · `-`
+- [DMO immo SA](dmo-immo-sa.md) · Bavois · `?`
+- [DOM Immobilier SA](dom-immobilier-sa.md) · Penthaz · ``
+- [DPG Immobilier SA](dpg-immobilier-sa.md) · Lavey-Morcles · `damien@dpg-immobilier.com`
+- [DRIAD Immo Sàrl](driad-immo-sarl.md) · Crissier · ``
+- [DT Construction Immobilière Sàrl](dt-construction-immobiliere-sarl.md) · Rolle · `-`
+- [DYM immo Sàrl](dym-immo-sarl.md) · Montanaire · `-`
+- [Dautaj Immobilier Sàrl](dautaj-immobilier-sarl.md) · Villeneuve (VD) · `?`
+- [De Blasio Immobilier SA](de-blasio-immobilier-sa.md) · Valbroye · ``
+- [Delessert Immobilier Sàrl](delessert-immobilier-sarl.md) · Savigny · `elodie@delessert-immobilier.ch`
+- [Destimmo SA](destimmo-sa.md) · Chexbres · `info@destimmo.ch`
+- [DiG IMMO SA](dig-immo-sa.md) · Prangins · ``
+- [Difaco Immobilier Sàrl](difaco-immobilier-sarl.md) · Ormont-Dessus · `info@difaco.ch`
+- [Dimab Immobilier SA](dimab-immobilier-sa.md) · Blonay - Saint-Légier · `-`
+- [Domi immobilier Sàrl](domi-immobilier-sarl.md) · Epalinges · `info@remax.ch (+6)`
+- [Domus Immo Sàrl](domus-immo-sarl.md) · Lausanne · ``
+- [Dridi immo SA](dridi-immo-sa.md) · Boussens · `?`
+- [Dumnica Immobilier Sàrl](dumnica-immobilier-sarl.md) · Ecublens (VD) · ``
+- [Dunimmo Sàrl](dunimmo-sarl.md) · Epalinges · `contact@dunimmo.ch`
+- [Duo Immobilier Sàrl](duo-immobilier-sarl.md) · Blonay - Saint-Légier · `info@duoimmobilier.ch`
+- [Dyade Immobilier Sàrl](dyade-immobilier-sarl.md) · Nyon · `-`
+- [Dynamiques Immobiliers Sàrl](dynamiques-immobiliers-sarl.md) · Bourg-en-Lavaux · `-`
+- [ECG Immobilier S.A.](ecg-immobilier-s-a.md) · Préverenges · `?`
+- [EDI BOULAZ - IMMOBILIER - CHAUFFAGE - VENTILATION - CLIMATISATION - SANITAIRE S. à r.l.](edi-boulaz-immobilier-chauffage-ventilation-climatisation-sa.md) · Ecublens (VD) · ``
+- [EPR Immobilier SA](epr-immobilier-sa.md) · Lausanne · `?`
+- [Easy Gérance SA](easy-gerance-sa.md) · Yverdon-les-Bains · ``
+- [Eckert Immobilier SA](eckert-immobilier-sa.md) · Lausanne · `info@eckert-immobilier.ch`
+- [Eco Léman Immobilier SA](eco-leman-immobilier-sa.md) · Poliez-Pittet · `?`
+- [EcoPro Immobilier SA](ecopro-immobilier-sa.md) · Poliez-Pittet · `?`
+- [Eden JCT Immobilier Sàrl](eden-jct-immobilier-sarl.md) · Morges · ``
+- [El Gran Poder Immobilier SA](el-gran-poder-immobilier-sa.md) · Pully · `?`
+- [El Valle Immobilier SA](el-valle-immobilier-sa.md) · Pully · ``
+- [Elan Immo Sàrl](elan-immo-sarl.md) · Saint-Sulpice (VD) · `-`
+- [EmA Immobilier SA](ema-immobilier-sa.md) · Villeneuve (VD) · `?`
+- [Envergure Immobilier SA](envergure-immobilier-sa.md) · Lausanne · `?`
+- [Equi-Immo SA](equi-immo-sa.md) · Fiez · ``
+- [Espace-Design Immobilier Sàrl](espace-design-immobilier-sarl.md) · Saint-Sulpice (VD) · `info@espacedesign.ch`
+- [Estia Immobilier Holding SA](estia-immobilier-holding-sa.md) · Nyon · ``
+- [Estoppey Immobilier Sàrl](estoppey-immobilier-sarl.md) · Forel (Lavaux) · `info@estoppey-immo.ch`
+- [Etraz Immo SA](etraz-immo-sa.md) · Lonay · `?`
+- [Euro-Courtage Sàrl](euro-courtage-sarl.md) · Montreux · `contact@eurocourtage.ch`
+- [FBN2 immobilier SA](fbn2-immobilier-sa.md) · Montreux · `?`
+- [FC Gérance Sàrl](fc-gerance-sarl.md) · Blonay - Saint-Légier · ``
+- [FC Immobilier AG](fc-immobilier-ag.md) · Blonay - Saint-Légier · `?`
+- [FDH Immobilier Sàrl](fdh-immobilier-sarl.md) · Bussigny · ``
+- [FFA immobilier SA](ffa-immobilier-sa.md) · Villars-Sainte-Croix · `-`
+- [FGA Villars Immobilier SA](fga-villars-immobilier-sa.md) · Ollon · `?`
+- [FGND Immobilier SA](fgnd-immobilier-sa.md) · Forel (Lavaux) · `?`
+- [FHV Immobilier Sàrl](fhv-immobilier-sarl.md) · Lausanne · ``
+- [FIDEG Immo SA](fideg-immo-sa.md) · Aigle · `?`
+- [FIDI SA](fidi-sa.md) · Renens (VD) · `contact@fidisa.ch`
+- [FIDUCIAIRE JAQUES SA](fiduciaire-jaques-sa.md) · Sainte-Croix · `info@fid-jaques.ch`
+- [FIGARO Immobilier Sàrl](figaro-immobilier-sarl.md) · Montreux · ``
+- [FILEMI Immobilier Sàrl](filemi-immobilier-sarl.md) · Rolle · `info@filemi.ch`
+- [FKM Immobilier SA](fkm-immobilier-sa.md) · Saint-Sulpice (VD) · `?`
+- [FLAFER Immo Sàrl](flafer-immo-sarl.md) · Founex · `?`
+- [FM Consult Fiduciaire Sàrl](fm-consult-fiduciaire-sarl.md) · Epalinges · `info@fmconsultfiduciaire.ch`
+- [FMC Immo SA](fmc-immo-sa.md) · Bex · ``
+- [FP Gestion immobilier Sàrl](fp-gestion-immobilier-sarl.md) · Saint-Prex · `info@fpgestion.ch`
+- [FR Immo Invest Sàrl](fr-immo-invest-sarl.md) · Echandens · `?`
+- [FS Développement & Immobilier SA](fs-developpement-immobilier-sa.md) · Bussigny · ``
+- [FTimmobilier Sàrl](ftimmobilier-sarl.md) · Moudon · `info@ftimmobilier.ch`
+- [Failloubaz Immobilier SA](failloubaz-immobilier-sa.md) · Vully-les-Lacs · `?`
+- [Fantoli Immobilier Sàrl](fantoli-immobilier-sarl.md) · Bonvillars · `info@fantoli.ch`
+- [Fehlmann Immobilier SA](fehlmann-immobilier-sa.md) · Morges · `info@f-immob.ch`
+- [Ferrys Immobilier SA](ferrys-immobilier-sa.md) · Lausanne · ``
+- [Firebird 1961 Immobilière Sàrl](firebird-1961-immobiliere-sarl.md) · Arzier-Le Muids · `?`
+- [Flobis immobilier Sàrl](flobis-immobilier-sarl.md) · Lausanne · `contact@flobis.ch`
+- [Forte Broker Immobilier Sàrl](forte-broker-immobilier-sarl.md) · Ecublens (VD) · `acpoulard@fortebroker.ch`
+- [Four Immo Invest SA](four-immo-invest-sa.md) · Echichens · ``
+- [Frédérick Immobilier SA](frederick-immobilier-sa.md) · Montreux · `?`
+- [Furer SA, régisseurs et courtiers](furer-sa-regisseurs-et-courtiers.md) · Vevey · `info@furer.ch`
+- [G.C.C.J. immo Sàrl](g-c-c-j-immo-sarl.md) · Chavornay · `?`
+- [G.P. Immobilier Sàrl](g-p-immobilier-sarl.md) · Grandson · `?`
+- [GAEA Immobilier SA](gaea-immobilier-sa.md) · Genolier · ``
+- [GAR Immobilier SA](gar-immobilier-sa.md) · Nyon · `?`
+- [GDL Immobilier SA](gdl-immobilier-sa.md) · Morges · ``
+- [GEMYS immo sa](gemys-immo-sa.md) · Lonay · `?`
+- [GFM Immo Sàrl](gfm-immo-sarl.md) · Préverenges · `?`
+- [GK Investissement et Immobilier SA](gk-investissement-et-immobilier-sa.md) · Gland · `?`
+- [GS Immobilier SA](gs-immobilier-sa.md) · Bussigny · ``
+- [Gendre & Emonet SA](gendre-emonet-sa.md) · Montreux · `gerance@gendre-emonet.ch`
+- [Gerancimo Sàrl](gerancimo-sarl.md) · Saint-Sulpice (VD) · `info@gerancimo.ch`
+- [Gilbert G. Immobilier SA](gilbert-g-immobilier-sa.md) · Pully · `info@gilbertimmobilier.com`
+- [Gitana Immobilière SA](gitana-immobiliere-sa.md) · Saint-Sulpice (VD) · ``
+- [Giwa Immobilier Sàrl](giwa-immobilier-sarl.md) · Aubonne · `?`
+- [Glauser Immobilier SA](glauser-immobilier-sa.md) · La Tour-de-Peilz · `info@glauserimmo.ch`
+- [Globe Plan et Cie SA](globe-plan-et-cie-sa.md) · Lausanne · `info@globeplan.ch`
+- [Golay Immobilier SA](golay-immobilier-sa.md) · Lausanne · `fpache@golay-immobilier.ch (+1)`
+- [Grand Marais Immo SA](grand-marais-immo-sa.md) · Yverdon-les-Bains · `?`
+- [Grand Verger SA](grand-verger-sa.md) · Villeneuve (VD) · `info@grandverger.ch`
+- [Grata Eco House Suisse Sàrl](grata-eco-house-suisse-sarl.md) · Montreux · `hello@grata.com (+3)`
+- [Graz Immo SA](graz-immo-sa.md) · Le Mont-sur-Lausanne · ``
+- [Guex Immo SA](guex-immo-sa.md) · Bremblens · `?`
+- [Guédon Gérance SA](guedon-gerance-sa.md) · Lausanne · `guedon@guedon.ch`
+- [Gérance Borgeaud SA](gerance-borgeaud-sa.md) · Lausanne · `info@gerance-borgeaud.ch`
+- [Gérance Caiani S.A.](gerance-caiani-s-a.md) · Le Mont-sur-Lausanne · ``
+- [Gérance Emery S.A.](gerance-emery-s-a.md) · Morges · `?`
+- [Gérance Immobilière A. Berthoud Sàrl](gerance-immobiliere-a-berthoud-sarl.md) · Le Chenit · `?`
+- [Gérance Immobilière Grogg Sàrl](gerance-immobiliere-grogg-sarl.md) · Le Mont-sur-Lausanne · `dietlikon@grogg.ch`
+- [Gérance Immobilière Jean-Claude Jotterand Sàrl](gerance-immobiliere-jean-claude-jotterand-sarl.md) · Morges · ``
+- [Gérance Service S.A.](gerance-service-s-a.md) · Ollon · `?`
+- [H&B immobilier Sàrl](h-b-immobilier-sarl.md) · Saint-Barthélemy (VD) · ``
+- [HADE Immobilier Sàrl](hade-immobilier-sarl.md) · Lonay · `?`
+- [HBC Immobilier Sàrl](hbc-immobilier-sarl.md) · Pully · `?`
+- [HBMC Immo Sàrl](hbmc-immo-sarl.md) · Vufflens-la-Ville · `?`
+- [HOMA Immobilier Sàrl](homa-immobilier-sarl.md) · Vevey · ``
+- [HPA Immo Sàrl](hpa-immo-sarl.md) · Saint-Prex · `?`
+- [HUTTON IMMOBILIER Sàrl](hutton-immobilier-sarl.md) · Nyon · `contact@huttonimmobilier.com`
+- [Habitatlac Sàrl](habitatlac-sarl.md) · Lutry · `info@habitatlac.ch`
+- [Helvet Conseils Immo Sàrl](helvet-conseils-immo-sarl.md) · Oron · `info@helvet-conseils.ch`
+- [Helvet-immo Suisse SA](helvet-immo-suisse-sa.md) · Eysins · ``
+- [Helvetim Suisse Immobilière Sàrl](helvetim-suisse-immobiliere-sarl.md) · Lutry · `?`
+- [Henzen Immobilier Sàrl](henzen-immobilier-sarl.md) · Gingins · `?`
+- [Home-immobilier Sàrl](home-immobilier-sarl.md) · Ecublens (VD) · `?`
+- [Homequest Immobilier SA](homequest-immobilier-sa.md) · Lausanne · `info@homequest.ch`
+- [Homis Real Estate Sàrl](homis-real-estate-sarl.md) · Bottens · `info@homis.ch`
+- [Horizon Promotion & Régie Sàrl](horizon-promotion-regie-sarl.md) · Lausanne · `info@horizon-immo.ch`
+- [IBK Promotion Sàrl](ibk-promotion-sarl.md) · Villeneuve (VD) · `info@ibk-promotion.ch`
+- [ID GROUP Immobilier Sàrl](id-group-immobilier-sarl.md) · Morges · ``
+- [IEG, Immobilière Etudes et Gestion SA](ieg-immobiliere-etudes-et-gestion-sa.md) · Echandens · `?`
+- [IMMO Capital JP SA](immo-capital-jp-sa.md) · Payerne · ``
+- [IMMO ENERGY SA](immo-energy-sa.md) · Bussigny · `info@immoenergy.com`
+- [IMMOPRO gérance béatrice jotterand Sàrl](immopro-gerance-beatrice-jotterand-sarl.md) · Morges · `nellyatsirdea@gmail.com`
+- [IMOS Immobilier & Conseils Sàrl](imos-immobilier-conseils-sarl.md) · Etoy · `info@imos-immobilier.ch`
+- [IS Immobilière Suisse SA](is-immobiliere-suisse-sa.md) · Lutry · `?`
+- [IZI immo Sàrl](izi-immo-sarl.md) · Echandens · `info@iziimmo.com`
+- [Image Immobilier SA](image-immobilier-sa.md) · Nyon · ``
+- [Immersia Sàrl](immersia-sarl.md) · La Tour-de-Peilz · `info@immersia.ch`
+- [Immo & Co SA](immo-co-sa.md) · Ollon · `?`
+- [Immo 27 SA](immo-27-sa.md) · Payerne · ``
+- [Immo Concept JB Sàrl](immo-concept-jb-sarl.md) · Echichens · `?`
+- [Immo Conseils 48 Sàrl](immo-conseils-48-sarl.md) · Echallens · `info@immoconseils.com`
+- [Immo Expérience Sàrl](immo-experience-sarl.md) · Aigle · `info@immo-experience.com (+1)`
+- [Immo FR 1000 SA](immo-fr-1000-sa.md) · Bussigny · `?`
+- [Immo Five Acquisition Sàrl](immo-five-acquisition-sarl.md) · Perroy · ``
+- [Immo Five Invest SA](immo-five-invest-sa.md) · Perroy · `?`
+- [Immo GTR SA](immo-gtr-sa.md) · Nyon · ``
+- [Immo Mato SA](immo-mato-sa.md) · Lausanne · `?`
+- [Immo Montchoisi Sàrl](immo-montchoisi-sarl.md) · Lausanne · `info@montchoisi.ch (+2)`
+- [Immo Mujon SA](immo-mujon-sa.md) · Penthéréaz · `?`
+- [Immo Rue des Cloubeaux II SA](immo-rue-des-cloubeaux-ii-sa.md) · Lausanne · ``
+- [Immo Rue des Coubleaux SA](immo-rue-des-coubleaux-sa.md) · Lausanne · `?`
+- [Immo Ruelle du Châtaignier SA](immo-ruelle-du-chataignier-sa.md) · Lausanne · ``
+- [Immo Suisse Romande Sàrl](immo-suisse-romande-sarl.md) · Lausanne · `?`
+- [Immo Swiss Riviera SA](immo-swiss-riviera-sa.md) · Chavannes-près-Renens · `?`
+- [Immo Switzerland SA](immo-switzerland-sa.md) · Bourg-en-Lavaux · `?`
+- [Immo Terre-Sainte Sàrl](immo-terre-sainte-sarl.md) · Nyon · ``
+- [Immo Vy-d'Avenches SA, à Lausanne](immo-vy-d-avenches-sa-a-lausanne.md) · Lausanne · `?`
+- [Immo Wento Sàrl](immo-wento-sarl.md) · Lausanne · ``
+- [Immo-Consulting SA](immo-consulting-sa.md) · Lutry · `info@immo-consulting.ch`
+- [Immo-Lausanne SA, Vullierens](immo-lausanne-sa-vullierens.md) · Vullierens · `?`
+- [Immo-Ren Advisors Sàrl](immo-ren-advisors-sarl.md) · Vully-les-Lacs · `teag@advisors.ch (+8)`
+- [Immo-VD1000 SA](immo-vd1000-sa.md) · Bussigny · `?`
+- [Immo-VD2000 SA](immo-vd2000-sa.md) · Bussigny · ``
+- [Immo-meubles S.A.](immo-meubles-s-a.md) · Lausanne · `?`
+- [Immo-mtm SA](immo-mtm-sa.md) · Bussigny · ``
+- [Immo62 Sàrl](immo62-sarl.md) · Lausanne · `info@immo62.ch`
+- [ImmoSwiss Immobilier SA](immoswiss-immobilier-sa.md) · Montreux · `contact@immoswiss-immobilier.ch`
+- [ImmoZe Sàrl](immoze-sarl.md) · Lausanne · `immozesarl@gmail.com`
+- [Immobilier Insider Sàrl](immobilier-insider-sarl.md) · Eysins · `?`
+- [Immobilier Proxi Sàrl](immobilier-proxi-sarl.md) · Lausanne · `info@immobilier-proxi.ch`
+- [Immobilier et Design Sàrl](immobilier-et-design-sarl.md) · Lutry · `?`
+- [Immobilière Casa Bella Sàrl](immobiliere-casa-bella-sarl.md) · Lausanne · ``
+- [Immobilière des Montagnes SA](immobiliere-des-montagnes-sa.md) · Château-d'Oex · `?`
+- [Immobilière du Bourg S.A.](immobiliere-du-bourg-s-a.md) · Lutry · ``
+- [Infiniti Home Sàrl](infiniti-home-sarl.md) · Servion · `claudio@infinitihome.ch`
+- [Inter-Gérance SA](inter-gerance-sa.md) · Bex · `info@intergerance.ch`
+- [J-F Widmer Immobiliers Sàrl](j-f-widmer-immobiliers-sarl.md) · Chavannes-de-Bogis · `?`
+- [J2BM Immobilier SA](j2bm-immobilier-sa.md) · Chavornay · `?`
+- [JA Immobilier SA](ja-immobilier-sa.md) · Orbe · `?`
+- [JBM Immo Vision Sàrl](jbm-immo-vision-sarl.md) · Renens (VD) · ``
+- [JEFIMA Immobilier SA](jefima-immobilier-sa.md) · Orbe · `jefima@jefima.ch`
+- [JFR Immobilier Sàrl](jfr-immobilier-sarl.md) · Echandens · `info@jfr.ch`
+- [JK Immobilier Sàrl](jk-immobilier-sarl.md) · Vevey · ``
+- [JKL Immo SA](jkl-immo-sa.md) · Baulmes · `?`
+- [JL Immobilier-Conseils Sàrl](jl-immobilier-conseils-sarl.md) · Belmont-sur-Lausanne · `?`
+- [JL2 Immo Sàrl](jl2-immo-sarl.md) · Bullet · `?`
+- [JM Fiscalité & Immobilier Sàrl](jm-fiscalite-immobilier-sarl.md) · Rossenges · ``
+- [JM Immo Sàrl](jm-immo-sarl.md) · Yverdon-les-Bains · `?`
+- [JMG Immobilier Sàrl](jmg-immobilier-sarl.md) · Yvonand · ``
+- [JNB Immo SA](jnb-immo-sa.md) · Echallens · `info@jnbimmo.com`
+- [JNK immobilier Sàrl](jnk-immobilier-sarl.md) · Montreux · `?`
+- [JODHAR Immobilier SA](jodhar-immobilier-sa.md) · Borex · `?`
+- [Jaquier Immobilier Sàrl](jaquier-immobilier-sarl.md) · Grandson · ``
+- [Jardin Cosmique Immobilier SA](jardin-cosmique-immobilier-sa.md) · Bex · `info@jardincosmique.com`
+- [Jo immo Sàrl](jo-immo-sarl.md) · Payerne · ``
+- [Joode Immobilier SA](joode-immobilier-sa.md) · Lausanne · `?`
+- [KAVEN IMMOBILIER SARL](kaven-immobilier-sarl.md) · Lausanne · `?`
+- [KAYMO Sàrl](kaymo-sarl.md) · Le Mont-sur-Lausanne · `info@kaymo.ch`
+- [Kaltenrieder Immobilier Sàrl](kaltenrieder-immobilier-sarl.md) · Avenches · `?`
+- [KauCo Immobilier SA](kauco-immobilier-sa.md) · Vully-les-Lacs · ``
+- [Kimei Immobilier SA](kimei-immobilier-sa.md) · Yverdon-les-Bains · `?`
+- [Kissling Immobilier Sàrl](kissling-immobilier-sarl.md) · Crans (VD) · `info@kissling-immobilier.ch`
+- [L'Observatoire de l'Immobilier Sàrl](l-observatoire-de-l-immobilier-sarl.md) · Lausanne · `courtage@immobilier-weidner.ch`
+- [L3M Partners SA](l3m-partners-sa.md) · Nyon · `ad@l3m-partners.ch (+1)`
+- [LAUREMB Immobilier Sàrl](lauremb-immobilier-sarl.md) · Valbroye · ``
+- [LAVA-IMMO Sàrl](lava-immo-sarl.md) · Chardonne · `contact@lava-immo.ch`
+- [LEMS Immobilier SA](lems-immobilier-sa.md) · Lonay · `?`
+- [LF IMMOBILIER Sàrl](lf-immobilier-sarl.md) · Valbroye · `?`
+- [LGH Luginbühl Immobilier Sàrl](lgh-luginbuhl-immobilier-sarl.md) · Forel (Lavaux) · `?`
+- [LI Immobilier Sàrl](li-immobilier-sarl.md) · Lavey-Morcles · ``
+- [LIGNARIUS Sàrl](lignarius-sarl.md) · Bourg-en-Lavaux · `info@lignarius-immobilier.ch`
+- [LL Immo SA](ll-immo-sa.md) · Bavois · `?`
+- [LML Immobilier SA](lml-immobilier-sa.md) · Blonay - Saint-Légier · ``
+- [LOR&AL IMMOBILIER SARL](lor-al-immobilier-sarl.md) · Yens · `?`
+- [LSA Immo-Bat Sàrl](lsa-immo-bat-sarl.md) · Payerne · `?`
+- [LSG Immo Sàrl](lsg-immo-sarl.md) · Nyon · `info@immo.ls-group.ch`
+- [LT Développement Immobilier Sàrl](lt-developpement-immobilier-sarl.md) · Eysins · ``
+- [LUGA Immobilier SA](luga-immobilier-sa.md) · Montreux · `?`
+- [LVLI Immo Sàrl](lvli-immo-sarl.md) · Ollon · ``
+- [LVMJ Immo Sàrl](lvmj-immo-sarl.md) · Bremblens · `?`
+- [La Croix Immo SA](la-croix-immo-sa.md) · Lucens · `?`
+- [La Plaine Immobilier SA](la-plaine-immobilier-sa.md) · Aclens · `?`
+- [La Régie Foncière du Léman SA](la-regie-fonciere-du-leman-sa.md) · Lausanne · ``
+- [La Tenuta Immobiliare SA](la-tenuta-immobiliare-sa.md) · Crissier · `?`
+- [Lady Colinette Immobilier Sàrl](lady-colinette-immobilier-sarl.md) · Le Mont-sur-Lausanne · ``
+- [Lambert Immo Sàrl](lambert-immo-sarl.md) · Renens (VD) · `info@lambertimmo.ch`
+- [Lavaux Immobilier Services Sàrl](lavaux-immobilier-services-sarl.md) · Lutry · `?`
+- [Le Banneret Immobilier SA](le-banneret-immobilier-sa.md) · Vevey · `?`
+- [Le First Immo SA](le-first-immo-sa.md) · Villars-Sainte-Croix · `daniel@larosaire.ch`
+- [Lemanex Immobilier SA](lemanex-immobilier-sa.md) · Cugy (VD) · ``
+- [Leroux Immobilier Sàrl](leroux-immobilier-sarl.md) · Lausanne · `?`
+- [Les Vues Immobilier SA](les-vues-immobilier-sa.md) · Coppet · ``
+- [Les clés d'or Sàrl](les-cles-d-or-sarl.md) · Bottens · `lesclesdor@bluewin.ch`
+- [Leuba Immobilier SA](leuba-immobilier-sa.md) · Gollion · `?`
+- [LevadImmo SA](levadimmo-sa.md) · Morrens (VD) · `laura.berthouzoz@levadimmo.ch`
+- [Lio Immo Sàrl](lio-immo-sarl.md) · Château-d'Oex · `info@lio-immo.ch`
+- [Locatelli Immobilier Sàrl](locatelli-immobilier-sarl.md) · Arnex-sur-Orbe · `?`
+- [Locom Sàrl](locom-sarl.md) · Morges · `info@locom.ch`
+- [Logistimmo SA](logistimmo-sa.md) · Orbe · `info@logistimmo.ch`
+- [Loschi Immobilier SA](loschi-immobilier-sa.md) · Crissier · `?`
+- [Lyv Immobilier SA](lyv-immobilier-sa.md) · Yverdon-les-Bains · ``
+- [Léman Développements Immobiliers (LDI) Sàrl](leman-developpements-immobiliers-ldi-sarl.md) · Saint-Sulpice (VD) · `?`
+- [M&B gérance immobilière SA](m-b-gerance-immobiliere-sa.md) · Lausanne · `location@mbsa.ch`
+- [M&P Immobilier SA](m-p-immobilier-sa.md) · Echichens · ``
+- [M&X Immobilier SA](m-x-immobilier-sa.md) · Epalinges · `?`
+- [M2 Immobilier SA](m2-immobilier-sa.md) · Yverdon-les-Bains · `?`
+- [MAEL immo SA](mael-immo-sa.md) · Clarmont · `info@maelimmo.ch`
+- [MAK-Immo et Cie SA](mak-immo-et-cie-sa.md) · Lausanne · ``
+- [MCC Immobilière SA](mcc-immobiliere-sa.md) · Montreux · `?`
+- [MDC Immobilier Sàrl](mdc-immobilier-sarl.md) · Saint-Prex · ``
+- [MEA Immobilier SA](mea-immobilier-sa.md) · Cugy (VD) · `?`
+- [MF Consulting Immobilier Sàrl](mf-consulting-immobilier-sarl.md) · Echichens · `?`
+- [MG CONSULTING & IMMO SA](mg-consulting-immo-sa.md) · Servion · `?`
+- [MGM Fiduciaire SA](mgm-fiduciaire-sa.md) · Lutry · `gerance@mgm.ch`
+- [MILO Immobilier SA](milo-immobilier-sa.md) · Yverdon-les-Bains · ``
+- [MLS Immobilier SA](mls-immobilier-sa.md) · Penthalaz · `?`
+- [MM Properties SA](mm-properties-sa.md) · Founex · `marine@mm-properties.ch`
+- [MMS Pro SA](mms-pro-sa.md) · Cugy (VD) · `marie@mmspro.ch`
+- [MNG Immo Sàrl](mng-immo-sarl.md) · Cossonay · ``
+- [MNM Immobilier Sàrl](mnm-immobilier-sarl.md) · Nyon · `contact@mnm-immobilier.ch`
+- [MNS Immobilier SA](mns-immobilier-sa.md) · Etoy · `?`
+- [MOINEImmobilier Sàrl](moineimmobilier-sarl.md) · Villeneuve (VD) · `?`
+- [MONT Immobilier SA](mont-immobilier-sa.md) · Le Mont-sur-Lausanne · `?`
+- [MORINAJ Développement immobilier Sàrl](morinaj-developpement-immobilier-sarl.md) · Pully · `?`
+- [MR Immo & Invest SA](mr-immo-invest-sa.md) · Echallens · `?`
+- [MVV Immobilier Sàrl](mvv-immobilier-sarl.md) · Payerne · ``
+- [MZ Immo Sàrl](mz-immo-sarl.md) · Vallorbe · `?`
+- [Mak Immobilier SA](mak-immobilier-sa.md) · Lausanne · `?`
+- [Maloma courtage et gestion immobilière Sàrl](maloma-courtage-et-gestion-immobiliere-sarl.md) · Lausanne · `?`
+- [Manava Immobilier Sàrl](manava-immobilier-sarl.md) · Fiez · ``
+- [Mandrin Immobilier Sàrl](mandrin-immobilier-sarl.md) · Aigle · `isabelle@mandrinimmobilier.ch`
+- [Marango Immo 2 SA](marango-immo-2-sa.md) · Orbe · ``
+- [Marango Immo 3 SA](marango-immo-3-sa.md) · Orbe · `?`
+- [Marango Immo 4 SA](marango-immo-4-sa.md) · Orbe · `?`
+- [Marango Immo SA](marango-immo-sa.md) · Orbe · `?`
+- [Marvic Immo SA](marvic-immo-sa.md) · Daillens · ``
+- [Mastino Maçonnerie et Immobilier Sàrl](mastino-maconnerie-et-immobilier-sarl.md) · Champagne · `?`
+- [Mavrix Sàrl](mavrix-sarl.md) · Lausanne · `info@mavrix.ch`
+- [Max Immobilier Sàrl](max-immobilier-sarl.md) · Yens · ``
+- [Meg Immo Sàrl](meg-immo-sarl.md) · Cossonay · `meg@meg-immo.ch`
+- [Melex Immo SA](melex-immo-sa.md) · Le Mont-sur-Lausanne · `info@melex.com`
+- [Mello Immo Sàrl](mello-immo-sarl.md) · Yverdon-les-Bains · `info@melloimmo.ch`
+- [Mermoud Immobilier SA](mermoud-immobilier-sa.md) · Prangins · `thierry@mermoud-immobilier.ch`
+- [Meystre Immo Sàrl](meystre-immo-sarl.md) · Sainte-Croix · `?`
+- [Michel Fontana Immobilier Sàrl](michel-fontana-immobilier-sarl.md) · Ormont-Dessus · ``
+- [MichouDiffusion Sàrl](michoudiffusion-sarl.md) · Oron · `michoudiffusion@me.com`
+- [Miele Immobilier SA](miele-immobilier-sa.md) · Epalinges · `?`
+- [Misa management immobilier S.A.](misa-management-immobilier-s-a.md) · Lausanne · `?`
+- [Morel Immo Sàrl](morel-immo-sarl.md) · Cossonay · `info@morel-immo.ch`
+- [Morier Immo Services Sàrl](morier-immo-services-sarl.md) · Château-d'Oex · `info@morier-immo.ch`
+- [Muveran Immobilier SA](muveran-immobilier-sa.md) · Lausanne · `?`
+- [N&C Immo SA](n-c-immo-sa.md) · Lavey-Morcles · `nicolasconstantin.nce@gmail.com`
+- [N.A Immo & Invest Sàrl](n-a-immo-invest-sarl.md) · Cossonay · `?`
+- [NEAL Immo Sàrl](neal-immo-sarl.md) · Lutry · `info@neal-immo.ch`
+- [NEXILIS Immobilier Sàrl](nexilis-immobilier-sarl.md) · Blonay - Saint-Légier · `david@nexilis-immobilier.ch`
+- [NFM immo SA](nfm-immo-sa.md) · Chigny · ``
+- [NNB Immo Sàrl](nnb-immo-sarl.md) · Cheseaux-sur-Lausanne · `?`
+- [NYG Immobilier SA](nyg-immobilier-sa.md) · Vevey · ``
+- [Naef Immobilier Lausanne SA à Prilly](naef-immobilier-lausanne-sa-a-prilly.md) · Prilly · `?`
+- [Naef Immobilier Nyon SA](naef-immobilier-nyon-sa.md) · Nyon · `nyon@naef.ch`
+- [Neeser Immo SA](neeser-immo-sa.md) · Morges · `?`
+- [Nela-Immo SA](nela-immo-sa.md) · Cossonay · `?`
+- [NewLand Project SA](newland-project-sa.md) · Pully · `info@newland-project.ch`
+- [Nicolier Immobilier père & fils Sàrl](nicolier-immobilier-pere-fils-sarl.md) · Payerne · `?`
+- [Nileb Immo SA](nileb-immo-sa.md) · Penthalaz · `?`
+- [Nobilia Immobilier SA](nobilia-immobilier-sa.md) · Lausanne · ``
+- [Novasim Immobilier SA](novasim-immobilier-sa.md) · Morges · `?`
+- [Novéo Immobilier SA](noveo-immobilier-sa.md) · Pully · `yves.cachemaille@noveo-immobilier.ch`
+- [O'Immo Sàrl](o-immo-sarl.md) · Yverdon-les-Bains · `?`
+- [ODEUX SA](odeux-sa.md) · Pully · `info@odeux.ch`
+- [OIKOS-Immo Sàrl](oikos-immo-sarl.md) · Bussigny · `info@oikos-immo.ch`
+- [OMMILOS solutions immobilières Sàrl](ommilos-solutions-immobilieres-sarl.md) · Avenches · `fx.greth@ommilos.ch (+3)`
+- [Oikia Immobilier Sàrl](oikia-immobilier-sarl.md) · Lausanne · `?`
+- [Oikia-Immo SA](oikia-immo-sa.md) · Donneloye · ``
+- [Olafer SA](olafer-sa.md) · Orbe · `info@alabri.ch`
+- [Omnia Immobilier Riviera Sàrl](omnia-immobilier-riviera-sarl.md) · Vevey · `riviera@omnia.ch`
+- [Omnia Immobilier SA](omnia-immobilier-sa.md) · Lausanne · `lausanne@omnia.ch`
+- [Omnis Immobilier SA](omnis-immobilier-sa.md) · Payerne · `?`
+- [Opt-Immo Management Sàrl](opt-immo-management-sarl.md) · Fontaines-sur-Grandson · ``
+- [Opus Conseils SA](opus-conseils-sa.md) · Denges · `prahin@opus-conseils.ch`
+- [PAJE Immobilier SA](paje-immobilier-sa.md) · Jouxtens-Mézery · `?`
+- [PAP Immobilier SA](pap-immobilier-sa.md) · Mies · `?`
+- [PBBG Gérances et Gestions Immobilières SA](pbbg-gerances-et-gestions-immobilieres-sa.md) · Lausanne · `info@pbbg.ch`
+- [PCH Immobilier SA](pch-immobilier-sa.md) · Hautemorges · `?`
+- [PM Immo Sàrl](pm-immo-sarl.md) · Ollon · ``
+- [PMCA Immobilier SA](pmca-immobilier-sa.md) · Lausanne · `?`
+- [PR Pascal Richard IMMOBILIER Sàrl](pr-pascal-richard-immobilier-sarl.md) · Montreux · ``
+- [PRESTIM SA](prestim-sa.md) · Lausanne · `location@prestim.ch`
+- [PRS-immo Sàrl](prs-immo-sarl.md) · Vully-les-Lacs · `?`
+- [PSI Gérance et Courtage Sàrl](psi-gerance-et-courtage-sarl.md) · Lausanne · `?`
+- [Parisi Immobilier Sàrl](parisi-immobilier-sarl.md) · Lausanne · `?`
+- [Pentagone Immobilier SA](pentagone-immobilier-sa.md) · Etoy · ``
+- [Pepper Properties Sàrl](pepper-properties-sarl.md) · Chardonne · `info@pepperproperties.ch (+1)`
+- [Perspectiv'Immo SA](perspectiv-immo-sa.md) · Hautemorges · `?`
+- [Phil Immobilier SA](phil-immobilier-sa.md) · Denges · ``
+- [Philido Immo SA](philido-immo-sa.md) · Le Mont-sur-Lausanne · `?`
+- [Piller Immobilier Sàrl](piller-immobilier-sarl.md) · Corcelles-près-Payerne · `?`
+- [Point d'Ancrage Sàrl](point-d-ancrage-sarl.md) · Eysins · `immo@pointdancrage.ch`
+- [Pro Logement Gérance et Courtage SA](pro-logement-gerance-et-courtage-sa.md) · Sullens · `?`
+- [ProConseils Immobilier Sàrl](proconseils-immobilier-sarl.md) · Morges · `info@proconseilsimmobilier.ch`
+- [Prospera Immobilier Sàrl](prospera-immobilier-sarl.md) · Yverdon-les-Bains · ``
+- [Prévoyance Foncière Immo Sàrl](prevoyance-fonciere-immo-sarl.md) · Lausanne · `?`
+- [Publiaz immobilier SA](publiaz-immobilier-sa.md) · Renens (VD) · ``
+- [R-Immobilier Sàrl](r-immobilier-sarl.md) · Lausanne · `?`
+- [RAF Immobilier Sàrl](raf-immobilier-sarl.md) · Blonay - Saint-Légier · `?`
+- [RAM immobilier et participations S.A.](ram-immobilier-et-participations-s-a.md) · Lausanne · `?`
+- [RAMA Immobilier SA](rama-immobilier-sa.md) · Puidoux · `info@immo-rama.ch`
+- [RBR immobilière Sàrl](rbr-immobiliere-sarl.md) · Yvorne · ``
+- [RCCS IMMO Sàrl](rccs-immo-sarl.md) · Agiez · `?`
+- [RDT Immo & Invest Sàrl](rdt-immo-invest-sarl.md) · Montilliez · ``
+- [REAL Management SA](real-management-sa.md) · Aigle · `info@realmanagement.ch`
+- [REALMETAL Immo Sàrl](realmetal-immo-sarl.md) · Bex · `?`
+- [REALTA Immobilier SA](realta-immobilier-sa.md) · Crissier · `info@realtaimmo.ch`
+- [REYA Immobilier Sàrl](reya-immobilier-sarl.md) · Lausanne · `?`
+- [RF5 Immobilier Sàrl](rf5-immobilier-sarl.md) · Aigle · `?`
+- [RG Immo SA](rg-immo-sa.md) · Echichens · ``
+- [RHD Immobilier Sàrl](rhd-immobilier-sarl.md) · Croy · `?`
+- [RILSA SA](rilsa-sa.md) · Lausanne · `info@rilsa.ch (+1)`
+- [RM Immo Sàrl](rm-immo-sarl.md) · Pully · ``
+- [RNK IMMO SA](rnk-immo-sa.md) · Saint-Sulpice (VD) · `?`
+- [RO-IMMO SA](ro-immo-sa.md) · Orbe · `?`
+- [ROC Immo SA](roc-immo-sa.md) · Le Vaud · `?`
+- [RSA IMMOBILIER SARL](rsa-immobilier-sarl.md) · Crissier · ``
+- [Redwood Réalisations Immobilières SA](redwood-realisations-immobilieres-sa.md) · Lussy-sur-Morges · `?`
+- [Reichenbach Immobilier SA](reichenbach-immobilier-sa.md) · Tolochenaz · ``
+- [Rent to go Sàrl](rent-to-go-sarl.md) · Lausanne · `info@rent-to-go.ch`
+- [Ressources Immobilières Sàrl](ressources-immobilieres-sarl.md) · Nyon · `info@ressourcesimmobilieres.ch`
+- [Reymondin Moser Immobilier SA](reymondin-moser-immobilier-sa.md) · Donneloye · `?`
+- [Rhéa Immobilier Sàrl](rhea-immobilier-sarl.md) · Crissier · `info@rhea-immobilier.ch`
+- [Ricciardelli Immobilier SA](ricciardelli-immobilier-sa.md) · Gryon · `info@ricciardelli-immobilier.ch`
+- [Rocha Immobilier SA](rocha-immobilier-sa.md) · Vallorbe · `?`
+- [Rochat Immo Sàrl](rochat-immo-sarl.md) · L'Abbaye · ``
+- [Rockwell Properties SA](rockwell-properties-sa.md) · Lausanne · `info@rockwell.ch`
+- [Roj-immo Sàrl](roj-immo-sarl.md) · Perroy · `?`
+- [Roland Savary Immobilier SA](roland-savary-immobilier-sa.md) · Oron · `info@savaryimmobilier.ch (+1)`
+- [Roland Savary Immobilier Yverdon SA](roland-savary-immobilier-yverdon-sa.md) · Yverdon-les-Bains · `info@rsiy.ch`
+- [Roma Immobilier SA](roma-immobilier-sa.md) · Lonay · ``
+- [Romandie Gestion Immobilier Sàrl](romandie-gestion-immobilier-sarl.md) · Gimel · `?`
+- [Ronchi Immobilier SA](ronchi-immobilier-sa.md) · Gland · `?`
+- [Rosset SA agence immobilière](rosset-sa-agence-immobiliere.md) · Lausanne · `info@rosset.ch (+2)`
+- [Rouge-Wuillemin Immo SA](rouge-wuillemin-immo-sa.md) · Oron · ``
+- [Roxane Immobilier Sàrl](roxane-immobilier-sarl.md) · Saint-Sulpice (VD) · `?`
+- [Rubin Gestion Immobilière Sàrl](rubin-gestion-immobiliere-sarl.md) · Noville · ``
+- [Rudin Immobilier Sàrl](rudin-immobilier-sarl.md) · Lutry · `info@rudin-immobilier.ch`
+- [Régie Bally SA](regie-bally-sa.md) · Daillens · `info@regiebally.ch`
+- [Régie Braun SA](regie-braun-sa.md) · Lausanne · `direction@regiebraun.ch`
+- [Régie Chamot & Cie SA](regie-chamot-cie-sa.md) · Lausanne · `info@regiechamot.ch (+1)`
+- [Régie Eric Glauser SA](regie-eric-glauser-sa.md) · La Tour-de-Peilz · `contact@regieglauser.ch (+1)`
+- [Régie Guyot Sàrl](regie-guyot-sarl.md) · Lausanne · `?`
+- [Régie IMMOSPHERE SA](regie-immosphere-sa.md) · Cugy (VD) · `info@regie-immosphere.ch`
+- [Régie Luginbühl SA](regie-luginbuhl-sa.md) · Morges · `info@ril.ch`
+- [Régie Marmillod SA](regie-marmillod-sa.md) · Lausanne · `info@regiemarmillod.ch`
+- [Régie Nicolas Demierre S.A.](regie-nicolas-demierre-s-a.md) · Lausanne · `?`
+- [Régie Suisse - RS SA](regie-suisse-rs-sa.md) · Rolle · `?`
+- [Régie Turrian S.A.](regie-turrian-s-a.md) · Ollon · ``
+- [Régie de l'Arc SA](regie-de-l-arc-sa.md) · Lonay · `?`
+- [Régie de la Tine Sàrl](regie-de-la-tine-sarl.md) · Ferreyres · `?`
+- [Régie du Châtelard Sàrl](regie-du-chatelard-sarl.md) · Payerne · `?`
+- [Régie du Croset SA](regie-du-croset-sa.md) · Ecublens (VD) · `location@regieducroset.ch`
+- [Régie du Lac S.A.](regie-du-lac-s-a.md) · Lausanne · `?`
+- [Régie du Léman SA](regie-du-leman-sa.md) · Chavannes-près-Renens · `info@leman.com`
+- [Régie immobilière Charles Decker S.A.](regie-immobiliere-charles-decker-s-a.md) · Yverdon-les-Bains · ``
+- [Régie Ô Talent SA](regie-o-talent-sa.md) · Cugy (VD) · `?`
+- [Réno-Immobilier SA](reno-immobilier-sa.md) · Le Mont-sur-Lausanne · ``
+- [Rêve-Immob Gérance & Courtage SA](reve-immob-gerance-courtage-sa.md) · Orbe · `info@reve-immob.ch`
+- [S&C Tinguely Immobilier Sàrl](s-c-tinguely-immobilier-sarl.md) · Etoy · `contact@tinguelyimmobilier.ch`
+- [S2I (Swiss Innovative Investment) SA](s2i-swiss-innovative-investment-sa.md) · Lausanne · `info@swiss2i.com`
+- [SALM Immobilier Sàrl](salm-immobilier-sarl.md) · Ollon · `?`
+- [SC Sotornik & Clerbout Immobilier SA](sc-sotornik-clerbout-immobilier-sa.md) · Pully · `contact@scimmo.ch`
+- [SCHENK Immobilier SA](schenk-immobilier-sa.md) · Rolle · `info@schenk-immobilier.ch`
+- [SCORDIA IMMO SA](scordia-immo-sa.md) · Gland · ``
+- [SDB Immobilier Sàrl](sdb-immobilier-sarl.md) · Chamblon · `?`
+- [SGF Groupe Immobilières SA](sgf-groupe-immobilieres-sa.md) · Sainte-Croix · ``
+- [SHAH Immobilier SA](shah-immobilier-sa.md) · Lonay · `?`
+- [SHM IMMOBILIARE SA](shm-immobiliare-sa.md) · Nyon · `?`
+- [SIPA Immo 13 SA](sipa-immo-13-sa.md) · Lausanne · `?`
+- [SIPA Immo 14 SA](sipa-immo-14-sa.md) · Lausanne · ``
+- [SIPA Immo 15 SA](sipa-immo-15-sa.md) · Lausanne · `?`
+- [SIPA Immo 16 SA](sipa-immo-16-sa.md) · Lausanne · ``
+- [SIPA Immo 17 SA](sipa-immo-17-sa.md) · Lausanne · `?`
+- [SIPA Immo 18 SA](sipa-immo-18-sa.md) · Lausanne · `?`
+- [SIPA Immo FR 10 SA](sipa-immo-fr-10-sa.md) · Lausanne · `?`
+- [SIPA Immo FR 11 SA](sipa-immo-fr-11-sa.md) · Lausanne · ``
+- [SIPA Immo VS 12 SA](sipa-immo-vs-12-sa.md) · Lausanne · `?`
+- [SIPA Immo VS 3 SA](sipa-immo-vs-3-sa.md) · Lausanne · ``
+- [SIPA Immo VS 4 SA](sipa-immo-vs-4-sa.md) · Lausanne · `?`
+- [SIPA Immo VS 5 SA](sipa-immo-vs-5-sa.md) · Lausanne · `?`
+- [SIPA Immo VS 6 SA](sipa-immo-vs-6-sa.md) · Lausanne · `?`
+- [SIPA Immo VS 7 SA](sipa-immo-vs-7-sa.md) · Lausanne · ``
+- [SIPA Immo VS 8 SA](sipa-immo-vs-8-sa.md) · Lausanne · `?`
+- [SIPA Immo VS 9 SA](sipa-immo-vs-9-sa.md) · Lausanne · ``
+- [SIPA Immobilier SA](sipa-immobilier-sa.md) · Lausanne · `?`
+- [SLR Immobilier Sàrl](slr-immobilier-sarl.md) · Payerne · `?`
+- [SOO Immobilier Sàrl](soo-immobilier-sarl.md) · Echandens · `?`
+- [STERE Sàrl](stere-sarl.md) · Lausanne · `immobilier@stere.ch`
+- [STUDIO MASINI Sàrl REALISATION & GESTION IMMOBILIERE](studio-masini-sarl-realisation-gestion-immobiliere.md) · Lussy-sur-Morges · ``
+- [SWP régisseurs SA](swp-regisseurs-sa.md) · Nyon · `info@swpregisseurs.ch`
+- [Sage & Sage Immobilier SA](sage-sage-immobilier-sa.md) · Puidoux · `?`
+- [Saint-Hubert Immobilier Sàrl](saint-hubert-immobilier-sarl.md) · Villars-Sainte-Croix · `info@st-hubert-immobilier.ch`
+- [Saint-Jean Immo SA, à Lausanne](saint-jean-immo-sa-a-lausanne.md) · Lausanne · `?`
+- [Saint-Pierre Immobilier SA](saint-pierre-immobilier-sa.md) · Echandens · `?`
+- [Saint-Yves Immobilier SA](saint-yves-immobilier-sa.md) · Echandens · `?`
+- [Schulz Immobilier S.A.](schulz-immobilier-s-a.md) · Orbe · ``
+- [Segurimmo Régie Immobilière SA](segurimmo-regie-immobiliere-sa.md) · Montreux · `info@segurimmo.ch`
+- [Select Immobilier Sàrl](select-immobilier-sarl.md) · Lausanne · `?`
+- [Senimmo Sàrl](senimmo-sarl.md) · Montreux · `info.senimmo@bluewin.ch`
+- [Services gérances Silimmob Sàrl](services-gerances-silimmob-sarl.md) · Lausanne · `?`
+- [Sg gestion immobilière Sàrl](sg-gestion-immobiliere-sarl.md) · Froideville · `?`
+- [Siac - société immobilière, achats et constructions S.A.](siac-societe-immobiliere-achats-et-constructions-s-a.md) · Lausanne · `?`
+- [Sicuro Finance & Prévoyance Sàrl](sicuro-finance-prevoyance-sarl.md) · Cheseaux-sur-Lausanne · `sicuroimmobilier@gmail.com`
+- [Simelfi-Immo Sàrl](simelfi-immo-sarl.md) · Nyon · ``
+- [Sinss Immo Sàrl](sinss-immo-sarl.md) · Froideville · `?`
+- [Solutions Immobilières 360 Sàrl](solutions-immobilieres-360-sarl.md) · Jongny · ``
+- [Soph-Immo Sàrl](soph-immo-sarl.md) · Vevey · `info@sophimmo.com`
+- [Sorbiers Immobilier SA](sorbiers-immobilier-sa.md) · Moudon · `?`
+- [St-Clerc Immobilier SA](st-clerc-immobilier-sa.md) · Pully · `info@st-clerc-immobilier.ch`
+- [Stalder Immobilier La Vallée Sàrl](stalder-immobilier-la-vallee-sarl.md) · L'Abbaye · `info@stalder-immobilier.ch`
+- [Sto-Vex immo Sàrl](sto-vex-immo-sarl.md) · Gland · `?`
+- [Streck Immobilien SA](streck-immobilien-sa.md) · Aclens · ``
+- [Sun Immobilier S.à r.l.](sun-immobilier-s-a-r-l.md) · Yvonand · `?`
+- [Swiss Immo Gest SA](swiss-immo-gest-sa.md) · Ollon · `info@swissimmogest.ch`
+- [SwissDom Immobilier Sàrl](swissdom-immobilier-sarl.md) · Nyon · ``
+- [Swisslink Immobilier Sàrl](swisslink-immobilier-sarl.md) · Lausanne · `?`
+- [Synergie Immobilier Sàrl](synergie-immobilier-sarl.md) · Yverdon-les-Bains · `?`
+- [Syrixa Immobilier SA](syrixa-immobilier-sa.md) · Hautemorges · `?`
+- [T.D.D. Gérance S. A.](t-d-d-gerance-s-a.md) · Vevey · ``
+- [TAWI Immobilier SA](tawi-immobilier-sa.md) · Lausanne · `?`
+- [TB Immo Suisse SA](tb-immo-suisse-sa.md) · Etoy · ``
+- [TBI SA, Technique du Bâtiment Immobilier](tbi-sa-technique-du-batiment-immobilier.md) · Tolochenaz · `?`
+- [TD promotion immobilière SA](td-promotion-immobiliere-sa.md) · Giez · `?`
+- [TEDESCHI Immobilier et Fiduciaire Sàrl](tedeschi-immobilier-et-fiduciaire-sarl.md) · Tolochenaz · `?`
+- [TNC Immo Sàrl](tnc-immo-sarl.md) · Lausanne · ``
+- [Tempus Immobilier SA](tempus-immobilier-sa.md) · Nyon · `?`
+- [Thomann gérance SA](thomann-gerance-sa.md) · Yverdon-les-Bains · ``
+- [Thomas Régie Foncière SA](thomas-regie-fonciere-sa.md) · Cheseaux-sur-Lausanne · `info@thomas-regiefonciere.ch`
+- [Thépot & Trippen Immobilier SA](thepot-trippen-immobilier-sa.md) · Vevey · `?`
+- [Tonfack Immo Sàrl](tonfack-immo-sarl.md) · Lausanne · `?`
+- [TransCréa Sàrl](transcrea-sarl.md) · Sainte-Croix · `mariejose.gerber@transcrea.ch (+6)`
+- [Tummam Immo SA](tummam-immo-sa.md) · Lausanne · `?`
+- [Twenty One Invest SA](twenty-one-invest-sa.md) · La Sarraz · `m.tetaz@heat-sa.ch`
+- [Union Immobilière Familiale (UIF) SA](union-immobiliere-familiale-uif-sa.md) · Cheseaux-Noréaz · ``
+- [Urba Immo SA](urba-immo-sa.md) · Assens · `info@urbaimmo.ch`
+- [V&J Immo Sàrl](v-j-immo-sarl.md) · Pomy · ``
+- [V.A immobilier SA](v-a-immobilier-sa.md) · Cugy (VD) · `?`
+- [VALAUR Immobilier SA](valaur-immobilier-sa.md) · Genolier · `info@valaur.ch (+3)`
+- [VMZ-immo SA](vmz-immo-sa.md) · Montreux · `?`
+- [VP&K Immobilier SA](vp-k-immobilier-sa.md) · Lausanne · `?`
+- [Valorem Invest Sàrl](valorem-invest-sarl.md) · Nyon · `carichino.marco@yahoo.com`
+- [Voisirel Immo SA](voisirel-immo-sa.md) · Lonay · ``
+- [Vue sur lac Sàrl](vue-sur-lac-sarl.md) · Lausanne · `info@vuesurlac-immo.ch`
+- [Wamag Immobilien AG](wamag-immobilien-ag.md) · Payerne · `?`
+- [Wector SA](wector-sa.md) · Tannay · `info@wector.ch`
+- [Winch Immo Sàrl](winch-immo-sarl.md) · Cugy (VD) · ``
+- [XAN Immobilier SA](xan-immobilier-sa.md) · Oulens-sous-Echallens · `?`
+- [XPERT IMMO INVEST SARL](xpert-immo-invest-sarl.md) · Lausanne · `info@xpert-immo.ch`
+- [XPERT IMMO REAL ESTATE SA](xpert-immo-real-estate-sa.md) · Lausanne · `?`
+- [XPERT IMMO SA](xpert-immo-sa.md) · Lausanne · ``
+- [Y&P Immobilier Sàrl](y-p-immobilier-sarl.md) · Vevey · `?`
+- [Y-immo SA](y-immo-sa.md) · Savigny · ``
+- [YADES Immobilier SA](yades-immobilier-sa.md) · Yverdon-les-Bains · `?`
+- [YASH IMMO SA](yash-immo-sa.md) · Le Mont-sur-Lausanne · `?`
+- [YLB Immo SA](ylb-immo-sa.md) · Yverdon-les-Bains · `?`
+- [YSL Immo Sàrl](ysl-immo-sarl.md) · Sainte-Croix · ``
+- [Yaka Immobilier SA](yaka-immobilier-sa.md) · Lausanne · `info@yaka-immobilier.ch`
+- [ZOSSO IMMOBILIER SA](zosso-immobilier-sa.md) · Arzier-Le Muids · ``
+- [Zest Immo SA](zest-immo-sa.md) · Lausanne · `info@zestimmo.com`
+- [Zurbuchen Habitat Immobilier Sàrl](zurbuchen-habitat-immobilier-sarl.md) · Eclépens · `info@zurbuchenhabitat.ch`
+- [a Cabana Sàrl](a-cabana-sarl.md) · Lausanne · `?`
+- [cityus Sàrl](cityus-sarl.md) · Puidoux · `info@cityus.com`
+- [clémo Sàrl](clemo-sarl.md) · Echallens · `info@clemo.immo (+3)`
+- [db gestion immobilier-architecture Sàrl](db-gestion-immobilier-architecture-sarl.md) · Hermenches · ``
+- [gmp Réalisations immobilières forfaitaires Sàrl](gmp-realisations-immobilieres-forfaitaires-sarl.md) · Chavornay · `?`
+- [iii Investissements Immobiliers et Industriels SA](iii-investissements-immobiliers-et-industriels-sa.md) · Renens (VD) · ``
+- [immoregie Sàrl](immoregie-sarl.md) · Lausanne · `contact@immoregie.ch (+1)`
+- [integrale immobilier conseils Sàrl](integrale-immobilier-conseils-sarl.md) · Belmont-sur-Lausanne · `info@iiconseils.ch`
+- [mava immobilier SA](mava-immobilier-sa.md) · Lausanne · `-`
+- [petignat & amor immobilier SA](petignat-amor-immobilier-sa.md) · Vevey · `info@petignat-amor.ch`
+- [votrecourtier.ch sa](votrecourtier-ch-sa.md) · Crissier · `alexandre@votrecourtier.ch`
+
+## regie-letting (174)
+
+lets property; the administration may sit elsewhere
+
+- [5D Immo Sàrl](5d-immo-sarl.md) · Sainte-Croix · ``
+- [A2L Sàrl](a2l-sarl.md) · Sullens · ``
+- [AB IMMOBILIER & RELOCATION Sàrl](ab-immobilier-relocation-sarl.md) · Crassier · `annabelle.bacuet@gmail.com`
+- [ABF Immobilier SA](abf-immobilier-sa.md) · Lausanne · ``
+- [ABimmob Sàrl](abimmob-sarl.md) · Vallorbe · ``
+- [AFA immo & partners Sàrl](afa-immo-partners-sarl.md) · Eclépens · ``
+- [AGG Immo SA](agg-immo-sa.md) · Pully · ``
+- [AK Immobilier SA](ak-immobilier-sa.md) · Lausanne · ``
+- [AT IMMO SA](at-immo-sa.md) · Assens · ``
+- [AZEO Sàrl](azeo-sarl.md) · Chexbres · ``
+- [Abaq Immobilier SA](abaq-immobilier-sa.md) · Prangins · ``
+- [Abate Immobilier Sàrl](abate-immobilier-sarl.md) · Lausanne · ``
+- [Abscisse Immobilier SA](abscisse-immobilier-sa.md) · Le Mont-sur-Lausanne · ``
+- [Académie Revitalis Sàrl](academie-revitalis-sarl.md) · Montreux · ``
+- [Acavimax Sàrl](acavimax-sarl.md) · Montreux · ``
+- [Amema Sàrl](amema-sarl.md) · Tolochenaz · `info@amema.ch`
+- [Anne Läng Immobilier SA](anne-lang-immobilier-sa.md) · Assens · ``
+- [Arenaz Immobilier SA](arenaz-immobilier-sa.md) · Romanel-sur-Morges · ``
+- [Aurlau SA](aurlau-sa.md) · Assens · `info@aurlau.ch`
+- [BAF Immobilier SA](baf-immobilier-sa.md) · Rolle · ``
+- [BE Immo Invest Sàrl](be-immo-invest-sarl.md) · Crissier · ``
+- [BRECCOLINI IMMO SA](breccolini-immo-sa.md) · Chavannes-de-Bogis · `?`
+- [Banana Immo SA](banana-immo-sa.md) · Morrens (VD) · ``
+- [Bargueton immobilier Sàrl](bargueton-immobilier-sarl.md) · Nyon · `?`
+- [Berose SA](berose-sa.md) · Morges · `info@berose-sa.ch`
+- [Block 21 Immo SA](block-21-immo-sa.md) · Préverenges · ``
+- [Boi Immobilier SA](boi-immobilier-sa.md) · Oron · ``
+- [Bossi Immobilier SARL](bossi-immobilier-sarl.md) · Nyon · `info@bossi-immo.ch (+1)`
+- [Burnier & Cie SA](burnier-cie-sa.md) · Nyon · `gerance@burnier.ch`
+- [C&D IMMO Sàrl](c-d-immo-sarl.md) · Mollens (VD) · ``
+- [C2I Comptoir d'Investissements Immobiliers SA](c2i-comptoir-d-investissements-immobiliers-sa.md) · Dully · ``
+- [CFG Rametta Immobilier Sàrl](cfg-rametta-immobilier-sarl.md) · Moudon · ``
+- [CH2R Immobilier Sàrl](ch2r-immobilier-sarl.md) · Lausanne · ``
+- [CRB Immobiliers SA](crb-immobiliers-sa.md) · Moudon · ``
+- [Caetano Immobilier SA](caetano-immobilier-sa.md) · Penthaz · ``
+- [Caules IMMO Sàrl](caules-immo-sarl.md) · Vully-les-Lacs · ``
+- [Chablais Box Immo SA](chablais-box-immo-sa.md) · Aigle · ``
+- [Challande Immobilier Sàrl](challande-immobilier-sarl.md) · Nyon · ``
+- [Copernicus Immobilier SA](copernicus-immobilier-sa.md) · Montreux · ``
+- [DB IMMOBILIERS SA](db-immobiliers-sa.md) · Crissier · ``
+- [DC Immo Sàrl](dc-immo-sarl.md) · Yverdon-les-Bains · ``
+- [DS IMMOBILIER Sàrl](ds-immobilier-sarl.md) · Villeneuve (VD) · ``
+- [Design Immobilier SA](design-immobilier-sa.md) · Pully · ``
+- [Drelon Immobilier Sàrl](drelon-immobilier-sarl.md) · Lutry · ``
+- [Déborah Darribère Sàrl](deborah-darribere-sarl.md) · Mies · `info@deborahdarribere.ch`
+- [ESSOR projets immobiliers Sàrl](essor-projets-immobiliers-sarl.md) · Préverenges · ``
+- [ESTÉ HOMES Sàrl](este-homes-sarl.md) · Montreux · `info@este-homes.ch`
+- [Ensemble Immo SA](ensemble-immo-sa.md) · Pully · ``
+- [Estia Immobilier Suisse SA](estia-immobilier-suisse-sa.md) · Nyon · ``
+- [FMCK Immo Sàrl](fmck-immo-sarl.md) · Goumoëns · ``
+- [Fancous Immo SA](fancous-immo-sa.md) · Founex · ``
+- [Fauve Immo SA](fauve-immo-sa.md) · Tolochenaz · ``
+- [Free Concept Sàrl](free-concept-sarl.md) · Yverdon-les-Bains · `info@freeconceptimmo.ch`
+- [Froidevaux Immobilier SA](froidevaux-immobilier-sa.md) · Lausanne · `info@froidevaux-immobilier.ch (+5)`
+- [Gali Immobilier SA](gali-immobilier-sa.md) · Concise · ``
+- [Gentile Immobilier SA](gentile-immobilier-sa.md) · Etagnières · ``
+- [Groupe Richard Griffet Immobilier SA](groupe-richard-griffet-immobilier-sa.md) · Gland · ``
+- [Groupe-Immobilier.Swiss SA](groupe-immobilier-swiss-sa.md) · Yverdon-les-Bains · ``
+- [H Finance & Immobilier SA](h-finance-immobilier-sa.md) · Lausanne · ``
+- [HDPF Immobilier Sàrl](hdpf-immobilier-sarl.md) · Vallorbe · ``
+- [HONORIS IMMOBILIER SA](honoris-immobilier-sa.md) · Ecublens (VD) · ``
+- [Hal immo consulting Sàrl](hal-immo-consulting-sarl.md) · Lausanne · ``
+- [Heaven Immobilier Sàrl](heaven-immobilier-sarl.md) · Epalinges · ``
+- [Home Selection Courtage Sàrl](home-selection-courtage-sarl.md) · Chavannes-de-Bogis · `info@home-selection.com`
+- [Home Vision Immobilier SA](home-vision-immobilier-sa.md) · Montreux · ``
+- [IDD immobilier Sàrl](idd-immobilier-sarl.md) · Jouxtens-Mézery · ``
+- [IMMEA immobilier SA](immea-immobilier-sa.md) · Jongny · ``
+- [INTIQO Sàrl](intiqo-sarl.md) · Bourg-en-Lavaux · `intiqo.sarl@gmail.com`
+- [IPR Art Immo Technology Sàrl](ipr-art-immo-technology-sarl.md) · Pully · ``
+- [ITHACA Immobilier SA](ithaca-immobilier-sa.md) · Goumoëns · ``
+- [Immo CH 1000 SA](immo-ch-1000-sa.md) · Bussigny · ``
+- [Immo Impulse SA](immo-impulse-sa.md) · Montreux · ``
+- [Immo VS 1000 SA](immo-vs-1000-sa.md) · Bussigny · ``
+- [Immo Vertical Sàrl](immo-vertical-sarl.md) · Grandson · ``
+- [Immo-95 SA](immo-95-sa.md) · Lutry · ``
+- [Immo-Challenge Sàrl](immo-challenge-sarl.md) · Vufflens-le-Château · `?`
+- [Immobilier Vaudois SA](immobilier-vaudois-sa.md) · Nyon · ``
+- [Immobilier de la Côte SA](immobilier-de-la-cote-sa.md) · Vich · ``
+- [Immobilière Campafina SA](immobiliere-campafina-sa.md) · Pully · ``
+- [Immobilière du Grey SA](immobiliere-du-grey-sa.md) · Pully · ``
+- [Impact Immobilier SA](impact-immobilier-sa.md) · Bussigny · ``
+- [Imva Immobilier et Valeurs S.A.](imva-immobilier-et-valeurs-s-a.md) · Nyon · ``
+- [J & D Immo SA](j-d-immo-sa.md) · Montreux · ``
+- [JPPA Dizerens Immobilier Sàrl](jppa-dizerens-immobilier-sarl.md) · Montanaire · ``
+- [Jari Immobilier SA](jari-immobilier-sa.md) · Orbe · ``
+- [KARYS IMMOBILIER SA](karys-immobilier-sa.md) · Gingins · ``
+- [KLR Immobilier Sàrl](klr-immobilier-sarl.md) · Montanaire · ``
+- [KN-IMMO Swiss Business Sàrl](kn-immo-swiss-business-sarl.md) · Nyon · ``
+- [Karlen Immobilier SA](karlen-immobilier-sa.md) · Villars-Sainte-Croix · ``
+- [KasaMea Immobilier Sàrl](kasamea-immobilier-sarl.md) · Lutry · `info@kasamea.ch`
+- [Kore Immobilier SA](kore-immobilier-sa.md) · Saint-Sulpice (VD) · ``
+- [L'Agence Immobilière Nyon J. Righetti SA](l-agence-immobiliere-nyon-j-righetti-sa.md) · Nyon · `jason@lagence-immobiliere.ch`
+- [LAREGIEBAUM SARL](laregiebaum-sarl.md) · Lausanne · ``
+- [LDLH Immo Sàrl](ldlh-immo-sarl.md) · Yens · ``
+- [LDTH Immobiliers SA](ldth-immobiliers-sa.md) · Prilly · ``
+- [LEMO IMMOBILIERE SA](lemo-immobiliere-sa.md) · Ecublens (VD) · ``
+- [LGS Immobilier SA](lgs-immobilier-sa.md) · Orbe · ``
+- [LLMP Immo Sàrl](llmp-immo-sarl.md) · Bussigny · ``
+- [LMC Immobilier SA](lmc-immobilier-sa.md) · Gland · ``
+- [LVMD SA](lvmd-sa.md) · Morges · `lvmd@bluewin.ch`
+- [LVTiC Sàrl](lvtic-sarl.md) · Puidoux · `contact@lvtic.ch (+5)`
+- [Lacore Immobilier Sàrl](lacore-immobilier-sarl.md) · Nyon · ``
+- [Larmont Immo SA](larmont-immo-sa.md) · Lausanne · ``
+- [Liniger Agro Immo SA](liniger-agro-immo-sa.md) · Vich · ``
+- [Llaneza Immobilier SA](llaneza-immobilier-sa.md) · Montreux · `marie-ange@lnz-immo.ch`
+- [MA Acquisitions Immobilières SA](ma-acquisitions-immobilieres-sa.md) · Saint-Sulpice (VD) · ``
+- [MA Développements Immobiliers SA](ma-developpements-immobiliers-sa.md) · Saint-Sulpice (VD) · ``
+- [MATOS IMMO Sàrl](matos-immo-sarl.md) · Mex (VD) · `matosimmo@gmail.com`
+- [MGE Immo Sàrl](mge-immo-sarl.md) · Jorat-Mézières · ``
+- [MKS Immo Palud4 Sàrl](mks-immo-palud4-sarl.md) · Payerne · ``
+- [MP Immo Sàrl](mp-immo-sarl.md) · Champagne · ``
+- [Maistra Immobilier Sàrl](maistra-immobilier-sarl.md) · Rolle · ``
+- [Mamen Immobilier SA](mamen-immobilier-sa.md) · Saint-Sulpice (VD) · ``
+- [McDonald's Suisse Development Sàrl](mcdonald-s-suisse-development-sarl.md) · Crissier · ``
+- [Mirtezani immobilier Sàrl](mirtezani-immobilier-sarl.md) · Le Mont-sur-Lausanne · ``
+- [NAFE Immobilier Sàrl](nafe-immobilier-sarl.md) · Cossonay · ``
+- [NRJ Immobilier Sàrl](nrj-immobilier-sarl.md) · Avenches · ``
+- [Nara immo SA](nara-immo-sa.md) · Corseaux · ``
+- [Nathome Sàrl](nathome-sarl.md) · Tolochenaz · `info@nathome.ch`
+- [Newstart Immobiliers SA](newstart-immobiliers-sa.md) · Vallorbe · ``
+- [Nexstone SA](nexstone-sa.md) · La Tour-de-Peilz · `info@nexstone.ch`
+- [Noble & Vive Estate Sàrl](noble-vive-estate-sarl.md) · Rolle · `info@noblevive.ch`
+- [Nova Home Immobilier et Construction Sàrl](nova-home-immobilier-et-construction-sarl.md) · Yverdon-les-Bains · ``
+- [OPALLIA Sàrl](opallia-sarl.md) · Nyon · `gaia.prost@opalliahomes.ch`
+- [OSD - Immobilier SA](osd-immobilier-sa.md) · Renens (VD) · ``
+- [P One Immobilier Sàrl](p-one-immobilier-sarl.md) · Vich · ``
+- [P.M.E. - IMMO SA](p-m-e-immo-sa.md) · Romanel-sur-Lausanne · ``
+- [PAC Immobilier SA](pac-immobilier-sa.md) · Crissier · ``
+- [PARFENE Sàrl](parfene-sarl.md) · Rolle · ``
+- [PBA Management Sàrl](pba-management-sarl.md) · Epalinges · `info@pba-management.ch`
+- [PDG Immobilier Sàrl](pdg-immobilier-sarl.md) · Jouxtens-Mézery · ``
+- [PKNK Immobilier Sàrl](pknk-immobilier-sarl.md) · Sainte-Croix · ``
+- [PROXIMMO Agence Immobilière Sàrl](proximmo-agence-immobiliere-sarl.md) · Lausanne · `info@proximmo.ch (+10)`
+- [Phoenix Architecture & Immobilier Sàrl](phoenix-architecture-immobilier-sarl.md) · Nyon · ``
+- [Plus One Immobilier SA](plus-one-immobilier-sa.md) · Vich · ``
+- [ProDevelopment Immo SA](prodevelopment-immo-sa.md) · Montreux · ``
+- [Project Immo Sàrl](project-immo-sarl.md) · Lutry · `d.brentini@projectimmo.ch`
+- [Rapin Immobilier Sàrl](rapin-immobilier-sarl.md) · Cudrefin · ``
+- [Rift Immobilier Sàrl](rift-immobilier-sarl.md) · Giez · ``
+- [Régie Schmid SA](regie-schmid-sa.md) · Nyon · `info@regie-schmid.ch`
+- [Régis Menétrey Immobilier SA](regis-menetrey-immobilier-sa.md) · Paudex · ``
+- [Résidentiel.ch Sàrl](residentiel-ch-sarl.md) · Pully · `residentiel@bluewin.ch`
+- [SEA IMMOBILIER SA](sea-immobilier-sa.md) · Villars-Sainte-Croix · ``
+- [SEV Sàrl](sev-sarl.md) · Eclépens · `info@sev-immobilier.ch`
+- [SGKuster Immo Sàrl](sgkuster-immo-sarl.md) · Nyon · ``
+- [SHAKO PRODUCTION Sàrl](shako-production-sarl.md) · Bex · ``
+- [SIB IMMO SA](sib-immo-sa.md) · Prilly · ``
+- [SJA Immo SA](sja-immo-sa.md) · Pully · ``
+- [SOCIETE COOPERATIVE IMMOBILIERE "LE LOGEMENT POUR TOUS"](societe-cooperative-immobiliere-le-logement-pour-tous.md) · Bex · ``
+- [SUGGESTIM SA](suggestim-sa.md) · Forel (Lavaux) · `info@suggestim.ch`
+- [Sagrave Immobilier SA](sagrave-immobilier-sa.md) · Lausanne · ``
+- [Serrania Immo SA](serrania-immo-sa.md) · Coppet · ``
+- [Sidefsa - Société Immobilière de l'Eau Froide S.A.](sidefsa-societe-immobiliere-de-l-eau-froide-s-a.md) · Villeneuve (VD) · ``
+- [Star courtage immobilier Sàrl](star-courtage-immobilier-sarl.md) · Gland · ``
+- [Suggestion Immobilière Sàrl](suggestion-immobiliere-sarl.md) · Blonay - Saint-Légier · ``
+- [Swisscar-immo et assurances SA](swisscar-immo-et-assurances-sa.md) · Montreux · ``
+- [Swizz Immo SA](swizz-immo-sa.md) · Saint-Sulpice (VD) · ``
+- [TALM-GA Immobilier SA](talm-ga-immobilier-sa.md) · Rolle · ``
+- [VBB Immobilier Sàrl](vbb-immobilier-sarl.md) · Roche (VD) · ``
+- [VUD Immobilier Sàrl](vud-immobilier-sarl.md) · Chavornay · ``
+- [Vaud Invest Immo Sàrl](vaud-invest-immo-sarl.md) · Nyon · ``
+- [Victoria Gaillard Sàrl](victoria-gaillard-sarl.md) · Montreux · `victoria.lombardo@emoh.ch`
+- [Victory Management Sàrl](victory-management-sarl.md) · Epalinges · `kevin@victory-management.ch`
+- [Villa Suisse Immo Sàrl](villa-suisse-immo-sarl.md) · Le Mont-sur-Lausanne · ``
+- [Viveo Immo SA](viveo-immo-sa.md) · Bussigny · ``
+- [WDH Immo Sàrl](wdh-immo-sarl.md) · Froideville · ``
+- [ZR immo Sàrl](zr-immo-sarl.md) · Lutry · ``
+- [ZZ Immobilier Sàrl](zz-immobilier-sarl.md) · Lausanne · `?`
+- [aB. product. produits techniques - applications bâtiment Sàrl](ab-product-produits-techniques-applications-batiment-sarl.md) · Vallorbe · ``
+- [aalto tek Sàrl](aalto-tek-sarl.md) · Gland · ``
+- [babu immobilier Sàrl](babu-immobilier-sarl.md) · Founex · ``
+- [bunq immobilier sa](bunq-immobilier-sa.md) · Nyon · ``
+- [move im SA](move-im-sa.md) · Lausanne · `info@moveim.ch`
+- [nOta bene immo SA](nota-bene-immo-sa.md) · Nyon · ``

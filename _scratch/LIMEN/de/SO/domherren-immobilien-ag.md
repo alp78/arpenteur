@@ -1,0 +1,36 @@
+# Domherren Immobilien AG
+
+| | |
+|---|---|
+| UID | `CHE386458653` |
+| Legal form | Société anonyme |
+| Canton | SO (de) |
+| Registered seat | Egerkingen |
+| Address | Domherrenstrasse 14, 4622 Egerkingen |
+| Register status | ACTIVE |
+
+## Relevance for Limen
+
+**regie-letting** — lets property; the administration may sit elsewhere
+
+purpose names letting but not administration, name agrees
+
+## Where to write
+
+- not looked for yet
+
+No website resolved.
+
+## What the register says it does
+
+> Handel mit sowie Erwerb, Verwaltung, Überbauung, Vermietung und Vermittlung von Immobilien in der Schweiz und im Ausland. Kann zudem Energie produzieren und mit dieser handeln, sich an anderen Unternehmen beteiligen, Lizenzen, Patente und andere immaterielle Werte erwerben, verwalten, vermitteln und veräussern, ferner Zweigniederlassungen und Tochtergesellschaften im In- und Ausland errichten und überhaupt alle Geschäfte tätigen, die mit dem Zweck der Gesellschaft zusammenhängen oder diesen zu fördern geeignet sind.
+
+## Sources
+
+- Register entry: https://www.zefix.admin.ch/fr/search/entity/list?name=CHE386458653&directLink=true
+- Grading: rule over the registered purpose, see `scripts/classify_regies.py`
+- Addresses: none held
+- Cascade: `intel.address_hunt`, outcome `not run`
+
+The register carries no warranty and has no legal effect; only the certified
+cantonal excerpt and the FOSC publication text are binding.

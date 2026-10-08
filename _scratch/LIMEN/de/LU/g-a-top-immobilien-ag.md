@@ -1,0 +1,36 @@
+# G + A Top Immobilien AG
+
+| | |
+|---|---|
+| UID | `CHE303455315` |
+| Legal form | Société anonyme |
+| Canton | LU (de) |
+| Registered seat | Hochdorf |
+| Address | Moosstrasse 2, 6280 Hochdorf |
+| Register status | ACTIVE |
+
+## Relevance for Limen
+
+**regie-core** — manages property for third parties, so runs inspections routinely
+
+purpose names management of property for others, name agrees
+
+## Where to write
+
+- nothing yet, and the search is unfinished — ran without the search tier
+
+No website resolved.
+
+## What the register says it does
+
+> Kauf und Verkauf sowie Halten und Verwaltung von Immobilien jeglicher Art; Kauf, Verwaltung und Finanzierung von Liegenschaften; Erstellung von Wohn- und Geschäftsräumen sowie Durchführung von Umbauten, Renovationen; Ausführung von Generalunternehmeraufträgen; Im- und Export sowie Vertrieb von und Handel mit Waren aller Art; Beteiligungen.
+
+## Sources
+
+- Register entry: https://www.zefix.admin.ch/fr/search/entity/list?name=CHE303455315&directLink=true
+- Grading: rule over the registered purpose, see `scripts/classify_regies.py`
+- Addresses: none held
+- Cascade: `intel.address_hunt`, outcome `partial`
+
+The register carries no warranty and has no legal effect; only the certified
+cantonal excerpt and the FOSC publication text are binding.

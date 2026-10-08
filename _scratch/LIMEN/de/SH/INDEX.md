@@ -1,0 +1,131 @@
+# SH · 119 firms
+
+
+## regie-core (67)
+
+manages property for third parties, so runs inspections routinely
+
+- [2R Immobilien AG](2r-immobilien-ag.md) · Schaffhausen · `-`
+- [4S Energie + Immobilien GmbH](4s-energie-immobilien-gmbh.md) · Schaffhausen · `-`
+- [A + B Immobilien Schaffhausen AG](a-b-immobilien-schaffhausen-ag.md) · Schaffhausen · `-`
+- [ADAG Immobilien AG](adag-immobilien-ag.md) · Beringen · `-`
+- [AFS Immobilien AG](afs-immobilien-ag.md) · Schaffhausen · `-`
+- [ALVA Immobilien AG](alva-immobilien-ag.md) · Schaffhausen · `-`
+- [Albert Schachenmann Immobilien AG](albert-schachenmann-immobilien-ag.md) · Schaffhausen · `-`
+- [BREL Immobilien AG](brel-immobilien-ag.md) · Beringen · ``
+- [BS Verwaltung & Consulting GmbH](bs-verwaltung-consulting-gmbh.md) · Schaffhausen · `?`
+- [Baum Immobilien Verwaltungs-GmbH](baum-immobilien-verwaltungs-gmbh.md) · Schaffhausen · `info@baumimmobilien.com`
+- [Bauvision Immobilien und Handels AG](bauvision-immobilien-und-handels-ag.md) · Hemishofen · `?`
+- [Birchweg Immobilien AG](birchweg-immobilien-ag.md) · Schaffhausen · `?`
+- [Brandi Immo AG](brandi-immo-ag.md) · Schaffhausen · `?`
+- [Breiter-Immobilien AG Schaffhausen](breiter-immobilien-ag-schaffhausen.md) · Schaffhausen · `?`
+- [Bührer RK Immo AG](buhrer-rk-immo-ag.md) · Stetten (SH) · `?`
+- [Dalpont Immobilien GmbH](dalpont-immobilien-gmbh.md) · Oberhallau · `y.zumsteg@dalpont.immo`
+- [DiREMa.immo - Digital Real Estate Management GmbH](direma-immo-digital-real-estate-management-gmbh.md) · Neunkirch · `info@direma.immo`
+- [FULL-Haus Immo GmbH](full-haus-immo-gmbh.md) · Stetten (SH) · `?`
+- [Feurer-Frey Immobilien AG](feurer-frey-immobilien-ag.md) · Neuhausen am Rheinfall · `?`
+- [FrontWeb Immobilien GmbH](frontweb-immobilien-gmbh.md) · Stein am Rhein · `info@frontweb.ch`
+- [Garcia Immobilien GmbH](garcia-immobilien-gmbh.md) · Buch (SH) · `marisol@garcia-immobilien.ch`
+- [Gebr. Wanner Immo AG](gebr-wanner-immo-ag.md) · Schleitheim · `?`
+- [Grubenpark Immobilien AG](grubenpark-immobilien-ag.md) · Schaffhausen · `?`
+- [Güetli Immobilien AG](guetli-immobilien-ag.md) · Schaffhausen · `?`
+- [H + O Immobilien AG](h-o-immobilien-ag.md) · Stein am Rhein · `?`
+- [HG Prime Immobilien GmbH](hg-prime-immobilien-gmbh.md) · Neuhausen am Rheinfall · `?`
+- [HMG Immobilien AG](hmg-immobilien-ag.md) · Oberhallau · `info@hmgimmobilien.com`
+- [HRM Immobilien und Verwaltungen AG](hrm-immobilien-und-verwaltungen-ag.md) · Löhningen · `?`
+- [Hauen Immo Aktiengesellschaft](hauen-immo-aktiengesellschaft.md) · Schaffhausen · `?`
+- [Hoch Immo Aktiengesellschaft](hoch-immo-aktiengesellschaft.md) · Schaffhausen · `?`
+- [Hofwisen Immobilien GmbH](hofwisen-immobilien-gmbh.md) · Stein am Rhein · `?`
+- [IT3 Immobilien + Treuhand AG](it3-immobilien-treuhand-ag.md) · Schaffhausen · `info@it3.ch (+2)`
+- [Immo Bodensee & Rhein AG](immo-bodensee-rhein-ag.md) · Stein am Rhein · `?`
+- [JLM Immo AG](jlm-immo-ag.md) · Neunkirch · `?`
+- [Klaiber Immobilien AG](klaiber-immobilien-ag.md) · Schaffhausen · `?`
+- [Konfidenz Immobilien AG](konfidenz-immobilien-ag.md) · Schaffhausen · `?`
+- [Kornhaus Liegenschaften Schaffhausen AG](kornhaus-liegenschaften-schaffhausen-ag.md) · Schaffhausen · `?`
+- [Krieger Immo GmbH](krieger-immo-gmbh.md) · Stein am Rhein · `info@krieger-immo.ch`
+- [Langfeldweg Immobilien AG](langfeldweg-immobilien-ag.md) · Neunkirch · `?`
+- [LiFi Immo AG](lifi-immo-ag.md) · Siblingen · `?`
+- [Lino Fabrizi Immobilien GmbH](lino-fabrizi-immobilien-gmbh.md) · Neuhausen am Rheinfall · `?`
+- [MGL Immobilien AG](mgl-immobilien-ag.md) · Löhningen · `?`
+- [MM Immo & Planung GmbH](mm-immo-planung-gmbh.md) · Stetten (SH) · `?`
+- [MMATS Immobilien GmbH](mmats-immobilien-gmbh.md) · Schaffhausen · `?`
+- [MSC Immobilien GmbH](msc-immobilien-gmbh.md) · Schleitheim · `info@msc-immobilien.com`
+- [MWW Immo AG](mww-immo-ag.md) · Lohn (SH) · `?`
+- [Manzano Immobilien GmbH](manzano-immobilien-gmbh.md) · Neuhausen am Rheinfall · `?`
+- [MeKu Immo AG](meku-immo-ag.md) · Schaffhausen · `?`
+- [NLA Immo AG](nla-immo-ag.md) · Thayngen · `?`
+- [PostRhein Immobilien AG](postrhein-immobilien-ag.md) · Neuhausen am Rheinfall · `?`
+- [Qualimatik Immobilien AG](qualimatik-immobilien-ag.md) · Schaffhausen · `?`
+- [REMAG Immobilien AG](remag-immobilien-ag.md) · Rüdlingen · `?`
+- [RWT Immobilien AG](rwt-immobilien-ag.md) · Thayngen · `?`
+- [Randen Immo AG](randen-immo-ag.md) · Beggingen · `?`
+- [Randenburg-Immobilien AG](randenburg-immobilien-ag.md) · Schaffhausen · `?`
+- [SHU Immobilien AG](shu-immobilien-ag.md) · Schaffhausen · `?`
+- [SMG immobilien ag](smg-immobilien-ag.md) · Beringen · `info@smg-immobilien.ch`
+- [SiF-Immobilien AG](sif-immobilien-ag.md) · Schaffhausen · `?`
+- [Sonnenstube Immo AG](sonnenstube-immo-ag.md) · Schaffhausen · `?`
+- [Swiss Prime Immobilien GmbH](swiss-prime-immobilien-gmbh.md) · Neuhausen am Rheinfall · `info@swissprime.ch`
+- [UD Immobilien AG Schaffhausen](ud-immobilien-ag-schaffhausen.md) · Schaffhausen · `?`
+- [Valuca Immobilien GmbH](valuca-immobilien-gmbh.md) · Dörflingen · `?`
+- [Weder Immobilien GmbH](weder-immobilien-gmbh.md) · Schaffhausen · `?`
+- [Wohnkonzept Immobilienverwaltung GmbH](wohnkonzept-immobilienverwaltung-gmbh.md) · Schaffhausen · `?`
+- [Wunderli Immobilien GmbH](wunderli-immobilien-gmbh.md) · Thayngen · `info@wunderli-immobilien.ch (+6)`
+- [be2 immobilien ag](be2-immobilien-ag.md) · Neuhausen am Rheinfall · `?`
+- [zehnder immo ag](zehnder-immo-ag.md) · Bargen (SH) · `info@zehnderimmo.ch`
+
+## regie-letting (52)
+
+lets property; the administration may sit elsewhere
+
+- [B&B Handel- und Immobilien AG](b-b-handel-und-immobilien-ag.md) · Schaffhausen · ``
+- [BERODI Immobilien GmbH](berodi-immobilien-gmbh.md) · Ramsen · ``
+- [Bergauer Immobilien GmbH](bergauer-immobilien-gmbh.md) · Büttenhardt · ``
+- [Bührer & Partner Immobilien AG](buhrer-partner-immobilien-ag.md) · Neuhausen am Rheinfall · `?`
+- [CBGB Immobilien GmbH](cbgb-immobilien-gmbh.md) · Schaffhausen · ``
+- [Casaly Immobilien AG](casaly-immobilien-ag.md) · Schaffhausen · `phan@casaly.ch (+1)`
+- [Chlaffental Immobilien AG](chlaffental-immobilien-ag.md) · Neuhausen am Rheinfall · ``
+- [City Liegenschaften AG](city-liegenschaften-ag.md) · Schaffhausen · ``
+- [Esox Immobilien AG](esox-immobilien-ag.md) · Neuhausen am Rheinfall · ``
+- [FE Immobilien AG](fe-immobilien-ag.md) · Neuhausen am Rheinfall · ``
+- [Faba Immobilien AG](faba-immobilien-ag.md) · Stein am Rhein · ``
+- [Fernsicht Liegenschaften AG](fernsicht-liegenschaften-ag.md) · Stetten (SH) · ``
+- [Gloor Immo AG](gloor-immo-ag.md) · Schaffhausen · ``
+- [Graf & Partner Immobilien AG](graf-partner-immobilien-ag.md) · Schaffhausen · ``
+- [Götz Immobilien-Treuhand GmbH](gotz-immobilien-treuhand-gmbh.md) · Stein am Rhein · `?`
+- [HQ Immobilien AG](hq-immobilien-ag.md) · Schaffhausen · ``
+- [Hedinger Immo GmbH](hedinger-immo-gmbh.md) · Wilchingen · ``
+- [Hörnliberg Immobilien AG](hornliberg-immobilien-ag.md) · Schaffhausen · ``
+- [IRES IMMOBILIEN GmbH](ires-immobilien-gmbh.md) · Hallau · ``
+- [Immo Rent Bigasky GmbH](immo-rent-bigasky-gmbh.md) · Ramsen · ``
+- [Immobilien Degerfeld AG](immobilien-degerfeld-ag.md) · Stein am Rhein · ``
+- [Imthurn Immobilien AG](imthurn-immobilien-ag.md) · Thayngen · ``
+- [Jan Hagoort Immo GmbH](jan-hagoort-immo-gmbh.md) · Stein am Rhein · ``
+- [Kimi Immobilien AG](kimi-immobilien-ag.md) · Schaffhausen · ``
+- [LS Immobilien GmbH](ls-immobilien-gmbh.md) · Schaffhausen · ``
+- [LaJuNa Immobilien GmbH](lajuna-immobilien-gmbh.md) · Stetten (SH) · ``
+- [MACHEIS Immo AG](macheis-immo-ag.md) · Thayngen · ``
+- [MSK Immobilien AG](msk-immobilien-ag.md) · Schaffhausen · ``
+- [MaJeBra Immo GmbH](majebra-immo-gmbh.md) · Schaffhausen · ``
+- [Mary's Immobilien Management AG](mary-s-immobilien-management-ag.md) · Schaffhausen · ``
+- [QW Immobilien AG](qw-immobilien-ag.md) · Schaffhausen · ``
+- [Reasco Immobilien AG](reasco-immobilien-ag.md) · Neuhausen am Rheinfall · `?`
+- [Ritter Immobilien-Treuhand AG](ritter-immobilien-treuhand-ag.md) · Schaffhausen · `?`
+- [Rolf Ziegler Immo GmbH](rolf-ziegler-immo-gmbh.md) · Schleitheim · ``
+- [S+M Immobilien AG](s-m-immobilien-ag.md) · Schaffhausen · ``
+- [Schlumpf Immobilien AG](schlumpf-immobilien-ag.md) · Schaffhausen · ``
+- [Stag-Immobilien AG](stag-immobilien-ag.md) · Stein am Rhein · ``
+- [TARU Immo AG](taru-immo-ag.md) · Thayngen · ``
+- [Thayngen Immobilien AG](thayngen-immobilien-ag.md) · Thayngen · ``
+- [Vistara Immobilien AG](vistara-immobilien-ag.md) · Schaffhausen · ``
+- [W&L Immobilien GmbH](w-l-immobilien-gmbh.md) · Schaffhausen · `?`
+- [Wagner Immo und Gerüstbau AG](wagner-immo-und-gerustbau-ag.md) · Stein am Rhein · ``
+- [Wallimann Immobilien GmbH](wallimann-immobilien-gmbh.md) · Rüdlingen · ``
+- [Yves Senn Immobilien AG](yves-senn-immobilien-ag.md) · Schaffhausen · ``
+- [Zollikof Immobilien AG](zollikof-immobilien-ag.md) · Stein am Rhein · ``
+- [area immobilien ag](area-immobilien-ag.md) · Neunkirch · ``
+- [b53 immobilien ag](b53-immobilien-ag.md) · Schaffhausen · ``
+- [bs immobilien- & finanzgesellschaft ag](bs-immobilien-finanzgesellschaft-ag.md) · Schaffhausen · ``
+- [immo kopfsalat gmbh](immo-kopfsalat-gmbh.md) · Schaffhausen · ``
+- [intreXis Immo GmbH](intrexis-immo-gmbh.md) · Neuhausen am Rheinfall · ``
+- [s+p Schmid Immobilien AG](s-p-schmid-immobilien-ag.md) · Schaffhausen · ``
+- [ywi immo gmbh](ywi-immo-gmbh.md) · Schaffhausen · ``

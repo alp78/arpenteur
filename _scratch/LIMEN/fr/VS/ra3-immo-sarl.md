@@ -1,0 +1,36 @@
+# RA3 Immo Sàrl
+
+| | |
+|---|---|
+| UID | `CHE411204974` |
+| Legal form | Société à responsabilité limitée |
+| Canton | VS (fr) |
+| Registered seat | Massongex |
+| Address | Chemin du Canal 2b, 1869 Massongex |
+| Register status | ACTIVE |
+
+## Relevance for Limen
+
+**regie-core** — manages property for third parties, so runs inspections routinely
+
+purpose names management of property for others, name agrees
+
+## Where to write
+
+- nothing yet, and the search is unfinished — ran without the search tier
+
+No website resolved.
+
+## What the register says it does
+
+> La société a pour but toutes activités dans le domaine de l'immobilier (à l'exclusion des activités prohibées par la LFAIE), soit notamment la promotion, le commerce, le courtage, l'activité d'entrepreneur général, la construction, la rénovation, la location, l'administration, la gestion de biens immobiliers, ainsi que le conseil et toutes prestations de service dans ces domaines; tous travaux dans le domaine du bâtiment; le commerce de tout produit. Elle peut créer des succursales en Suisse et à l'étranger, participer à d'autres entreprises en Suisse et à l'étranger, acquérir des entreprises visant un but identique ou analogue, ou fusionner avec de telles entreprises, acquérir ou vendre des immeubles (à l'exclusion des activités prohibées par la LFAIE), faire toutes opérations et conclure tous contrats propres à développer et à étendre son but ou s'y rapportant directement ou indirectement. La société peut octroyer des garanties, consentir des prêts ou des avances à des associés ou à des tiers.
+
+## Sources
+
+- Register entry: https://www.zefix.admin.ch/fr/search/entity/list?name=CHE411204974&directLink=true
+- Grading: rule over the registered purpose, see `scripts/classify_regies.py`
+- Addresses: none held
+- Cascade: `intel.address_hunt`, outcome `partial`
+
+The register carries no warranty and has no legal effect; only the certified
+cantonal excerpt and the FOSC publication text are binding.

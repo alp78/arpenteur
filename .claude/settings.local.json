@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "WebSearch",
+      "WebFetch(domain:www.ictjournal.ch)",
+      "WebFetch(domain:www.letemps.ch)",
+      "WebFetch(domain:www.tdg.ch)",
+      "WebFetch(domain:ideas.repec.org)"
+    ]
+  }
+}

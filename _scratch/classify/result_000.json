@@ -1,0 +1,2219 @@
+[
+ {
+  "uid": "CHE164075515",
+  "sector": "consulting",
+  "sector_confidence": 0.45,
+  "sector_rationale": "conseil dans le domaine de la mode et du design",
+  "segments": []
+ },
+ {
+  "uid": "CHE459659149",
+  "sector": "finance",
+  "sector_confidence": 0.8,
+  "sector_rationale": "corporate finance, fusions et acquisitions, ingénierie financière",
+  "segments": [
+   {
+    "segment": "compliance-sector",
+    "confidence": 0.55,
+    "rationale": "activité de conseil financier et en gestion de participations"
+   }
+  ]
+ },
+ {
+  "uid": "CHE174939850",
+  "sector": "construction",
+  "sector_confidence": 0.95,
+  "sector_rationale": "exploitation d'une entreprise générale de construction et de rénovation",
+  "segments": [
+   {
+    "segment": "sme-owner",
+    "confidence": 0.5,
+    "rationale": "petite entreprise générale de construction"
+   }
+  ]
+ },
+ {
+  "uid": "CHE305189998",
+  "sector": "holding",
+  "sector_confidence": 0.95,
+  "sector_rationale": "l'acquisition, la détention, l'administration et la gestion de participations",
+  "segments": []
+ },
+ {
+  "uid": "CHE139423493",
+  "sector": "construction",
+  "sector_confidence": 0.95,
+  "sector_rationale": "l'exécution de tous travaux de construction, de rénovation et de menuiserie",
+  "segments": [
+   {
+    "segment": "sme-owner",
+    "confidence": 0.5,
+    "rationale": "entreprise artisanale de rénovation"
+   }
+  ]
+ },
+ {
+  "uid": "CHE409552897",
+  "sector": "construction",
+  "sector_confidence": 0.6,
+  "sector_rationale": "fourniture et pose d'éléments anti-feu, travaux de serrurerie et vitrerie",
+  "segments": []
+ },
+ {
+  "uid": "CHE426007023",
+  "sector": "construction",
+  "sector_confidence": 0.85,
+  "sector_rationale": "menuiserie, bois, vitrerie, serrurerie, second oeuvre",
+  "segments": [
+   {
+    "segment": "sme-owner",
+    "confidence": 0.5,
+    "rationale": "service de dépannage artisanal"
+   }
+  ]
+ },
+ {
+  "uid": "CHE161610027",
+  "sector": "construction",
+  "sector_confidence": 0.95,
+  "sector_rationale": "travaux de démolition et de construction, terrassement, maçonnerie",
+  "segments": []
+ },
+ {
+  "uid": "CHE112124974",
+  "sector": "wholesale-trade",
+  "sector_confidence": 0.6,
+  "sector_rationale": "commerce et distribution dans le domaine de l'électricité",
+  "segments": []
+ },
+ {
+  "uid": "CHE276974467",
+  "sector": "marketing-media",
+  "sector_confidence": 0.75,
+  "sector_rationale": "l'impression, l'édition, la réimpression et la vente de livres",
+  "segments": []
+ },
+ {
+  "uid": "CHE164480264",
+  "sector": "consulting",
+  "sector_confidence": 0.55,
+  "sector_rationale": "fournir différents conseils dans les domaines de l'hôtellerie, du tourisme et de la construction",
+  "segments": []
+ },
+ {
+  "uid": "CHE414750374",
+  "sector": "finance",
+  "sector_confidence": 0.7,
+  "sector_rationale": "conseil et courtage dans les domaines des assurances, de la prévoyance et des placements financiers",
+  "segments": [
+   {
+    "segment": "compliance-sector",
+    "confidence": 0.7,
+    "rationale": "courtage en assurances et prévoyance professionnelle"
+   }
+  ]
+ },
+ {
+  "uid": "CHE274504180",
+  "sector": "construction",
+  "sector_confidence": 0.6,
+  "sector_rationale": "exploitation d'une entreprise générale, bâtiment, génie-civil, gros oeuvre et second oeuvre",
+  "segments": []
+ },
+ {
+  "uid": "CHE104341995",
+  "sector": "construction",
+  "sector_confidence": 0.9,
+  "sector_rationale": "entreprise générale de bâtiments regroupant tous corps de métier",
+  "segments": [
+   {
+    "segment": "sme-owner",
+    "confidence": 0.55,
+    "rationale": "entreprise de dépannage jour et nuit"
+   }
+  ]
+ },
+ {
+  "uid": "CHE110470081",
+  "sector": "construction",
+  "sector_confidence": 0.7,
+  "sector_rationale": "pose de serrures, menuiseries, vitreries, stores, travaux de réfection",
+  "segments": [
+   {
+    "segment": "sme-owner",
+    "confidence": 0.5,
+    "rationale": "entreprise de dépannage et service d'urgence"
+   }
+  ]
+ },
+ {
+  "uid": "CHE433758407",
+  "sector": "consulting",
+  "sector_confidence": 0.7,
+  "sector_rationale": "accompagnement des organisations dans la mise en oeuvre du management durable",
+  "segments": []
+ },
+ {
+  "uid": "CHE109836815",
+  "sector": "legal-accounting",
+  "sector_confidence": 0.95,
+  "sector_rationale": "activités de révision, comptabilité et conseil juridique et fiscal",
+  "segments": [
+   {
+    "segment": "compliance-sector",
+    "confidence": 0.6,
+    "rationale": "activité de révision réglementée"
+   }
+  ]
+ },
+ {
+  "uid": "CHE164280541",
+  "sector": "marketing-media",
+  "sector_confidence": 0.7,
+  "sector_rationale": "prestations dans les domaines de la communication numérique et du conseil en communication digital",
+  "segments": [
+   {
+    "segment": "ai-adopter",
+    "confidence": 0.4,
+    "rationale": "communication numérique et commerce électronique de produits digitaux"
+   }
+  ]
+ },
+ {
+  "uid": "CHE367154589",
+  "sector": "hospitality",
+  "sector_confidence": 0.6,
+  "sector_rationale": "exploitation d'établissements publics tels que kiosques, cafés, hôtels, bars et restaurants",
+  "segments": []
+ },
+ {
+  "uid": "CHE138507348",
+  "sector": "hospitality",
+  "sector_confidence": 0.6,
+  "sector_rationale": "exploitation d'établissements publics tels que kiosques, cafés, hôtels, bars et restaurants",
+  "segments": []
+ },
+ {
+  "uid": "CHE194943079",
+  "sector": "real-estate",
+  "sector_confidence": 0.5,
+  "sector_rationale": "gérance immobilière et investissements dans le domaine immobilier",
+  "segments": []
+ },
+ {
+  "uid": "CHE444822452",
+  "sector": "construction",
+  "sector_confidence": 0.95,
+  "sector_rationale": "exploitation d'une entreprise générale du bâtiment, gros oeuvre et second oeuvre",
+  "segments": []
+ },
+ {
+  "uid": "CHE380561123",
+  "sector": "engineering",
+  "sector_confidence": 0.55,
+  "sector_rationale": "analyse, expertise et audit technique des installations d'ascenseurs et escaliers mécaniques",
+  "segments": []
+ },
+ {
+  "uid": "CHE253906207",
+  "sector": "wholesale-trade",
+  "sector_confidence": 0.65,
+  "sector_rationale": "distribution et vente en gros et au détail de parfums, cosmétiques, vêtements",
+  "segments": []
+ },
+ {
+  "uid": "CHE255710939",
+  "sector": "engineering",
+  "sector_confidence": 0.45,
+  "sector_rationale": "architecture d'intérieur, aménagement d'intérieur, design, décoration",
+  "segments": []
+ },
+ {
+  "uid": "CHE163704892",
+  "sector": "education",
+  "sector_confidence": 0.95,
+  "sector_rationale": "enseignement préparatoire à l'entrée aux écoles d'arts",
+  "segments": [
+   {
+    "segment": "sme-owner",
+    "confidence": 0.45,
+    "rationale": "petit atelier d'enseignement artistique"
+   }
+  ]
+ },
+ {
+  "uid": "CHE343249791",
+  "sector": "manufacturing",
+  "sector_confidence": 0.45,
+  "sector_rationale": "production, diffusion et vente d'articles de la branche joaillère et horlogère",
+  "segments": []
+ },
+ {
+  "uid": "CHE139353450",
+  "sector": "transport-logistics",
+  "sector_confidence": 0.95,
+  "sector_rationale": "exploitation d'une entreprise de taxis et transport professionnel de personnes",
+  "segments": [
+   {
+    "segment": "sme-owner",
+    "confidence": 0.55,
+    "rationale": "petite entreprise de taxis"
+   }
+  ]
+ },
+ {
+  "uid": "CHE112849474",
+  "sector": "engineering",
+  "sector_confidence": 0.85,
+  "sector_rationale": "architecture design, urbanisme, paysage",
+  "segments": []
+ },
+ {
+  "uid": "CHE440922089",
+  "sector": "consulting",
+  "sector_confidence": 0.4,
+  "sector_rationale": "fournir toutes prestations de conseil, d'intermédiation, de recherche et développement",
+  "segments": []
+ },
+ {
+  "uid": "CHE170254552",
+  "sector": "wholesale-trade",
+  "sector_confidence": 0.9,
+  "sector_rationale": "importation, distribution en gros et commercialisation de produits alimentaires",
+  "segments": []
+ },
+ {
+  "uid": "CHE231670918",
+  "sector": "retail",
+  "sector_confidence": 0.8,
+  "sector_rationale": "exploitation d'un local de vente et d'un site de vente en ligne",
+  "segments": []
+ },
+ {
+  "uid": "CHE424476275",
+  "sector": "finance",
+  "sector_confidence": 0.5,
+  "sector_rationale": "recherche de financement, analyse financière et mise en relation avec des investisseurs",
+  "segments": []
+ },
+ {
+  "uid": "CHE110060547",
+  "sector": "agriculture",
+  "sector_confidence": 0.5,
+  "sector_rationale": "activités de jardinier paysagiste",
+  "segments": [
+   {
+    "segment": "sme-owner",
+    "confidence": 0.5,
+    "rationale": "activité artisanale de jardinage"
+   }
+  ]
+ },
+ {
+  "uid": "CHE113608447",
+  "sector": "personal-services",
+  "sector_confidence": 0.7,
+  "sector_rationale": "agence de sécurité, enquêtes, transport de valeurs et chauffeur privé",
+  "segments": []
+ },
+ {
+  "uid": "CHE232113282",
+  "sector": "construction",
+  "sector_confidence": 0.85,
+  "sector_rationale": "installation, maintenance et réparation d'installations électriques dans le bâtiment",
+  "segments": []
+ },
+ {
+  "uid": "CHE139928379",
+  "sector": "personal-services",
+  "sector_confidence": 0.9,
+  "sector_rationale": "service de nettoyage et entretien pour particuliers et entreprises",
+  "segments": []
+ },
+ {
+  "uid": "CHE452800518",
+  "sector": "real-estate",
+  "sector_confidence": 0.9,
+  "sector_rationale": "toutes transactions et activités immobilières, promotion immobilière",
+  "segments": []
+ },
+ {
+  "uid": "CHE442088451",
+  "sector": "construction",
+  "sector_confidence": 0.8,
+  "sector_rationale": "gypserie, décors en staff et stuc, maçonnerie décorative",
+  "segments": []
+ },
+ {
+  "uid": "CHE114984769",
+  "sector": "wholesale-trade",
+  "sector_confidence": 0.85,
+  "sector_rationale": "import et export, commerce de piles, accumulateurs, batteries",
+  "segments": []
+ },
+ {
+  "uid": "CHE206577374",
+  "sector": "manufacturing",
+  "sector_confidence": 0.6,
+  "sector_rationale": "exploitation de l'abattoir de Loëx",
+  "segments": []
+ },
+ {
+  "uid": "CHE112691919",
+  "sector": "it-services",
+  "sector_confidence": 0.85,
+  "sector_rationale": "commerce de matériels et de logiciels informatiques, développement de logiciels et de sites Internet",
+  "segments": [
+   {
+    "segment": "ai-adopter",
+    "confidence": 0.6,
+    "rationale": "développement de logiciels spécifiques de base de données et de site Internet"
+   }
+  ]
+ },
+ {
+  "uid": "CHE147035839",
+  "sector": "engineering",
+  "sector_confidence": 0.65,
+  "sector_rationale": "exploitation d'un bureau d'architecture et de direction de travaux",
+  "segments": []
+ },
+ {
+  "uid": "CHE490036184",
+  "sector": "finance",
+  "sector_confidence": 0.75,
+  "sector_rationale": "Handels- und Betriebsmittelfinanzierung",
+  "segments": [
+   {
+    "segment": "compliance-sector",
+    "confidence": 0.5,
+    "rationale": "activité de financement"
+   }
+  ]
+ },
+ {
+  "uid": "CHE112608841",
+  "sector": "construction",
+  "sector_confidence": 0.75,
+  "sector_rationale": "vente et pose de tout revêtement de sols",
+  "segments": []
+ },
+ {
+  "uid": "CHE243354364",
+  "sector": "health-care",
+  "sector_confidence": 0.9,
+  "sector_rationale": "exploitation d'un cabinet dentaire ainsi que d'un laboratoire dentaire",
+  "segments": [
+   {
+    "segment": "compliance-sector",
+    "confidence": 0.7,
+    "rationale": "prestation de soins dentaires"
+   },
+   {
+    "segment": "sme-owner",
+    "confidence": 0.5,
+    "rationale": "cabinet dentaire exploité en propre"
+   }
+  ]
+ },
+ {
+  "uid": "CHE233005784",
+  "sector": "construction",
+  "sector_confidence": 0.9,
+  "sector_rationale": "isolation de façades, peinture, plâtrerie, menuiserie",
+  "segments": []
+ },
+ {
+  "uid": "CHE146271567",
+  "sector": "wholesale-trade",
+  "sector_confidence": 0.55,
+  "sector_rationale": "industrie du textile et de la mode: achat, vente, importation et exportation",
+  "segments": []
+ },
+ {
+  "uid": "CHE368550574",
+  "sector": "holding",
+  "sector_confidence": 0.95,
+  "sector_rationale": "l'acquisition, la détention, la vente et la gestion de toutes participations",
+  "segments": []
+ },
+ {
+  "uid": "CHE105615296",
+  "sector": "real-estate",
+  "sector_confidence": 0.7,
+  "sector_rationale": "vente, achats et tout type de transactions liées à l'immobilier",
+  "segments": []
+ },
+ {
+  "uid": "CHE109688756",
+  "sector": "education",
+  "sector_confidence": 0.5,
+  "sector_rationale": "coaching, séminaires et stages pour managers, familles et sportifs",
+  "segments": []
+ },
+ {
+  "uid": "CHE226325692",
+  "sector": "marketing-media",
+  "sector_confidence": 0.6,
+  "sector_rationale": "conseil en communication et en stratégie de développement (marketing)",
+  "segments": []
+ },
+ {
+  "uid": "CHE410470361",
+  "sector": "retail",
+  "sector_confidence": 0.6,
+  "sector_rationale": "exploitation d'un commerce de tabac-journaux et de produits alimentaires",
+  "segments": [
+   {
+    "segment": "sme-owner",
+    "confidence": 0.5,
+    "rationale": "petit commerce de quartier"
+   }
+  ]
+ },
+ {
+  "uid": "CHE115238321",
+  "sector": "consulting",
+  "sector_confidence": 0.4,
+  "sector_rationale": "consultants en matière de commerce et marchés (Business and Marketing Consultants)",
+  "segments": []
+ },
+ {
+  "uid": "CHE337103699",
+  "sector": "construction",
+  "sector_confidence": 0.85,
+  "sector_rationale": "la vente et la pose de carrelages",
+  "segments": []
+ },
+ {
+  "uid": "CHE112689957",
+  "sector": "construction",
+  "sector_confidence": 0.55,
+  "sector_rationale": "entreprise de serrurerie, ferronnerie d'art, construction métallique, vitrerie",
+  "segments": []
+ },
+ {
+  "uid": "CHE438912087",
+  "sector": "construction",
+  "sector_confidence": 0.5,
+  "sector_rationale": "exploitation d'une entreprise générale de construction",
+  "segments": []
+ },
+ {
+  "uid": "CHE430086327",
+  "sector": "wholesale-trade",
+  "sector_confidence": 0.5,
+  "sector_rationale": "commerce, commercialisation et distribution à l'étranger de produits alimentaires",
+  "segments": []
+ },
+ {
+  "uid": "CHE114047362",
+  "sector": "wholesale-trade",
+  "sector_confidence": 0.8,
+  "sector_rationale": "achat, vente et commercialisation de fruits et légumes, négoce",
+  "segments": []
+ },
+ {
+  "uid": "CHE103135944",
+  "sector": "real-estate",
+  "sector_confidence": 0.9,
+  "sector_rationale": "achat, vente, possession, exploitation et location de biens immobiliers",
+  "segments": []
+ },
+ {
+  "uid": "CHE427440894",
+  "sector": "education",
+  "sector_confidence": 0.8,
+  "sector_rationale": "exploitation d'une ou plusieurs auto-écoles et formation de moniteurs",
+  "segments": []
+ },
+ {
+  "uid": "CHE105349858",
+  "sector": "it-services",
+  "sector_confidence": 0.8,
+  "sector_rationale": "services, conseils, achats et ventes de matériel et de logiciels informatiques",
+  "segments": []
+ },
+ {
+  "uid": "CHE108706771",
+  "sector": "legal-accounting",
+  "sector_confidence": 0.7,
+  "sector_rationale": "gestion de mandats comptables et fiscaux, élaboration de contrats juridiques",
+  "segments": [
+   {
+    "segment": "compliance-sector",
+    "confidence": 0.5,
+    "rationale": "mandats fiscaux et juridiques"
+   }
+  ]
+ },
+ {
+  "uid": "CHE479136357",
+  "sector": "real-estate",
+  "sector_confidence": 0.8,
+  "sector_rationale": "exploitation d'une agence immobilière, gérance d'immeubles",
+  "segments": []
+ },
+ {
+  "uid": "CHE497136007",
+  "sector": "legal-accounting",
+  "sector_confidence": 0.9,
+  "sector_rationale": "prestations fiduciaires, gestion comptable, fiscalité et gestion des salaires",
+  "segments": [
+   {
+    "segment": "compliance-sector",
+    "confidence": 0.5,
+    "rationale": "fiscalité et administration des salaires"
+   }
+  ]
+ },
+ {
+  "uid": "CHE243518370",
+  "sector": "construction",
+  "sector_confidence": 0.85,
+  "sector_rationale": "montage et démontage d'échafaudages, de monte-charges et d'étayages",
+  "segments": []
+ },
+ {
+  "uid": "CHE403383685",
+  "sector": "consulting",
+  "sector_confidence": 0.5,
+  "sector_rationale": "bureau de conseil, d'audit, de formation et de recherche en développement durable",
+  "segments": []
+ },
+ {
+  "uid": "CHE430150480",
+  "sector": "legal-accounting",
+  "sector_confidence": 0.9,
+  "sector_rationale": "exploitation de sociétés fiduciaires, tenue de comptabilité, révision des comptes",
+  "segments": [
+   {
+    "segment": "compliance-sector",
+    "confidence": 0.5,
+    "rationale": "révision des comptes et conseils fiscaux"
+   }
+  ]
+ },
+ {
+  "uid": "CHE287891779",
+  "sector": "wholesale-trade",
+  "sector_confidence": 0.4,
+  "sector_rationale": "opérations commerciales sur bijoux, montres, tableaux, ventes aux enchères publiques",
+  "segments": []
+ },
+ {
+  "uid": "CHE103106546",
+  "sector": "legal-accounting",
+  "sector_confidence": 0.95,
+  "sector_rationale": "dispense de conseils fiscaux et établissement de déclarations fiscales",
+  "segments": [
+   {
+    "segment": "compliance-sector",
+    "confidence": 0.55,
+    "rationale": "conseil fiscal réglementé"
+   }
+  ]
+ },
+ {
+  "uid": "CHE434337818",
+  "sector": "construction",
+  "sector_confidence": 0.95,
+  "sector_rationale": "exploitation d'une entreprise générale du bâtiment",
+  "segments": []
+ },
+ {
+  "uid": "CHE227275329",
+  "sector": "construction",
+  "sector_confidence": 0.9,
+  "sector_rationale": "opérations en relation avec le domaine du bâtiment, rénovation et transformation",
+  "segments": []
+ },
+ {
+  "uid": "CHE247575013",
+  "sector": "transport-logistics",
+  "sector_confidence": 0.9,
+  "sector_rationale": "le transport professionnel de personnes",
+  "segments": []
+ },
+ {
+  "uid": "CHE373552484",
+  "sector": "education",
+  "sector_confidence": 0.55,
+  "sector_rationale": "agence organisant des séjours linguistiques pour les étudiants et les professeurs",
+  "segments": []
+ },
+ {
+  "uid": "CHE287073605",
+  "sector": "personal-services",
+  "sector_confidence": 0.75,
+  "sector_rationale": "entreprise de nettoyage et d'entretien d'immeubles et de locaux commerciaux",
+  "segments": []
+ },
+ {
+  "uid": "CHE131139108",
+  "sector": "it-services",
+  "sector_confidence": 0.6,
+  "sector_rationale": "services informatiques, systèmes de contrôle, automatique des bâtiments et solutions domotiques",
+  "segments": [
+   {
+    "segment": "ai-adopter",
+    "confidence": 0.5,
+    "rationale": "solutions domotiques et gestion de systèmes"
+   }
+  ]
+ },
+ {
+  "uid": "CHE178550830",
+  "sector": "finance",
+  "sector_confidence": 0.85,
+  "sector_rationale": "conseil en matière d'investissements financiers",
+  "segments": [
+   {
+    "segment": "compliance-sector",
+    "confidence": 0.6,
+    "rationale": "renvoi à la LBA et à la loi sur les banques"
+   }
+  ]
+ },
+ {
+  "uid": "CHE105552796",
+  "sector": "agriculture",
+  "sector_confidence": 0.5,
+  "sector_rationale": "création et entretien de jardins, paysagisme",
+  "segments": []
+ },
+ {
+  "uid": "CHE342371053",
+  "sector": "holding",
+  "sector_confidence": 0.95,
+  "sector_rationale": "la détention de participations",
+  "segments": []
+ },
+ {
+  "uid": "CHE423219244",
+  "sector": "construction",
+  "sector_confidence": 0.85,
+  "sector_rationale": "pose de carrelage et de parquet, travaux de peinture",
+  "segments": []
+ },
+ {
+  "uid": "CHE492945927",
+  "sector": "construction",
+  "sector_confidence": 0.95,
+  "sector_rationale": "entreprise générale de construction et rénovation, direction de travaux",
+  "segments": []
+ },
+ {
+  "uid": "CHE407267440",
+  "sector": "construction",
+  "sector_confidence": 0.7,
+  "sector_rationale": "travaux d'installation, de réparation et de maintenance des ascenseurs et élévateurs",
+  "segments": []
+ },
+ {
+  "uid": "CHE355667712",
+  "sector": "wholesale-trade",
+  "sector_confidence": 0.85,
+  "sector_rationale": "importation, exportation et distribution de tous véhicules et accessoires",
+  "segments": []
+ },
+ {
+  "uid": "CHE140663443",
+  "sector": "wholesale-trade",
+  "sector_confidence": 0.7,
+  "sector_rationale": "import-export et commerce d'acier, de métaux ferreux et de matières premières",
+  "segments": []
+ },
+ {
+  "uid": "CHE224697071",
+  "sector": "hospitality",
+  "sector_confidence": 0.95,
+  "sector_rationale": "l'exploitation d'établissements publics, notamment de restaurants",
+  "segments": [
+   {
+    "segment": "sme-owner",
+    "confidence": 0.55,
+    "rationale": "exploitation d'un restaurant"
+   }
+  ]
+ },
+ {
+  "uid": "CHE223149950",
+  "sector": "manufacturing",
+  "sector_confidence": 0.6,
+  "sector_rationale": "recherche, développement, fabrication et commercialisation de produits pharmaceutiques",
+  "segments": [
+   {
+    "segment": "compliance-sector",
+    "confidence": 0.5,
+    "rationale": "produits pharmaceutiques réglementés"
+   },
+   {
+    "segment": "data-driven",
+    "confidence": 0.45,
+    "rationale": "recherche et développement"
+   },
+   {
+    "segment": "lean-startup",
+    "confidence": 0.4,
+    "rationale": "but de produit et de recherche"
+   }
+  ]
+ },
+ {
+  "uid": "CHE113957215",
+  "sector": "it-services",
+  "sector_confidence": 0.6,
+  "sector_rationale": "toute activité dans les domaines informatiques et internet",
+  "segments": []
+ },
+ {
+  "uid": "CHE279806027",
+  "sector": "wholesale-trade",
+  "sector_confidence": 0.5,
+  "sector_rationale": "l'achat et la vente de produits de luxe, montres et objets de collection",
+  "segments": []
+ },
+ {
+  "uid": "CHE114986219",
+  "sector": "construction",
+  "sector_confidence": 0.9,
+  "sector_rationale": "gypserie, peinture et décoration",
+  "segments": []
+ },
+ {
+  "uid": "CHE437630930",
+  "sector": "it-services",
+  "sector_confidence": 0.55,
+  "sector_rationale": "prestations de conseil dans le domaine de l'informatique",
+  "segments": []
+ },
+ {
+  "uid": "CHE436036730",
+  "sector": "legal-accounting",
+  "sector_confidence": 0.95,
+  "sector_rationale": "prestations juridiques par des avocats inscrits, conseil en matière fiscale",
+  "segments": [
+   {
+    "segment": "compliance-sector",
+    "confidence": 0.7,
+    "rationale": "avocats inscrits dans un registre et représentation devant les tribunaux"
+   }
+  ]
+ },
+ {
+  "uid": "CHE160343409",
+  "sector": "wholesale-trade",
+  "sector_confidence": 0.45,
+  "sector_rationale": "la vente et l'entretien de tout type d'abris, tentes et chapiteaux",
+  "segments": []
+ },
+ {
+  "uid": "CHE106816868",
+  "sector": "marketing-media",
+  "sector_confidence": 0.35,
+  "sector_rationale": "location de tentes et de chapiteaux",
+  "segments": []
+ },
+ {
+  "uid": "CHE185946096",
+  "sector": "retail",
+  "sector_confidence": 0.5,
+  "sector_rationale": "exploite des boutiques physiques et des plateformes de commerce électronique",
+  "segments": []
+ },
+ {
+  "uid": "CHE442716365",
+  "sector": "construction",
+  "sector_confidence": 0.9,
+  "sector_rationale": "montage et démontage des plafonds, technique de construction",
+  "segments": []
+ },
+ {
+  "uid": "CHE442593909",
+  "sector": "finance",
+  "sector_confidence": 0.85,
+  "sector_rationale": "conseil et courtage dans les domaines des assurances et du financement hypothécaire",
+  "segments": [
+   {
+    "segment": "compliance-sector",
+    "confidence": 0.65,
+    "rationale": "courtage en assurances"
+   }
+  ]
+ },
+ {
+  "uid": "CHE165428390",
+  "sector": "finance",
+  "sector_confidence": 0.6,
+  "sector_rationale": "recherche d'opportunités d'investissements et de solutions de financements",
+  "segments": []
+ },
+ {
+  "uid": "CHE292679334",
+  "sector": "finance",
+  "sector_confidence": 0.5,
+  "sector_rationale": "conseils financiers à d'autres entreprises actives dans la gestion de fortune",
+  "segments": []
+ },
+ {
+  "uid": "CHE100364224",
+  "sector": "consulting",
+  "sector_confidence": 0.4,
+  "sector_rationale": "fourniture de services dans les domaines du conseil d'entreprise et de la formation",
+  "segments": []
+ },
+ {
+  "uid": "CHE115299601",
+  "sector": "it-services",
+  "sector_confidence": 0.45,
+  "sector_rationale": "conseils et services aux particuliers et entreprises, principalement dans l'informatique",
+  "segments": [
+   {
+    "segment": "ai-adopter",
+    "confidence": 0.4,
+    "rationale": "commerce et e-commerce, processus commerciaux"
+   }
+  ]
+ },
+ {
+  "uid": "CHE344219462",
+  "sector": "hospitality",
+  "sector_confidence": 0.9,
+  "sector_rationale": "exploitation de cafés, restaurants",
+  "segments": [
+   {
+    "segment": "sme-owner",
+    "confidence": 0.5,
+    "rationale": "exploitation d'un café-restaurant"
+   }
+  ]
+ },
+ {
+  "uid": "CHE417672204",
+  "sector": "construction",
+  "sector_confidence": 0.5,
+  "sector_rationale": "construction, montage et aménagement d'accrobranches et travaux acrobatiques sur cordes",
+  "segments": []
+ },
+ {
+  "uid": "CHE471898191",
+  "sector": "health-care",
+  "sector_confidence": 0.6,
+  "sector_rationale": "exploitation d'un ou plusieurs cabinets de physiothérapie",
+  "segments": [
+   {
+    "segment": "compliance-sector",
+    "confidence": 0.45,
+    "rationale": "cabinet de physiothérapie"
+   }
+  ]
+ },
+ {
+  "uid": "CHE159795064",
+  "sector": "wholesale-trade",
+  "sector_confidence": 0.5,
+  "sector_rationale": "importation, commercialisation et distribution sous licence de jouets et de jeux",
+  "segments": []
+ },
+ {
+  "uid": "CHE238541647",
+  "sector": "manufacturing",
+  "sector_confidence": 0.6,
+  "sector_rationale": "fabrication et vente de bijoux",
+  "segments": []
+ },
+ {
+  "uid": "CHE101565966",
+  "sector": "wholesale-trade",
+  "sector_confidence": 0.5,
+  "sector_rationale": "commerce, courtage et création en matière d'horlogerie et de bijouterie",
+  "segments": []
+ },
+ {
+  "uid": "CHE296894050",
+  "sector": "legal-accounting",
+  "sector_confidence": 0.95,
+  "sector_rationale": "tout mandat fiduciaire, tenue de comptabilité, révision, expertise comptable",
+  "segments": [
+   {
+    "segment": "compliance-sector",
+    "confidence": 0.5,
+    "rationale": "révision et déclarations d'impôt"
+   }
+  ]
+ },
+ {
+  "uid": "CHE390951690",
+  "sector": "construction",
+  "sector_confidence": 0.45,
+  "sector_rationale": "exploitation d'un atelier de construction et d'architecture",
+  "segments": []
+ },
+ {
+  "uid": "CHE323389532",
+  "sector": "real-estate",
+  "sector_confidence": 0.9,
+  "sector_rationale": "achat, vente, possession, exploitation, construction et location d'immeubles",
+  "segments": []
+ },
+ {
+  "uid": "CHE115783570",
+  "sector": "real-estate",
+  "sector_confidence": 0.95,
+  "sector_rationale": "achat, vente, détention, gestion et courtage de tous biens immobiliers",
+  "segments": []
+ },
+ {
+  "uid": "CHE215483476",
+  "sector": "real-estate",
+  "sector_confidence": 0.9,
+  "sector_rationale": "achat, vente, possession, exploitation, construction et location d'immeubles",
+  "segments": []
+ },
+ {
+  "uid": "CHE408712187",
+  "sector": "finance",
+  "sector_confidence": 0.6,
+  "sector_rationale": "conseils en gestion de fonds et levée des fonds",
+  "segments": []
+ },
+ {
+  "uid": "CHE189536685",
+  "sector": "consulting",
+  "sector_confidence": 0.85,
+  "sector_rationale": "offrir des services de consultation en gestion (management)",
+  "segments": []
+ },
+ {
+  "uid": "CHE187829076",
+  "sector": "education",
+  "sector_confidence": 0.55,
+  "sector_rationale": "exploitation d'une école de coiffure et d'un salon de coiffure",
+  "segments": [
+   {
+    "segment": "sme-owner",
+    "confidence": 0.5,
+    "rationale": "école et salon exploités par la fondatrice"
+   }
+  ]
+ },
+ {
+  "uid": "CHE114073796",
+  "sector": "education",
+  "sector_confidence": 0.6,
+  "sector_rationale": "accorder des formations dans le domaine du sertissage en horlogerie et joaillerie",
+  "segments": []
+ },
+ {
+  "uid": "CHE202905456",
+  "sector": "education",
+  "sector_confidence": 0.85,
+  "sector_rationale": "assure l'enseignement, la formation et le perfectionnement de jeunes artistes lyriques",
+  "segments": []
+ },
+ {
+  "uid": "CHE499253380",
+  "sector": "education",
+  "sector_confidence": 0.85,
+  "sector_rationale": "formation en matière de protection civile et en gestion de situations de crise",
+  "segments": []
+ },
+ {
+  "uid": "CHE300102429",
+  "sector": "education",
+  "sector_confidence": 0.7,
+  "sector_rationale": "l'enseignement des différentes médecines quantiques et intégratives",
+  "segments": []
+ },
+ {
+  "uid": "CHE314955177",
+  "sector": "marketing-media",
+  "sector_confidence": 0.55,
+  "sector_rationale": "créer des enregistrements de CDs de très haute qualité pour des pianistes",
+  "segments": []
+ },
+ {
+  "uid": "CHE217416456",
+  "sector": "education",
+  "sector_confidence": 0.8,
+  "sector_rationale": "organisation de cours de formation continue pour les professionnels de la médecine dentaire",
+  "segments": []
+ },
+ {
+  "uid": "CHE382144227",
+  "sector": "legal-accounting",
+  "sector_confidence": 0.9,
+  "sector_rationale": "tous mandats fiduciaires, opérations de comptabilité, conseils juridiques et fiscaux",
+  "segments": []
+ },
+ {
+  "uid": "CHE427225479",
+  "sector": "holding",
+  "sector_confidence": 0.65,
+  "sector_rationale": "acquisition et gestion directes ou indirectes de participations à d'autres sociétés",
+  "segments": []
+ },
+ {
+  "uid": "CHE333450541",
+  "sector": "real-estate",
+  "sector_confidence": 0.7,
+  "sector_rationale": "conseils et expertises en gestion de patrimoine immobilier, développement de projets immobiliers",
+  "segments": []
+ },
+ {
+  "uid": "CHE297767193",
+  "sector": "hospitality",
+  "sector_confidence": 0.85,
+  "sector_rationale": "confection et vente de pizzas, notamment la vente par livraison à domicile",
+  "segments": [
+   {
+    "segment": "sme-owner",
+    "confidence": 0.5,
+    "rationale": "petite exploitation de restauration"
+   }
+  ]
+ },
+ {
+  "uid": "CHE482728759",
+  "sector": "hospitality",
+  "sector_confidence": 0.95,
+  "sector_rationale": "exploitation du restaurant Auberge communale de Collex-Bossy",
+  "segments": [
+   {
+    "segment": "sme-owner",
+    "confidence": 0.6,
+    "rationale": "exploitation d'une auberge"
+   }
+  ]
+ },
+ {
+  "uid": "CHE385878656",
+  "sector": "holding",
+  "sector_confidence": 0.95,
+  "sector_rationale": "détention et gestion de participations dans le sens d'une société holding",
+  "segments": []
+ },
+ {
+  "uid": "CHE288532308",
+  "sector": "legal-accounting",
+  "sector_confidence": 0.5,
+  "sector_rationale": "conseil en matière d'administration et de gestion de sociétés et de fiscalité",
+  "segments": []
+ },
+ {
+  "uid": "CHE110050098",
+  "sector": "finance",
+  "sector_confidence": 0.9,
+  "sector_rationale": "courtage, conseils et gestion en matière d'assurance et de produits financiers",
+  "segments": [
+   {
+    "segment": "compliance-sector",
+    "confidence": 0.65,
+    "rationale": "courtage en assurance et produits financiers"
+   }
+  ]
+ },
+ {
+  "uid": "CHE336403265",
+  "sector": "wholesale-trade",
+  "sector_confidence": 0.6,
+  "sector_rationale": "représentation commerciale, achat, vente, import et export de tous produits",
+  "segments": []
+ },
+ {
+  "uid": "CHE307675554",
+  "sector": "consulting",
+  "sector_confidence": 0.5,
+  "sector_rationale": "mettre en relation des personnes et entreprises afin de créer des opportunités commerciales",
+  "segments": []
+ },
+ {
+  "uid": "CHE493011246",
+  "sector": "construction",
+  "sector_confidence": 0.7,
+  "sector_rationale": "travaux de maçonnerie, de ferblanterie et d'étanchéité des bâtiments",
+  "segments": []
+ },
+ {
+  "uid": "CHE289886559",
+  "sector": "transport-logistics",
+  "sector_confidence": 0.85,
+  "sector_rationale": "transport de personnes à mobilité réduite, malades ou en situation de handicap",
+  "segments": []
+ },
+ {
+  "uid": "CHE136895097",
+  "sector": "marketing-media",
+  "sector_confidence": 0.9,
+  "sector_rationale": "prestations dans les domaines de la communication, des public affairs et des relations médias",
+  "segments": []
+ },
+ {
+  "uid": "CHE453230121",
+  "sector": "it-services",
+  "sector_confidence": 0.75,
+  "sector_rationale": "la création de logiciels bancaires et financiers",
+  "segments": [
+   {
+    "segment": "ai-adopter",
+    "confidence": 0.6,
+    "rationale": "création de logiciels"
+   },
+   {
+    "segment": "compliance-sector",
+    "confidence": 0.4,
+    "rationale": "logiciels bancaires et financiers"
+   }
+  ]
+ },
+ {
+  "uid": "CHE186304233",
+  "sector": "wholesale-trade",
+  "sector_confidence": 0.45,
+  "sector_rationale": "intermédiation dans la vente, le dépôt-vente et le courtage de véhicules de collection",
+  "segments": []
+ },
+ {
+  "uid": "CHE459466047",
+  "sector": "personal-services",
+  "sector_confidence": 0.5,
+  "sector_rationale": "la maintenance, l'entretien et le nettoyage des bâtiments, services de conciergerie",
+  "segments": []
+ },
+ {
+  "uid": "CHE414948611",
+  "sector": "legal-accounting",
+  "sector_confidence": 0.9,
+  "sector_rationale": "prestations d'une société fiduciaire: comptabilité, conseil fiscal, gestion de salaires",
+  "segments": []
+ },
+ {
+  "uid": "CHE312878100",
+  "sector": "finance",
+  "sector_confidence": 0.8,
+  "sector_rationale": "agent de recherche de financement et en assurances de personne, secteur du crédit",
+  "segments": [
+   {
+    "segment": "compliance-sector",
+    "confidence": 0.55,
+    "rationale": "courtage en assurances et crédit"
+   }
+  ]
+ },
+ {
+  "uid": "CHE434156518",
+  "sector": "real-estate",
+  "sector_confidence": 0.85,
+  "sector_rationale": "courtage, achat, vente, administration, promotion et gestion de biens immobiliers",
+  "segments": []
+ },
+ {
+  "uid": "CHE210711753",
+  "sector": "holding",
+  "sector_confidence": 0.95,
+  "sector_rationale": "prise, achat, vente, administration et gestion de participations",
+  "segments": []
+ },
+ {
+  "uid": "CHE437282711",
+  "sector": "legal-accounting",
+  "sector_confidence": 0.45,
+  "sector_rationale": "prestations dans le domaine financier et comptable",
+  "segments": []
+ },
+ {
+  "uid": "CHE483999522",
+  "sector": "consulting",
+  "sector_confidence": 0.7,
+  "sector_rationale": "conseil d'entreprise, prestations de marketing et introduction d'outils informatiques",
+  "segments": [
+   {
+    "segment": "ai-adopter",
+    "confidence": 0.4,
+    "rationale": "introduction d'outils informatiques pour augmenter la productivité"
+   }
+  ]
+ },
+ {
+  "uid": "CHE177669842",
+  "sector": "consulting",
+  "sector_confidence": 0.5,
+  "sector_rationale": "entreprise de conseils en affaires et gestion, services auxiliaires de bureaux",
+  "segments": []
+ },
+ {
+  "uid": "CHE202446649",
+  "sector": "wholesale-trade",
+  "sector_confidence": 0.45,
+  "sector_rationale": "achat, distribution et vente de systèmes et accessoires pour congrès et foires",
+  "segments": []
+ },
+ {
+  "uid": "CHE113477547",
+  "sector": "other",
+  "sector_confidence": 0.4,
+  "sector_rationale": "exploitation d'une entreprise multiservices: courtage, commerce, transport, location",
+  "segments": []
+ },
+ {
+  "uid": "CHE291730783",
+  "sector": "construction",
+  "sector_confidence": 0.75,
+  "sector_rationale": "exécution d'installations de courant fort et faible, contrôle des installations électriques",
+  "segments": []
+ },
+ {
+  "uid": "CHE112776177",
+  "sector": "construction",
+  "sector_confidence": 0.8,
+  "sector_rationale": "exploitation d'une entreprise de courant fort et courant faible",
+  "segments": []
+ },
+ {
+  "uid": "CHE204093183",
+  "sector": "holding",
+  "sector_confidence": 0.5,
+  "sector_rationale": "la prise de participation et l'animation dans toutes sociétés",
+  "segments": []
+ },
+ {
+  "uid": "CHE144297685",
+  "sector": "it-services",
+  "sector_confidence": 0.5,
+  "sector_rationale": "prestations dans le domaine de l'informatique, étude, conseil, assistance technique",
+  "segments": []
+ },
+ {
+  "uid": "CHE425896237",
+  "sector": "wholesale-trade",
+  "sector_confidence": 0.45,
+  "sector_rationale": "achat, vente, dépôt-vente, importation et exportation de véhicules automobiles",
+  "segments": []
+ },
+ {
+  "uid": "CHE481414488",
+  "sector": "legal-accounting",
+  "sector_confidence": 0.95,
+  "sector_rationale": "exploitation d'un cabinet d'avocat spécialisé dans l'arbitrage international",
+  "segments": [
+   {
+    "segment": "compliance-sector",
+    "confidence": 0.7,
+    "rationale": "cabinet d'avocat"
+   }
+  ]
+ },
+ {
+  "uid": "CHE112545146",
+  "sector": "it-services",
+  "sector_confidence": 0.9,
+  "sector_rationale": "fourniture de biens et services informatiques, infogérance d'infrastructure, intégration",
+  "segments": []
+ },
+ {
+  "uid": "CHE433615989",
+  "sector": "retail",
+  "sector_confidence": 0.45,
+  "sector_rationale": "vente de voitures et exploitation d'un garage, réparations et carrosserie",
+  "segments": [
+   {
+    "segment": "sme-owner",
+    "confidence": 0.5,
+    "rationale": "exploitation d'un garage"
+   }
+  ]
+ },
+ {
+  "uid": "CHE452960748",
+  "sector": "legal-accounting",
+  "sector_confidence": 0.5,
+  "sector_rationale": "tous services et opérations dans le domaine de la propriété intellectuelle",
+  "segments": []
+ },
+ {
+  "uid": "CHE113404399",
+  "sector": "real-estate",
+  "sector_confidence": 0.9,
+  "sector_rationale": "administration de copropriétés, gestion immobilière, conseils immobiliers, courtage",
+  "segments": []
+ },
+ {
+  "uid": "CHE454487697",
+  "sector": "hospitality",
+  "sector_confidence": 0.9,
+  "sector_rationale": "l'exploitation de cafés, bars et restaurants",
+  "segments": []
+ },
+ {
+  "uid": "CHE158301471",
+  "sector": "construction",
+  "sector_confidence": 0.9,
+  "sector_rationale": "travaux de plâtrerie et de staff, peinture, isolation, démolition",
+  "segments": []
+ },
+ {
+  "uid": "CHE390620454",
+  "sector": "construction",
+  "sector_confidence": 0.95,
+  "sector_rationale": "exploitation d'une entreprise générale du bâtiment, construction et rénovation",
+  "segments": []
+ },
+ {
+  "uid": "CHE316834716",
+  "sector": "marketing-media",
+  "sector_confidence": 0.8,
+  "sector_rationale": "média d'information spécialisé et prestataire de services événementiels",
+  "segments": []
+ },
+ {
+  "uid": "CHE114608510",
+  "sector": "consulting",
+  "sector_confidence": 0.45,
+  "sector_rationale": "activités dans le domaine du management d'entreprises commerciales ou industrielles",
+  "segments": []
+ },
+ {
+  "uid": "CHE232027205",
+  "sector": "agriculture",
+  "sector_confidence": 0.5,
+  "sector_rationale": "entretien et travaux de jardinage",
+  "segments": [
+   {
+    "segment": "sme-owner",
+    "confidence": 0.5,
+    "rationale": "petite entreprise de jardinage"
+   }
+  ]
+ },
+ {
+  "uid": "CHE340756293",
+  "sector": "construction",
+  "sector_confidence": 0.65,
+  "sector_rationale": "conception, réalisation, rénovation et maintenance de bâtiments",
+  "segments": []
+ },
+ {
+  "uid": "CHE115331771",
+  "sector": "construction",
+  "sector_confidence": 0.8,
+  "sector_rationale": "travaux liés à la menuiserie, à l'ébénisterie et à la rénovation des bâtiments",
+  "segments": []
+ },
+ {
+  "uid": "CHE474782981",
+  "sector": "real-estate",
+  "sector_confidence": 0.9,
+  "sector_rationale": "mandats de courtage, acquisition, vente, gestion et promotion de biens immobiliers",
+  "segments": []
+ },
+ {
+  "uid": "CHE456117834",
+  "sector": "construction",
+  "sector_confidence": 0.8,
+  "sector_rationale": "travaux de construction et rénovation, gypserie-peinture, plâtrerie",
+  "segments": []
+ },
+ {
+  "uid": "CHE481053284",
+  "sector": "consulting",
+  "sector_confidence": 0.45,
+  "sector_rationale": "consulting dans les domaines agroalimentaire, de l'importation et de l'exportation",
+  "segments": []
+ },
+ {
+  "uid": "CHE174197605",
+  "sector": "consulting",
+  "sector_confidence": 0.8,
+  "sector_rationale": "conseiller et accompagner les entreprises en vue de leur implantation sur des marchés émergents",
+  "segments": []
+ },
+ {
+  "uid": "CHE333687296",
+  "sector": "it-services",
+  "sector_confidence": 0.85,
+  "sector_rationale": "toute activité dans le domaine de l'informatique, commerce, conseils et développement",
+  "segments": [
+   {
+    "segment": "ai-adopter",
+    "confidence": 0.45,
+    "rationale": "développement informatique"
+   }
+  ]
+ },
+ {
+  "uid": "CHE138879554",
+  "sector": "health-care",
+  "sector_confidence": 0.45,
+  "sector_rationale": "fourniture d'appareils pour malentendants et accessoires",
+  "segments": []
+ },
+ {
+  "uid": "CHE114047379",
+  "sector": "retail",
+  "sector_confidence": 0.4,
+  "sector_rationale": "commercialisation d'appareils acoustiques",
+  "segments": []
+ },
+ {
+  "uid": "CHE404111876",
+  "sector": "engineering",
+  "sector_confidence": 0.8,
+  "sector_rationale": "bureau d'étude spécialisé en acoustique: études, mesures, expertises",
+  "segments": [
+   {
+    "segment": "data-driven",
+    "confidence": 0.4,
+    "rationale": "réalisation de mesures et d'expertises"
+   }
+  ]
+ },
+ {
+  "uid": "CHE493147207",
+  "sector": "hospitality",
+  "sector_confidence": 0.9,
+  "sector_rationale": "exploitation d'hôtels, bars, cafés, restaurants, tea-rooms",
+  "segments": []
+ },
+ {
+  "uid": "CHE236148612",
+  "sector": "holding",
+  "sector_confidence": 0.5,
+  "sector_rationale": "détention, gestion et réalisation de participations dans tous types d'entreprises",
+  "segments": []
+ },
+ {
+  "uid": "CHE110170696",
+  "sector": "real-estate",
+  "sector_confidence": 0.8,
+  "sector_rationale": "promotion, courtage et pilotage d'opérations immobilières",
+  "segments": []
+ },
+ {
+  "uid": "CHE191681084",
+  "sector": "engineering",
+  "sector_confidence": 0.5,
+  "sector_rationale": "mandats d'architecte, de pilotage et d'expertise",
+  "segments": []
+ },
+ {
+  "uid": "CHE487256609",
+  "sector": "construction",
+  "sector_confidence": 0.9,
+  "sector_rationale": "installation, transformation, dépannage et entretien d'installations sanitaires",
+  "segments": []
+ },
+ {
+  "uid": "CHE159340048",
+  "sector": "consulting",
+  "sector_confidence": 0.4,
+  "sector_rationale": "prestations de services et conseils dans le domaine du bâtiment et des énergies renouvelables",
+  "segments": []
+ },
+ {
+  "uid": "CHE212243214",
+  "sector": "finance",
+  "sector_confidence": 0.8,
+  "sector_rationale": "conseils, études et analyses dans le domaine financier, opérations de fusion-acquisition",
+  "segments": []
+ },
+ {
+  "uid": "CHE245599988",
+  "sector": "real-estate",
+  "sector_confidence": 0.5,
+  "sector_rationale": "prestations dans les domaines du développement immobilier et de l'assistance de maîtrise d'ouvrage",
+  "segments": []
+ },
+ {
+  "uid": "CHE135541047",
+  "sector": "it-services",
+  "sector_confidence": 0.8,
+  "sector_rationale": "conseils, services, formation et vente de matériel dans les technologies de l'information",
+  "segments": []
+ },
+ {
+  "uid": "CHE415695039",
+  "sector": "wholesale-trade",
+  "sector_confidence": 0.8,
+  "sector_rationale": "importation, vente, distribution d'horlogerie et de bijouterie",
+  "segments": []
+ },
+ {
+  "uid": "CHE109506298",
+  "sector": "it-services",
+  "sector_confidence": 0.8,
+  "sector_rationale": "création de sites Internet/Intranet, de serveurs Web et de logiciels",
+  "segments": [
+   {
+    "segment": "ai-adopter",
+    "confidence": 0.55,
+    "rationale": "création de sites et développement de logiciels"
+   }
+  ]
+ },
+ {
+  "uid": "CHE372475450",
+  "sector": "hospitality",
+  "sector_confidence": 0.9,
+  "sector_rationale": "exploitation d'établissements publics tels que cafés, bistrots, bars et restaurants",
+  "segments": []
+ },
+ {
+  "uid": "CHE466955943",
+  "sector": "health-care",
+  "sector_confidence": 0.85,
+  "sector_rationale": "exploitation d'un cabinet de physiothérapies, activités médicales et paramédicales",
+  "segments": [
+   {
+    "segment": "compliance-sector",
+    "confidence": 0.55,
+    "rationale": "activités médicales et paramédicales"
+   },
+   {
+    "segment": "sme-owner",
+    "confidence": 0.5,
+    "rationale": "cabinet exploité en propre"
+   }
+  ]
+ },
+ {
+  "uid": "CHE112169764",
+  "sector": "it-services",
+  "sector_confidence": 0.45,
+  "sector_rationale": "installations audiovisuelles, câblages, vidéo surveillance, sonorisation",
+  "segments": []
+ },
+ {
+  "uid": "CHE428959791",
+  "sector": "construction",
+  "sector_confidence": 0.7,
+  "sector_rationale": "l'exploitation d'une serrurerie",
+  "segments": []
+ },
+ {
+  "uid": "CHE351649282",
+  "sector": "construction",
+  "sector_confidence": 0.75,
+  "sector_rationale": "menuiserie, parqueterie, nettoyage et entretien dans le bâtiment",
+  "segments": []
+ },
+ {
+  "uid": "CHE445551712",
+  "sector": "it-services",
+  "sector_confidence": 0.45,
+  "sector_rationale": "installations audiovisuelles, câblages, vidéo surveillance, sonorisation",
+  "segments": []
+ },
+ {
+  "uid": "CHE402196666",
+  "sector": "it-services",
+  "sector_confidence": 0.9,
+  "sector_rationale": "conseils et services dans le domaine de la technologie de l'information, développement de logiciels",
+  "segments": [
+   {
+    "segment": "ai-adopter",
+    "confidence": 0.6,
+    "rationale": "développement de logiciels"
+   }
+  ]
+ },
+ {
+  "uid": "CHE102250608",
+  "sector": "wholesale-trade",
+  "sector_confidence": 0.55,
+  "sector_rationale": "commerce, représentation et distribution de produits chimiques, de matériel médical et de médicaments",
+  "segments": [
+   {
+    "segment": "compliance-sector",
+    "confidence": 0.4,
+    "rationale": "médicaments et matériel médical"
+   }
+  ]
+ },
+ {
+  "uid": "CHE169170285",
+  "sector": "wholesale-trade",
+  "sector_confidence": 0.45,
+  "sector_rationale": "vente, location et réparation de matériel industriel, magasin de pièces détachées",
+  "segments": []
+ },
+ {
+  "uid": "CHE235173464",
+  "sector": "wholesale-trade",
+  "sector_confidence": 0.7,
+  "sector_rationale": "commercialisation, vente et distribution de dispositifs médicaux et de médicaments",
+  "segments": [
+   {
+    "segment": "compliance-sector",
+    "confidence": 0.5,
+    "rationale": "dispositifs médicaux et médicaments"
+   }
+  ]
+ },
+ {
+  "uid": "CHE139877339",
+  "sector": "hospitality",
+  "sector_confidence": 0.4,
+  "sector_rationale": "intermédiation commerciale dans le domaine de l'hôtellerie et de la restauration",
+  "segments": []
+ },
+ {
+  "uid": "CHE111730385",
+  "sector": "wholesale-trade",
+  "sector_confidence": 0.45,
+  "sector_rationale": "représentation de tous biens de consommation, décoration et cadeau gourmand",
+  "segments": []
+ },
+ {
+  "uid": "CHE112971796",
+  "sector": "legal-accounting",
+  "sector_confidence": 0.95,
+  "sector_rationale": "exécution de mandats comptables, fiscaux, administratifs et de conseil",
+  "segments": []
+ },
+ {
+  "uid": "CHE489920051",
+  "sector": "real-estate",
+  "sector_confidence": 0.95,
+  "sector_rationale": "achat, vente, gérance, location et promotion de propriétés immobilières",
+  "segments": []
+ },
+ {
+  "uid": "CHE107613747",
+  "sector": "it-services",
+  "sector_confidence": 0.9,
+  "sector_rationale": "création de programmes, installation et étude de solutions informatiques",
+  "segments": [
+   {
+    "segment": "ai-adopter",
+    "confidence": 0.55,
+    "rationale": "création de programmes informatiques"
+   }
+  ]
+ },
+ {
+  "uid": "CHE113883404",
+  "sector": "marketing-media",
+  "sector_confidence": 0.5,
+  "sector_rationale": "atelier photographique noir-blanc et atelier de collage",
+  "segments": [
+   {
+    "segment": "sme-owner",
+    "confidence": 0.45,
+    "rationale": "petit atelier photographique"
+   }
+  ]
+ },
+ {
+  "uid": "CHE450297413",
+  "sector": "education",
+  "sector_confidence": 0.6,
+  "sector_rationale": "exploitation d'un centre de formation professionnelle biomécanique et psychocorporelle",
+  "segments": []
+ },
+ {
+  "uid": "CHE234052409",
+  "sector": "manufacturing",
+  "sector_confidence": 0.8,
+  "sector_rationale": "conception, développement et production de produits formulés avec des dérivés de pin",
+  "segments": []
+ },
+ {
+  "uid": "CHE393422844",
+  "sector": "construction",
+  "sector_confidence": 0.55,
+  "sector_rationale": "débouchage, dépannage, eaux usées et eaux claires, recherche de fuites",
+  "segments": []
+ },
+ {
+  "uid": "CHE233648574",
+  "sector": "health-care",
+  "sector_confidence": 0.5,
+  "sector_rationale": "recherche et exploitation de thérapies et psychothérapies dans la santé, sphère ORL",
+  "segments": [
+   {
+    "segment": "lean-startup",
+    "confidence": 0.4,
+    "rationale": "recherche, développement et technologies"
+   },
+   {
+    "segment": "compliance-sector",
+    "confidence": 0.4,
+    "rationale": "thérapies et psychothérapies"
+   }
+  ]
+ },
+ {
+  "uid": "CHE113947010",
+  "sector": "legal-accounting",
+  "sector_confidence": 0.95,
+  "sector_rationale": "mandats dans les domaines de la comptabilité, de la fiscalité et de l'administration des sociétés",
+  "segments": []
+ },
+ {
+  "uid": "CHE279161992",
+  "sector": "education",
+  "sector_confidence": 0.95,
+  "sector_rationale": "gérer une école privée dans le domaine de l'éducation des enfants et des jeunes",
+  "segments": []
+ },
+ {
+  "uid": "CHE231676832",
+  "sector": "it-services",
+  "sector_confidence": 0.75,
+  "sector_rationale": "prestations de services et formation en matière informatique, création et vente de logiciels",
+  "segments": [
+   {
+    "segment": "ai-adopter",
+    "confidence": 0.5,
+    "rationale": "création et vente de logiciels et de licences"
+   }
+  ]
+ },
+ {
+  "uid": "CHE475174695",
+  "sector": "construction",
+  "sector_confidence": 0.95,
+  "sector_rationale": "entreprise générale du bâtiment, gypserie, peinture, isolation de façade",
+  "segments": []
+ },
+ {
+  "uid": "CHE296789559",
+  "sector": "construction",
+  "sector_confidence": 0.8,
+  "sector_rationale": "installation, maintenance et dépannage de chauffages, ventilations et climatisations",
+  "segments": []
+ },
+ {
+  "uid": "CHE113196597",
+  "sector": "it-services",
+  "sector_confidence": 0.85,
+  "sector_rationale": "recherche, développement et commercialisation de programmes informatiques",
+  "segments": [
+   {
+    "segment": "ai-adopter",
+    "confidence": 0.6,
+    "rationale": "développement de programmes informatiques"
+   },
+   {
+    "segment": "lean-startup",
+    "confidence": 0.4,
+    "rationale": "but de produit technologique"
+   }
+  ]
+ },
+ {
+  "uid": "CHE184062088",
+  "sector": "it-services",
+  "sector_confidence": 0.5,
+  "sector_rationale": "conseil, intégration, conception et installation en domotique",
+  "segments": [
+   {
+    "segment": "ai-adopter",
+    "confidence": 0.5,
+    "rationale": "solutions de domotique"
+   }
+  ]
+ },
+ {
+  "uid": "CHE114555931",
+  "sector": "education",
+  "sector_confidence": 0.75,
+  "sector_rationale": "organisation de séjours linguistiques, enseignement et apprentissage des langues",
+  "segments": []
+ },
+ {
+  "uid": "CHE455254500",
+  "sector": "health-care",
+  "sector_confidence": 0.9,
+  "sector_rationale": "rééducation et prévention des troubles de la mobilité, programmes de réadaptation en physiothérapie",
+  "segments": [
+   {
+    "segment": "compliance-sector",
+    "confidence": 0.55,
+    "rationale": "prise en charge de patients"
+   }
+  ]
+ },
+ {
+  "uid": "CHE497294675",
+  "sector": "it-services",
+  "sector_confidence": 0.85,
+  "sector_rationale": "prestation de tous services et conseils informatiques et de télécommunication",
+  "segments": []
+ },
+ {
+  "uid": "CHE183783311",
+  "sector": "consulting",
+  "sector_confidence": 0.55,
+  "sector_rationale": "services dans le domaine du développement durable: conseil, gestion et mise en oeuvre de projets",
+  "segments": []
+ },
+ {
+  "uid": "CHE115980544",
+  "sector": "engineering",
+  "sector_confidence": 0.7,
+  "sector_rationale": "prestation d'architecture, BIM Building Information Modeling, modélisation 3D",
+  "segments": [
+   {
+    "segment": "ai-adopter",
+    "confidence": 0.45,
+    "rationale": "BIM, imagerie et modélisation 3D, visites virtuelles"
+   }
+  ]
+ },
+ {
+  "uid": "CHE480849808",
+  "sector": "health-care",
+  "sector_confidence": 0.75,
+  "sector_rationale": "exploitation d'un cabinet de médecine traditionnelle chinoise",
+  "segments": [
+   {
+    "segment": "sme-owner",
+    "confidence": 0.5,
+    "rationale": "cabinet exploité en propre"
+   }
+  ]
+ },
+ {
+  "uid": "CHE197511368",
+  "sector": "it-services",
+  "sector_confidence": 0.8,
+  "sector_rationale": "conseil en systèmes informatiques, conception, intégration et maintenance de logiciels",
+  "segments": [
+   {
+    "segment": "ai-adopter",
+    "confidence": 0.55,
+    "rationale": "conception et intégration de logiciels"
+   },
+   {
+    "segment": "data-driven",
+    "confidence": 0.4,
+    "rationale": "optimisation de la chaîne d'approvisionnement et des systèmes d'information"
+   }
+  ]
+ },
+ {
+  "uid": "CHE362660885",
+  "sector": "engineering",
+  "sector_confidence": 0.7,
+  "sector_rationale": "exploitation d'un bureau d'architectes et exécution de tous mandats qui s'y rattachent",
+  "segments": []
+ },
+ {
+  "uid": "CHE335428191",
+  "sector": "consulting",
+  "sector_confidence": 0.45,
+  "sector_rationale": "prodiguer tous conseils et assistance dans le domaine de la construction",
+  "segments": []
+ },
+ {
+  "uid": "CHE459629243",
+  "sector": "real-estate",
+  "sector_confidence": 0.9,
+  "sector_rationale": "conseil et service de gestion en matière immobilière, acquisition de biens immobiliers",
+  "segments": []
+ },
+ {
+  "uid": "CHE310714918",
+  "sector": "consulting",
+  "sector_confidence": 0.55,
+  "sector_rationale": "conseil, formation et audit dans la sécurité du transport de marchandises dangereuses",
+  "segments": [
+   {
+    "segment": "compliance-sector",
+    "confidence": 0.45,
+    "rationale": "sécurité réglementée du transport de marchandises dangereuses"
+   }
+  ]
+ },
+ {
+  "uid": "CHE364004692",
+  "sector": "health-care",
+  "sector_confidence": 0.95,
+  "sector_rationale": "prestations médicales rentrant dans le cadre de l'activité d'un médecin généraliste",
+  "segments": [
+   {
+    "segment": "compliance-sector",
+    "confidence": 0.7,
+    "rationale": "activité médicale réglementée"
+   },
+   {
+    "segment": "sme-owner",
+    "confidence": 0.5,
+    "rationale": "cabinet médical individuel"
+   }
+  ]
+ },
+ {
+  "uid": "CHE477818693",
+  "sector": "construction",
+  "sector_confidence": 0.9,
+  "sector_rationale": "la fourniture et la pose de tous types de sols",
+  "segments": []
+ },
+ {
+  "uid": "CHE245341094",
+  "sector": "health-care",
+  "sector_confidence": 0.45,
+  "sector_rationale": "recherche, développement et commercialisation de produits liés à la fertilité masculine",
+  "segments": [
+   {
+    "segment": "lean-startup",
+    "confidence": 0.5,
+    "rationale": "but de recherche et de produit"
+   },
+   {
+    "segment": "data-driven",
+    "confidence": 0.4,
+    "rationale": "recherche en santé reproductive"
+   },
+   {
+    "segment": "compliance-sector",
+    "confidence": 0.4,
+    "rationale": "domaine de la santé"
+   }
+  ]
+ },
+ {
+  "uid": "CHE250680805",
+  "sector": "personal-services",
+  "sector_confidence": 0.5,
+  "sector_rationale": "prestations dans les domaines de la protection et de la conciergerie de luxe",
+  "segments": []
+ },
+ {
+  "uid": "CHE485938589",
+  "sector": "consulting",
+  "sector_confidence": 0.85,
+  "sector_rationale": "conseil en développement organisationnel, en stratégie et gestion des ressources humaines",
+  "segments": []
+ },
+ {
+  "uid": "CHE192604198",
+  "sector": "engineering",
+  "sector_confidence": 0.85,
+  "sector_rationale": "exploitation d'un bureau d'architecture, d'urbanisme et de design",
+  "segments": []
+ },
+ {
+  "uid": "CHE208900144",
+  "sector": "consulting",
+  "sector_confidence": 0.75,
+  "sector_rationale": "assurer le développement commercial externalisé de sociétés",
+  "segments": []
+ },
+ {
+  "uid": "CHE146901434",
+  "sector": "it-services",
+  "sector_confidence": 0.75,
+  "sector_rationale": "vente et intégration de tous produits touchant à l'informatique, services et conseils",
+  "segments": []
+ },
+ {
+  "uid": "CHE218021184",
+  "sector": "consulting",
+  "sector_confidence": 0.8,
+  "sector_rationale": "conseil en stratégie, organisation, management, ressources humaines et gestion de projet",
+  "segments": []
+ },
+ {
+  "uid": "CHE486013412",
+  "sector": "construction",
+  "sector_confidence": 0.95,
+  "sector_rationale": "entreprise de rénovation du bâtiment, de plâtrerie et peinture",
+  "segments": []
+ },
+ {
+  "uid": "CHE439446219",
+  "sector": "consulting",
+  "sector_confidence": 0.4,
+  "sector_rationale": "services de conseil, import-export et commerce",
+  "segments": []
+ },
+ {
+  "uid": "CHE472367192",
+  "sector": "legal-accounting",
+  "sector_confidence": 0.9,
+  "sector_rationale": "mandats de révision, gestion comptable et activités dans le domaine de la fiscalité",
+  "segments": [
+   {
+    "segment": "compliance-sector",
+    "confidence": 0.5,
+    "rationale": "mandats de révision"
+   }
+  ]
+ },
+ {
+  "uid": "CHE145718258",
+  "sector": "marketing-media",
+  "sector_confidence": 0.85,
+  "sector_rationale": "conception et production d'images et de films pour le cinéma, internet et la télévision",
+  "segments": []
+ },
+ {
+  "uid": "CHE315083918",
+  "sector": "marketing-media",
+  "sector_confidence": 0.85,
+  "sector_rationale": "conception, réalisation et conseil dans le graphisme, la signalétique et les médias interactifs",
+  "segments": []
+ },
+ {
+  "uid": "CHE109474600",
+  "sector": "marketing-media",
+  "sector_confidence": 0.7,
+  "sector_rationale": "multimédia, publicité, communication, internet on line et programmation",
+  "segments": [
+   {
+    "segment": "ai-adopter",
+    "confidence": 0.4,
+    "rationale": "internet on line et programmation"
+   }
+  ]
+ },
+ {
+  "uid": "CHE316762494",
+  "sector": "engineering",
+  "sector_confidence": 0.6,
+  "sector_rationale": "exploitation d'un bureau d'architecture, d'urbanisme et de design",
+  "segments": []
+ },
+ {
+  "uid": "CHE445738854",
+  "sector": "transport-logistics",
+  "sector_confidence": 0.85,
+  "sector_rationale": "déménagement, manutention, entreposage, stockage, garde-meuble, archivage",
+  "segments": []
+ },
+ {
+  "uid": "CHE325072968",
+  "sector": "marketing-media",
+  "sector_confidence": 0.7,
+  "sector_rationale": "exploitation d'une agence de communication, création d'identité visuelle et supports marketing",
+  "segments": [
+   {
+    "segment": "ai-adopter",
+    "confidence": 0.5,
+    "rationale": "développement d'applications mobiles et de sites web"
+   }
+  ]
+ },
+ {
+  "uid": "CHE476369273",
+  "sector": "consulting",
+  "sector_confidence": 0.45,
+  "sector_rationale": "accompagnement d'autres entreprises afin de les rendre opérationnels sur le marché",
+  "segments": []
+ },
+ {
+  "uid": "CHE169477513",
+  "sector": "transport-logistics",
+  "sector_confidence": 0.9,
+  "sector_rationale": "le transport de personnes au moyen de tous véhicules",
+  "segments": []
+ },
+ {
+  "uid": "CHE482432052",
+  "sector": "manufacturing",
+  "sector_confidence": 0.55,
+  "sector_rationale": "conception, fabrication et installation de simulateurs de golf",
+  "segments": []
+ },
+ {
+  "uid": "CHE403929638",
+  "sector": "construction",
+  "sector_confidence": 0.95,
+  "sector_rationale": "exécution de tous travaux de construction et de rénovation, second oeuvre, peinture, plâtrerie",
+  "segments": []
+ },
+ {
+  "uid": "CHE273958986",
+  "sector": "finance",
+  "sector_confidence": 0.55,
+  "sector_rationale": "conseil, accompagnement et assistance en matière d'actifs digitaux",
+  "segments": [
+   {
+    "segment": "ai-adopter",
+    "confidence": 0.4,
+    "rationale": "actifs digitaux"
+   },
+   {
+    "segment": "compliance-sector",
+    "confidence": 0.4,
+    "rationale": "gestion d'actifs"
+   }
+  ]
+ },
+ {
+  "uid": "CHE213938856",
+  "sector": "consulting",
+  "sector_confidence": 0.8,
+  "sector_rationale": "conseil en développement, gestion et administration de PME",
+  "segments": []
+ },
+ {
+  "uid": "CHE440788939",
+  "sector": "marketing-media",
+  "sector_confidence": 0.9,
+  "sector_rationale": "production et postproduction audiovisuelle, tournage et montage de vidéos",
+  "segments": []
+ },
+ {
+  "uid": "CHE149361391",
+  "sector": "holding",
+  "sector_confidence": 0.85,
+  "sector_rationale": "acquisition, administration, gestion, cession de toute participation dans des sociétés",
+  "segments": []
+ },
+ {
+  "uid": "CHE378247551",
+  "sector": "hospitality",
+  "sector_confidence": 0.95,
+  "sector_rationale": "exploitation d'établissements publics tels que cafés, restaurants, bars, hôtels",
+  "segments": [
+   {
+    "segment": "sme-owner",
+    "confidence": 0.5,
+    "rationale": "exploitation d'un établissement public"
+   }
+  ]
+ },
+ {
+  "uid": "CHE161987302",
+  "sector": "it-services",
+  "sector_confidence": 0.9,
+  "sector_rationale": "étude, conseil et réalisation de projets dans le domaine de l'informatique et des télécommunications",
+  "segments": [
+   {
+    "segment": "ai-adopter",
+    "confidence": 0.55,
+    "rationale": "commerce de logiciels et réalisation de projets informatiques"
+   },
+   {
+    "segment": "data-driven",
+    "confidence": 0.4,
+    "rationale": "traitement et stockage de données"
+   }
+  ]
+ },
+ {
+  "uid": "CHE486071510",
+  "sector": "engineering",
+  "sector_confidence": 0.65,
+  "sector_rationale": "exploitation d'un bureau d'ingénierie, études et conseils dans l'environnement et la gestion des polluants",
+  "segments": [
+   {
+    "segment": "data-driven",
+    "confidence": 0.35,
+    "rationale": "études et gestion des polluants"
+   }
+  ]
+ },
+ {
+  "uid": "CHE481465741",
+  "sector": "marketing-media",
+  "sector_confidence": 0.7,
+  "sector_rationale": "maîtrise d'oeuvre en fabrication, impression et pose de supports de communication visuelle",
+  "segments": []
+ }
+]

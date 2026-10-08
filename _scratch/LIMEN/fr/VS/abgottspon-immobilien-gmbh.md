@@ -1,0 +1,36 @@
+# Abgottspon Immobilien GmbH
+
+| | |
+|---|---|
+| UID | `CHE168632722` |
+| Legal form | Société à responsabilité limitée |
+| Canton | VS (fr) |
+| Registered seat | Visp |
+| Address | Litternaweg 1, 3930 Visp |
+| Register status | ACTIVE |
+
+## Relevance for Limen
+
+**regie-letting** — lets property; the administration may sit elsewhere
+
+purpose names letting but not administration, name agrees
+
+## Where to write
+
+- not looked for yet
+
+No website resolved.
+
+## What the register says it does
+
+> Erwerb, Halten, Bewirtschaften und Vermieten von Immobilien. Kann Zweigniederlassungen und Tochtergesellschaften errichten und sich an anderen Gesellschaften beteiligen.
+
+## Sources
+
+- Register entry: https://www.zefix.admin.ch/fr/search/entity/list?name=CHE168632722&directLink=true
+- Grading: rule over the registered purpose, see `scripts/classify_regies.py`
+- Addresses: none held
+- Cascade: `intel.address_hunt`, outcome `not run`
+
+The register carries no warranty and has no legal effect; only the certified
+cantonal excerpt and the FOSC publication text are binding.

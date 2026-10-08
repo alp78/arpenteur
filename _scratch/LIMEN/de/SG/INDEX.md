@@ -1,0 +1,906 @@
+# SG · 894 firms
+
+
+## regie-core (457)
+
+manages property for third parties, so runs inspections routinely
+
+- [2S immo GmbH](2s-immo-gmbh.md) · Oberriet (SG) · `-`
+- [A13 Immo AG](a13-immo-ag.md) · Eggersriet · `-`
+- [A3 immo invest ag](a3-immo-invest-ag.md) · Mörschwil · ``
+- [AA-Immo AG](aa-immo-ag.md) · Kaltbrunn · `-`
+- [ABA Immo AG](aba-immo-ag.md) · Wil (SG) · `info@aba-immobilien.ch (+2)`
+- [ABN Immobilien & Holding AG](abn-immobilien-holding-ag.md) · St. Gallen · `-`
+- [ABPS Immobilien AG](abps-immobilien-ag.md) · Gossau (SG) · `-`
+- [ACSA IMMO AG](acsa-immo-ag.md) · Berneck · `-`
+- [ADZ Immobilien & Bau AG](adz-immobilien-bau-ag.md) · St. Gallen · `-`
+- [AF Immobilien GmbH](af-immobilien-gmbh.md) · Gommiswald · `af@afimmobilien.ch`
+- [ALMMA Immobilien & Verwaltungen GmbH](almma-immobilien-verwaltungen-gmbh.md) · Mels · `-`
+- [ALYVO Immobilien AG](alyvo-immobilien-ag.md) · Au (SG) · `-`
+- [AMA Liegenschaften AG](ama-liegenschaften-ag.md) · Altstätten · `-`
+- [AMASCO Immobilien AG](amasco-immobilien-ag.md) · Wil (SG) · `-`
+- [APEX Immobilien GmbH](apex-immobilien-gmbh.md) · St. Gallen · ``
+- [AREVO Immobilien AG](arevo-immobilien-ag.md) · Rorschach · `info@arevo.ch`
+- [AS Immo - Service AG](as-immo-service-ag.md) · St. Gallen · `info@asimmoservice.ch`
+- [ASMA Immobilien AG](asma-immobilien-ag.md) · Oberbüren · `info@asma-immobilien.ch`
+- [Alder-Camenisch Immobilien Einrichtungen AG](alder-camenisch-immobilien-einrichtungen-ag.md) · Goldach · `-`
+- [Alfonso Immobilien GmbH](alfonso-immobilien-gmbh.md) · Mörschwil · `info@alfonso-immo.ch`
+- [Alima Verwaltungs GmbH](alima-verwaltungs-gmbh.md) · Goldach · ``
+- [Allegra Immobilien AG](allegra-immobilien-ag.md) · Wil (SG) · `-`
+- [Altstadt Immobilien AG](altstadt-immobilien-ag.md) · Wil (SG) · `?`
+- [Alvier Liegenschaften AG](alvier-liegenschaften-ag.md) · Wartau · `-`
+- [Ammann Immobilien AG](ammann-immobilien-ag.md) · St. Gallen · ``
+- [Antigua Immobilien Ltd. Liability Co.](antigua-immobilien-ltd-liability-co.md) · St. Gallen · `-`
+- [Anuba-Immobilien AG](anuba-immobilien-ag.md) · St. Margrethen · ``
+- [Ararat Immobilien GmbH](ararat-immobilien-gmbh.md) · Buchs (SG) · `-`
+- [Aspero Immo + Treuhand AG](aspero-immo-treuhand-ag.md) · St. Gallen · `info@aspero-ag.ch`
+- [August Braunwalder Immobilien und Verwaltungs AG](august-braunwalder-immobilien-und-verwaltungs-ag.md) · Gossau (SG) · `?`
+- [Axalo Immobilien AG](axalo-immobilien-ag.md) · Buchs (SG) · ``
+- [B&U Steiner Immobilien AG](b-u-steiner-immobilien-ag.md) · Kaltbrunn · `info@steinerimmobilien.ch`
+- [BA Immobilien GmbH](ba-immobilien-gmbh.md) · St. Gallen · ``
+- [BAKAREDA Immobilien AG](bakareda-immobilien-ag.md) · Eschenbach (SG) · `-`
+- [BBB Immobilien AG](bbb-immobilien-ag.md) · Flums · `info@bbb-immobilien.ch`
+- [BBI Immobilien AG](bbi-immobilien-ag.md) · Au (SG) · `?`
+- [BEDA IMMO AG](beda-immo-ag.md) · Goldach · `brigitta@rothenstein.ch`
+- [BF Verwaltungs GmbH](bf-verwaltungs-gmbh.md) · Wil (SG) · `?`
+- [BROMA Immobilien AG](broma-immobilien-ag.md) · Vilters-Wangs · ``
+- [BWSA Immobilien AG](bwsa-immobilien-ag.md) · St. Gallen · `?`
+- [Baba Immobilien AG](baba-immobilien-ag.md) · St. Gallen · `-`
+- [Babilon Immobilien GmbH](babilon-immobilien-gmbh.md) · Oberuzwil · `?`
+- [Bachmann Liegenschaften AG](bachmann-liegenschaften-ag.md) · Uznach · `-`
+- [Bakija Immo AG](bakija-immo-ag.md) · Wil (SG) · `?`
+- [Bauhu Immobilien AG](bauhu-immobilien-ag.md) · St. Gallen · ``
+- [Baumann Immobilien AG](baumann-immobilien-ag.md) · St. Gallen · `info@baumannimmobilien.ch`
+- [BeBe Immobilien AG](bebe-immobilien-ag.md) · Rüthi (SG) · `?`
+- [Belsito Immobilien AG](belsito-immobilien-ag.md) · Rapperswil-Jona · `?`
+- [Benedikt Müller Immobilien GmbH](benedikt-muller-immobilien-gmbh.md) · Rapperswil-Jona · ``
+- [Beni Burtscher Immobilien AG](beni-burtscher-immobilien-ag.md) · Jonschwil · `-`
+- [Benz Immo SG GmbH](benz-immo-sg-gmbh.md) · Rorschacherberg · ``
+- [Bergholz AG Immobilien Wil](bergholz-ag-immobilien-wil.md) · Wil (SG) · `info@bergholz-immobilien.com`
+- [Better Life Immobilien AG](better-life-immobilien-ag.md) · Gossau (SG) · `info@better-life.ch`
+- [Bewira Immobilien AG](bewira-immobilien-ag.md) · Buchs (SG) · `?`
+- [Bidan Immo GmbH](bidan-immo-gmbh.md) · Goldach · ``
+- [Bleiker Verwaltungs AG](bleiker-verwaltungs-ag.md) · Bütschwil-Ganterschwil · `?`
+- [Bloom Immobilien GmbH](bloom-immobilien-gmbh.md) · Zuzwil (SG) · ``
+- [Bodan Immobilien- Handels + Verwaltungs AG](bodan-immobilien-handels-verwaltungs-ag.md) · Steinach · `?`
+- [Bolliger Verwaltungs AG](bolliger-verwaltungs-ag.md) · Rapperswil-Jona · `?`
+- [Bonetti Immobilien AG](bonetti-immobilien-ag.md) · Bad Ragaz · `?`
+- [Brehm Immobilien AG](brehm-immobilien-ag.md) · St. Gallen · ``
+- [Brimmo Liegenschaften AG](brimmo-liegenschaften-ag.md) · Zuzwil (SG) · `?`
+- [Brunner-Dobler Immobilien GmbH](brunner-dobler-immobilien-gmbh.md) · Neckertal · ``
+- [Brändle Immobilien GmbH](brandle-immobilien-gmbh.md) · St. Gallen · `?`
+- [Buech Verwaltungs GmbH](buech-verwaltungs-gmbh.md) · Rapperswil-Jona · `-`
+- [Buni Immobilien AG](buni-immobilien-ag.md) · Altstätten · `?`
+- [Buriet Liegenschaften AG](buriet-liegenschaften-ag.md) · Thal · ``
+- [Burlet-Immo GmbH](burlet-immo-gmbh.md) · Schmerikon · `?`
+- [Burlington Rutherford Immobilien AG](burlington-rutherford-immobilien-ag.md) · Buchs (SG) · `?`
+- [Bärlocher Immo AG](barlocher-immo-ag.md) · St. Gallen · `?`
+- [Bärtsch Immobilien und Verwaltungs AG](bartsch-immobilien-und-verwaltungs-ag.md) · Mels · `t.baertsch@bluewin.ch`
+- [Bühler-Immo Betriebs AG](buhler-immo-betriebs-ag.md) · Uzwil · `?`
+- [Bürge & Partner Immobilien GmbH](burge-partner-immobilien-gmbh.md) · Rapperswil-Jona · ``
+- [Büsser Verwaltungs AG](busser-verwaltungs-ag.md) · Rapperswil-Jona · `?`
+- [C.K.L Immobilien AG](c-k-l-immobilien-ag.md) · Bad Ragaz · ``
+- [CAN Immobilien GmbH](can-immobilien-gmbh.md) · St. Gallen · `?`
+- [CIG Conzept Immobilien AG](cig-conzept-immobilien-ag.md) · Au (SG) · `-`
+- [CMP Immo GmbH](cmp-immo-gmbh.md) · Niederhelfenschwil · `info@cmpimmo.ch`
+- [CN Verwaltungs GmbH](cn-verwaltungs-gmbh.md) · Wil (SG) · `?`
+- [Candrian Immo AG](candrian-immo-ag.md) · Gaiserwald · `?`
+- [Car Hotel Immobilien AG](car-hotel-immobilien-ag.md) · Sevelen · ``
+- [Cavegn 7188 Immo AG](cavegn-7188-immo-ag.md) · Rapperswil-Jona · `?`
+- [Centrum Immobilien AG](centrum-immobilien-ag.md) · Rapperswil-Jona · `info@centrum.immo`
+- [Charly's Immo AG](charly-s-immo-ag.md) · Wil (SG) · `info@charly-immo.ch`
+- [City Immo St.Gallen AG](city-immo-st-gallen-ag.md) · St. Gallen · `info@cityimmo.ch`
+- [Clavis Immobilien GmbH](clavis-immobilien-gmbh.md) · St. Gallen · `info@clavis-immo.ch`
+- [Cohen Immobilien AG](cohen-immobilien-ag.md) · Vilters-Wangs · ``
+- [Concept Liegenschaften AG](concept-liegenschaften-ag.md) · Häggenschwil · `?`
+- [Contex Verwaltungs AG](contex-verwaltungs-ag.md) · Rheineck · `info@prg-broker.ch (+2)`
+- [Cäsi Fink Immobilien GmbH](casi-fink-immobilien-gmbh.md) · Lütisburg · `?`
+- [DAMAMORI Immo GmbH](damamori-immo-gmbh.md) · Eschenbach (SG) · ``
+- [DF Treuhand und Verwaltungs AG](df-treuhand-und-verwaltungs-ag.md) · Wil (SG) · `mail@dftreuhand.ch`
+- [DICASA Immo Fürstenland GmbH](dicasa-immo-furstenland-gmbh.md) · Gossau (SG) · `info@dicasa.ch`
+- [Denzil Immo AG](denzil-immo-ag.md) · Niederhelfenschwil · `-`
+- [Die Immo AG](die-immo-ag.md) · St. Gallen · `info@dieimmo.ch`
+- [Die Immo Profi AG](die-immo-profi-ag.md) · Thal · `info@immo-profi.com`
+- [Dietziker Immobilien GmbH](dietziker-immobilien-gmbh.md) · Eschenbach (SG) · ``
+- [Dornen Immobilien AG](dornen-immobilien-ag.md) · Flums · `?`
+- [Dufour Immobilien AG](dufour-immobilien-ag.md) · Thal · ``
+- [Dust Immobilien AG](dust-immobilien-ag.md) · St. Gallen · `-`
+- [EBL Immobilien GmbH](ebl-immobilien-gmbh.md) · Niederhelfenschwil · `?`
+- [EBU Immo GmbH](ebu-immo-gmbh.md) · Gaiserwald · `?`
+- [ESD Immo AG](esd-immo-ag.md) · Wil (SG) · ``
+- [Ebeag Immobilien AG](ebeag-immobilien-ag.md) · St. Gallen · `info@ebeag-immobilien.com`
+- [Eberle Immobilien GmbH](eberle-immobilien-gmbh.md) · Kaltbrunn · ``
+- [Eberle Treuhand und Verwaltungs-AG](eberle-treuhand-und-verwaltungs-ag.md) · Mels · `-`
+- [Eckstein Immobilien AG](eckstein-immobilien-ag.md) · Flums · `info@eckstein.ch`
+- [Eichbühl Kempter Immobilien AG](eichbuhl-kempter-immobilien-ag.md) · Oberbüren · `?`
+- [Eisbär-Immobilien AG](eisbar-immobilien-ag.md) · Wil (SG) · ``
+- [Elbema Immobilien AG](elbema-immobilien-ag.md) · Rapperswil-Jona · `?`
+- [Elinvest Finanz und Immobilien AG](elinvest-finanz-und-immobilien-ag.md) · Uznach · `?`
+- [Emunah Immobilien AG](emunah-immobilien-ag.md) · Eschenbach (SG) · `-`
+- [Erag Immobilien AG](erag-immobilien-ag.md) · St. Gallen · `?`
+- [Erlen Verwaltungs AG](erlen-verwaltungs-ag.md) · Rapperswil-Jona · `?`
+- [Espart Liegenschaften Verwaltung AG](espart-liegenschaften-verwaltung-ag.md) · Rapperswil-Jona · `?`
+- [F + S Immobilien-Systeme AG](f-s-immobilien-systeme-ag.md) · Buchs (SG) · `?`
+- [F. Brändle Immo AG](f-brandle-immo-ag.md) · St. Gallen · `?`
+- [F. G. Immo. GmbH](f-g-immo-gmbh.md) · Buchs (SG) · `-`
+- [FALESI Immo AG](falesi-immo-ag.md) · Häggenschwil · `?`
+- [FDP Immo AG](fdp-immo-ag.md) · Widnau · `?`
+- [FEEL Immobilien GmbH](feel-immobilien-gmbh.md) · Buchs (SG) · ``
+- [FHW Immo AG](fhw-immo-ag.md) · St. Gallen · `?`
+- [FIT Immobilien AG](fit-immobilien-ag.md) · Mels · ``
+- [FMS Immo AG](fms-immo-ag.md) · Rorschach · `?`
+- [Farms Immo AG](farms-immo-ag.md) · Mels · `?`
+- [Federer Liegenschaften GmbH](federer-liegenschaften-gmbh.md) · Diepoldsau · `?`
+- [Felix Müller Immobilien AG](felix-muller-immobilien-ag.md) · St. Gallen · `?`
+- [Flurhof-Immobilien AG](flurhof-immobilien-ag.md) · Thal · `?`
+- [Flurweg Immobilien AG](flurweg-immobilien-ag.md) · Gams · ``
+- [Fontana Immo und Verwaltung AG](fontana-immo-und-verwaltung-ag.md) · Goldach · `?`
+- [Fratris Immobilien AG](fratris-immobilien-ag.md) · Diepoldsau · `info@fratris.ch`
+- [Freuler + Partner Immobilien GmbH](freuler-partner-immobilien-gmbh.md) · Vilters-Wangs · `?`
+- [Frigoli Immobilien GmbH](frigoli-immobilien-gmbh.md) · Nesslau · ``
+- [Futura Immo Invest AG](futura-immo-invest-ag.md) · Gossau (SG) · `?`
+- [Fürstenland Verwaltung GmbH](furstenland-verwaltung-gmbh.md) · Oberbüren · ``
+- [GAMA Immo AG](gama-immo-ag.md) · Oberriet (SG) · `?`
+- [GEMAG Immobilien AG](gemag-immobilien-ag.md) · St. Gallen · `info@gemag-immobilien.ch (+14)`
+- [GFT Immobilien AG](gft-immobilien-ag.md) · St. Gallen · `?`
+- [GHPS Immobilien AG](ghps-immobilien-ag.md) · Wil (SG) · ``
+- [GMÜR IMMO GMBH](gmur-immo-gmbh.md) · Bütschwil-Ganterschwil · `?`
+- [Galli Immo-Service AG](galli-immo-service-ag.md) · Jonschwil · `mila.zuber@galli-immo.ch (+13)`
+- [Gallus Liegenschaften AG](gallus-liegenschaften-ag.md) · Wittenbach · ``
+- [Ganahl Immobilien AG](ganahl-immobilien-ag.md) · Widnau · `?`
+- [Gani Immobilien AG](gani-immobilien-ag.md) · Buchs (SG) · `?`
+- [Gassner Immobilien AG](gassner-immobilien-ag.md) · Sevelen · `?`
+- [Geisser Immo AG](geisser-immo-ag.md) · Ebnat-Kappel · ``
+- [Geisser Immobilien AG](geisser-immobilien-ag.md) · Mörschwil · `?`
+- [Gema-Immobilien AG](gema-immobilien-ag.md) · Sargans · ``
+- [Genossenschaft Dorfladenliegenschaft Häggenschwil](genossenschaft-dorfladenliegenschaft-haggenschwil.md) · Häggenschwil · `?`
+- [Getrag-Immobilien GmbH](getrag-immobilien-gmbh.md) · Bütschwil-Ganterschwil · `info@getrag-immobilien.ch`
+- [Gewerbliche Liegenschaften AG](gewerbliche-liegenschaften-ag.md) · St. Gallen · `?`
+- [Giezendanner Immobilien AG Ebnat-Kappel (GIMAG)](giezendanner-immobilien-ag-ebnat-kappel-gimag.md) · Ebnat-Kappel · ``
+- [Glatthalde Immobilien AG](glatthalde-immobilien-ag.md) · Flawil · `?`
+- [Gonzen Liegenschaften AG](gonzen-liegenschaften-ag.md) · Wartau · ``
+- [Good Liegenschaften AG](good-liegenschaften-ag.md) · Mels · `?`
+- [Grubenmann Immobilien-Treuhand AG](grubenmann-immobilien-treuhand-ag.md) · Gaiserwald · `?`
+- [Grun Immobilien AG](grun-immobilien-ag.md) · Mels · `info@grunimmo.ch (+1)`
+- [Grundstein Immobilien AG](grundstein-immobilien-ag.md) · Gaiserwald · `info@grundstein-immobilien.com (+7)`
+- [Gähler Immobilien und Verwaltungs AG](gahler-immobilien-und-verwaltungs-ag.md) · Gossau (SG) · ``
+- [Götsch Immobilien GmbH](gotsch-immobilien-gmbh.md) · Gossau (SG) · `?`
+- [H + M Immo AG](h-m-immo-ag.md) · Gossau (SG) · ``
+- [HOPP-Immo AG](hopp-immo-ag.md) · Thal · `?`
+- [HRA Immobilien AG](hra-immobilien-ag.md) · Sargans · `?`
+- [HULFTEGG Finanz- und Verwaltungs AG](hulftegg-finanz-und-verwaltungs-ag.md) · Mosnang · `?`
+- [HaSchKe Immobilien GmbH](haschke-immobilien-gmbh.md) · Wil (SG) · ``
+- [Hagmann Immobilien AG](hagmann-immobilien-ag.md) · Rorschach · `?`
+- [Hanselmann Verwaltungs & Beratungs GmbH](hanselmann-verwaltungs-beratungs-gmbh.md) · Goldach · ``
+- [Hch. Vetsch Immobilien AG](hch-vetsch-immobilien-ag.md) · Grabs · `?`
+- [Helbling Liegenschaften AG](helbling-liegenschaften-ag.md) · Gaiserwald · `?`
+- [Herbag Immobilien AG](herbag-immobilien-ag.md) · Rapperswil-Jona · `?`
+- [Hermann J. Mayer Immobilien Treuhand AG](hermann-j-mayer-immobilien-treuhand-ag.md) · St. Margrethen · ``
+- [Heule Frei Verwaltungen AG](heule-frei-verwaltungen-ag.md) · Widnau · `?`
+- [Hinterwies Immobilien AG](hinterwies-immobilien-ag.md) · Eschenbach (SG) · ``
+- [Hof Immobilien AG](hof-immobilien-ag.md) · Lichtensteig · `?`
+- [Hofstetter Immobilien AG](hofstetter-immobilien-ag.md) · Rapperswil-Jona · `info@hofstetterimmobilien.ch`
+- [Holzegger Immobilien AG](holzegger-immobilien-ag.md) · Rapperswil-Jona · `?`
+- [Huber Immobilien- und Beteiligungs-AG](huber-immobilien-und-beteiligungs-ag.md) · St. Gallen · ``
+- [Huka Immobilien AG](huka-immobilien-ag.md) · Altstätten · `?`
+- [Hutter Immobilien AG](hutter-immobilien-ag.md) · Oberriet (SG) · ``
+- [Häne & Partner AG, Immobilien](hane-partner-ag-immobilien.md) · Rapperswil-Jona · `?`
+- [Häusli Immobilien GmbH](hausli-immobilien-gmbh.md) · Berneck · `?`
+- [IBSG AG](ibsg-ag.md) · Gossau (SG) · `info@ibsg.ch (+6)`
+- [IDZ Immobilien Dienstleistungszentrum AG](idz-immobilien-dienstleistungszentrum-ag.md) · Rapperswil-Jona · `markus.brand@idz.ch (+3)`
+- [IMMO Rheintal GmbH](immo-rheintal-gmbh.md) · Altstätten · `info@rheintal.com (+2)`
+- [IMMOVIDA Immo-Treuhand AG](immovida-immo-treuhand-ag.md) · Kirchberg (SG) · ``
+- [IRRI - Immobilien AG](irri-immobilien-ag.md) · Gossau (SG) · `?`
+- [Ideen in Holz Immo AG](ideen-in-holz-immo-ag.md) · Steinach · ``
+- [Ilgenwiese Immobilien AG](ilgenwiese-immobilien-ag.md) · Gossau (SG) · `?`
+- [Immo AG Sargans](immo-ag-sargans.md) · Sargans · `?`
+- [Immo Kampfer AG](immo-kampfer-ag.md) · Widnau · `?`
+- [Immo Plus Immobilien AG](immo-plus-immobilien-ag.md) · Rorschach · ``
+- [Immo Promag AG](immo-promag-ag.md) · St. Gallen · `?`
+- [Immo Schelmenturm AG](immo-schelmenturm-ag.md) · Altstätten · ``
+- [Immo Seepark AG](immo-seepark-ag.md) · Rorschach · `?`
+- [Immo V GmbH](immo-v-gmbh.md) · St. Gallen · `?`
+- [Immo- & GastroConcept GmbH](immo-gastroconcept-gmbh.md) · Balgach · `?`
+- [Immo-Center AG](immo-center-ag.md) · Wil (SG) · ``
+- [Immobilien Bernhard Simon-Strasse AG](immobilien-bernhard-simon-strasse-ag.md) · Bad Ragaz · `?`
+- [Immobilien Fürstenland AG](immobilien-furstenland-ag.md) · Zuzwil (SG) · ``
+- [Immobilien Treppenbau.ch AG](immobilien-treppenbau-ch-ag.md) · Bütschwil-Ganterschwil · `?`
+- [Immobilienstelle Schweiz AG](immobilienstelle-schweiz-ag.md) · Widnau · `?`
+- [Immoround Immobilien GmbH](immoround-immobilien-gmbh.md) · Balgach · `info@immoround.ch`
+- [Inex Handels- und Verwaltungs AG](inex-handels-und-verwaltungs-ag.md) · Sennwald · ``
+- [Investa Immobilien AG](investa-immobilien-ag.md) · Rorschach · `info@investa-immobilien.ch`
+- [Isgafols Immobilien GmbH](isgafols-immobilien-gmbh.md) · Gams · ``
+- [J.J. Meier Verwaltungs AG](j-j-meier-verwaltungs-ag.md) · St. Gallen · `?`
+- [JB Immo AG](jb-immo-ag.md) · Quarten · `?`
+- [JH Immo AG](jh-immo-ag.md) · Rapperswil-Jona · `?`
+- [Japako Immobilien AG](japako-immobilien-ag.md) · St. Gallen · ``
+- [JuKa Immobilien GmbH](juka-immobilien-gmbh.md) · Kaltbrunn · `?`
+- [Junginger Bestattungen + Immo AG](junginger-bestattungen-immo-ag.md) · Walenstadt · ``
+- [K & P Treuhand & Immobilien GmbH](k-p-treuhand-immobilien-gmbh.md) · Buchs (SG) · `?`
+- [KHG Immo AG](khg-immo-ag.md) · Flawil · `flawil@khg-immo.ch (+4)`
+- [KNG Liegenschaften AG](kng-liegenschaften-ag.md) · Weesen · `?`
+- [Kabashi Immobilien AG](kabashi-immobilien-ag.md) · Kaltbrunn · ``
+- [Kaltwerk Immo AG](kaltwerk-immo-ag.md) · Kaltbrunn · `?`
+- [Kani Immo GmbH](kani-immo-gmbh.md) · St. Gallen · ``
+- [Kansani Immobilien AG](kansani-immobilien-ag.md) · St. Gallen · `info@kansani.ch`
+- [Karl Roos Immobilien AG](karl-roos-immobilien-ag.md) · Kaltbrunn · `info@karlroos.com`
+- [Karl-H Immo AG](karl-h-immo-ag.md) · Wartau · `?`
+- [Karrer Immobilien-Treuhand AG](karrer-immobilien-treuhand-ag.md) · St. Gallen · ``
+- [Katvan Immo AG](katvan-immo-ag.md) · Buchs (SG) · `?`
+- [Kelsa Liegenschaften AG](kelsa-liegenschaften-ag.md) · Gommiswald · ``
+- [Kempf Immobilien GmbH](kempf-immobilien-gmbh.md) · Gossau (SG) · `?`
+- [Kesseli Immobilien AG](kesseli-immobilien-ag.md) · Mels · `?`
+- [Kirana Immobilien AG](kirana-immobilien-ag.md) · Diepoldsau · `info@kirana.ch`
+- [Klosterhof-Immobilien AG](klosterhof-immobilien-ag.md) · St. Gallen · ``
+- [Koller Bau und Immobilien GmbH](koller-bau-und-immobilien-gmbh.md) · St. Margrethen · `info@koller-bau.ch`
+- [Koller Family Immo AG](koller-family-immo-ag.md) · Gossau (SG) · ``
+- [Krone Immo GmbH](krone-immo-gmbh.md) · Zuzwil (SG) · `?`
+- [Kuster Immobilien AG](kuster-immobilien-ag.md) · Wil (SG) · `info@kuster-immobilien.ch`
+- [Kuster Immobilienmanagement GmbH](kuster-immobilienmanagement-gmbh.md) · Schmerikon · `?`
+- [Käser Immobilien AG](kaser-immobilien-ag.md) · St. Gallen · ``
+- [LAASS Immobilien AG](laass-immobilien-ag.md) · Gossau (SG) · `?`
+- [LAIMA Immobilien GmbH](laima-immobilien-gmbh.md) · Oberuzwil · ``
+- [LBL Immo AG](lbl-immo-ag.md) · Wittenbach · `?`
+- [LEVA - Immobilien AG](leva-immobilien-ag.md) · Wil (SG) · `info@leva-immobilien.ch`
+- [LIV Immobilien AG](liv-immobilien-ag.md) · Wil (SG) · `info@liv-immobilien.ch`
+- [LRS Immobilien AG](lrs-immobilien-ag.md) · Wittenbach · ``
+- [LT Immo Group AG](lt-immo-group-ag.md) · Uznach · `?`
+- [Langenegger Verwaltungen GmbH](langenegger-verwaltungen-gmbh.md) · Oberriet (SG) · ``
+- [Lavtina Immobilien AG](lavtina-immobilien-ag.md) · Mels · `?`
+- [Lenoir Immobilien AG](lenoir-immobilien-ag.md) · St. Gallen · `?`
+- [Likona Verwaltungs GmbH](likona-verwaltungs-gmbh.md) · Gossau (SG) · `?`
+- [LinVerwaltung AG](linverwaltung-ag.md) · St. Gallen · ``
+- [Lindenhof Liegenschaften AG](lindenhof-liegenschaften-ag.md) · Wil (SG) · `?`
+- [Liora Immobilien GmbH](liora-immobilien-gmbh.md) · Buchs (SG) · ``
+- [Lisa Immobilien AG](lisa-immobilien-ag.md) · Nesslau · `info@lisaimmobilien.com`
+- [LivingMoments Immobilien AG](livingmoments-immobilien-ag.md) · Sargans · `info@livingmoments.ch`
+- [Livion Immobilien GmbH](livion-immobilien-gmbh.md) · Altstätten · `info@livionimmobilien.ch (+3)`
+- [LoMando Immo AG](lomando-immo-ag.md) · Wattwil · ``
+- [Los Arcos Immobilien GmbH](los-arcos-immobilien-gmbh.md) · Eschenbach (SG) · `info@losarcos.com`
+- [LuXe Immobilien AG](luxe-immobilien-ag.md) · Gams · ``
+- [Löwengasse Immobilien AG](lowengasse-immobilien-ag.md) · Wil (SG) · `?`
+- [Lüchinger Immobilien AG](luchinger-immobilien-ag.md) · Oberriet (SG) · `?`
+- [MATAY Immo-Bau GmbH](matay-immo-bau-gmbh.md) · Sennwald · `?`
+- [MB Verwaltung GmbH](mb-verwaltung-gmbh.md) · Goldach · ``
+- [MCR Immobilien AG](mcr-immobilien-ag.md) · Thal · `?`
+- [MELA Immo AG](mela-immo-ag.md) · Rüthi (SG) · ``
+- [MOWEI Immo AG](mowei-immo-ag.md) · Goldach · `?`
+- [MW Immo GmbH](mw-immo-gmbh.md) · Uzwil · `?`
+- [MW Immobilien AG](mw-immobilien-ag.md) · Grabs · `?`
+- [Martin Bau- und Verwaltungs AG](martin-bau-und-verwaltungs-ag.md) · Mörschwil · ``
+- [Marty Immobilien AG](marty-immobilien-ag.md) · Wartau · `?`
+- [Mattle Immobilien AG](mattle-immobilien-ag.md) · St. Gallen · `inbox@mattle-immo.ch`
+- [Mayer Liegenschaften AG](mayer-liegenschaften-ag.md) · Rorschach · `?`
+- [Menzi Immobilien AG](menzi-immobilien-ag.md) · Wil (SG) · `kontakt@menzi-immobilien.ch`
+- [MiaCasa Immobilien AG](miacasa-immobilien-ag.md) · Rapperswil-Jona · `info@miacasaimmobilien.ch`
+- [Midema Immobilien GmbH](midema-immobilien-gmbh.md) · St. Margrethen · ``
+- [Momo Immobilien AG](momo-immobilien-ag.md) · Schmerikon · `?`
+- [Mondal-Immo GmbH](mondal-immo-gmbh.md) · Wittenbach · ``
+- [Monopol Immobilien AG](monopol-immobilien-ag.md) · Rapperswil-Jona · `?`
+- [Moosacker Immobilien AG](moosacker-immobilien-ag.md) · Balgach · `?`
+- [Mun & Partner Immobilien GmbH](mun-partner-immobilien-gmbh.md) · Altstätten · `k.mun@mun-partner.ch (+1)`
+- [Myrthen Immobilien AG](myrthen-immobilien-ag.md) · St. Gallen · `?`
+- [Möven Immobilien AG](moven-immobilien-ag.md) · Rapperswil-Jona · ``
+- [Müller Verwaltungs AG](muller-verwaltungs-ag.md) · Rapperswil-Jona · `?`
+- [MüllerMolinari Immobilien AG](mullermolinari-immobilien-ag.md) · Rorschacherberg · ``
+- [N & B Immobilien AG](n-b-immobilien-ag.md) · Oberuzwil · `?`
+- [NBG Immo AG](nbg-immo-ag.md) · Uzwil · `?`
+- [NTB Immobilien AG](ntb-immobilien-ag.md) · Flawil · `?`
+- [Nebensee Immobilien AG](nebensee-immobilien-ag.md) · Quarten · ``
+- [Noka Immobilien AG](noka-immobilien-ag.md) · Wil (SG) · `info@noka-immobilien.ch`
+- [Nüesch GmbH, Immobilien](nuesch-gmbh-immobilien.md) · Widnau · ``
+- [OLAC Immobilien AG](olac-immobilien-ag.md) · Wattwil · `?`
+- [OSAG Immobilien AG](osag-immobilien-ag.md) · St. Gallen · `?`
+- [OSWIT Immobilien AG](oswit-immobilien-ag.md) · Wil (SG) · `?`
+- [OVB Oberdorfer Verwaltungs AG](ovb-oberdorfer-verwaltungs-ag.md) · Mosnang · ``
+- [Oberdorf Verwaltungs AG](oberdorf-verwaltungs-ag.md) · Benken (SG) · `?`
+- [Oberhänsli Immobilien AG](oberhansli-immobilien-ag.md) · Mosnang · ``
+- [Ostblick Immobilien AG](ostblick-immobilien-ag.md) · Gossau (SG) · `?`
+- [Ott Liegenschaften AG](ott-liegenschaften-ag.md) · Gaiserwald · `?`
+- [PEGI Immobilien GmbH](pegi-immobilien-gmbh.md) · Sennwald · `?`
+- [PFISTER & AMMONN IMMO-MANAGEMENT AG](pfister-ammonn-immo-management-ag.md) · Wil (SG) · `?`
+- [PHM Immobilien AG](phm-immobilien-ag.md) · Diepoldsau · `?`
+- [PHV Immo GmbH](phv-immo-gmbh.md) · Kirchberg (SG) · ``
+- [PML Immo GmbH](pml-immo-gmbh.md) · Niederhelfenschwil · `?`
+- [PRILAX Immobilien AG](prilax-immobilien-ag.md) · Gams · `?`
+- [PRO Immobilis GmbH](pro-immobilis-gmbh.md) · Bad Ragaz · `?`
+- [PROPERTY Verwaltungen GmbH](property-verwaltungen-gmbh.md) · Thal · ``
+- [PS Immo Invest GmbH](ps-immo-invest-gmbh.md) · Flawil · `?`
+- [PSB Immobilien AG](psb-immobilien-ag.md) · Goldach · ``
+- [ParaGraf Immobilien GmbH](paragraf-immobilien-gmbh.md) · Balgach · `?`
+- [Parasol Immobilien GmbH](parasol-immobilien-gmbh.md) · Sennwald · `?`
+- [Parkett Perfekt Immobilien GmbH](parkett-perfekt-immobilien-gmbh.md) · Wattwil · `info@parkettperfekt.ch`
+- [Paus Immo AG](paus-immo-ag.md) · Tübach · ``
+- [Pavesi Immobilien GmbH](pavesi-immobilien-gmbh.md) · Jonschwil · `?`
+- [Pemat Immobilien AG](pemat-immobilien-ag.md) · Oberriet (SG) · ``
+- [Performance Immobilien-Treuhand GmbH](performance-immobilien-treuhand-gmbh.md) · Uznach · `info@performance-immobilien-treuhand.ch`
+- [Peter Baumgartner Bau- und Verwaltungs-AG](peter-baumgartner-bau-und-verwaltungs-ag.md) · St. Gallen · `info@peterbaumgartner.com`
+- [Physio-Ost Immobilien GmbH](physio-ost-immobilien-gmbh.md) · Wartau · `info@physio.ch`
+- [Pondis Immo AG](pondis-immo-ag.md) · Rorschach · ``
+- [Prefera Immobilien AG](prefera-immobilien-ag.md) · Sargans · `marla.ott@prefera.ch (+9)`
+- [Pro Immo 24 AG](pro-immo-24-ag.md) · Schänis · ``
+- [Probau Immobilien AG](probau-immobilien-ag.md) · Altstätten · `?`
+- [Proma Immobilien AG](proma-immobilien-ag.md) · St. Gallen · `?`
+- [Pronto Liegenschaften AG](pronto-liegenschaften-ag.md) · St. Gallen · `?`
+- [Propisuisse Immobilien AG](propisuisse-immobilien-ag.md) · Thal · ``
+- [Püntener Immobilien AG](puntener-immobilien-ag.md) · Uzwil · `?`
+- [R. Schlegel Immobilien AG](r-schlegel-immobilien-ag.md) · Kirchberg (SG) · ``
+- [RAPP IMMOBILIEN MANAGEMENT AG](rapp-immobilien-management-ag.md) · Wil (SG) · `?`
+- [RESU Bau + Immo GmbH](resu-bau-immo-gmbh.md) · St. Gallen · `?`
+- [RH Verwaltungen GmbH](rh-verwaltungen-gmbh.md) · Goldach · `office@rh-verwaltungen.ch (+2)`
+- [RIMET Immobilien AG](rimet-immobilien-ag.md) · Gaiserwald · ``
+- [RMCH Immobilien GmbH](rmch-immobilien-gmbh.md) · Wattwil · `?`
+- [RMD Immobilien GmbH](rmd-immobilien-gmbh.md) · Diepoldsau · ``
+- [RS Immo GmbH](rs-immo-gmbh.md) · Gossau (SG) · `?`
+- [RT Verwaltungs AG](rt-verwaltungs-ag.md) · Altstätten · `treuhand@rtag.ch (+37)`
+- [RUWIT Immobilien AG](ruwit-immobilien-ag.md) · Wittenbach · `?`
+- [Raiffeisen Immo AG](raiffeisen-immo-ag.md) · St. Gallen · `?`
+- [ReFix Immobilien AG](refix-immobilien-ag.md) · St. Gallen · `?`
+- [Rebtho Immobilien AG](rebtho-immobilien-ag.md) · Wittenbach · ``
+- [Rehkate, Sutter Immobilien AG St. Gallen](rehkate-sutter-immobilien-ag-st-gallen.md) · St. Gallen · `?`
+- [Relex Immobilien AG](relex-immobilien-ag.md) · Rapperswil-Jona · `?`
+- [René Metzler Immobilien-Treuhand AG](rene-metzler-immobilien-treuhand-ag.md) · Mörschwil · `?`
+- [Rhomberg Immobilien AG](rhomberg-immobilien-ag.md) · Marbach (SG) · `?`
+- [Ri-Ma Immobilien GmbH](ri-ma-immobilien-gmbh.md) · Widnau · `?`
+- [Rieben & Partner Immobilien AG](rieben-partner-immobilien-ag.md) · Rapperswil-Jona · `?`
+- [Riedl Immo GmbH](riedl-immo-gmbh.md) · Mörschwil · `?`
+- [RiiSev immo gmbh](riisev-immo-gmbh.md) · Sevelen · `info@riisevimmo.ch`
+- [Rimle Immobilien GmbH](rimle-immobilien-gmbh.md) · Wil (SG) · `?`
+- [Robert Küng Verwaltungs AG](robert-kung-verwaltungs-ag.md) · Rapperswil-Jona · ``
+- [Roosen Immo AG](roosen-immo-ag.md) · Altstätten · `?`
+- [Rossi Immo AG](rossi-immo-ag.md) · St. Gallen · ``
+- [Rotmonten Immobilien AG](rotmonten-immobilien-ag.md) · St. Gallen · `info@rotmonten.ch`
+- [Ruhberg Immobilien AG](ruhberg-immobilien-ag.md) · Mörschwil · `?`
+- [Rundblick Immobilien AG](rundblick-immobilien-ag.md) · Gaiserwald · `?`
+- [Rüdisüli Immobilien AG](rudisuli-immobilien-ag.md) · Rapperswil-Jona · ``
+- [SAM Immo Schenk GmbH](sam-immo-schenk-gmbh.md) · Degersheim · `?`
+- [SB2 Immo GmbH](sb2-immo-gmbh.md) · Au (SG) · ``
+- [SBC Immobilien AG](sbc-immobilien-ag.md) · Sargans · `?`
+- [SFC Immo AG SG](sfc-immo-ag-sg.md) · Uznach · `info@sfc-immo.com`
+- [SIBAMA Immobilien AG](sibama-immobilien-ag.md) · Mörschwil · `?`
+- [SM Bau Immo AG](sm-bau-immo-ag.md) · Zuzwil (SG) · ``
+- [STIHA Immobilien AG](stiha-immobilien-ag.md) · St. Gallen · `?`
+- [SUJORI Immobilien AG](sujori-immobilien-ag.md) · Gaiserwald · ``
+- [SUM Immobilien GmbH](sum-immobilien-gmbh.md) · Diepoldsau · `?`
+- [Sanor Immobilien Aktiengesellschaft](sanor-immobilien-aktiengesellschaft.md) · Rapperswil-Jona · `?`
+- [Scherrer Verwaltungs AG](scherrer-verwaltungs-ag.md) · Niederhelfenschwil · `?`
+- [Schlegel Immo GmbH](schlegel-immo-gmbh.md) · Mels · ``
+- [Schlegel Universalbau Immobilien GmbH](schlegel-universalbau-immobilien-gmbh.md) · Walenstadt · `?`
+- [Schmuckli Immobilien AG](schmuckli-immobilien-ag.md) · Wil (SG) · ``
+- [Schnegger Immobilien AG](schnegger-immobilien-ag.md) · Altstätten · `?`
+- [Schär Immobilien AG](schar-immobilien-ag.md) · Wil (SG) · `?`
+- [SeVa Immobilien GmbH](seva-immobilien-gmbh.md) · Sevelen · `?`
+- [Seaar Immobilien AG](seaar-immobilien-ag.md) · Flums · ``
+- [Siag Immobilien AG](siag-immobilien-ag.md) · St. Gallen · `?`
+- [Siling Immo GmbH](siling-immo-gmbh.md) · Gossau (SG) · ``
+- [Silutopia Immobilien GmbH](silutopia-immobilien-gmbh.md) · Gommiswald · `?`
+- [Silvan Meile Immobilien GmbH](silvan-meile-immobilien-gmbh.md) · Lichtensteig · `architektur@silvanmeile.ch`
+- [Simoness - Verwaltungs GmbH](simoness-verwaltungs-gmbh.md) · Rapperswil-Jona · `?`
+- [Skyline Immobilien GmbH](skyline-immobilien-gmbh.md) · Rapperswil-Jona · ``
+- [Sonnenberg Immobilien + Verwaltungs AG Bütschwil](sonnenberg-immobilien-verwaltungs-ag-butschwil.md) · Bütschwil-Ganterschwil · `?`
+- [Spatium Immobilien AG](spatium-immobilien-ag.md) · St. Gallen · ``
+- [St. Galler Immobilien AG](st-galler-immobilien-ag.md) · St. Gallen · `hans@stgaller.ch (+3)`
+- [Stadtbach Immobilien AG](stadtbach-immobilien-ag.md) · Rapperswil-Jona · `info@stadtbach-immobilien.ch`
+- [Stamo Immo AG](stamo-immo-ag.md) · Wittenbach · `?`
+- [Stampf Immobilien GmbH](stampf-immobilien-gmbh.md) · Schmerikon · ``
+- [Starkenbach Immo GmbH](starkenbach-immo-gmbh.md) · Wildhaus-Alt St. Johann · `info@starkenbach.ch`
+- [Starmag Immo AG](starmag-immo-ag.md) · Jonschwil · ``
+- [Staub Immobilien AG](staub-immobilien-ag.md) · St. Gallen · `info@staub-immobilien.com`
+- [Steinemann Immobilien AG](steinemann-immobilien-ag.md) · St. Gallen · `?`
+- [Steinemann Verwaltungen AG](steinemann-verwaltungen-ag.md) · St. Gallen · `info@steinemann-verwaltungen.ch`
+- [Studer Immo AG, Goldach](studer-immo-ag-goldach.md) · Goldach · ``
+- [Stump Immobilien AG](stump-immobilien-ag.md) · Thal · `?`
+- [Städis IMMO AG](stadis-immo-ag.md) · Widnau · ``
+- [Sulser Immo AG](sulser-immo-ag.md) · St. Gallen · `?`
+- [Susan Keller Immobilien GmbH](susan-keller-immobilien-gmbh.md) · Buchs (SG) · `info@susankeller.com`
+- [SwissAlp Immobilien AG](swissalp-immobilien-ag.md) · Buchs (SG) · `?`
+- [TAURUS AG, Immobilien](taurus-ag-immobilien.md) · Mels · ``
+- [TEGRA Immo AG](tegra-immo-ag.md) · St. Gallen · `?`
+- [TI Terza Immobilien GmbH](ti-terza-immobilien-gmbh.md) · Quarten · ``
+- [TRÜMPY IMMO GmbH](trumpy-immo-gmbh.md) · Rapperswil-Jona · `?`
+- [Tagblatt Immobilien AG](tagblatt-immobilien-ag.md) · Wil (SG) · `?`
+- [Techex Immobilien AG](techex-immobilien-ag.md) · Kirchberg (SG) · `?`
+- [Tino Immo AG](tino-immo-ag.md) · Steinach · ``
+- [Trecono Immobilien AG](trecono-immobilien-ag.md) · Goldach · `info@trecono.ch (+5)`
+- [Trunz Immobilien AG](trunz-immobilien-ag.md) · Wittenbach · ``
+- [Trusa Immobilien AG](trusa-immobilien-ag.md) · Sennwald · `?`
+- [Trust Plus Immobilien AG](trust-plus-immobilien-ag.md) · Wil (SG) · `info@trustplus.com`
+- [Tschumper Immobilien AG](tschumper-immobilien-ag.md) · Mosnang · `?`
+- [UB Immo AG](ub-immo-ag.md) · St. Gallen · ``
+- [UB Immobilien & Beratung AG](ub-immobilien-beratung-ag.md) · Rapperswil-Jona · `?`
+- [UHO Immobilien GmbH](uho-immobilien-gmbh.md) · Mosnang · ``
+- [V & V Immo GmbH](v-v-immo-gmbh.md) · St. Margrethen · `?`
+- [VID AG Verwaltungen - Immobilien Dienstleistungen](vid-ag-verwaltungen-immobilien-dienstleistungen.md) · Uzwil · `?`
+- [Vermoplan Immobilien AG](vermoplan-immobilien-ag.md) · Uznach · `info@vermoplan.ch (+6)`
+- [Verwaltungen-Hohl AG](verwaltungen-hohl-ag.md) · Uzwil · ``
+- [Vetsch Marty Liegenschaften AG](vetsch-marty-liegenschaften-ag.md) · Wartau · `?`
+- [ViNa Immo AG](vina-immo-ag.md) · Quarten · ``
+- [Viresta Immobilien AG](viresta-immobilien-ag.md) · Jonschwil · `?`
+- [Visio Immobilien GmbH](visio-immobilien-gmbh.md) · St. Gallen · `?`
+- [Vistareal Immobilien AG](vistareal-immobilien-ag.md) · St. Gallen · `?`
+- [Vivantum Immobilien AG](vivantum-immobilien-ag.md) · Thal · ``
+- [WAWO Immo AG](wawo-immo-ag.md) · Oberriet (SG) · `?`
+- [WBK Immobilien AG](wbk-immobilien-ag.md) · Mels · ``
+- [WG3 Immobilien Investment AG](wg3-immobilien-investment-ag.md) · St. Gallen · `?`
+- [WIB Immobilien GmbH](wib-immobilien-gmbh.md) · Wil (SG) · `?`
+- [WIFAG Immo AG](wifag-immo-ag.md) · St. Gallen · `?`
+- [Wagen Immobilien AG](wagen-immobilien-ag.md) · Rapperswil-Jona · ``
+- [Warth Immobilien AG](warth-immobilien-ag.md) · Rapperswil-Jona · `?`
+- [WeTha Immo GmbH](wetha-immo-gmbh.md) · Kirchberg (SG) · ``
+- [Wealth Immobilien AG](wealth-immobilien-ag.md) · St. Gallen · `?`
+- [Weber Dörfli Immobilien AG](weber-dorfli-immobilien-ag.md) · Jonschwil · `?`
+- [Weber Immo + Handel GmbH](weber-immo-handel-gmbh.md) · Kirchberg (SG) · `?`
+- [Weibel Immobilien AG](weibel-immobilien-ag.md) · Tübach · ``
+- [Wettstein & Partner Immobilien AG](wettstein-partner-immobilien-ag.md) · Rapperswil-Jona · `info@wettstein.ch (+11)`
+- [Winkel 2b Immobilien AG](winkel-2b-immobilien-ag.md) · Oberbüren · ``
+- [Wipag-Immobilien AG](wipag-immobilien-ag.md) · St. Gallen · `info@wipagimmobilien.ch`
+- [Wissmann Immobilien AG](wissmann-immobilien-ag.md) · Flawil · `info@wissmann-immobilien.ch`
+- [Wolfgang Immobilien AG](wolfgang-immobilien-ag.md) · Oberuzwil · `info@wolfgang.ch`
+- [ZMBC Immobilienmanagement GmbH](zmbc-immobilienmanagement-gmbh.md) · St. Margrethen · ``
+- [ZORA Immo GmbH](zora-immo-gmbh.md) · Goldach · `?`
+- [ZUBAG Immobilien AG](zubag-immobilien-ag.md) · Gommiswald · ``
+- [Zehnder Immobilien Wil AG](zehnder-immobilien-wil-ag.md) · Wil (SG) · `info@zehnderimmobilien.com`
+- [Zen Immo+Bau AG](zen-immo-bau-ag.md) · Gaiserwald · `info@zenimmo.com`
+- [Zwerit Immo GmbH](zwerit-immo-gmbh.md) · Nesslau · `info@zwerit-immo.ch (+1)`
+- [afino immobilien ag](afino-immobilien-ag.md) · St. Gallen · ``
+- [alpiger immo gmbh](alpiger-immo-gmbh.md) · Sennwald · `?`
+- [blaser immo gmbh](blaser-immo-gmbh.md) · Gossau (SG) · ``
+- [capitol immobilien gmbh](capitol-immobilien-gmbh.md) · Mörschwil · `-`
+- [ce immobilien gmbh](ce-immobilien-gmbh.md) · Häggenschwil · `?`
+- [cosyhome verwaltungen GmbH](cosyhome-verwaltungen-gmbh.md) · St. Gallen · `?`
+- [goe-bau immo gmbh](goe-bau-immo-gmbh.md) · Nesslau · ``
+- [graber immo GmbH](graber-immo-gmbh.md) · Oberriet (SG) · `?`
+- [hisa immobilien ag](hisa-immobilien-ag.md) · Zuzwil (SG) · `?`
+- [iD bau + immobilien ag](id-bau-immobilien-ag.md) · Au (SG) · `-`
+- [juma Verwaltungen GmbH](juma-verwaltungen-gmbh.md) · Sevelen · `?`
+- [mima-immo & trade AG](mima-immo-trade-ag.md) · Sennwald · `?`
+- [monaco IMMOBILIEN AG](monaco-immobilien-ag.md) · Mörschwil · ``
+- [osterwalder immobilien ag](osterwalder-immobilien-ag.md) · Wil (SG) · `info@osterwalder-immobilien.ch (+4)`
+- [san immobilien ag](san-immobilien-ag.md) · Altstätten · ``
+- [stehle.immobilien ag](stehle-immobilien-ag.md) · St. Gallen · `-`
+- [swisspartners Immobilien AG](swisspartners-immobilien-ag.md) · Rapperswil-Jona · `?`
+- [verum Immobilienverwaltungs GmbH](verum-immobilienverwaltungs-gmbh.md) · Widnau · `?`
+- [waldorf immobilien ag](waldorf-immobilien-ag.md) · Wil (SG) · ``
+- [wkB Immo GmbH](wkb-immo-gmbh.md) · Neckertal · `-`
+
+## regie-letting (437)
+
+lets property; the administration may sit elsewhere
+
+- [A&A IMMO GmbH](a-a-immo-gmbh.md) · Gossau (SG) · ``
+- [ACCAD Immobilien AG](accad-immobilien-ag.md) · Wil (SG) · ``
+- [ACV WILLI Treuhand + Immobilien AG Buchs](acv-willi-treuhand-immobilien-ag-buchs.md) · Buchs (SG) · ``
+- [ACV WILLI Treuhand + Immobilien AG Mels](acv-willi-treuhand-immobilien-ag-mels.md) · Mels · ``
+- [AFR Immobilien AG](afr-immobilien-ag.md) · St. Margrethen · ``
+- [AH Residenz Immobilien AG Wil](ah-residenz-immobilien-ag-wil.md) · Wil (SG) · ``
+- [AKH Immobilien und Handels AG](akh-immobilien-und-handels-ag.md) · Gossau (SG) · ``
+- [ALGA Immobilien GmbH](alga-immobilien-gmbh.md) · Wittenbach · ``
+- [AMH Immobilien AG](amh-immobilien-ag.md) · Altstätten · ``
+- [AMRA Liegenschaften AG](amra-liegenschaften-ag.md) · Rapperswil-Jona · ``
+- [APM Immobilien AG](apm-immobilien-ag.md) · Mosnang · ``
+- [ASC Immobilien GmbH](asc-immobilien-gmbh.md) · Rapperswil-Jona · ``
+- [ASK Immobilien GmbH](ask-immobilien-gmbh.md) · Kirchberg (SG) · ``
+- [AVM Immobilien AG](avm-immobilien-ag.md) · Bütschwil-Ganterschwil · ``
+- [Abderhalden Immo AG](abderhalden-immo-ag.md) · Bütschwil-Ganterschwil · ``
+- [Aepli Immo AG](aepli-immo-ag.md) · Gossau (SG) · ``
+- [Aeuli Immobilien AG](aeuli-immobilien-ag.md) · Vilters-Wangs · ``
+- [Agro Immobilien AG](agro-immobilien-ag.md) · Eschenbach (SG) · ``
+- [Aircraft Immobilien AG](aircraft-immobilien-ag.md) · Gossau (SG) · ``
+- [Alp-Immo GmbH](alp-immo-gmbh.md) · Ebnat-Kappel · ``
+- [Alphasol Immo AG](alphasol-immo-ag.md) · Bütschwil-Ganterschwil · ``
+- [Altherr Immo AG](altherr-immo-ag.md) · Nesslau · ``
+- [Altwegg Liegenschaften AG](altwegg-liegenschaften-ag.md) · Wil (SG) · ``
+- [Aram-Immobilien AG](aram-immobilien-ag.md) · Widnau · ``
+- [Arne Immo AG](arne-immo-ag.md) · Vilters-Wangs · ``
+- [Arta Immobilien AG](arta-immobilien-ag.md) · Rorschach · ``
+- [Asmaro Immo AG](asmaro-immo-ag.md) · Ebnat-Kappel · ``
+- [Aurum Immobilien AG](aurum-immobilien-ag.md) · Rapperswil-Jona · ``
+- [Avanti Immobilien AG](avanti-immobilien-ag.md) · Wartau · ``
+- [B&T Immo AG](b-t-immo-ag.md) · Uzwil · ``
+- [BAUMET Immo AG](baumet-immo-ag.md) · Oberriet (SG) · ``
+- [BBR Immo GmbH](bbr-immo-gmbh.md) · Niederbüren · ``
+- [BENSA Immobilien AG](bensa-immobilien-ag.md) · Neckertal · ``
+- [BKE Immo GmbH](bke-immo-gmbh.md) · Altstätten · ``
+- [BLE Immobilien AG](ble-immobilien-ag.md) · Uznach · ``
+- [BMK Immo GmbH](bmk-immo-gmbh.md) · Gommiswald · ``
+- [BN Immo AG](bn-immo-ag.md) · Walenstadt · ``
+- [BO Immobilien AG](bo-immobilien-ag.md) · Rorschacherberg · ``
+- [Badhof Immobilien GmbH](badhof-immobilien-gmbh.md) · Altstätten · ``
+- [Bajer Immobilien GmbH](bajer-immobilien-gmbh.md) · Altstätten · ``
+- [Baldegger Immobilien AG Oberuzwil](baldegger-immobilien-ag-oberuzwil.md) · Oberuzwil · ``
+- [Batus-Immobilien AG](batus-immobilien-ag.md) · St. Gallen · `?`
+- [Benninger Immobilien AG](benninger-immobilien-ag.md) · Uzwil · ``
+- [Berag Immobilien AG](berag-immobilien-ag.md) · Amden · ``
+- [Bergruh Immobilien AG](bergruh-immobilien-ag.md) · St. Gallen · ``
+- [Bestdrive Immo GmbH](bestdrive-immo-gmbh.md) · St. Gallen · ``
+- [BewiG Immo GmbH](bewig-immo-gmbh.md) · Walenstadt · ``
+- [Birkenau Immobilien AG](birkenau-immobilien-ag.md) · St. Gallen · ``
+- [Bogen Immobilien AG](bogen-immobilien-ag.md) · St. Gallen · ``
+- [Bonum Immobilien AG](bonum-immobilien-ag.md) · Wil (SG) · ``
+- [Brisket Immobilien AG](brisket-immobilien-ag.md) · Rapperswil-Jona · ``
+- [Bruderer Immo AG](bruderer-immo-ag.md) · St. Gallen · ``
+- [Brunnen Immo AG](brunnen-immo-ag.md) · Altstätten · ``
+- [Brunner Immobilien und Verwaltungen AG](brunner-immobilien-und-verwaltungen-ag.md) · Mels · ``
+- [Brüschweiler Immobilien AG](bruschweiler-immobilien-ag.md) · St. Gallen · ``
+- [Bäumlihof Immobilien AG](baumlihof-immobilien-ag.md) · St. Gallen · ``
+- [Büchler AG, Immobilien-Dienstleistungen](buchler-ag-immobilien-dienstleistungen.md) · Uzwil · `anja.keller@buechler-immo.ch (+6)`
+- [Büel Immobilien GmbH](buel-immobilien-gmbh.md) · Kirchberg (SG) · ``
+- [Bürki Immo AG](burki-immo-ag.md) · Flawil · ``
+- [CBG Immo AG](cbg-immo-ag.md) · Kirchberg (SG) · ``
+- [CEMA Immobilien GmbH](cema-immobilien-gmbh.md) · Neckertal · ``
+- [CMB Immobilien AG](cmb-immobilien-ag.md) · Bad Ragaz · ``
+- [CMI Immobilien AG](cmi-immobilien-ag.md) · Goldach · ``
+- [CSC Immobilien GmbH](csc-immobilien-gmbh.md) · Altstätten · ``
+- [Cantieni immo & bau AG](cantieni-immo-bau-ag.md) · Oberbüren · ``
+- [Carpoint Immobilien GmbH](carpoint-immobilien-gmbh.md) · Diepoldsau · ``
+- [Casanova Immobilien AG](casanova-immobilien-ag.md) · Rapperswil-Jona · ``
+- [Cellere Immobilien AG](cellere-immobilien-ag.md) · Mörschwil · ``
+- [CiLa Immobilien AG](cila-immobilien-ag.md) · St. Gallen · ``
+- [Comada-Immo GmbH](comada-immo-gmbh.md) · Zuzwil (SG) · ``
+- [Corona Immobilien AG](corona-immobilien-ag.md) · Sevelen · ``
+- [Curiger Immobilien AG](curiger-immobilien-ag.md) · Au (SG) · `?`
+- [DHELD Immobilien GmbH](dheld-immobilien-gmbh.md) · Rebstein · ``
+- [DHK Immobilien AG](dhk-immobilien-ag.md) · Kaltbrunn · ``
+- [DHK Liegenschaften AG](dhk-liegenschaften-ag.md) · Kaltbrunn · ``
+- [DKM IMMOBILIEN AG](dkm-immobilien-ag.md) · Wattwil · ``
+- [Dawi Immobilien- und Handels AG](dawi-immobilien-und-handels-ag.md) · St. Gallen · ``
+- [Decasa Immobilien AG](decasa-immobilien-ag.md) · Zuzwil (SG) · ``
+- [Deiss Immobilien AG](deiss-immobilien-ag.md) · Marbach (SG) · ``
+- [Dela Immobilien GmbH](dela-immobilien-gmbh.md) · Oberuzwil · ``
+- [Detego Immobilien AG](detego-immobilien-ag.md) · Oberbüren · ``
+- [Diener Immo AG](diener-immo-ag.md) · Waldkirch · ``
+- [Dinesta Immo GmbH](dinesta-immo-gmbh.md) · Oberuzwil · ``
+- [EB Liegenschaften AG](eb-liegenschaften-ag.md) · St. Gallen · ``
+- [EBERLE IMMO Bazenheid AG](eberle-immo-bazenheid-ag.md) · Kirchberg (SG) · ``
+- [EDR Immo AG](edr-immo-ag.md) · St. Gallen · ``
+- [EGLI Liegenschaften AG](egli-liegenschaften-ag.md) · Bütschwil-Ganterschwil · ``
+- [EKA Immobilien AG](eka-immobilien-ag.md) · Rapperswil-Jona · ``
+- [EMAD Immo AG](emad-immo-ag.md) · St. Gallen · ``
+- [ENOT Immobiliengesellschaft AG](enot-immobiliengesellschaft-ag.md) · Kaltbrunn · ``
+- [ENSAB Immobilien AG](ensab-immobilien-ag.md) · Sevelen · ``
+- [Eberle Immobilien Wil AG](eberle-immobilien-wil-ag.md) · Wil (SG) · ``
+- [Eichenau Immo AG](eichenau-immo-ag.md) · Buchs (SG) · ``
+- [Eicher Immobilienverwaltungen GmbH](eicher-immobilienverwaltungen-gmbh.md) · Wil (SG) · ``
+- [Eigenmann Immobilien AG](eigenmann-immobilien-ag.md) · Flawil · ``
+- [Eiko Verwaltungs AG](eiko-verwaltungs-ag.md) · St. Gallen · `?`
+- [Emme-Jona Immobilien AG](emme-jona-immobilien-ag.md) · Rapperswil-Jona · ``
+- [Engelhof Immobilien Treuhand AG](engelhof-immobilien-treuhand-ag.md) · Gaiserwald · ``
+- [F+P Immobilien AG](f-p-immobilien-ag.md) · Widnau · ``
+- [FLH Immo AG](flh-immo-ag.md) · Oberbüren · ``
+- [FRAUENHOF Immobilien AG](frauenhof-immobilien-ag.md) · Altstätten · ``
+- [FRITAG Verwaltungs AG](fritag-verwaltungs-ag.md) · Rapperswil-Jona · ``
+- [Felix Immo AG](felix-immo-ag.md) · Zuzwil (SG) · ``
+- [Feuz Immobilien AG](feuz-immobilien-ag.md) · Wartau · ``
+- [Fides Immo Mels GmbH](fides-immo-mels-gmbh.md) · Mels · ``
+- [Filtrox Immobilien AG](filtrox-immobilien-ag.md) · St. Gallen · ``
+- [Fischbacher Immobilien AG](fischbacher-immobilien-ag.md) · Oberbüren · ``
+- [Fraefel Immobilien GmbH](fraefel-immobilien-gmbh.md) · Wittenbach · ``
+- [Frefel Immobilien AG](frefel-immobilien-ag.md) · Mörschwil · ``
+- [Freundlieb Immobilien GmbH](freundlieb-immobilien-gmbh.md) · Rorschacherberg · ``
+- [Friedtal Immo AG](friedtal-immo-ag.md) · Wil (SG) · ``
+- [Fritz Müller Immobilien AG](fritz-muller-immobilien-ag.md) · Rorschach · ``
+- [G + S Immobilien AG](g-s-immobilien-ag.md) · Wil (SG) · ``
+- [GAM Immobilien GmbH](gam-immobilien-gmbh.md) · Rapperswil-Jona · ``
+- [Gadient Immobilien AG](gadient-immobilien-ag.md) · Schmerikon · ``
+- [GalloCircle Immobilien AG](gallocircle-immobilien-ag.md) · Uzwil · ``
+- [GdP Immo GmbH](gdp-immo-gmbh.md) · Flawil · ``
+- [Gebimo Immobilien AG](gebimo-immobilien-ag.md) · Rorschach · ``
+- [Gebr. Lienhard Immobilien AG](gebr-lienhard-immobilien-ag.md) · Degersheim · ``
+- [Gebrüder Oberhänsli Immobilien AG](gebruder-oberhansli-immobilien-ag.md) · Mosnang · ``
+- [Georg Egli Liegenschaften AG](georg-egli-liegenschaften-ag.md) · Bütschwil-Ganterschwil · ``
+- [Gerber Immobilien GmbH](gerber-immobilien-gmbh.md) · Gossau (SG) · ``
+- [Gisler Liegenschaften GmbH](gisler-liegenschaften-gmbh.md) · Ebnat-Kappel · ``
+- [Glattfeld Immo AG](glattfeld-immo-ag.md) · Oberbüren · ``
+- [Gonzen Immobilien AG](gonzen-immobilien-ag.md) · Mels · ``
+- [Greenfield Immobilien AG](greenfield-immobilien-ag.md) · Rapperswil-Jona · ``
+- [Grewaco Liegenschaften AG](grewaco-liegenschaften-ag.md) · Rheineck · ``
+- [Grossstein Immobilien AG](grossstein-immobilien-ag.md) · Rapperswil-Jona · ``
+- [Grünhofhallen Immobilien AG](grunhofhallen-immobilien-ag.md) · Kaltbrunn · ``
+- [H. & M. Schmid Immobilien AG](h-m-schmid-immobilien-ag.md) · Tübach · ``
+- [HABA-immo AG](haba-immo-ag.md) · Rüthi (SG) · ``
+- [HAMI-Immo GmbH](hami-immo-gmbh.md) · Sargans · ``
+- [HBN Immobilien GmbH](hbn-immobilien-gmbh.md) · Gommiswald · ``
+- [HERBLO Immobilien AG](herblo-immobilien-ag.md) · Eschenbach (SG) · ``
+- [HJ Egli Immobilien GmbH](hj-egli-immobilien-gmbh.md) · Thal · ``
+- [HMH Immo AG](hmh-immo-ag.md) · Gossau (SG) · ``
+- [HOAG Immobilien AG](hoag-immobilien-ag.md) · St. Gallen · `info@hoag-immo.ch (+1)`
+- [HOWE Immo AG](howe-immo-ag.md) · Gommiswald · ``
+- [HPS Immobilien AG](hps-immobilien-ag.md) · Gossau (SG) · ``
+- [Habis Verwaltungs AG](habis-verwaltungs-ag.md) · Flawil · ``
+- [Habitare Immobilien AG](habitare-immobilien-ag.md) · St. Gallen · ``
+- [Hablützel Immo AG](hablutzel-immo-ag.md) · Degersheim · ``
+- [Halef Immo Trade AG](halef-immo-trade-ag.md) · Au (SG) · ``
+- [Hasler Textil Immobilien AG](hasler-textil-immobilien-ag.md) · Berneck · ``
+- [Hauser Immobilien AG](hauser-immobilien-ag.md) · St. Gallen · ``
+- [Heidiland Immobilien AG](heidiland-immobilien-ag.md) · Weesen · ``
+- [Helfenberger Immobilien AG](helfenberger-immobilien-ag.md) · Niederbüren · ``
+- [Heller Immo AG](heller-immo-ag.md) · Gaiserwald · ``
+- [Hestra-Immo AG](hestra-immo-ag.md) · Zuzwil (SG) · ``
+- [Hofberg Immo AG](hofberg-immo-ag.md) · Wil (SG) · ``
+- [Hollenstein Immo AG](hollenstein-immo-ag.md) · Oberuzwil · ``
+- [Hollis Immobilien AG](hollis-immobilien-ag.md) · Niederhelfenschwil · ``
+- [Holzer Immo AG](holzer-immo-ag.md) · Uznach · ``
+- [HomeLiv Immo GmbH](homeliv-immo-gmbh.md) · Oberriet (SG) · ``
+- [Hungerbühler Immo AG](hungerbuhler-immo-ag.md) · Gossau (SG) · ``
+- [Huppenkothen Immobilien Schweiz AG](huppenkothen-immobilien-schweiz-ag.md) · Oberriet (SG) · ``
+- [Huser Schnell Immobilien AG](huser-schnell-immobilien-ag.md) · Altstätten · ``
+- [HÜKE Immobilien AG](huke-immobilien-ag.md) · Rapperswil-Jona · ``
+- [Häne Immobilien AG](hane-immobilien-ag.md) · Wil (SG) · ``
+- [IA Immobilien Anlage AG](ia-immobilien-anlage-ag.md) · St. Gallen · ``
+- [IBU Liegenschaften AG](ibu-liegenschaften-ag.md) · Rebstein · ``
+- [ICS Immobilien AG](ics-immobilien-ag.md) · Uzwil · ``
+- [INViVA Immobilien AG](inviva-immobilien-ag.md) · Au (SG) · ``
+- [IP Gewerbe Immobilien AG](ip-gewerbe-immobilien-ag.md) · St. Gallen · ``
+- [ISI Immobilien GmbH](isi-immobilien-gmbh.md) · St. Margrethen · ``
+- [Imhof Liegenschaften AG](imhof-liegenschaften-ag.md) · Vilters-Wangs · ``
+- [Immo Casa Suisse AG](immo-casa-suisse-ag.md) · St. Gallen · ``
+- [Immo Gallus GmbH](immo-gallus-gmbh.md) · St. Gallen · ``
+- [Immo Hofstetter AG](immo-hofstetter-ag.md) · Oberriet (SG) · ``
+- [Immo Meri AG](immo-meri-ag.md) · Altstätten · ``
+- [Immo Mühle AG](immo-muhle-ag.md) · Wattwil · ``
+- [Immo Peter AG](immo-peter-ag.md) · Altstätten · ``
+- [Immo Steig Wattwil AG](immo-steig-wattwil-ag.md) · Wattwil · ``
+- [Immo-Clement AG](immo-clement-ag.md) · Altstätten · ``
+- [Immo-Portfolio GmbH Schweiz](immo-portfolio-gmbh-schweiz.md) · St. Gallen · `cedric.kriebel@immo-portfolio.ch (+1)`
+- [Immobilien AG des Konsumvereins St. Gallen](immobilien-ag-des-konsumvereins-st-gallen.md) · St. Gallen · ``
+- [Immobilien Buchental AG](immobilien-buchental-ag.md) · Berneck · ``
+- [Immobilien Genossenschaft Schänis IGS](immobilien-genossenschaft-schanis-igs.md) · Schänis · ``
+- [Immobilien Loh AG](immobilien-loh-ag.md) · Kirchberg (SG) · ``
+- [Immobilien MP AG](immobilien-mp-ag.md) · Andwil (SG) · ``
+- [Immobilien Renn AG](immobilien-renn-ag.md) · Gossau (SG) · ``
+- [Immobilien St. Gallen AG](immobilien-st-gallen-ag.md) · St. Gallen · ``
+- [Immobilienexpert GmbH](immobilienexpert-gmbh.md) · Rapperswil-Jona · `?`
+- [Immobiliengenossenschaft des Lebensmittelvereins Walenstadt](immobiliengenossenschaft-des-lebensmittelvereins-walenstadt.md) · Walenstadt · ``
+- [J. Zoller Immo AG](j-zoller-immo-ag.md) · Au (SG) · ``
+- [JAN Immobilien GmbH](jan-immobilien-gmbh.md) · Tübach · ``
+- [JARA Immobilien AG](jara-immobilien-ag.md) · Rapperswil-Jona · ``
+- [JD Liegenschaften AG](jd-liegenschaften-ag.md) · Vilters-Wangs · ``
+- [JML Immo AG](jml-immo-ag.md) · Widnau · ``
+- [Jakob Hubeli Immobilien GmbH](jakob-hubeli-immobilien-gmbh.md) · Au (SG) · ``
+- [Jakob Immo & Verwaltung GmbH](jakob-immo-verwaltung-gmbh.md) · Goldach · ``
+- [Jakob Immobilien GmbH](jakob-immobilien-gmbh.md) · Uznach · ``
+- [Johann Dürr Immobilien AG](johann-durr-immobilien-ag.md) · Gams · ``
+- [Jud Immo GmbH](jud-immo-gmbh.md) · Weesen · ``
+- [Jud Immobilien GmbH](jud-immobilien-gmbh.md) · Gommiswald · ``
+- [Julia Immobilien AG Bad Ragaz](julia-immobilien-ag-bad-ragaz.md) · Bad Ragaz · ``
+- [Jung Immobilien GmbH](jung-immobilien-gmbh.md) · Muolen · ``
+- [Jupiter Immobilien AG](jupiter-immobilien-ag.md) · Wil (SG) · ``
+- [Jöhl Immobilien AG](johl-immobilien-ag.md) · Amden · ``
+- [K. Kühnis Immo GmbH](k-kuhnis-immo-gmbh.md) · Diepoldsau · ``
+- [K2 Immo AG](k2-immo-ag.md) · St. Gallen · ``
+- [KAH Liegenschaften AG](kah-liegenschaften-ag.md) · Schmerikon · ``
+- [KDS Immobilien AG](kds-immobilien-ag.md) · Rorschacherberg · ``
+- [KGP Immobilien AG](kgp-immobilien-ag.md) · Rapperswil-Jona · ``
+- [KLOTZ Immobilien / Bau GmbH](klotz-immobilien-bau-gmbh.md) · Rapperswil-Jona · `?`
+- [KX3 Immobilien AG](kx3-immobilien-ag.md) · Rapperswil-Jona · ``
+- [KaS Immo GmbH](kas-immo-gmbh.md) · Altstätten · ``
+- [Kaiser Immo GmbH](kaiser-immo-gmbh.md) · St. Gallen · ``
+- [Kauf Immobilien AG](kauf-immobilien-ag.md) · Ebnat-Kappel · ``
+- [Kaufmann Liegenschaften AG](kaufmann-liegenschaften-ag.md) · St. Gallen · ``
+- [Kellenberger Immobilien AG](kellenberger-immobilien-ag.md) · Rheineck · ``
+- [Keller Immobilien AG, St. Gallen](keller-immobilien-ag-st-gallen.md) · St. Gallen · ``
+- [Kirchplatz Immobilien AG](kirchplatz-immobilien-ag.md) · Vilters-Wangs · ``
+- [Koller Immobilien & Gastro GmbH](koller-immobilien-gastro-gmbh.md) · Wil (SG) · ``
+- [Konforta Immobilien-Treuhand AG](konforta-immobilien-treuhand-ag.md) · Gossau (SG) · ``
+- [Konrath Immobilien AG](konrath-immobilien-ag.md) · Rorschach · ``
+- [Konvekta Immo AG](konvekta-immo-ag.md) · St. Gallen · ``
+- [Kopp Immobilien AG](kopp-immobilien-ag.md) · Oberuzwil · ``
+- [Koster Immobilien AG](koster-immobilien-ag.md) · Neckertal · ``
+- [Kunfermann Immobilien AG](kunfermann-immobilien-ag.md) · Bad Ragaz · ``
+- [Kurt Lämmler Immobilien AG](kurt-lammler-immobilien-ag.md) · Eschenbach (SG) · ``
+- [Kuster Liegenschaften AG](kuster-liegenschaften-ag.md) · Schmerikon · ``
+- [Käppeli Immo AG](kappeli-immo-ag.md) · Bad Ragaz · ``
+- [Künzle Immo AG Gossau](kunzle-immo-ag-gossau.md) · Gossau (SG) · ``
+- [Künzle Immobilien AG Niederwil](kunzle-immobilien-ag-niederwil.md) · Oberbüren · ``
+- [LAAD Immobilien AG](laad-immobilien-ag.md) · Rapperswil-Jona · ``
+- [LEIA Immobilien AG](leia-immobilien-ag.md) · Rapperswil-Jona · ``
+- [LGS Liegenschaften Grünenfelder Schigg AG](lgs-liegenschaften-grunenfelder-schigg-ag.md) · Vilters-Wangs · ``
+- [LPN Immo GmbH](lpn-immo-gmbh.md) · Oberbüren · ``
+- [LUSS Immobilien AG](luss-immobilien-ag.md) · Kirchberg (SG) · ``
+- [LaRo Immobilien AG](laro-immobilien-ag.md) · Goldach · ``
+- [Laco Immobilien AG](laco-immobilien-ag.md) · Wittenbach · ``
+- [Langrüti Immo GmbH](langruti-immo-gmbh.md) · Rapperswil-Jona · ``
+- [Largo Liegenschaften AG](largo-liegenschaften-ag.md) · Rapperswil-Jona · ``
+- [Larke La Immobilien AG](larke-la-immobilien-ag.md) · Oberriet (SG) · ``
+- [Laternser Immobilien GmbH](laternser-immobilien-gmbh.md) · Benken (SG) · `?`
+- [Lehmann Immobilien AG](lehmann-immobilien-ag.md) · Gossau (SG) · ``
+- [Lehn Immo GmbH](lehn-immo-gmbh.md) · St. Gallen · ``
+- [Lerchen Immobilien AG](lerchen-immobilien-ag.md) · Mels · ``
+- [Lex Immobilien GmbH](lex-immobilien-gmbh.md) · Buchs (SG) · ``
+- [Liegenschaften-Treuhand St. Gallen AG "LITAG"](liegenschaften-treuhand-st-gallen-ag-litag.md) · St. Gallen · ``
+- [Likona Immobilien AG](likona-immobilien-ag.md) · Gossau (SG) · ``
+- [Lindenberg Immobilien AG](lindenberg-immobilien-ag.md) · Jonschwil · ``
+- [Loher Immo AG](loher-immo-ag.md) · Zuzwil (SG) · ``
+- [Loosli Christoph AG, Immobilien](loosli-christoph-ag-immobilien.md) · Uzwil · ``
+- [Looweg Verwaltungs AG](looweg-verwaltungs-ag.md) · Oberriet (SG) · ``
+- [LuDa Immo AG](luda-immo-ag.md) · Gossau (SG) · ``
+- [Luta Immobilien AG](luta-immobilien-ag.md) · Altstätten · ``
+- [Löwen-Immo AG](lowen-immo-ag.md) · Wil (SG) · ``
+- [Löwenherz Immobilien AG](lowenherz-immobilien-ag.md) · Jonschwil · ``
+- [M & R Liegenschaften AG](m-r-liegenschaften-ag.md) · Ebnat-Kappel · ``
+- [M. Gerschwiler Immobilien AG](m-gerschwiler-immobilien-ag.md) · St. Gallen · ``
+- [MADE Immobilien AG](made-immobilien-ag.md) · St. Gallen · ``
+- [MAPEC Immo AG](mapec-immo-ag.md) · Niederhelfenschwil · `info@mapec.ch (+1)`
+- [MCW Immo AG](mcw-immo-ag.md) · St. Gallen · ``
+- [MDC IMMO AG](mdc-immo-ag.md) · St. Gallen · ``
+- [MEA Immobilien AG](mea-immobilien-ag.md) · Uzwil · ``
+- [MESA Immo AG](mesa-immo-ag.md) · St. Gallen · ``
+- [MJT Immo GmbH](mjt-immo-gmbh.md) · St. Gallen · ``
+- [MMV Immobilien AG](mmv-immobilien-ag.md) · Uznach · ``
+- [MSN Immobilien AG](msn-immobilien-ag.md) · Eschenbach (SG) · ``
+- [MTJJ Immo GmbH](mtjj-immo-gmbh.md) · Widnau · ``
+- [Mader-Immobilien AG](mader-immobilien-ag.md) · St. Gallen · ``
+- [Malco Immobilien AG](malco-immobilien-ag.md) · Wattwil · ``
+- [Marino Immobilien AG](marino-immobilien-ag.md) · Uznach · ``
+- [Mario Liegenschaften AG](mario-liegenschaften-ag.md) · Kirchberg (SG) · ``
+- [Marku Immobilien AG](marku-immobilien-ag.md) · Oberuzwil · ``
+- [Martan Immo GmbH](martan-immo-gmbh.md) · Wil (SG) · ``
+- [Mettelacher Immobilien AG](mettelacher-immobilien-ag.md) · Rapperswil-Jona · ``
+- [Mettlen Immobilien AG](mettlen-immobilien-ag.md) · Weesen · ``
+- [Metzler Immobilien GmbH](metzler-immobilien-gmbh.md) · Wattwil · ``
+- [Mikado Immobilien AG](mikado-immobilien-ag.md) · Wattwil · ``
+- [Milestone Immo AG](milestone-immo-ag.md) · Rapperswil-Jona · ``
+- [Mock Immobilien AG](mock-immobilien-ag.md) · Eichberg · ``
+- [Mondi Immobilien GmbH](mondi-immobilien-gmbh.md) · Kirchberg (SG) · ``
+- [Musa Immobilien AG](musa-immobilien-ag.md) · Oberuzwil · ``
+- [Müller und Hochreutener Immobilien GmbH](muller-und-hochreutener-immobilien-gmbh.md) · Goldach · ``
+- [NAM Immobilien AG](nam-immobilien-ag.md) · Gaiserwald · ``
+- [NPK Immobilien AG](npk-immobilien-ag.md) · Rapperswil-Jona · ``
+- [Negropont Immobilien AG](negropont-immobilien-ag.md) · Rorschach · ``
+- [NeoVac Immobilien AG](neovac-immobilien-ag.md) · Oberriet (SG) · ``
+- [Neuhaus Immo AG](neuhaus-immo-ag.md) · Wartau · ``
+- [Niki's Immo AG](niki-s-immo-ag.md) · Sevelen · ``
+- [Nolfi & Thoma Immobilien GmbH](nolfi-thoma-immobilien-gmbh.md) · Wittenbach · ``
+- [Nosta Immobilien AG](nosta-immobilien-ag.md) · Rorschach · ``
+- [Nyima Immobilien AG](nyima-immobilien-ag.md) · Rapperswil-Jona · ``
+- [Näf Immo GmbH](naf-immo-gmbh.md) · Mosnang · ``
+- [Nägele Immo AG](nagele-immo-ag.md) · Oberuzwil · ``
+- [ODM Immobilien AG](odm-immobilien-ag.md) · Altstätten · ``
+- [Obvega Immobilien GmbH](obvega-immobilien-gmbh.md) · St. Gallen · ``
+- [Orchis Immobilien AG](orchis-immobilien-ag.md) · St. Gallen · ``
+- [Oscar Bernet Immo AG](oscar-bernet-immo-ag.md) · Uznach · ``
+- [P. Oberholzer Immobilien AG](p-oberholzer-immobilien-ag.md) · Gommiswald · ``
+- [P5 Immobilien AG](p5-immobilien-ag.md) · Jonschwil · ``
+- [PAOL Immo AG](paol-immo-ag.md) · Ebnat-Kappel · ``
+- [PAUER Immobilien AG](pauer-immobilien-ag.md) · Mels · ``
+- [PCI Verwaltung AG](pci-verwaltung-ag.md) · Gams · ``
+- [PEMS Immobilien AG](pems-immobilien-ag.md) · Sennwald · ``
+- [PNB Immobilien AG](pnb-immobilien-ag.md) · Eggersriet · ``
+- [PSE Immo AG](pse-immo-ag.md) · Thal · ``
+- [PTHS Immobilien AG](pths-immobilien-ag.md) · Rorschach · ``
+- [Pacofa Immo AG](pacofa-immo-ag.md) · Eschenbach (SG) · ``
+- [Pali Immo GmbH](pali-immo-gmbh.md) · Zuzwil (SG) · ``
+- [Panthera Immobilien AG](panthera-immobilien-ag.md) · Uznach · ``
+- [Part Immobilien AG](part-immobilien-ag.md) · Gommiswald · ``
+- [Patrius Immobilien GmbH](patrius-immobilien-gmbh.md) · Eschenbach (SG) · ``
+- [Perola Immobilien GmbH](perola-immobilien-gmbh.md) · Rapperswil-Jona · ``
+- [Playa Immobilien AG](playa-immobilien-ag.md) · Buchs (SG) · ``
+- [Pralumino Immobilien AG](pralumino-immobilien-ag.md) · Oberriet (SG) · ``
+- [Probst Liegenschaften GmbH](probst-liegenschaften-gmbh.md) · Gommiswald · ``
+- [QPS Immo AG](qps-immo-ag.md) · St. Gallen · ``
+- [RAJA Immobilien AG](raja-immobilien-ag.md) · Rapperswil-Jona · ``
+- [RCS Immo AG](rcs-immo-ag.md) · Gaiserwald · ``
+- [REALO Immobilien AG](realo-immobilien-ag.md) · St. Gallen · ``
+- [RF Immo GmbH](rf-immo-gmbh.md) · St. Gallen · ``
+- [RIA.Immo GmbH](ria-immo-gmbh.md) · Oberbüren · ``
+- [RIC Immobilien AG](ric-immobilien-ag.md) · Steinach · ``
+- [RIKURO Immo AG](rikuro-immo-ag.md) · Kaltbrunn · ``
+- [RJF Immobilien AG](rjf-immobilien-ag.md) · Rapperswil-Jona · ``
+- [RKL Immo AG](rkl-immo-ag.md) · Uznach · ``
+- [ROBA Liegenschaften AG](roba-liegenschaften-ag.md) · Rapperswil-Jona · ``
+- [ROTHMOOS Immobilien AG](rothmoos-immobilien-ag.md) · Neckertal · ``
+- [RRAJT Immo GmbH](rrajt-immo-gmbh.md) · Wil (SG) · ``
+- [RRV Immobilien AG](rrv-immobilien-ag.md) · Widnau · ``
+- [RTM AG Immobiliengesellschaft](rtm-ag-immobiliengesellschaft.md) · Rorschach · ``
+- [ReGall Immobilien AG](regall-immobilien-ag.md) · St. Gallen · `?`
+- [Red & White Immobilien AG](red-white-immobilien-ag.md) · Buchs (SG) · ``
+- [Res Egli Immo AG](res-egli-immo-ag.md) · Wildhaus-Alt St. Johann · ``
+- [Revora Immobilien AG](revora-immobilien-ag.md) · Thal · ``
+- [Rheno Immobilia AG](rheno-immobilia-ag.md) · Altstätten · ``
+- [Rieben Verwaltungs AG](rieben-verwaltungs-ag.md) · Neckertal · ``
+- [Riesen Immobilien AG](riesen-immobilien-ag.md) · Altstätten · ``
+- [Riethüsli Immobilien GmbH](riethusli-immobilien-gmbh.md) · St. Gallen · ``
+- [Rietli Immobilien AG](rietli-immobilien-ag.md) · Wartau · ``
+- [Riget Immobilien GmbH](riget-immobilien-gmbh.md) · Schänis · ``
+- [Rimola Immobilien AG](rimola-immobilien-ag.md) · Altstätten · ``
+- [Rivartis Immo AG](rivartis-immo-ag.md) · Walenstadt · ``
+- [Rohner Immo AG](rohner-immo-ag.md) · Kirchberg (SG) · ``
+- [Rose's Immo GmbH](rose-s-immo-gmbh.md) · Flawil · ``
+- [Rosenberg Immobilien AG](rosenberg-immobilien-ag.md) · Tübach · ``
+- [Roth Immobilien Nesslau GmbH](roth-immobilien-nesslau-gmbh.md) · Nesslau · ``
+- [Rusch Liegenschaften AG](rusch-liegenschaften-ag.md) · Zuzwil (SG) · ``
+- [Ruti Immobilien GmbH](ruti-immobilien-gmbh.md) · St. Gallen · ``
+- [S. Frei Immobilien AG](s-frei-immobilien-ag.md) · Wil (SG) · ``
+- [SCHUBRO Immobilien AG](schubro-immobilien-ag.md) · Grabs · ``
+- [SD Liegenschaften AG](sd-liegenschaften-ag.md) · Buchs (SG) · ``
+- [SEH Immobilien GmbH](seh-immobilien-gmbh.md) · Wil (SG) · ``
+- [SF Immobilien und Verwaltungs AG](sf-immobilien-und-verwaltungs-ag.md) · Wittenbach · ``
+- [SGO Immo AG](sgo-immo-ag.md) · Oberbüren · ``
+- [SI Sieber Immobilien AG](si-sieber-immobilien-ag.md) · Diepoldsau · ``
+- [SMART HUB IMMOBILIEN AG](smart-hub-immobilien-ag.md) · Widnau · ``
+- [SMAS Immo AG](smas-immo-ag.md) · Gaiserwald · ``
+- [Sandbüchel-Immobilien AG](sandbuchel-immobilien-ag.md) · Berneck · ``
+- [Savino Immobilien GmbH](savino-immobilien-gmbh.md) · St. Gallen · ``
+- [Schlegel AG, Immobilien](schlegel-ag-immobilien.md) · Kirchberg (SG) · ``
+- [Sherlock Immo AG](sherlock-immo-ag.md) · Wil (SG) · ``
+- [Simba Immo GmbH](simba-immo-gmbh.md) · Zuzwil (SG) · ``
+- [Simus Immobilien AG](simus-immobilien-ag.md) · St. Gallen · ``
+- [Sinea Immobilien GmbH](sinea-immobilien-gmbh.md) · Widnau · ``
+- [Sinici Immobilien AG](sinici-immobilien-ag.md) · Goldach · ``
+- [Soda Treuhand & Immobilien GmbH](soda-treuhand-immobilien-gmbh.md) · Buchs (SG) · ``
+- [Soleda Immobilien AG](soleda-immobilien-ag.md) · St. Gallen · ``
+- [Späni Verwaltungs AG](spani-verwaltungs-ag.md) · Rapperswil-Jona · ``
+- [Steiner Himmelberger Immobilien AG](steiner-himmelberger-immobilien-ag.md) · Wildhaus-Alt St. Johann · ``
+- [Strebis Immo GmbH](strebis-immo-gmbh.md) · Goldach · ``
+- [Stricker Immo AG](stricker-immo-ag.md) · Flawil · ``
+- [Strübi Immo AG](strubi-immo-ag.md) · Nesslau · ``
+- [Sulzberg Immo AG](sulzberg-immo-ag.md) · St. Gallen · ``
+- [Swiss MediCenter Immo AG](swiss-medicenter-immo-ag.md) · St. Margrethen · ``
+- [T&Z architektur bau immobilien ag](t-z-architektur-bau-immobilien-ag.md) · St. Gallen · ``
+- [THOMCON Immobilien AG](thomcon-immobilien-ag.md) · Bad Ragaz · ``
+- [TJ Immo AG](tj-immo-ag.md) · Gommiswald · ``
+- [TJJ Immobilien GmbH](tjj-immobilien-gmbh.md) · Widnau · ``
+- [TOWA Immobilien AG](towa-immobilien-ag.md) · Flawil · ``
+- [Talberg Immobilien AG](talberg-immobilien-ag.md) · Oberbüren · ``
+- [TamaTec Immo AG](tamatec-immo-ag.md) · Flawil · ``
+- [Tarora Immobilien AG](tarora-immobilien-ag.md) · Wil (SG) · ``
+- [Theba Immobilien AG](theba-immobilien-ag.md) · Buchs (SG) · ``
+- [Thönig Immo AG](thonig-immo-ag.md) · St. Gallen · ``
+- [Toggenburg Immobilien AG](toggenburg-immobilien-ag.md) · Wildhaus-Alt St. Johann · ``
+- [Topalli Immobilien AG](topalli-immobilien-ag.md) · Uzwil · ``
+- [Tscheggenau Immobilien AG](tscheggenau-immobilien-ag.md) · St. Gallen · ``
+- [Tschirky Immo AG](tschirky-immo-ag.md) · Schmerikon · ``
+- [Türmlihuus Immobilien AG](turmlihuus-immobilien-ag.md) · Flawil · ``
+- [Ulmer AG Immobilien](ulmer-ag-immobilien.md) · Goldach · ``
+- [Unikat Immo AG](unikat-immo-ag.md) · Jonschwil · ``
+- [VDN Immobilien GmbH](vdn-immobilien-gmbh.md) · Oberuzwil · ``
+- [VSSM-SG Immobilien AG](vssm-sg-immobilien-ag.md) · St. Gallen · ``
+- [Vierkant Immobilien GmbH](vierkant-immobilien-gmbh.md) · Gaiserwald · ``
+- [Vionnet Immobilien GmbH](vionnet-immobilien-gmbh.md) · Tübach · ``
+- [WEIER IMMO AG](weier-immo-ag.md) · Oberbüren · ``
+- [WEMA Verwaltung AG](wema-verwaltung-ag.md) · Rapperswil-Jona · ``
+- [WEZ-Immo AG](wez-immo-ag.md) · Oberbüren · ``
+- [WIGURE Immobilien AG](wigure-immobilien-ag.md) · Uznach · ``
+- [WIMAG Verwaltungs AG](wimag-verwaltungs-ag.md) · Rapperswil-Jona · ``
+- [WISBACH Immobilien AG](wisbach-immobilien-ag.md) · Rapperswil-Jona · ``
+- [WOHNfühl Immobilien AG](wohnfuhl-immobilien-ag.md) · Gommiswald · ``
+- [Wagner Immobilien GmbH](wagner-immobilien-gmbh.md) · Oberuzwil · ``
+- [Wagner Uznach Immobilien AG](wagner-uznach-immobilien-ag.md) · Uznach · ``
+- [Waldegg Immobilien GmbH](waldegg-immobilien-gmbh.md) · Tübach · ``
+- [Waldegg Immobilien Service GmbH](waldegg-immobilien-service-gmbh.md) · Kirchberg (SG) · ``
+- [Walser Verwaltungs AG, Unterterzen](walser-verwaltungs-ag-unterterzen.md) · Quarten · ``
+- [Warthausen Immobilien AG](warthausen-immobilien-ag.md) · Schänis · ``
+- [Weier Beteiligungs- und Immobilien AG](weier-beteiligungs-und-immobilien-ag.md) · St. Gallen · ``
+- [Weiher Immobilien AG](weiher-immobilien-ag.md) · Gommiswald · ``
+- [Weltert Immobilien AG](weltert-immobilien-ag.md) · St. Gallen · ``
+- [Weromo Immobilien AG](weromo-immobilien-ag.md) · Berneck · ``
+- [Wiederkehr Immobilien AG](wiederkehr-immobilien-ag.md) · St. Gallen · ``
+- [Wilson Immo GmbH](wilson-immo-gmbh.md) · Flawil · ``
+- [Winggel Immobilien AG](winggel-immobilien-ag.md) · Mels · ``
+- [Wirag Immobilien AG](wirag-immobilien-ag.md) · Kirchberg (SG) · ``
+- [Würth Immobilien AG](wurth-immobilien-ag.md) · Thal · ``
+- [Wüst Immo AG](wust-immo-ag.md) · Altstätten · ``
+- [Zbinden Immo Services AG](zbinden-immo-services-ag.md) · Mörschwil · ``
+- [Ziegal Immo AG](ziegal-immo-ag.md) · Bütschwil-Ganterschwil · ``
+- [Zünd Immobilien AG](zund-immobilien-ag.md) · Altstätten · ``
+- [Züstim Immobilien AG](zustim-immobilien-ag.md) · Rapperswil-Jona · ``
+- [atm3 ag Immobilien](atm3-ag-immobilien.md) · Grabs · ``
+- [atrimos immobilien gmbh](atrimos-immobilien-gmbh.md) · Oberuzwil · ``
+- [besser.leben immo ag](besser-leben-immo-ag.md) · St. Gallen · ``
+- [eb-Bau Architektur & Immobilien GmbH](eb-bau-architektur-immobilien-gmbh.md) · Balgach · ``
+- [elix immobilien gmbh](elix-immobilien-gmbh.md) · Kirchberg (SG) · ``
+- [from heaven immo ag](from-heaven-immo-ag.md) · Bad Ragaz · ``
+- [immo & wash ag](immo-wash-ag.md) · Altstätten · ``
+- [immo prime invest ag](immo-prime-invest-ag.md) · Buchs (SG) · ``
+- [immo sondy GmbH](immo-sondy-gmbh.md) · Goldach · ``
+- [immo-sila ag](immo-sila-ag.md) · Bad Ragaz · ``
+- [kemu immo gmbh](kemu-immo-gmbh.md) · Niederbüren · ``
+- [kesselhaus immobilien ag](kesselhaus-immobilien-ag.md) · Rorschacherberg · ``
+- [msj immobilien ag](msj-immobilien-ag.md) · St. Gallen · ``
+- [nd immobilien ag](nd-immobilien-ag.md) · Au (SG) · ``
+- [nh Immobilien Invest AG](nh-immobilien-invest-ag.md) · Ebnat-Kappel · ``
+- [og-immo ag](og-immo-ag.md) · Oberriet (SG) · ``
+- [pllm Immo GmbH](pllm-immo-gmbh.md) · Wittenbach · ``
+- [seeblick liegenschaften ag](seeblick-liegenschaften-ag.md) · Mörschwil · ``
+- [smero immo ag](smero-immo-ag.md) · Rapperswil-Jona · ``
+- [tijara immobilien ag](tijara-immobilien-ag.md) · St. Gallen · ``

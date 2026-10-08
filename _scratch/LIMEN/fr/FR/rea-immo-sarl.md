@@ -1,0 +1,36 @@
+# REA Immo Sàrl
+
+| | |
+|---|---|
+| UID | `CHE488342045` |
+| Legal form | Société à responsabilité limitée |
+| Canton | FR (fr) |
+| Registered seat | Fétigny-Ménières |
+| Address | Chemin de la Biolleyrette 4, 1532 Fétigny |
+| Register status | ACTIVE |
+
+## Relevance for Limen
+
+**regie-core** — manages property for third parties, so runs inspections routinely
+
+purpose names management of property for others, name agrees
+
+## Where to write
+
+- not looked for yet
+
+No website resolved.
+
+## What the register says it does
+
+> la société a pour but la gestion immobilière et la rénovation de tous types de biens. D'une manière générale, la société peut créer des succursales, participer à d'autres entreprises, acquérir ou fonder des entreprises visant un but identique ou analogue, faire toutes opérations financières, commerciales, mobilières, immobilières et autres et conclure tous contrats propres à développer son but ou s'y rapportant directement ou indirectement.
+
+## Sources
+
+- Register entry: https://www.zefix.admin.ch/fr/search/entity/list?name=CHE488342045&directLink=true
+- Grading: rule over the registered purpose, see `scripts/classify_regies.py`
+- Addresses: none held
+- Cascade: `intel.address_hunt`, outcome `not run`
+
+The register carries no warranty and has no legal effect; only the certified
+cantonal excerpt and the FOSC publication text are binding.

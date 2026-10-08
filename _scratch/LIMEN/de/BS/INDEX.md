@@ -1,0 +1,171 @@
+# BS · 159 firms
+
+
+## regie-core (108)
+
+manages property for third parties, so runs inspections routinely
+
+- [AA Immobilien und Invest AG](aa-immobilien-und-invest-ag.md) · Basel · `info@aaimmo.ch`
+- [AAPS Immo GmbH](aaps-immo-gmbh.md) · Basel · `-`
+- [ADRIAN MUELLER IMMO-TREUHAND AG](adrian-mueller-immo-treuhand-ag.md) · Basel · `delia@am-immotreuhand.ch (+8)`
+- [AEQUITAS Immobilien AG](aequitas-immobilien-ag.md) · Basel · `info@aequitas.ch`
+- [AG für Liegenschaftswerte](ag-fur-liegenschaftswerte.md) · Basel · `-`
+- [Abendrot Immobilien AG](abendrot-immobilien-ag.md) · Basel · `info@abendrot-immobilien.ch`
+- [Atregio Immobilien GmbH](atregio-immobilien-gmbh.md) · Basel · `?`
+- [Attika Immobilien AG](attika-immobilien-ag.md) · Basel · `?`
+- [Bally Verwaltungen AG](bally-verwaltungen-ag.md) · Basel · `info@bally-verwaltungen.ch`
+- [BaselWerk Immobilien AG](baselwerk-immobilien-ag.md) · Basel · `info@baselwerk.ch`
+- [Basler Liegenschaftsunterhalt AG](basler-liegenschaftsunterhalt-ag.md) · Basel · `info@blu-bsbl.ch`
+- [Berger Liegenschaften AG](berger-liegenschaften-ag.md) · Basel · `info@bergerliegenschaften.ch`
+- [Beurret & Partner Immobilien GmbH](beurret-partner-immobilien-gmbh.md) · Basel · `info@beurretpartner.ch`
+- [Beurret Immobilien AG](beurret-immobilien-ag.md) · Basel · `?`
+- [Biag Basilea Immobilien AG](biag-basilea-immobilien-ag.md) · Basel · `?`
+- [Blochi Immobilien AG](blochi-immobilien-ag.md) · Riehen · `?`
+- [Block - Schulung, Beratung, Verwaltung GmbH](block-schulung-beratung-verwaltung-gmbh.md) · Bettingen · `?`
+- [Bob's Immobilien AG](bob-s-immobilien-ag.md) · Basel · `?`
+- [Brändle Liegenschaften AG](brandle-liegenschaften-ag.md) · Riehen · `?`
+- [Burgfelder Immobilien AG](burgfelder-immobilien-ag.md) · Basel · `?`
+- [CSG Immobilien AG](csg-immobilien-ag.md) · Basel · `info@csg-immobilien.com`
+- [Chodan Immobilien AG](chodan-immobilien-ag.md) · Basel · `?`
+- [CoDo Immobilien AG](codo-immobilien-ag.md) · Basel · `-`
+- [Cosmos Immobilien AG](cosmos-immobilien-ag.md) · Basel · `?`
+- [DS und Partner Immobilien AG](ds-und-partner-immobilien-ag.md) · Basel · `-`
+- [Densa Immobilien AG](densa-immobilien-ag.md) · Basel · `verwaltung@densaimmobilien.ch`
+- [Dinvest Bewirtschaftung AG](dinvest-bewirtschaftung-ag.md) · Basel · `info@dinvest.ag (+23)`
+- [Egloff Liegenschaften AG](egloff-liegenschaften-ag.md) · Basel · `?`
+- [FRIT Immobilien AG](frit-immobilien-ag.md) · Basel · `?`
+- [Felicitas Immobilien AG](felicitas-immobilien-ag.md) · Basel · ``
+- [Felmos Immobilien AG](felmos-immobilien-ag.md) · Basel · `?`
+- [GRIBA Grünig Immobilien Basel GmbH](griba-grunig-immobilien-basel-gmbh.md) · Basel · `?`
+- [GS Immobilien & Beratung GmbH](gs-immobilien-beratung-gmbh.md) · Basel · `info@beratung.ch`
+- [Gellert Immobilien AG](gellert-immobilien-ag.md) · Basel · `?`
+- [Generation Immobilien AG](generation-immobilien-ag.md) · Basel · `?`
+- [Grandea Immobilien GmbH](grandea-immobilien-gmbh.md) · Basel · ``
+- [Grether Liegenschaften AG](grether-liegenschaften-ag.md) · Basel · `?`
+- [HD Immobilien AG](hd-immobilien-ag.md) · Basel · `?`
+- [Hadira Immobilien GmbH](hadira-immobilien-gmbh.md) · Basel · `info@hadira.ch`
+- [Hana Immo AG](hana-immo-ag.md) · Basel · `?`
+- [Hegeba Immobilien AG](hegeba-immobilien-ag.md) · Basel · `?`
+- [Holinger Moll Immobilien AG](holinger-moll-immobilien-ag.md) · Basel · `?`
+- [Horburg Verwaltungs AG](horburg-verwaltungs-ag.md) · Basel · `info@horburg.ch`
+- [Husmattli-Immobilien AG](husmattli-immobilien-ag.md) · Basel · `?`
+- [IMMO-INVEST Immobilien- und Verwaltungs-AG](immo-invest-immobilien-und-verwaltungs-ag.md) · Basel · `?`
+- [Immo Croce GmbH](immo-croce-gmbh.md) · Basel · `susanne.wyss@immocroce.ch (+4)`
+- [Immo Plus AB GmbH](immo-plus-ab-gmbh.md) · Basel · `contact@immoplus.com`
+- [Immobag Immobilien AG](immobag-immobilien-ag.md) · Basel · `?`
+- [Inhouse Immobilien GmbH](inhouse-immobilien-gmbh.md) · Basel · `?`
+- [Jahraus Immobilien GmbH](jahraus-immobilien-gmbh.md) · Basel · `?`
+- [Kasaba Immobilien GmbH](kasaba-immobilien-gmbh.md) · Basel · `?`
+- [Kreis Immobilien AG](kreis-immobilien-ag.md) · Basel · `?`
+- [LIBA Immobilienberatung GmbH](liba-immobilienberatung-gmbh.md) · Basel · `?`
+- [Lastag Immobilien AG](lastag-immobilien-ag.md) · Basel · `rene.weiss@lastag.ch`
+- [MEM Immo AG](mem-immo-ag.md) · Basel · ``
+- [MENT Immobilien GmbH](ment-immobilien-gmbh.md) · Basel · `?`
+- [MGW Immobilien AG](mgw-immobilien-ag.md) · Basel · `info@mgwimmobilien.ch`
+- [MGW Liegenschaften AG](mgw-liegenschaften-ag.md) · Basel · `?`
+- [MIVA Immobilienverwaltung GmbH](miva-immobilienverwaltung-gmbh.md) · Basel · `?`
+- [MM Immobilien und Beratung GmbH](mm-immobilien-und-beratung-gmbh.md) · Basel · `info@beratung.ch`
+- [MRPS Immobilien GmbH](mrps-immobilien-gmbh.md) · Basel · ``
+- [Madiba Immobilien AG](madiba-immobilien-ag.md) · Basel · `madiba@madiba.ch`
+- [Mahler Immobilien AG](mahler-immobilien-ag.md) · Basel · `?`
+- [Mapo-Immobilien AG](mapo-immobilien-ag.md) · Basel · `?`
+- [Medon Immobilien AG](medon-immobilien-ag.md) · Basel · `?`
+- [Mélanie Blauenstein Immobilien GmbH](melanie-blauenstein-immobilien-gmbh.md) · Riehen · `?`
+- [NEFA Immobilien AG](nefa-immobilien-ag.md) · Basel · ``
+- [Nordwest-Immobilien AG](nordwest-immobilien-ag.md) · Basel · `info@nordwest-immobilien.com`
+- [Novano Immobilien AG](novano-immobilien-ag.md) · Basel · `?`
+- [OH Gotthelf Immobilien GmbH](oh-gotthelf-immobilien-gmbh.md) · Basel · `?`
+- [Paul Schneller Immobilien AG](paul-schneller-immobilien-ag.md) · Riehen · `info@paulschneller.com`
+- [Pelikan Immobilien AG](pelikan-immobilien-ag.md) · Basel · `?`
+- [Peter Stalder Immobilien AG](peter-stalder-immobilien-ag.md) · Basel · `?`
+- [Pfeiffer Verwaltungen GmbH](pfeiffer-verwaltungen-gmbh.md) · Basel · `?`
+- [Ponimmobilien GmbH](ponimmobilien-gmbh.md) · Basel · `info@ponimmobilien.ch`
+- [RS IMMOBILIEN + BAU AG](rs-immobilien-bau-ag.md) · Basel · `?`
+- [Rhybligg Immobilien AG](rhybligg-immobilien-ag.md) · Basel · `?`
+- [Richard Immo & Invest GmbH](richard-immo-invest-gmbh.md) · Basel · `info@richardimmo.com`
+- [Riehen Immobilien AG](riehen-immobilien-ag.md) · Riehen · ``
+- [Route 66 Immobilien AG](route-66-immobilien-ag.md) · Basel · `?`
+- [SAF Immobilien AG](saf-immobilien-ag.md) · Basel · `info@saf-immobilien.ch`
+- [Sevogel Immobilien AG](sevogel-immobilien-ag.md) · Basel · `?`
+- [Solus Immo AG](solus-immo-ag.md) · Basel · `info@solusimmo.com`
+- [Solvero Immobilien und Verwaltung GmbH](solvero-immobilien-und-verwaltung-gmbh.md) · Basel · `?`
+- [St. Johann 4 Immobilien AG](st-johann-4-immobilien-ag.md) · Basel · `?`
+- [Sunnyside Immo AG](sunnyside-immo-ag.md) · Basel · ``
+- [Swissline Immobilien GmbH](swissline-immobilien-gmbh.md) · Basel · `?`
+- [TALO Immobilien AG](talo-immobilien-ag.md) · Basel · `?`
+- [TRIGIS Treuhand & Immobilien AG](trigis-treuhand-immobilien-ag.md) · Basel · `info@trigis.ch`
+- [Terena Immobilien AG](terena-immobilien-ag.md) · Basel · `?`
+- [Terranova Immobilien AG](terranova-immobilien-ag.md) · Basel · `info@terranova-immo.ch`
+- [Tomy Immobilien AG](tomy-immobilien-ag.md) · Basel · ``
+- [Top Immobilien AG](top-immobilien-ag.md) · Basel · `?`
+- [Torri Immobilien GmbH](torri-immobilien-gmbh.md) · Basel · `info@torri-immobilien.ch`
+- [Tosca Immobilien AG](tosca-immobilien-ag.md) · Basel · `?`
+- [Tosch Immobilien Service GmbH](tosch-immobilien-service-gmbh.md) · Basel · `?`
+- [VT Immobilien GmbH](vt-immobilien-gmbh.md) · Basel · `info@vtimmo.ch`
+- [Vaga Bewirtschaftung AG](vaga-bewirtschaftung-ag.md) · Basel · ``
+- [Veriba Immobilien GmbH](veriba-immobilien-gmbh.md) · Basel · `info@veriba.ch (+17)`
+- [Vimova Bewirtschaftung AG](vimova-bewirtschaftung-ag.md) · Basel · `hello@vimova.ch (+4)`
+- [Vision Immobilier Sàrl](vision-immobilier-sarl.md) · Basel · `info@visionimmobilier.ch (+7)`
+- [Zum Schellenberg Immobilien AG](zum-schellenberg-immobilien-ag.md) · Basel · `?`
+- [Zwinger Immobilien AG](zwinger-immobilien-ag.md) · Basel · `?`
+- [dp immobilienberatung gmbh](dp-immobilienberatung-gmbh.md) · Basel · ``
+- [echt immo AG](echt-immo-ag.md) · Riehen · `?`
+- [steweo immobilien ag](steweo-immobilien-ag.md) · Basel · `info@steweo.ch (+5)`
+- [trimag Treuhand-Immobilien AG](trimag-treuhand-immobilien-ag.md) · Basel · `trimag@trimag.ch`
+- [we build immo gmbh](we-build-immo-gmbh.md) · Basel · `-`
+
+## regie-letting (51)
+
+lets property; the administration may sit elsewhere
+
+- [Adimmo AG](adimmo-ag.md) · Basel · `info@adimmo.ch`
+- [Aeschen Immobilien AG](aeschen-immobilien-ag.md) · Basel · ``
+- [Anfos Immobilien AG](anfos-immobilien-ag.md) · Basel · ``
+- [BESCH Immobilien GmbH](besch-immobilien-gmbh.md) · Riehen · ``
+- [BVF, Bau-, Verwaltungs-, Finanzierungs- und Treuhand AG](bvf-bau-verwaltungs-finanzierungs-und-treuhand-ag.md) · Basel · ``
+- [Bertan Immobilien AG](bertan-immobilien-ag.md) · Basel · ``
+- [Bolsinger Immobilien GmbH](bolsinger-immobilien-gmbh.md) · Basel · `bolsinger@bolimmo.ch`
+- [Burckhardt Immobilien AG](burckhardt-immobilien-ag.md) · Basel · ``
+- [CC Immobilien Treuhand GmbH](cc-immobilien-treuhand-gmbh.md) · Riehen · ``
+- [COAN IMMOBILIEN AG](coan-immobilien-ag.md) · Riehen · ``
+- [Carabelli Immobilien AG](carabelli-immobilien-ag.md) · Basel · `?`
+- [Caro Immobilien AG](caro-immobilien-ag.md) · Basel · ``
+- [De Cornalin Immobilien GmbH](de-cornalin-immobilien-gmbh.md) · Basel · ``
+- [Demenga Liegenschaften GmbH](demenga-liegenschaften-gmbh.md) · Basel · ``
+- [Dettwiler Immobilien GmbH](dettwiler-immobilien-gmbh.md) · Basel · ``
+- [Felix Platter Immobilien AG](felix-platter-immobilien-ag.md) · Basel · ``
+- [Filser Immobilien GmbH](filser-immobilien-gmbh.md) · Riehen · ``
+- [Firmit Immobilien AG](firmit-immobilien-ag.md) · Basel · ``
+- [Fritz Meyer Immo AG](fritz-meyer-immo-ag.md) · Basel · ``
+- [GEBE Immo AG](gebe-immo-ag.md) · Basel · ``
+- [Gilani Immobilien AG](gilani-immobilien-ag.md) · Basel · ``
+- [Hornfels Immobilien AG](hornfels-immobilien-ag.md) · Basel · ``
+- [IC Immobilien & Verwaltungs GmbH](ic-immobilien-verwaltungs-gmbh.md) · Basel · ``
+- [JB7 immo AG](jb7-immo-ag.md) · Basel · ``
+- [KIST Liegenschaften AG](kist-liegenschaften-ag.md) · Basel · ``
+- [L + B AG Liegenschaftsberatung](l-b-ag-liegenschaftsberatung.md) · Basel · ``
+- [MAMO IMMOBILIEN AG](mamo-immobilien-ag.md) · Basel · ``
+- [MMK Immo-Rent GmbH](mmk-immo-rent-gmbh.md) · Basel · ``
+- [Magna Immobilien AG](magna-immobilien-ag.md) · Basel · ``
+- [NGJD Immobilien AG](ngjd-immobilien-ag.md) · Basel · ``
+- [PAOM Immobilien Investment AG](paom-immobilien-investment-ag.md) · Bettingen · ``
+- [PH Immobilien + Services AG](ph-immobilien-services-ag.md) · Basel · ``
+- [Peag Immobilien AG](peag-immobilien-ag.md) · Basel · ``
+- [Pensa Immobilien AG](pensa-immobilien-ag.md) · Basel · ``
+- [RENÉ WENGER IMMOBILIEN AG](rene-wenger-immobilien-ag.md) · Basel · ``
+- [Realista Immobilien AG](realista-immobilien-ag.md) · Basel · ``
+- [Rhy Liegenschaften AG](rhy-liegenschaften-ag.md) · Basel · ``
+- [Rimmo-Invest AG](rimmo-invest-ag.md) · Basel · ``
+- [SRB Immobilien AG](srb-immobilien-ag.md) · Basel · ``
+- [STORM IMMO GmbH](storm-immo-gmbh.md) · Basel · ``
+- [Solnitor Immobilien AG](solnitor-immobilien-ag.md) · Basel · ``
+- [Sonne Liegenschaften AG](sonne-liegenschaften-ag.md) · Basel · ``
+- [Stawega Immobilien AG](stawega-immobilien-ag.md) · Basel · ``
+- [Struvis Immobilien AG](struvis-immobilien-ag.md) · Basel · ``
+- [Tibby Immobilien TI GmbH](tibby-immobilien-ti-gmbh.md) · Basel · ``
+- [Tripi Immobilien AG](tripi-immobilien-ag.md) · Basel · ``
+- [UAVI Immobilien AG](uavi-immobilien-ag.md) · Basel · ``
+- [Ventris Immobilien GmbH](ventris-immobilien-gmbh.md) · Basel · ``
+- [Zappalà Immobilien GmbH](zappala-immobilien-gmbh.md) · Basel · `info@zappala-immobilien.ch (+1)`
+- [Zur Rotbuche Immobilien AG](zur-rotbuche-immobilien-ag.md) · Basel · ``
+- [von Grafenstein Immobilien AG](von-grafenstein-immobilien-ag.md) · Basel · `?`

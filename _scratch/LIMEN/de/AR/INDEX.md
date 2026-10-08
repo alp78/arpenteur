@@ -1,0 +1,148 @@
+# AR · 136 firms
+
+
+## regie-core (76)
+
+manages property for third parties, so runs inspections routinely
+
+- [AJ Immobilien GmbH](aj-immobilien-gmbh.md) · Herisau · `-`
+- [ALPA Verwaltungen GmbH](alpa-verwaltungen-gmbh.md) · Teufen (AR) · `-`
+- [AMAS Immo AG](amas-immo-ag.md) · Herisau · ``
+- [ARO-Knechtle AG Immobilien-Treuhand](aro-knechtle-ag-immobilien-treuhand.md) · Herisau · `info@aro.immo (+18)`
+- [Amidi Immo Bau AG](amidi-immo-bau-ag.md) · Bühler · `-`
+- [Ammann & Ehrbar Immobilien AG](ammann-ehrbar-immobilien-ag.md) · Herisau · `info@ammann-ehrbar.ch`
+- [Austrasse Immobilien AG](austrasse-immobilien-ag.md) · Teufen (AR) · `?`
+- [BEMELE IMMO AG](bemele-immo-ag.md) · Wolfhalden · `-`
+- [Bau- u. Verwaltungs AG., Heiden](bau-u-verwaltungs-ag-heiden.md) · Heiden · `?`
+- [Bauarge Immobilien AG](bauarge-immobilien-ag.md) · Stein (AR) · `info@bauarge.ch (+3)`
+- [Belinda Bischof Immobilien AG](belinda-bischof-immobilien-ag.md) · Teufen (AR) · `?`
+- [Blanco Immo GmbH](blanco-immo-gmbh.md) · Teufen (AR) · `?`
+- [Boliga Immobilien AG](boliga-immobilien-ag.md) · Waldstatt · `info@boliga.ch`
+- [CG Immobilien GmbH](cg-immobilien-gmbh.md) · Schönengrund · `?`
+- [CUMCOR Immobilien GmbH](cumcor-immobilien-gmbh.md) · Walzenhausen · `-`
+- [Calcit Immobilien AG](calcit-immobilien-ag.md) · Herisau · `?`
+- [Carvo Immobilien GmbH](carvo-immobilien-gmbh.md) · Schönengrund · `?`
+- [Cervus Immobilien AG](cervus-immobilien-ag.md) · Herisau · `?`
+- [DANA Immobilien GmbH](dana-immobilien-gmbh.md) · Teufen (AR) · `-`
+- [DIERO Immobilien AG](diero-immobilien-ag.md) · Speicher · `-`
+- [DUR Immo AG](dur-immo-ag.md) · Walzenhausen · `?`
+- [Danuser Immobilien AG](danuser-immobilien-ag.md) · Herisau · ``
+- [Dauth Immobilien AG](dauth-immobilien-ag.md) · Stein (AR) · `?`
+- [Daxos Immobilien AG](daxos-immobilien-ag.md) · Teufen (AR) · ``
+- [Duck Immobilien AG](duck-immobilien-ag.md) · Herisau · `-`
+- [E. Anderegg Immobilien GmbH](e-anderegg-immobilien-gmbh.md) · Herisau · `info@anderegg-immobilien.ch (+13)`
+- [Fabrik am Rotbach Immobilien AG](fabrik-am-rotbach-immobilien-ag.md) · Bühler · `?`
+- [G. B. Blessing Immobilien AG](g-b-blessing-immobilien-ag.md) · Rehetobel · ``
+- [Harmonie Verwaltungs AG](harmonie-verwaltungs-ag.md) · Heiden · `?`
+- [Hirschen Immo GmbH](hirschen-immo-gmbh.md) · Stein (AR) · ``
+- [Hochreutener Immobilien AG](hochreutener-immobilien-ag.md) · Grub (AR) · `?`
+- [Hug + Partner Immobilien GmbH](hug-partner-immobilien-gmbh.md) · Herisau · `info@hugpartner.ch (+3)`
+- [Hummeli Immo AG](hummeli-immo-ag.md) · Walzenhausen · `?`
+- [Hörler Immobilien AG](horler-immobilien-ag.md) · Teufen (AR) · ``
+- [IDP Immobilien AG](idp-immobilien-ag.md) · Gais · `?`
+- [IMMOBILIS Invest AG](immobilis-invest-ag.md) · Walzenhausen · ``
+- [Immo 9464 AG](immo-9464-ag.md) · Gais · `?`
+- [Immobilien GmbH zum Waldgut](immobilien-gmbh-zum-waldgut.md) · Herisau · `?`
+- [Immobilien Leirer AG](immobilien-leirer-ag.md) · Stein (AR) · `info@leirer.ch`
+- [JALE Immo AG](jale-immo-ag.md) · Herisau · ``
+- [JBE-Immo GmbH](jbe-immo-gmbh.md) · Gais · `?`
+- [KBMG Immo Services AG](kbmg-immo-services-ag.md) · Lutzenberg · ``
+- [Kapf Immobilien GmbH](kapf-immobilien-gmbh.md) · Walzenhausen · `?`
+- [Keller + Marquart Immo AG](keller-marquart-immo-ag.md) · Herisau · `?`
+- [Knöpfel Immo GmbH](knopfel-immo-gmbh.md) · Waldstatt · `?`
+- [Koller & Koller Immo AG](koller-koller-immo-ag.md) · Herisau · ``
+- [Krüsi Immobilien AG](krusi-immobilien-ag.md) · Schönengrund · `?`
+- [LANTER immo ag](lanter-immo-ag.md) · Herisau · ``
+- [MAB Immobilien AG](mab-immobilien-ag.md) · Speicher · `?`
+- [MARD Immo GmbH](mard-immo-gmbh.md) · Speicher · `info@mard-immo.ch`
+- [MEAC Immobilien AG](meac-immobilien-ag.md) · Herisau · `?`
+- [N + S Immobilien AG](n-s-immobilien-ag.md) · Teufen (AR) · ``
+- [Notker Verwaltungs GmbH](notker-verwaltungs-gmbh.md) · Trogen · `?`
+- [OK Hörler Immobilien AG](ok-horler-immobilien-ag.md) · Teufen (AR) · ``
+- [REAL Senn Immo GmbH](real-senn-immo-gmbh.md) · Herisau · `info@real-senn-immo.ch`
+- [Renor Immobilien AG](renor-immobilien-ag.md) · Teufen (AR) · `?`
+- [Rixen Verwaltung AG](rixen-verwaltung-ag.md) · Teufen (AR) · `?`
+- [Rossfall Immobilien AG](rossfall-immobilien-ag.md) · Wald (AR) · ``
+- [SRP Immo AG](srp-immo-ag.md) · Gais · `?`
+- [Seitz Immo AG](seitz-immo-ag.md) · Speicher · ``
+- [Sirin Immobilien AG](sirin-immobilien-ag.md) · Rehetobel · `?`
+- [Soleil Immobilien AG](soleil-immobilien-ag.md) · Rehetobel · `info@soleil-immobilien.com`
+- [Spatenstich Immobilien AG](spatenstich-immobilien-ag.md) · Teufen (AR) · `?`
+- [Steini Immobilien GmbH](steini-immobilien-gmbh.md) · Herisau · ``
+- [Suttero-Immobilien AG](suttero-immobilien-ag.md) · Teufen (AR) · `?`
+- [TPT Immo AG](tpt-immo-ag.md) · Lutzenberg · ``
+- [WASTO Immobilien AG](wasto-immobilien-ag.md) · Herisau · `?`
+- [WTB Immobilien GmbH](wtb-immobilien-gmbh.md) · Waldstatt · `?`
+- [ZP Immobilien Holding AG](zp-immobilien-holding-ag.md) · Herisau · `?`
+- [Zurlinden Immobilien GmbH](zurlinden-immobilien-gmbh.md) · Heiden · ``
+- [Zwicker Immobilien AG](zwicker-immobilien-ag.md) · Herisau · `?`
+- [moka immobilien AG](moka-immobilien-ag.md) · Walzenhausen · ``
+- [nila immobilien GmbH](nila-immobilien-gmbh.md) · Heiden · `-`
+- [nisago Immobilien AG](nisago-immobilien-ag.md) · Rehetobel · `info@nisago.ch`
+- [wabu immo ag](wabu-immo-ag.md) · Teufen (AR) · `?`
+- [zume immo ag](zume-immo-ag.md) · Teufen (AR) · ``
+
+## regie-letting (60)
+
+lets property; the administration may sit elsewhere
+
+- [AIDAS Immobilien & Handels GmbH](aidas-immobilien-handels-gmbh.md) · Heiden · ``
+- [B&Z Immo Holding GmbH](b-z-immo-holding-gmbh.md) · Schönengrund · ``
+- [B4I Immobilien GmbH](b4i-immobilien-gmbh.md) · Teufen (AR) · ``
+- [BBP IMMOBILIEN AG](bbp-immobilien-ag.md) · Teufen (AR) · ``
+- [Bengtson Immobilien AG](bengtson-immobilien-ag.md) · Speicher · ``
+- [Bischof Edgar Liegenschaften AG](bischof-edgar-liegenschaften-ag.md) · Teufen (AR) · ``
+- [Bänziger Liegenschaften GmbH](banziger-liegenschaften-gmbh.md) · Trogen · ``
+- [CHS Phönix Immobilien AG](chs-phonix-immobilien-ag.md) · Gais · ``
+- [CR2 Immobilien AG](cr2-immobilien-ag.md) · Rehetobel · ``
+- [DWS Immobilien GmbH](dws-immobilien-gmbh.md) · Speicher · ``
+- [Dürrenbach Immobilien AG](durrenbach-immobilien-ag.md) · Urnäsch · ``
+- [EMC Immobilien AG](emc-immobilien-ag.md) · Herisau · ``
+- [FUBI Immobilien AG](fubi-immobilien-ag.md) · Herisau · ``
+- [Fluora Immobilien AG](fluora-immobilien-ag.md) · Herisau · ``
+- [Frischknecht Immobilien AG](frischknecht-immobilien-ag.md) · Heiden · ``
+- [Geser Liegenschaften AG](geser-liegenschaften-ag.md) · Speicher · ``
+- [Gise Immobilien AG](gise-immobilien-ag.md) · Teufen (AR) · ``
+- [HAG Immobilien & Verwaltung AG](hag-immobilien-verwaltung-ag.md) · Herisau · ``
+- [HERBAS IMMO AG](herbas-immo-ag.md) · Speicher · ``
+- [HGT Immobilien AG](hgt-immobilien-ag.md) · Speicher · ``
+- [HU Lanker Immobilien AG](hu-lanker-immobilien-ag.md) · Waldstatt · ``
+- [Heinz Alder Immobilien AG](heinz-alder-immobilien-ag.md) · Heiden · ``
+- [Hinteregg Immobilien AG](hinteregg-immobilien-ag.md) · Wolfhalden · ``
+- [Högger & Eugster Immobilien AG](hogger-eugster-immobilien-ag.md) · Teufen (AR) · ``
+- [Immo Fux AG](immo-fux-ag.md) · Gais · ``
+- [Immobilien Langmoos AG](immobilien-langmoos-ag.md) · Heiden · ``
+- [JARS IMMO AG](jars-immo-ag.md) · Teufen (AR) · ``
+- [Jenni Immobilien AG](jenni-immobilien-ag.md) · Heiden · ``
+- [Just Immobilien AG](just-immobilien-ag.md) · Walzenhausen · ``
+- [MST IMMO AG](mst-immo-ag.md) · Herisau · ``
+- [Meile Immobilien AG](meile-immobilien-ag.md) · Schwellbrunn · ``
+- [Mösler & Rusch Immobilien AG](mosler-rusch-immobilien-ag.md) · Hundwil · ``
+- [Niederer Immobilien AG](niederer-immobilien-ag.md) · Heiden · ``
+- [Oertle Immobilien AG](oertle-immobilien-ag.md) · Herisau · ``
+- [PGI Immobilienprojekte AG](pgi-immobilienprojekte-ag.md) · Teufen (AR) · ``
+- [PITA Immo GmbH](pita-immo-gmbh.md) · Speicher · ``
+- [Platz Herisau Immobilien AG](platz-herisau-immobilien-ag.md) · Herisau · ``
+- [Punto Hispano Immobilien GmbH](punto-hispano-immobilien-gmbh.md) · Heiden · ``
+- [R. Weber Verwaltungs AG](r-weber-verwaltungs-ag.md) · Heiden · ``
+- [R.M.S.Immobilien AG](r-m-s-immobilien-ag.md) · Bühler · ``
+- [RAX immo AG](rax-immo-ag.md) · Wolfhalden · ``
+- [Radi Immo GmbH](radi-immo-gmbh.md) · Bühler · ``
+- [Rochner Immobilien AG](rochner-immobilien-ag.md) · Walzenhausen · ``
+- [SURANA Immo AG](surana-immo-ag.md) · Bühler · ``
+- [SWISSCAP Immobilien AG](swisscap-immobilien-ag.md) · Speicher · ``
+- [Sadiki Immobilien GmbH](sadiki-immobilien-gmbh.md) · Herisau · ``
+- [Sanver Immo AG](sanver-immo-ag.md) · Teufen (AR) · ``
+- [Schteerislä Immobilien AG](schteerisla-immobilien-ag.md) · Herisau · ``
+- [Swiss Immo & Generalbau GmbH](swiss-immo-generalbau-gmbh.md) · Herisau · ``
+- [Synkope Immobilien GmbH](synkope-immobilien-gmbh.md) · Grub (AR) · ``
+- [UNIKUM Immobilien GmbH](unikum-immobilien-gmbh.md) · Teufen (AR) · ``
+- [Vivid Immobilien AG](vivid-immobilien-ag.md) · Teufen (AR) · ``
+- [WF Immobilien AG](wf-immobilien-ag.md) · Heiden · ``
+- [Wagner Liegenschaften AG](wagner-liegenschaften-ag.md) · Waldstatt · ``
+- [Walser-Mettlen Immobilien AG](walser-mettlen-immobilien-ag.md) · Urnäsch · ``
+- [Welz Immobilien GmbH](welz-immobilien-gmbh.md) · Trogen · ``
+- [Zähner Immobilien AG](zahner-immobilien-ag.md) · Rehetobel · ``
+- [f immobilien ag](f-immobilien-ag.md) · Wolfhalden · `?`
+- [max immo treuhand ag](max-immo-treuhand-ag.md) · Wald (AR) · ``
+- [nt4 immo gmbh](nt4-immo-gmbh.md) · Teufen (AR) · ``

@@ -1,0 +1,424 @@
+# GR · 412 firms
+
+
+## regie-core (184)
+
+manages property for third parties, so runs inspections routinely
+
+- [4049 Immobilien AG](4049-immobilien-ag.md) · Tamins · `-`
+- [4F Immo AG](4f-immo-ag.md) · Chur · `-`
+- [A-Z Immobewirtschaftung AG](a-z-immobewirtschaftung-ag.md) · Chur · `-`
+- [ALCV Immo Promo SA](alcv-immo-promo-sa.md) · Grono · `-`
+- [ALECTO Immobilien AG](alecto-immobilien-ag.md) · Arosa · `-`
+- [Accontaris Immobilien AG](accontaris-immobilien-ag.md) · Scuol · `zug@accontaris.ch (+2)`
+- [Adler Immo AG](adler-immo-ag.md) · Fläsch · `-`
+- [Alfina Prefera Immobilien AG](alfina-prefera-immobilien-ag.md) · Chur · `info@alfina.ch (+19)`
+- [Allana Immobilien AG](allana-immobilien-ag.md) · Chur · `info@allana.com`
+- [Alpenrose Immobilien AG](alpenrose-immobilien-ag.md) · Maienfeld · `-`
+- [Alpenrose Immobilien und Consulting GmbH](alpenrose-immobilien-und-consulting-gmbh.md) · La Punt Chamues-ch · `-`
+- [Am-Berg Immobilien + Planung GmbH](am-berg-immobilien-planung-gmbh.md) · Domleschg · `?`
+- [Ambassador-Immobilien AG](ambassador-immobilien-ag.md) · Celerina/Schlarigna · `-`
+- [Amfars Immo GmbH](amfars-immo-gmbh.md) · Chur · `?`
+- [Arena Tech Immo AG](arena-tech-immo-ag.md) · Scuol · `info@arenatech.ch`
+- [Ariada Verwaltungs AG](ariada-verwaltungs-ag.md) · Chur · `?`
+- [Arosa Alpine IMMO AG](arosa-alpine-immo-ag.md) · Arosa · `info@alpineimmo.com`
+- [Atlantis Immo Consulting SA](atlantis-immo-consulting-sa.md) · Silvaplana · `info@atlantis-immo.ch`
+- [BCJ Immo GmbH](bcj-immo-gmbh.md) · Davos · `info@bcj-immo.com`
+- [BHP Immobilien AG](bhp-immobilien-ag.md) · Maienfeld · `?`
+- [BOBA Immo AG](boba-immo-ag.md) · Vaz/Obervaz · `-`
+- [BRONSCHHOFEN IMMO CHUR AG](bronschhofen-immo-chur-ag.md) · Chur · ``
+- [Bachstei Immobilien GmbH](bachstei-immobilien-gmbh.md) · Flims · `?`
+- [Bellaval Immo AG](bellaval-immo-ag.md) · Scuol · ``
+- [Belmont Immobilien GmbH](belmont-immobilien-gmbh.md) · Chur · `?`
+- [Beltracchi Immobilien AG](beltracchi-immobilien-ag.md) · Celerina/Schlarigna · `info@beltracchi.ch`
+- [Beni Compagnoni Immobilien AG](beni-compagnoni-immobilien-ag.md) · Davos · `?`
+- [Berger Immobilien Treuhand AG](berger-immobilien-treuhand-ag.md) · Chur · `info@berger-immobilien.ch (+1)`
+- [Bialla Immo AG](bialla-immo-ag.md) · Rothenbrunnen · `?`
+- [CA-Immo AG](ca-immo-ag.md) · Chur · ``
+- [CAWIN Immobilien AG](cawin-immobilien-ag.md) · Untervaz · `?`
+- [CMSC Immo AG](cmsc-immo-ag.md) · Ilanz/Glion · ``
+- [CRESTA Immobilien AG](cresta-immobilien-ag.md) · Flims · `info@cresta.ch`
+- [Cadosch Immobilien AG](cadosch-immobilien-ag.md) · Thusis · `?`
+- [Canova Immobilien AG](canova-immobilien-ag.md) · Davos · `-`
+- [Castelberg Immobilien und Beratungen AG](castelberg-immobilien-und-beratungen-ag.md) · Zillis-Reischen · `?`
+- [Casty Immobilien AG](casty-immobilien-ag.md) · Davos · `?`
+- [Casutt Immobilien AG](casutt-immobilien-ag.md) · Falera · `armin.casutt@casutt-immobilien.ch`
+- [Cattori Immobilien AG](cattori-immobilien-ag.md) · Jenaz · `-`
+- [Censi Immobiliare Sagl](censi-immobiliare-sagl.md) · Cama · `?`
+- [Collenberg Immobilias SA](collenberg-immobilias-sa.md) · Lumnezia · `?`
+- [Curvia Immobilien AG](curvia-immobilien-ag.md) · Chur · `?`
+- [Curvér Treuhand + Verwaltungen AG](curver-treuhand-verwaltungen-ag.md) · Surses · `info@curver.ch (+19)`
+- [D&P Immo GmbH](d-p-immo-gmbh.md) · Bonaduz · `?`
+- [De Blanck Immobilien GmbH](de-blanck-immobilien-gmbh.md) · Chur · `-`
+- [Decurtins Immobilien AG](decurtins-immobilien-ag.md) · Sils im Domleschg · ``
+- [Diamed Verwaltungs AG](diamed-verwaltungs-ag.md) · Chur · `-`
+- [Diethelm Immo Davos GmbH](diethelm-immo-davos-gmbh.md) · Davos · `?`
+- [Dimora Immobilias SA](dimora-immobilias-sa.md) · Ilanz/Glion · `-`
+- [Dino's Immobilien- und Verwaltungs AG](dino-s-immobilien-und-verwaltungs-ag.md) · Chur · `?`
+- [Dorn Immobilien AG](dorn-immobilien-ag.md) · Chur · `info@dornimmobilien.ch`
+- [EVE Immobilien GmbH](eve-immobilien-gmbh.md) · Thusis · ``
+- [Elektro Mehli Verwaltungs AG](elektro-mehli-verwaltungs-ag.md) · Chur · `info@elektromehli.ch`
+- [Engel Immobilien Chur AG](engel-immobilien-chur-ag.md) · Chur · `info@engel-immobilien.ch`
+- [Federico Immobilien AG](federico-immobilien-ag.md) · Chur · `info@federico-immobilien.ch`
+- [Freund Immobilien AG](freund-immobilien-ag.md) · Samedan · `info@freundimmobilien.com`
+- [Funtauna Immobilien AG](funtauna-immobilien-ag.md) · Malans · `?`
+- [Gadient Arosa Immo AG](gadient-arosa-immo-ag.md) · Arosa · ``
+- [Galli Immobiliare SA](galli-immobiliare-sa.md) · Grono · `?`
+- [Gammeter Immobilien AG](gammeter-immobilien-ag.md) · St. Moritz · `?`
+- [Gasser & Wepf Immobilien AG](gasser-wepf-immobilien-ag.md) · Klosters · `info@gasserwepf.ch (+23)`
+- [Geronimi Immobilien AG](geronimi-immobilien-ag.md) · St. Moritz · `?`
+- [Glogn Immobilias SA](glogn-immobilias-sa.md) · Ilanz/Glion · `?`
+- [Gruber Immobilien AG](gruber-immobilien-ag.md) · Pontresina · ``
+- [H. P. Senn Immobilien GmbH](h-p-senn-immobilien-gmbh.md) · Landquart · `info@sennimmobilien.ch (+7)`
+- [HZ Immobilien AG](hz-immobilien-ag.md) · Chur · `?`
+- [Hans Peter Fontana Immobilien AG](hans-peter-fontana-immobilien-ag.md) · Flims · `?`
+- [Heidihaus Immobilien AG](heidihaus-immobilien-ag.md) · Chur · `?`
+- [Hoffmann Immo AG](hoffmann-immo-ag.md) · Davos · `?`
+- [Home Deal Immobilien GmbH](home-deal-immobilien-gmbh.md) · Landquart · ``
+- [IMMO ALLEGRA GmbH](immo-allegra-gmbh.md) · Scuol · `?`
+- [IMMO DOMUSNOVA SA](immo-domusnova-sa.md) · Grono · `?`
+- [Immo Brazerol AG](immo-brazerol-ag.md) · Chur · `?`
+- [Immo Broggi SA](immo-broggi-sa.md) · Roveredo (GR) · `?`
+- [Immo Büel Chur AG](immo-buel-chur-ag.md) · Chur · `?`
+- [Immo Churwalden GmbH](immo-churwalden-gmbh.md) · Churwalden · ``
+- [Immo FamCaSch AG](immo-famcasch-ag.md) · Landquart · `?`
+- [Immo GR sagl](immo-gr-sagl.md) · Grono · `?`
+- [Immo Gartmann SA](immo-gartmann-sa.md) · Vals · `?`
+- [Immo Hemmi AG](immo-hemmi-ag.md) · Chur · `?`
+- [Immo Hirschen AG](immo-hirschen-ag.md) · Jenaz · `?`
+- [Immo La Punt GmbH](immo-la-punt-gmbh.md) · La Punt Chamues-ch · ``
+- [Immo Muletg AG](immo-muletg-ag.md) · Flims · `?`
+- [Immo Tull AG](immo-tull-ag.md) · Flims · `?`
+- [Immo-RD Sagl](immo-rd-sagl.md) · Grono · `?`
+- [Immobiliare Swissteam SA](immobiliare-swissteam-sa.md) · Grono · `?`
+- [Immobilias G. Cagienard SA](immobilias-g-cagienard-sa.md) · Laax · `?`
+- [Immobilien Boutique AG](immobilien-boutique-ag.md) · Davos · ``
+- [Immobilien Fontana AG](immobilien-fontana-ag.md) · Flims · `?`
+- [Immobilien M. Bardill AG](immobilien-m-bardill-ag.md) · Landquart · `?`
+- [Immobilien Wolf & Co. AG](immobilien-wolf-co-ag.md) · Chur · `?`
+- [Immobilien-Gesellschaft Zieglerhof AG](immobilien-gesellschaft-zieglerhof-ag.md) · Vaz/Obervaz · `?`
+- [JK Immo Rock AG](jk-immo-rock-ag.md) · St. Moritz · `?`
+- [JOSEF IMMO SA](josef-immo-sa.md) · Brusio · ``
+- [Joos Immobilien AG](joos-immobilien-ag.md) · Chur · `?`
+- [Jägli und Schneider Immobilien AG](jagli-und-schneider-immobilien-ag.md) · Davos · `?`
+- [Jörimann Immobilien GmbH](jorimann-immobilien-gmbh.md) · Chur · `?`
+- [K48 Immobilien AG](k48-immobilien-ag.md) · Chur · `?`
+- [Kehl Gärten & Immobilien AG](kehl-garten-immobilien-ag.md) · Zizers · `?`
+- [Krol Immobilien AG](krol-immobilien-ag.md) · Trun · ``
+- [L & M Immobilien & Transport GmbH](l-m-immobilien-transport-gmbh.md) · Chur · `?`
+- [LACASA Immobilien AG](lacasa-immobilien-ag.md) · Ilanz/Glion · `?`
+- [LAE Immobilien AG](lae-immobilien-ag.md) · Grüsch · `?`
+- [LAIL Immobilien AG](lail-immobilien-ag.md) · S-chanf · `?`
+- [La Resgia Immobilien AG](la-resgia-immobilien-ag.md) · Vaz/Obervaz · `?`
+- [Lamm Immobilien AG](lamm-immobilien-ag.md) · St. Moritz · ``
+- [Limaco Immobilien AG](limaco-immobilien-ag.md) · Davos · `?`
+- [Lizi Immobilien AG](lizi-immobilien-ag.md) · Klosters · `?`
+- [Ljama Immobiliare Sagl](ljama-immobiliare-sagl.md) · Roveredo (GR) · `arber.k@ljama-immobiliare.ch`
+- [Lo Svizzero Immobilien AG](lo-svizzero-immobilien-ag.md) · Domleschg · `?`
+- [Loga-Immobilien AG](loga-immobilien-ag.md) · St. Moritz · `mail@loga.ch (+11)`
+- [Luck Immobilien GmbH](luck-immobilien-gmbh.md) · Schluein · `?`
+- [Luzi Immobilien AG](luzi-immobilien-ag.md) · Cazis · ``
+- [Lötscher & Lötscher Immobilien AG](lotscher-lotscher-immobilien-ag.md) · Schiers · `?`
+- [Lüthi Beteiligungs + Immobilien AG](luthi-beteiligungs-immobilien-ag.md) · Samedan · `?`
+- [MAYRAN - IMMOBILIEN AG](mayran-immobilien-ag.md) · Roveredo (GR) · `?`
+- [MKTJ Immo AG](mktj-immo-ag.md) · Fläsch · `?`
+- [Meng Immobilien GmbH](meng-immobilien-gmbh.md) · Davos · `?`
+- [Meuli Immo AG](meuli-immo-ag.md) · Sils im Engadin/Segl · ``
+- [Minelli Immobiliare AG](minelli-immobiliare-ag.md) · Davos · `?`
+- [Moducan Immo AG](moducan-immo-ag.md) · Laax · `?`
+- [Morell & Giovanoli Immobilien AG](morell-giovanoli-immobilien-ag.md) · Samedan · `info@morell-giovanoli.ch (+6)`
+- [Mountain Living Immobilien GmbH](mountain-living-immobilien-gmbh.md) · Flims · `dpaul@mountainliving.com (+4)`
+- [Muchetta Immo-Invest AG](muchetta-immo-invest-ag.md) · Davos · `?`
+- [Munt Immobilien AG](munt-immobilien-ag.md) · St. Moritz · ``
+- [Müli Immo GmbH](muli-immo-gmbh.md) · Davos · `?`
+- [Müller Immobilien AG Andeer](muller-immobilien-ag-andeer.md) · Andeer · `?`
+- [N. + E. Margadant Curia Immobilien AG](n-e-margadant-curia-immobilien-ag.md) · Chur · `?`
+- [Nicol. Hartmann Immobilien AG](nicol-hartmann-immobilien-ag.md) · St. Moritz · `?`
+- [Nikolaus Graf Immobilien AG](nikolaus-graf-immobilien-ag.md) · Laax · `?`
+- [O'BRIDGE IMMOBILIEN GmbH](o-bridge-immobilien-gmbh.md) · Pontresina · ``
+- [O'Bridge Verwaltung GmbH](o-bridge-verwaltung-gmbh.md) · Pontresina · `?`
+- [OH Immobilien AG](oh-immobilien-ag.md) · Davos · `?`
+- [PMC Immobilien Consulting GmbH](pmc-immobilien-consulting-gmbh.md) · Vaz/Obervaz · `?`
+- [Pallavicini Immobilien AG](pallavicini-immobilien-ag.md) · Chur · `?`
+- [Permanigia Immo AG](permanigia-immo-ag.md) · Obersaxen Mundaun · `?`
+- [Plaboma Immobilien GmbH](plaboma-immobilien-gmbh.md) · Bonaduz · ``
+- [Plan-B Immobilien AG](plan-b-immobilien-ag.md) · Silvaplana · `?`
+- [Premium Immobiliare Sagl](premium-immobiliare-sagl.md) · Grono · `info@premiumimmobiliare.ch`
+- [ROBE65 IMMO AG](robe65-immo-ag.md) · Sils im Domleschg · `?`
+- [Rageth Immo AG](rageth-immo-ag.md) · Landquart · `info@rageth.ch (+8)`
+- [ReD Immobilien AG](red-immobilien-ag.md) · Flims · `?`
+- [Redoc Immobilien AG](redoc-immobilien-ag.md) · Chur · ``
+- [Reich Immobilien AG](reich-immobilien-ag.md) · Silvaplana · `info@reichimmobilien.com`
+- [Remo Fluri Immobilien AG](remo-fluri-immobilien-ag.md) · Flims · `?`
+- [Retus Immobilien AG](retus-immobilien-ag.md) · St. Moritz · `?`
+- [Rexas Immobilienverwaltung GmbH](rexas-immobilienverwaltung-gmbh.md) · Churwalden · `?`
+- [RhB Immobilien AG](rhb-immobilien-ag.md) · Chur · `contact@rhb.ch (+4)`
+- [RhB Immobilien Obersee AG](rhb-immobilien-obersee-ag.md) · Chur · ``
+- [RoNo Immobilien GmbH](rono-immobilien-gmbh.md) · Churwalden · `?`
+- [Rossboden Immobilien AG](rossboden-immobilien-ag.md) · Chur · `?`
+- [Roston Immobilien AG](roston-immobilien-ag.md) · Chur · `?`
+- [Rüedi Immobilien AG](ruedi-immobilien-ag.md) · Klosters · `info@ruedi-immobilien.ch`
+- [SATO Immobilien AG](sato-immobilien-ag.md) · Maienfeld · `?`
+- [SEBE Immobilien AG](sebe-immobilien-ag.md) · Chur · ``
+- [SK Immobilien AG](sk-immobilien-ag.md) · Chur · `?`
+- [SPECIALE IMMOBILIEN SAGL](speciale-immobilien-sagl.md) · Celerina/Schlarigna · `info@specialeimmobilien.ch`
+- [SRE Immobilien MR SA](sre-immobilien-mr-sa.md) · St. Moritz · `info@sreimmobilien.ch (+1)`
+- [SWISS BÜNDNER IMMOBILIEN GmbH](swiss-bundner-immobilien-gmbh.md) · Domleschg · `?`
+- [Schmid Liegenschaften AG](schmid-liegenschaften-ag.md) · Flims · `info@schmid-liegenschaften.ch`
+- [Sisa Immobilien AG](sisa-immobilien-ag.md) · St. Moritz · ``
+- [Spescha Immobilien AG](spescha-immobilien-ag.md) · Ilanz/Glion · `?`
+- [St.Anna Immobilien AG](st-anna-immobilien-ag.md) · Grono · `?`
+- [Star Dreams Immobilien AG](star-dreams-immobilien-ag.md) · St. Moritz · `?`
+- [Stef-Immobilien AG](stef-immobilien-ag.md) · Celerina/Schlarigna · `?`
+- [Sudèr Immobilien AG](suder-immobilien-ag.md) · Samedan · `?`
+- [TI Teco Immo-GR AG](ti-teco-immo-gr-ag.md) · Chur · ``
+- [TMP Verwaltungen GmbH](tmp-verwaltungen-gmbh.md) · Chur · `?`
+- [Thalfeld-Immobilien AG](thalfeld-immobilien-ag.md) · Chur · `?`
+- [Top Living Immobilien AG](top-living-immobilien-ag.md) · Chur · `?`
+- [Triulzi Immobiliare SA](triulzi-immobiliare-sa.md) · Celerina/Schlarigna · `?`
+- [VREMI IMMO AG](vremi-immo-ag.md) · Chur · `?`
+- [Valär Immobilien-Treuhand AG](valar-immobilien-treuhand-ag.md) · Davos · `?`
+- [Vigna Immobilien AG](vigna-immobilien-ag.md) · Scuol · `?`
+- [WE-Immobilien AG](we-immobilien-ag.md) · Davos · `?`
+- [WS Immobilien Davos AG](ws-immobilien-davos-ag.md) · Davos · `?`
+- [Weibel Immo Chur AG](weibel-immo-chur-ag.md) · Chur · `?`
+- [Zeus Immobilien AG](zeus-immobilien-ag.md) · Thusis · `?`
+- [Zimmi Immobilien AG](zimmi-immobilien-ag.md) · Domat/Ems · ``
+- [Zindel United Verwaltungs AG](zindel-united-verwaltungs-ag.md) · Maienfeld · `info@zindel-united.ch`
+- [domenig MANAGEMENT UND VERWALTUNG AG](domenig-management-und-verwaltung-ag.md) · Chur · `architekten@domenig.ch`
+- [elprotec Immo AG](elprotec-immo-ag.md) · Chur · `?`
+- [immo+gest Sagl](immo-gest-sagl.md) · St. Moritz · `info@immogest.com`
+- [wood stone immo AG](wood-stone-immo-ag.md) · Chur · `info@woodstone.com`
+
+## regie-letting (228)
+
+lets property; the administration may sit elsewhere
+
+- [4OL Immo AG](4ol-immo-ag.md) · Val Müstair · ``
+- [6193 Immo AG](6193-immo-ag.md) · Chur · ``
+- [6319 Immobilien AG](6319-immobilien-ag.md) · Chur · ``
+- [7402 Immobilien AG](7402-immobilien-ag.md) · Bonaduz · ``
+- [ACS Immobilien AG](acs-immobilien-ag.md) · Landquart · ``
+- [ADF Immobilien Sagl](adf-immobilien-sagl.md) · St. Moritz · ``
+- [ARAI Immobilien AG](arai-immobilien-ag.md) · Chur · ``
+- [ATLANTIK IMMOBILIEN AG](atlantik-immobilien-ag.md) · Samedan · ``
+- [AZ Immobilien & Design GmbH](az-immobilien-design-gmbh.md) · Arosa · ``
+- [Almedana Immobilien AG](almedana-immobilien-ag.md) · Landquart · ``
+- [Alpensonne Immobilien AG](alpensonne-immobilien-ag.md) · St. Moritz · ``
+- [Althaus Immobilien AG](althaus-immobilien-ag.md) · Arosa · ``
+- [Ambühl Liegenschaften AG](ambuhl-liegenschaften-ag.md) · Davos · ``
+- [Animà Immobilien AG](anima-immobilien-ag.md) · Ilanz/Glion · ``
+- [Araschgen Immo Domat/Ems GmbH](araschgen-immo-domat-ems-gmbh.md) · Domat/Ems · ``
+- [Arfeld Immobilien AG](arfeld-immobilien-ag.md) · Chur · ``
+- [Axel Heim Immobilien GmbH](axel-heim-immobilien-gmbh.md) · Davos · ``
+- [B&B Immobilien St.Moritz AG](b-b-immobilien-st-moritz-ag.md) · St. Moritz · ``
+- [BRIC Immobilien AG](bric-immobilien-ag.md) · Bonaduz · ``
+- [Banzer Immobilien AG](banzer-immobilien-ag.md) · Thusis · ``
+- [Bardill Immobilien AG](bardill-immobilien-ag.md) · Jenaz · ``
+- [Baumgartner Immo Scuol AG](baumgartner-immo-scuol-ag.md) · Scuol · ``
+- [Berca Immobilien AG](berca-immobilien-ag.md) · Landquart · ``
+- [Bergsee Immobilien GmbH](bergsee-immobilien-gmbh.md) · Breil/Brigels · `?`
+- [Blumengarten Immobilien AG](blumengarten-immobilien-ag.md) · Malans · ``
+- [Brauchli Immobilien AG](brauchli-immobilien-ag.md) · Landquart · ``
+- [Bufa Immobilien AG](bufa-immobilien-ag.md) · Chur · ``
+- [Burkhardt AG Immobilien und Verwaltung](burkhardt-ag-immobilien-und-verwaltung.md) · Maienfeld · ``
+- [Bühler Architektur + Immobilien AG](buhler-architektur-immobilien-ag.md) · Thusis · ``
+- [Bündner Wolldeckenfabrik Immobilien AG](bundner-wolldeckenfabrik-immobilien-ag.md) · Sils im Domleschg · ``
+- [Büsser Immobilien AG](busser-immobilien-ag.md) · Chur · ``
+- [C62 Immobilien AG](c62-immobilien-ag.md) · Zizers · ``
+- [CC-Nova Immo GmbH](cc-nova-immo-gmbh.md) · Domat/Ems · ``
+- [CFT Immo AG](cft-immo-ag.md) · Chur · ``
+- [CM Immo Bau SA](cm-immo-bau-sa.md) · Grono · ``
+- [Cahenzli AG Immo](cahenzli-ag-immo.md) · Trin · ``
+- [Capararo Immobilien AG](capararo-immobilien-ag.md) · Chur · ``
+- [Cava Immo AG](cava-immo-ag.md) · Ilanz/Glion · ``
+- [Central Immobilien AG](central-immobilien-ag.md) · Davos · ``
+- [Champagna Immobilien GmbH](champagna-immobilien-gmbh.md) · St. Moritz · ``
+- [Christoffel Liegenschaften AG](christoffel-liegenschaften-ag.md) · Davos · `?`
+- [Clavanövs Immobilien AG](clavanovs-immobilien-ag.md) · Samedan · ``
+- [Colotessi Immo AG](colotessi-immo-ag.md) · Chur · ``
+- [Comminot Immobilien AG](comminot-immobilien-ag.md) · Chur · ``
+- [Confidenza Bau & Immobilien AG](confidenza-bau-immobilien-ag.md) · Scuol · ``
+- [Creselly Immobilien AG](creselly-immobilien-ag.md) · Klosters · ``
+- [Curau Immobilien AG](curau-immobilien-ag.md) · Chur · ``
+- [Curvér Immobilien AG](curver-immobilien-ag.md) · Surses · `?`
+- [DAC Immobilien AG](dac-immobilien-ag.md) · Arosa · ``
+- [DEA Immobilien AG](dea-immobilien-ag.md) · St. Moritz · ``
+- [Danusa Immobilien AG](danusa-immobilien-ag.md) · Grüsch · ``
+- [Degonda immobilias SA](degonda-immobilias-sa.md) · Sumvitg · ``
+- [Diana Immobiliare SA](diana-immobiliare-sa.md) · Poschiavo · ``
+- [Däscher & Partner Immobilien GmbH](dascher-partner-immobilien-gmbh.md) · Domleschg · ``
+- [ESCHER Immobilien AG](escher-immobilien-ag.md) · Chur · ``
+- [Encarden Immobilien AG](encarden-immobilien-ag.md) · Medel (Lucmagn) · ``
+- [Engiadina Muntogna Immobilien SA](engiadina-muntogna-immobilien-sa.md) · Scuol · `?`
+- [Estina Immo AG](estina-immo-ag.md) · Domat/Ems · ``
+- [Ettinger Immobilien AG](ettinger-immobilien-ag.md) · Landquart · ``
+- [Europa Immo St. Moritz AG](europa-immo-st-moritz-ag.md) · St. Moritz · ``
+- [FA Immobilien AG](fa-immobilien-ag.md) · Ilanz/Glion · ``
+- [FB IMMO SAGL](fb-immo-sagl.md) · Cama · ``
+- [FERRARI GARTMANN IMMO AG](ferrari-gartmann-immo-ag.md) · Chur · ``
+- [FEWO Engadin Immobilien GmbH](fewo-engadin-immobilien-gmbh.md) · St. Moritz · ``
+- [Fadail Immobilien AG](fadail-immobilien-ag.md) · Chur · ``
+- [Falknis Immobilien AG](falknis-immobilien-ag.md) · Chur · ``
+- [Felix Schutz Immobilien GmbH](felix-schutz-immobilien-gmbh.md) · Bergün Filisur · ``
+- [Flumis Immobilien AG](flumis-immobilien-ag.md) · Untervaz · ``
+- [Flütsch Immobilien AG](flutsch-immobilien-ag.md) · Klosters · ``
+- [Forum 01 Immobilien AG](forum-01-immobilien-ag.md) · Bonaduz · ``
+- [Fross Immobilien Management AG](fross-immobilien-management-ag.md) · Davos · `?`
+- [Fäh & Co. Immo AG](fah-co-immo-ag.md) · Chur · ``
+- [GEES Immobilien GmbH](gees-immobilien-gmbh.md) · Davos · ``
+- [GINA Beteiligungen und Immobilien AG](gina-beteiligungen-und-immobilien-ag.md) · Chur · ``
+- [GL Immobilien St. Moritz AG](gl-immobilien-st-moritz-ag.md) · St. Moritz · ``
+- [GR Immobilien AG](gr-immobilien-ag.md) · Chur · ``
+- [Gasser Immo AG](gasser-immo-ag.md) · Chur · ``
+- [Gianni Uno Immobilien GmbH](gianni-uno-immobilien-gmbh.md) · La Punt Chamues-ch · ``
+- [Giblen Immobilien AG](giblen-immobilien-ag.md) · Chur · ``
+- [Glattfelder Immobilien AG](glattfelder-immobilien-ag.md) · St. Moritz · ``
+- [Godenzi Immobiliare SA](godenzi-immobiliare-sa.md) · Poschiavo · ``
+- [Goldblum Immobilien AG](goldblum-immobilien-ag.md) · Chur · ``
+- [Gredig Immobilien AG](gredig-immobilien-ag.md) · Domat/Ems · ``
+- [Gricon Treuhand + Immobilien AG](gricon-treuhand-immobilien-ag.md) · Zizers · ``
+- [Grischa Immobilien AG](grischa-immobilien-ag.md) · Chur · ``
+- [Guardaval Immobilien GmbH](guardaval-immobilien-gmbh.md) · La Punt Chamues-ch · ``
+- [Guatelli Immobilien GmbH](guatelli-immobilien-gmbh.md) · La Punt Chamues-ch · ``
+- [HPM Immobilien AG](hpm-immobilien-ag.md) · Silvaplana · ``
+- [Hagenbuch Immobilien & Treuhand GmbH](hagenbuch-immobilien-treuhand-gmbh.md) · Chur · ``
+- [Hossmann Immobilien AG](hossmann-immobilien-ag.md) · Thusis · ``
+- [Hug Architektur-Immobilien AG](hug-architektur-immobilien-ag.md) · Untervaz · ``
+- [IMMO SMC SA](immo-smc-sa.md) · Grono · ``
+- [IMMOBILIARE MOESA SA](immobiliare-moesa-sa.md) · Soazza · ``
+- [IMMOBILIARE RORÈ SA](immobiliare-rore-sa.md) · Roveredo (GR) · ``
+- [IMMOBILIARE STELLA SA](immobiliare-stella-sa.md) · Grono · ``
+- [Iara Immobiliare SA](iara-immobiliare-sa.md) · Lostallo · ``
+- [Immo AG 9195](immo-ag-9195.md) · Chur · ``
+- [Immo C. Capelli SA](immo-c-capelli-sa.md) · Poschiavo · ``
+- [Immo Darms AG](immo-darms-ag.md) · Ilanz/Glion · `?`
+- [Immo Dosch Sagl](immo-dosch-sagl.md) · Cama · ``
+- [Immo Hospitality SA](immo-hospitality-sa.md) · Poschiavo · ``
+- [Immo Huonder AG](immo-huonder-ag.md) · Disentis/Mustér · ``
+- [Immo Klinik Lürlibad AG](immo-klinik-lurlibad-ag.md) · Chur · ``
+- [Immo Lacus 184 AG](immo-lacus-184-ag.md) · Klosters · ``
+- [Immo Lacus 186/188 AG](immo-lacus-186-188-ag.md) · Klosters · ``
+- [Immo Lacus 190/194 AG](immo-lacus-190-194-ag.md) · Klosters · ``
+- [Immo Mellanze AG](immo-mellanze-ag.md) · Chur · ``
+- [Immo SL AG](immo-sl-ag.md) · Chur · ``
+- [Immo SanCes AG](immo-sances-ag.md) · Flims · ``
+- [Immo VM15 SA](immo-vm15-sa.md) · Disentis/Mustér · ``
+- [Immo-Reich AG](immo-reich-ag.md) · Cazis · ``
+- [Immobilia Desertina SA](immobilia-desertina-sa.md) · Disentis/Mustér · ``
+- [Immobiliare Longa SA Poschiavo](immobiliare-longa-sa-poschiavo.md) · Poschiavo · ``
+- [Immobiliare Sasso della Volpe SA](immobiliare-sasso-della-volpe-sa.md) · Grono · ``
+- [Immobiliargesellschaft Viamala AG](immobiliargesellschaft-viamala-ag.md) · Thusis · ``
+- [Immobilien AG Wiesental 58](immobilien-ag-wiesental-58.md) · Chur · ``
+- [Immobilien Boutique Sales GmbH](immobilien-boutique-sales-gmbh.md) · Davos · ``
+- [Immobilien Corina AG](immobilien-corina-ag.md) · Davos · ``
+- [Immobilien Engadin AG](immobilien-engadin-ag.md) · Samedan · ``
+- [Immobilien J. Brunold AG](immobilien-j-brunold-ag.md) · Arosa · ``
+- [Immobilien Malloth AG](immobilien-malloth-ag.md) · St. Moritz · ``
+- [Immobilien Rolf Kohler GmbH](immobilien-rolf-kohler-gmbh.md) · Bonaduz · ``
+- [Immobilien Schneider AG Davos](immobilien-schneider-ag-davos.md) · Davos · ``
+- [Immobilien Werkallee AG](immobilien-werkallee-ag.md) · Thusis · ``
+- [Ina Immobilia AG](ina-immobilia-ag.md) · Celerina/Schlarigna · `ina@ina-immobilia.ch`
+- [Isla Schluein Immobilien AG](isla-schluein-immobilien-ag.md) · Schluein · ``
+- [JAK Immobilien Chur AG](jak-immobilien-chur-ag.md) · Chur · ``
+- [JALU Immobilien AG](jalu-immobilien-ag.md) · Vaz/Obervaz · ``
+- [JRS Immobilien AG](jrs-immobilien-ag.md) · Flims · ``
+- [Jandolla Immobilien AG](jandolla-immobilien-ag.md) · Vaz/Obervaz · ``
+- [Juven Immobilien AG](juven-immobilien-ag.md) · Davos · ``
+- [Jäger Immobilien Churwalden AG](jager-immobilien-churwalden-ag.md) · Churwalden · ``
+- [Kama Immobilien Engadin AG](kama-immobilien-engadin-ag.md) · Samedan · ``
+- [Kasper & Sohn Immobilien AG](kasper-sohn-immobilien-ag.md) · Arosa · ``
+- [Kindschi Immobilien AG](kindschi-immobilien-ag.md) · Davos · ``
+- [Kölliker Immobilien GmbH](kolliker-immobilien-gmbh.md) · Davos · ``
+- [LOOKUP Immobiliare Sagl](lookup-immobiliare-sagl.md) · St. Moritz · ``
+- [Lemm Immobilien AG](lemm-immobilien-ag.md) · St. Moritz · `?`
+- [Lenzerheide Immobilien AG](lenzerheide-immobilien-ag.md) · Vaz/Obervaz · ``
+- [Li Rivi Immo SA](li-rivi-immo-sa.md) · Brusio · ``
+- [Lindenquai Immobilien AG](lindenquai-immobilien-ag.md) · Falera · ``
+- [Lisignoli Immobilien & Treuhand GmbH](lisignoli-immobilien-treuhand-gmbh.md) · Silvaplana · ``
+- [Lustenberger Liegenschaften GmbH](lustenberger-liegenschaften-gmbh.md) · Churwalden · ``
+- [Lux 12 Immobilien AG](lux-12-immobilien-ag.md) · Chur · ``
+- [Lütscher Immobilien AG](lutscher-immobilien-ag.md) · Chur · ``
+- [M + T Immobiliengesellschaft AG](m-t-immobiliengesellschaft-ag.md) · Chur · ``
+- [M&R Chur Immobilien AG](m-r-chur-immobilien-ag.md) · Chur · ``
+- [M. Oberhänsli Immobilien AG](m-oberhansli-immobilien-ag.md) · Chur · ``
+- [MDS Immobilien AG](mds-immobilien-ag.md) · St. Moritz · ``
+- [Mainstation Immo AG](mainstation-immo-ag.md) · Chur · ``
+- [Marali Immobilien AG](marali-immobilien-ag.md) · Cazis · ``
+- [Marchion Immo AG](marchion-immo-ag.md) · Schiers · ``
+- [Marco Immobilien AG](marco-immobilien-ag.md) · Landquart · ``
+- [Maren-Immo AG](maren-immo-ag.md) · St. Moritz · ``
+- [Mario Bordoli Immobilien AG](mario-bordoli-immobilien-ag.md) · Trimmis · ``
+- [Maurana Immobilien AG](maurana-immobilien-ag.md) · Breil/Brigels · ``
+- [Medical Immo Malans AG](medical-immo-malans-ag.md) · Malans · ``
+- [Mettier Immobilien AG](mettier-immobilien-ag.md) · Chur · ``
+- [Miranda Immobilien AG](miranda-immobilien-ag.md) · Churwalden · ``
+- [Montalta Immobilien AG](montalta-immobilien-ag.md) · Schluein · ``
+- [Montana AG Liegenschaften](montana-ag-liegenschaften.md) · Chur · ``
+- [NC Immo AG](nc-immo-ag.md) · Flims · ``
+- [OERA IMMO AG](oera-immo-ag.md) · Zizers · ``
+- [OMA Immobilien AG](oma-immobilien-ag.md) · Domat/Ems · ``
+- [Orges Immobilien AG](orges-immobilien-ag.md) · Domat/Ems · ``
+- [Ortus Immobilien AG](ortus-immobilien-ag.md) · Klosters · ``
+- [PHE Immobilien Engadin AG](phe-immobilien-engadin-ag.md) · Samedan · ``
+- [Paleu Sura Immobilien AG](paleu-sura-immobilien-ag.md) · Domat/Ems · ``
+- [Parmentier Immobilier Sagl](parmentier-immobilier-sagl.md) · Cama · ``
+- [Parpan Immobilien AG](parpan-immobilien-ag.md) · Vaz/Obervaz · ``
+- [Patronum Immobiliare Sagl](patronum-immobiliare-sagl.md) · Roveredo (GR) · ``
+- [Pinaia Immobiliare SA](pinaia-immobiliare-sa.md) · Roveredo (GR) · ``
+- [Piz Alun Immobilien AG](piz-alun-immobilien-ag.md) · Landquart · ``
+- [Piz Bernina Immobilien GmbH](piz-bernina-immobilien-gmbh.md) · St. Moritz · ``
+- [Plazi Immobilien AG](plazi-immobilien-ag.md) · Davos · ``
+- [Poltera Immobilien & Restaurant-Betrieb AG](poltera-immobilien-restaurant-betrieb-ag.md) · Arosa · ``
+- [Prada Immo AG](prada-immo-ag.md) · Chur · ``
+- [Prasas-chèr Immo GmbH](prasas-cher-immo-gmbh.md) · Scuol · ``
+- [Quinto immo AG, Rhäzüns](quinto-immo-ag-rhazuns.md) · Rhäzüns · ``
+- [RS Immo AG Felsberg](rs-immo-ag-felsberg.md) · Felsberg · ``
+- [RS Immo-Service GmbH](rs-immo-service-gmbh.md) · Chur · ``
+- [Rachögna Immobilien GmbH](rachogna-immobilien-gmbh.md) · Scuol · ``
+- [RenverALL Immobilien AG](renverall-immobilien-ag.md) · Grono · ``
+- [Rhein Immobilien Invest AG](rhein-immobilien-invest-ag.md) · Ilanz/Glion · ``
+- [Riatsch Immo AG](riatsch-immo-ag.md) · Scuol · ``
+- [Roca Immobilien GmbH](roca-immobilien-gmbh.md) · Ilanz/Glion · ``
+- [Roco Immo AG](roco-immo-ag.md) · Lantsch/Lenz · ``
+- [Rosen Immobilien und Projektentwicklungen AG](rosen-immobilien-und-projektentwicklungen-ag.md) · Chur · ``
+- [Rosida Immo AG](rosida-immo-ag.md) · Scharans · ``
+- [Rätikon Immo AG](ratikon-immo-ag.md) · Grüsch · ``
+- [Rüfiwies Immo AG](rufiwies-immo-ag.md) · Malans · ``
+- [SANDÖGNA Immo AG](sandogna-immo-ag.md) · Zuoz · ``
+- [SOPLA Immobilien AG](sopla-immobilien-ag.md) · Bonaduz · ``
+- [SORANTO VERWALTUNG AG](soranto-verwaltung-ag.md) · Roveredo (GR) · ``
+- [Sassal Immo GmbH](sassal-immo-gmbh.md) · Chur · ``
+- [Sax-Köhle Immo AG](sax-kohle-immo-ag.md) · Flims · ``
+- [Schilt Immobilien GmbH](schilt-immobilien-gmbh.md) · Chur · ``
+- [Schloss Immobilien AG](schloss-immobilien-ag.md) · Pontresina · ``
+- [Societed immobiliera Islas SA](societed-immobiliera-islas-sa.md) · Samedan · ``
+- [Sporthaus Gotschna Immobilien AG](sporthaus-gotschna-immobilien-ag.md) · Klosters · ``
+- [Sprenger Immo Chur AG](sprenger-immo-chur-ag.md) · Chur · ``
+- [Survia Immo AG](survia-immo-ag.md) · St. Moritz · ``
+- [Survista Immobilien GmbH](survista-immobilien-gmbh.md) · Laax · ``
+- [T&E Immobilien AG](t-e-immobilien-ag.md) · Zizers · ``
+- [Tarcisi Maissen immobilias SA](tarcisi-maissen-immobilias-sa.md) · Trun · ``
+- [Tendra Immobilien AG](tendra-immobilien-ag.md) · St. Moritz · ``
+- [Thoma Immo AG](thoma-immo-ag.md) · Laax · ``
+- [Thomas Beratungs und Verwaltungs AG](thomas-beratungs-und-verwaltungs-ag.md) · Chur · ``
+- [Top1000 Immobilien AG](top1000-immobilien-ag.md) · Zuoz · ``
+- [Torri + Hagenbuch Verwaltungs GmbH](torri-hagenbuch-verwaltungs-gmbh.md) · Chur · ``
+- [Tschent Immobilien & Beratungen AG](tschent-immobilien-beratungen-ag.md) · Fläsch · ``
+- [Tschirky Immobilien und Verwaltungs AG](tschirky-immobilien-und-verwaltungs-ag.md) · Malans · ``
+- [Ughini Immobilien AG](ughini-immobilien-ag.md) · Cazis · ``
+- [Urech Immobilien Chur AG](urech-immobilien-chur-ag.md) · Chur · ``
+- [Valbella Immobilien AG](valbella-immobilien-ag.md) · Vaz/Obervaz · ``
+- [Valposchiavo Immobiliare SA](valposchiavo-immobiliare-sa.md) · Poschiavo · ``
+- [Verwaltungen Engadin AG](verwaltungen-engadin-ag.md) · St. Moritz · ``
+- [Via Veglia Immobilien AG](via-veglia-immobilien-ag.md) · Chur · ``
+- [Viktor Meli's Erben AG Immobilien Chur](viktor-meli-s-erben-ag-immobilien-chur.md) · Chur · ``
+- [WOHNVISION Casa Nova, Immobilien und Verwaltungs GmbH](wohnvision-casa-nova-immobilien-und-verwaltungs-gmbh.md) · Domat/Ems · ``
+- [WZ Immobilien und Verwaltungs AG](wz-immobilien-und-verwaltungs-ag.md) · Chur · ``
+- [Werner Mäder Immobilien GmbH](werner-mader-immobilien-gmbh.md) · St. Moritz · ``
+- [Wolf Immobilien GmbH](wolf-immobilien-gmbh.md) · Trimmis · ``
+- [Zoe's Immobilien AG](zoe-s-immobilien-ag.md) · Poschiavo · ``
+- [Zollhaus Chur Immobilien AG](zollhaus-chur-immobilien-ag.md) · Chur · ``
+- [immo-score ag](immo-score-ag.md) · Davos · `?`
+- [immobilias.ch sa](immobilias-ch-sa.md) · Ilanz/Glion · `?`
+- [mio immobiliare Sagl](mio-immobiliare-sagl.md) · Brusio · ``

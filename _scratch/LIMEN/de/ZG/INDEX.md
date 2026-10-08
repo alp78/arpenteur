@@ -1,0 +1,499 @@
+# ZG · 487 firms
+
+
+## regie-core (263)
+
+manages property for third parties, so runs inspections routinely
+
+- [4Plus Immobilien AG](4plus-immobilien-ag.md) · Baar · `-`
+- [9B Immobilien AG](9b-immobilien-ag.md) · Steinhausen · `-`
+- [A. Rüegg Verwaltungs AG, Steinhausen](a-ruegg-verwaltungs-ag-steinhausen.md) · Steinhausen · `info@ruegg-outlet.ch`
+- [ABAKO Immobilien AG](abako-immobilien-ag.md) · Zug · `-`
+- [AC Royal Immobilien AG](ac-royal-immobilien-ag.md) · Hünenberg · `-`
+- [AD HomeDesign Immobilien GmbH](ad-homedesign-immobilien-gmbh.md) · Zug · `-`
+- [AD Immobilien GmbH](ad-immobilien-gmbh.md) · Zug · ``
+- [AKRA Immobilien AG](akra-immobilien-ag.md) · Cham · `-`
+- [AM PULS Immobilien AG](am-puls-immobilien-ag.md) · Baar · `-`
+- [ARE Immobilien AG](are-immobilien-ag.md) · Baar · `info@areimmobilien.ch (+3)`
+- [ARK Immobilien AG](ark-immobilien-ag.md) · Cham · `info@ark-immobilien.com`
+- [ARWA IMMOBILIEN AG](arwa-immobilien-ag.md) · Baar · `-`
+- [ARZ Immobilien AG](arz-immobilien-ag.md) · Steinhausen · ``
+- [ASKK Immo GmbH](askk-immo-gmbh.md) · Oberägeri · `-`
+- [AVORA Immobilien AG](avora-immobilien-ag.md) · Baar · `marco.salm@avora-immobilien.ch (+1)`
+- [AX Immobilien AG](ax-immobilien-ag.md) · Zug · `-`
+- [Adya-Immobilien AG](adya-immobilien-ag.md) · Menzingen · `-`
+- [Allianz Verwaltungs AG](allianz-verwaltungs-ag.md) · Zug · `-`
+- [Alpropria O Immobilien AG](alpropria-o-immobilien-ag.md) · Baar · `info@alpropria.ch`
+- [Alves Immobilien AG](alves-immobilien-ag.md) · Zug · ``
+- [Anku Immobilien GmbH](anku-immobilien-gmbh.md) · Risch · `-`
+- [Auf der Mauer Liegenschaften AG](auf-der-mauer-liegenschaften-ag.md) · Zug · `-`
+- [Aureon Immobilien GmbH](aureon-immobilien-gmbh.md) · Steinhausen · `info@aureonimmobilien.ch`
+- [B & G Suisse Immobilien AG](b-g-suisse-immobilien-ag.md) · Baar · ``
+- [BEDO Immobilien AG](bedo-immobilien-ag.md) · Cham · `?`
+- [BRASTA Immobilien GmbH](brasta-immobilien-gmbh.md) · Neuheim · ``
+- [BRG Immo AG](brg-immo-ag.md) · Risch · `christophe@brg-immo.ch`
+- [BaMu Immobilien AG](bamu-immobilien-ag.md) · Baar · `-`
+- [Bawesa Immo AG](bawesa-immo-ag.md) · Baar · `?`
+- [Beciri Immo AG](beciri-immo-ag.md) · Zug · `info@beciriimmo.ch`
+- [Becker Immobilien AG](becker-immobilien-ag.md) · Baar · `remo.becker@becker-immobilien.ch`
+- [Bircher Autowasch und Immobilien AG](bircher-autowasch-und-immobilien-ag.md) · Unterägeri · ``
+- [Boll Immobilien GmbH](boll-immobilien-gmbh.md) · Hünenberg · `info@bollimmobilien.ch`
+- [Bühler Liegenschaften AG](buhler-liegenschaften-ag.md) · Risch · `-`
+- [CHH Liegenschaften AG](chh-liegenschaften-ag.md) · Cham · `-`
+- [CME Immobilien AG](cme-immobilien-ag.md) · Baar · ``
+- [COFIGEST IMMOBILIEN AG](cofigest-immobilien-ag.md) · Zug · `?`
+- [COSANA Immo & Beratungs AG](cosana-immo-beratungs-ag.md) · Cham · `?`
+- [CSL Partner Immobilien AG](csl-partner-immobilien-ag.md) · Zug · `?`
+- [CeVistu Immo AG](cevistu-immo-ag.md) · Cham · `?`
+- [Celik Immobilien GmbH](celik-immobilien-gmbh.md) · Zug · `ec@celikimmo.ch`
+- [Charon Immobilien AG](charon-immobilien-ag.md) · Zug · ``
+- [Chrüzacher Immobilien AG](chruzacher-immobilien-ag.md) · Hünenberg · `-`
+- [Chuan Li Immobilien AG](chuan-li-immobilien-ag.md) · Zug · ``
+- [Chuan Li Liegenschaften AG](chuan-li-liegenschaften-ag.md) · Zug · `?`
+- [Classic Immo AG](classic-immo-ag.md) · Zug · `info@classicimmo.com`
+- [DD Immobilien AG](dd-immobilien-ag.md) · Zug · `?`
+- [DKR Immobilien AG](dkr-immobilien-ag.md) · Baar · ``
+- [DLG Immobilien AG](dlg-immobilien-ag.md) · Baar · `-`
+- [DM Liegenschaften AG](dm-liegenschaften-ag.md) · Baar · ``
+- [Dani & Dominguez Immobilien AG](dani-dominguez-immobilien-ag.md) · Risch · `?`
+- [Dasios Immobilien AG](dasios-immobilien-ag.md) · Zug · `-`
+- [Die Liegenschafter Helvetic I AG](die-liegenschafter-helvetic-i-ag.md) · Cham · `?`
+- [Die Liegenschafter Helvetic II AG](die-liegenschafter-helvetic-ii-ag.md) · Cham · ``
+- [Die Liegenschafter Helvetic II GU AG](die-liegenschafter-helvetic-ii-gu-ag.md) · Cham · `-`
+- [Die Liegenschafter Helvetic II Land AG](die-liegenschafter-helvetic-ii-land-ag.md) · Cham · ``
+- [Dolphin Immobilien AG](dolphin-immobilien-ag.md) · Risch · `?`
+- [Domig Immobilien AG](domig-immobilien-ag.md) · Cham · `office@domig-immo.ch`
+- [Dr. Wollny Verwaltungen Suisse GmbH](dr-wollny-verwaltungen-suisse-gmbh.md) · Baar · `?`
+- [Dynasty Immobilien und Finanz AG](dynasty-immobilien-und-finanz-ag.md) · Zug · ``
+- [E2Design Immobilien AG](e2design-immobilien-ag.md) · Zug · `-`
+- [EMA-US Immo AG](ema-us-immo-ag.md) · Cham · ``
+- [EOS Immobilien AG](eos-immobilien-ag.md) · Baar · `?`
+- [EPN Immo AG](epn-immo-ag.md) · Zug · `?`
+- [ERMOSA Immo AG](ermosa-immo-ag.md) · Risch · `?`
+- [Elindo Immobilien GmbH](elindo-immobilien-gmbh.md) · Zug · `artur.pfeifer@elindo.ch`
+- [Elodie Immobilien AG](elodie-immobilien-ag.md) · Zug · ``
+- [Enikon Immobilien AG](enikon-immobilien-ag.md) · Cham · `info@enikon.ch`
+- [Evviva Immobilien AG](evviva-immobilien-ag.md) · Cham · ``
+- [F+F Immo-Projekte GmbH](f-f-immo-projekte-gmbh.md) · Cham · `info@immoprojekte.ch (+1)`
+- [Falc Immobilien Schweiz GmbH](falc-immobilien-schweiz-gmbh.md) · Zug · `c.genc@falcimmobilien.ch`
+- [Fanum Liegenschaften AG](fanum-liegenschaften-ag.md) · Risch · `?`
+- [Feldhof Verwaltungs AG](feldhof-verwaltungs-ag.md) · Risch · ``
+- [Felsomat Immobilien AG](felsomat-immobilien-ag.md) · Zug · `?`
+- [Fidura Immobilien AG](fidura-immobilien-ag.md) · Zug · ``
+- [Finanz und Immo Development GmbH](finanz-und-immo-development-gmbh.md) · Risch · `info@finanz-immo.ch`
+- [Frohe Aussicht Immobilien und Verwaltungen AG](frohe-aussicht-immobilien-und-verwaltungen-ag.md) · Baar · `?`
+- [Früh-Berisha Immobilien AG](fruh-berisha-immobilien-ag.md) · Oberägeri · `?`
+- [G3D Immobilien AG](g3d-immobilien-ag.md) · Baar · ``
+- [GGV Immobilien AG](ggv-immobilien-ag.md) · Zug · `?`
+- [Garage Wismer Immobilien AG](garage-wismer-immobilien-ag.md) · Risch · ``
+- [Gasser-Bättig Immobilien AG](gasser-battig-immobilien-ag.md) · Zug · `?`
+- [Geissfluh Immobilien AG](geissfluh-immobilien-ag.md) · Baar · `?`
+- [Geo-Verwaltungs AG](geo-verwaltungs-ag.md) · Hünenberg · `?`
+- [Gloria Immobilien AG](gloria-immobilien-ag.md) · Zug · ``
+- [Grund & Mobil Verwaltungs AG](grund-mobil-verwaltungs-ag.md) · Zug · `?`
+- [Guarda Immobilien AG](guarda-immobilien-ag.md) · Zug · ``
+- [GySis Immobilien GmbH](gysis-immobilien-gmbh.md) · Cham · `?`
+- [H & L Partners Immobilien AG](h-l-partners-immobilien-ag.md) · Walchwil · `?`
+- [HEFTI. HESS. MARTIGNONI. Immobilien AG](hefti-hess-martignoni-immobilien-ag.md) · Zug · `?`
+- [HMC Immobilien AG](hmc-immobilien-ag.md) · Zug · ``
+- [HVZ Immobilien AG](hvz-immobilien-ag.md) · Hünenberg · `?`
+- [Halibut Immo AG](halibut-immo-ag.md) · Unterägeri · ``
+- [Havel Immobilien AG](havel-immobilien-ag.md) · Baar · `?`
+- [Heimatraum Immobilien AG](heimatraum-immobilien-ag.md) · Risch · `?`
+- [Heinz Müller Immobilien & Gastrosupport AG](heinz-muller-immobilien-gastrosupport-ag.md) · Oberägeri · `?`
+- [Helvetia Immobilien & Verwaltung AG](helvetia-immobilien-verwaltung-ag.md) · Baar · ``
+- [Hobeika Immobilien AG](hobeika-immobilien-ag.md) · Zug · `info@hobeika-immobilien.ch`
+- [IMA Immobilien Management AG](ima-immobilien-management-ag.md) · Zug · ``
+- [IMMO-HFM AG](immo-hfm-ag.md) · Zug · `info@immo-hfm.ch`
+- [IMMOBILIEN-BERATUNG JOSEF WOLF AG](immobilien-beratung-josef-wolf-ag.md) · Zug · `?`
+- [IMMOLEADER Immobilien GmbH](immoleader-immobilien-gmbh.md) · Hünenberg · `office@immoleader.ch (+1)`
+- [IN-Immobilien AG](in-immobilien-ag.md) · Hünenberg · ``
+- [IWZ Immobilien AG](iwz-immobilien-ag.md) · Baar · `?`
+- [Im Bühl Immobilien + Finanz AG](im-buhl-immobilien-finanz-ag.md) · Zug · ``
+- [Immo - Helvetica - MAR AG](immo-helvetica-mar-ag.md) · Zug · `?`
+- [Immo Börse 24 AG](immo-borse-24-ag.md) · Steinhausen · `?`
+- [Immo Imperial Invest AG](immo-imperial-invest-ag.md) · Baar · `meier@immoimperialinvest.com`
+- [Immo Investment Partner AG](immo-investment-partner-ag.md) · Baar · ``
+- [Immo-Bewirtschaftungs AG](immo-bewirtschaftungs-ag.md) · Cham · `?`
+- [Immo-Real AG](immo-real-ag.md) · Zug · ``
+- [Immobilien "Gregorich" GmbH](immobilien-gregorich-gmbh.md) · Baar · `info@gregorich.ch (+1)`
+- [Immobilien AG Bergurag](immobilien-ag-bergurag.md) · Baar · `info@bergurag.ch`
+- [Immobilien-Bau AG, Cham](immobilien-bau-ag-cham.md) · Cham · `?`
+- [Imperium Immo AG](imperium-immo-ag.md) · Steinhausen · ``
+- [Inprom Verwaltungen AG](inprom-verwaltungen-ag.md) · Unterägeri · `?`
+- [Inter Immobilien GmbH Zug](inter-immobilien-gmbh-zug.md) · Zug · ``
+- [JA IMMOBILIEN AG](ja-immobilien-ag.md) · Zug · `?`
+- [JM-Immobilien AG](jm-immobilien-ag.md) · Risch · `?`
+- [JMSA Immobilien AG](jmsa-immobilien-ag.md) · Zug · `?`
+- [Juan Immobilien GmbH](juan-immobilien-gmbh.md) · Zug · ``
+- [Julia Wild Immobilien GmbH](julia-wild-immobilien-gmbh.md) · Zug · `?`
+- [Julier Immobilien AG](julier-immobilien-ag.md) · Baar · ``
+- [Jungfrau Immobilien GmbH](jungfrau-immobilien-gmbh.md) · Baar · `?`
+- [KDS Immo Group AG](kds-immo-group-ag.md) · Zug · `?`
+- [KHA Immobilien AG](kha-immobilien-ag.md) · Zug · `?`
+- [Kalberer Liegenschaften AG](kalberer-liegenschaften-ag.md) · Cham · ``
+- [Kapstein Immobilien AG](kapstein-immobilien-ag.md) · Zug · `?`
+- [Kolin Verwaltungen GmbH](kolin-verwaltungen-gmbh.md) · Zug · ``
+- [LED Liegenschaften AG](led-liegenschaften-ag.md) · Baar · `?`
+- [Lage A Immobilien GmbH](lage-a-immobilien-gmbh.md) · Zug · `pl@lage-immobilien.com`
+- [Lake & Mountain Immobilien AG](lake-mountain-immobilien-ag.md) · Cham · `info@lake.com`
+- [Licht & Partner Immobilien AG](licht-partner-immobilien-ag.md) · Baar · ``
+- [Limmat Immobilien GmbH](limmat-immobilien-gmbh.md) · Cham · `?`
+- [Liver Immobilien AG](liver-immobilien-ag.md) · Hünenberg · ``
+- [MATHU Immobilien AG](mathu-immobilien-ag.md) · Hünenberg · `?`
+- [MAWERO Immobilien AG](mawero-immobilien-ag.md) · Zug · `?`
+- [MEDIM Immobilien AG](medim-immobilien-ag.md) · Zug · `?`
+- [MH Investissements immobiliers GmbH](mh-investissements-immobiliers-gmbh.md) · Risch · ``
+- [MIC Immobilien Treuhand GmbH](mic-immobilien-treuhand-gmbh.md) · Oberägeri · `?`
+- [MILCo Immobilien AG](milco-immobilien-ag.md) · Baar · ``
+- [MITAWA IMMOBILIEN AG](mitawa-immobilien-ag.md) · Oberägeri · `?`
+- [MLD Immobiliare AG](mld-immobiliare-ag.md) · Steinhausen · `?`
+- [MSTR Strickler Immobilien GmbH](mstr-strickler-immobilien-gmbh.md) · Neuheim · `?`
+- [Maestral Immo AG](maestral-immo-ag.md) · Baar · ``
+- [Marin Immobilien GmbH](marin-immobilien-gmbh.md) · Baar · `?`
+- [Maxi Immobilien AG](maxi-immobilien-ag.md) · Cham · ``
+- [Melanie Hari Immobilien GmbH](melanie-hari-immobilien-gmbh.md) · Steinhausen · `?`
+- [Mijnssen Immo Consulting GmbH](mijnssen-immo-consulting-gmbh.md) · Zug · `?`
+- [Mobiland Immobilien AG](mobiland-immobilien-ag.md) · Baar · `?`
+- [Mont Fort Immobilien AG](mont-fort-immobilien-ag.md) · Baar · ``
+- [Moos-Cham Immobilien AG](moos-cham-immobilien-ag.md) · Cham · `mira.moos@moos-immobilien.com`
+- [Mühle Immobilien AG](muhle-immobilien-ag.md) · Zug · ``
+- [Mühlematter Immobilien AG](muhlematter-immobilien-ag.md) · Baar · `?`
+- [NOBIL IMMO GmbH](nobil-immo-gmbh.md) · Cham · `info@nobilimmo.ch`
+- [Neugass Immobilien AG](neugass-immobilien-ag.md) · Cham · `?`
+- [Nobo Immobilien AG](nobo-immobilien-ag.md) · Unterägeri · ``
+- [Nordost Immobilien AG](nordost-immobilien-ag.md) · Hünenberg · `?`
+- [ON Immobilien AG](on-immobilien-ag.md) · Baar · ``
+- [Ohnsorg Verwaltung AG](ohnsorg-verwaltung-ag.md) · Steinhausen · `?`
+- [Omondo Immobilien GmbH](omondo-immobilien-gmbh.md) · Zug · `?`
+- [Orchid Verwaltungs GmbH](orchid-verwaltungs-gmbh.md) · Zug · `?`
+- [P2 Immobilien AG](p2-immobilien-ag.md) · Zug · ``
+- [PADI Immobilien AG](padi-immobilien-ag.md) · Baar · `?`
+- [PALAPE Immo GmbH](palape-immo-gmbh.md) · Baar · ``
+- [PBV Immobilien AG](pbv-immobilien-ag.md) · Hünenberg · `?`
+- [PRG Immo AG](prg-immo-ag.md) · Walchwil · `?`
+- [Pantotex Immobilien Bewirtschaftung AG](pantotex-immobilien-bewirtschaftung-ag.md) · Cham · `?`
+- [Park Immobilien AG](park-immobilien-ag.md) · Zug · `?`
+- [Pemo Immobilien AG](pemo-immobilien-ag.md) · Cham · `?`
+- [Penelope Immobilien AG](penelope-immobilien-ag.md) · Baar · ``
+- [Pergega Immobilien AG](pergega-immobilien-ag.md) · Zug · `?`
+- [Peter Risi Immobilien AG](peter-risi-immobilien-ag.md) · Cham · `?`
+- [Pfister Immobilien Vermarktung GmbH](pfister-immobilien-vermarktung-gmbh.md) · Baar · `info@pfister-immobilien.ch`
+- [Pi.2 Immobilien AG](pi-2-immobilien-ag.md) · Zug · ``
+- [Pilatusblick Immobilien AG](pilatusblick-immobilien-ag.md) · Cham · `?`
+- [Piranha Immobilien GmbH](piranha-immobilien-gmbh.md) · Baar · ``
+- [Quint Immobilien Treuhand GmbH](quint-immobilien-treuhand-gmbh.md) · Walchwil · `?`
+- [Quint Immobilien Verwaltung GmbH](quint-immobilien-verwaltung-gmbh.md) · Walchwil · `?`
+- [RAW Immobilien AG](raw-immobilien-ag.md) · Hünenberg · `?`
+- [REB Immobilien AG](reb-immobilien-ag.md) · Hünenberg · ``
+- [RJ Weibel Immobilien AG](rj-weibel-immobilien-ag.md) · Hünenberg · `?`
+- [ROZA Immobilien GmbH](roza-immobilien-gmbh.md) · Zug · ``
+- [RWB Immobilien Schweiz AG](rwb-immobilien-schweiz-ag.md) · Hünenberg · `?`
+- [Real Invest Immobilien AG](real-invest-immobilien-ag.md) · Zug · `info@realinvestimmobilien.com`
+- [Rigipark Immobilien AG](rigipark-immobilien-ag.md) · Zug · `?`
+- [Rosamina Immobilien GmbH](rosamina-immobilien-gmbh.md) · Unterägeri · ``
+- [Rossberg Immobilien AG](rossberg-immobilien-ag.md) · Zug · `?`
+- [Rotkreuzhof-Immobilien AG](rotkreuzhof-immobilien-ag.md) · Risch · ``
+- [Rust Immobilien AG](rust-immobilien-ag.md) · Walchwil · `info@rustimmobilien.ch`
+- [SAIMO Immobilien AG](saimo-immobilien-ag.md) · Unterägeri · `mail@saimo.ch (+2)`
+- [SBG Immobilien AG](sbg-immobilien-ag.md) · Risch · `?`
+- [SCHWEIZER IMMOBILIEN & HANDELS AG](schweizer-immobilien-handels-ag.md) · Zug · ``
+- [SEMP Verwaltungs AG](semp-verwaltungs-ag.md) · Cham · `?`
+- [SITHO Immobilien AG](sitho-immobilien-ag.md) · Baar · ``
+- [STS Immobilien AG](sts-immobilien-ag.md) · Risch · `info@sts-immobilien.ch (+18)`
+- [SV Immobilien AG](sv-immobilien-ag.md) · Zug · `?`
+- [Santera Immobilien + Management AG](santera-immobilien-management-ag.md) · Zug · `?`
+- [Schmied Immobilien GmbH](schmied-immobilien-gmbh.md) · Zug · ``
+- [Schweiz GJ Immobilien AG](schweiz-gj-immobilien-ag.md) · Zug · `?`
+- [Schweizerische Immobilien Entwicklungsgesellschaft GmbH](schweizerische-immobilien-entwicklungsgesellschaft-gmbh.md) · Zug · ``
+- [Schwerzmann Immo AG](schwerzmann-immo-ag.md) · Hünenberg · `?`
+- [Schönblick Immobilien AG](schonblick-immobilien-ag.md) · Zug · `?`
+- [Securfina Immobilien GmbH](securfina-immobilien-gmbh.md) · Oberägeri · `info@securfina.ch (+2)`
+- [Seeland Immobilien AG](seeland-immobilien-ag.md) · Zug · ``
+- [Seidenschnur Verwaltungs AG](seidenschnur-verwaltungs-ag.md) · Baar · `?`
+- [Serena Immobilien AG](serena-immobilien-ag.md) · Risch · ``
+- [Shanti Immo GmbH](shanti-immo-gmbh.md) · Baar · `?`
+- [Siller Immobilien CH GmbH](siller-immobilien-ch-gmbh.md) · Zug · `info@siller-immobilien.com`
+- [Smago Immobilien GmbH](smago-immobilien-gmbh.md) · Menzingen · `info@smago-immobilien.ch`
+- [Solvia Immobilien AG](solvia-immobilien-ag.md) · Hünenberg · `?`
+- [Sonnhalde Immo AG](sonnhalde-immo-ag.md) · Cham · `?`
+- [Stadtturm Immobilien AG](stadtturm-immobilien-ag.md) · Zug · ``
+- [Stamus Immobilien AG](stamus-immobilien-ag.md) · Baar · `?`
+- [Stephan Häusler Immobilien AG](stephan-hausler-immobilien-ag.md) · Baar · `?`
+- [StoneCap Immobilien AG](stonecap-immobilien-ag.md) · Hünenberg · `?`
+- [Susta Immobilien AG](susta-immobilien-ag.md) · Baar · ``
+- [Swiss ND Immobilien AG](swiss-nd-immobilien-ag.md) · Unterägeri · `?`
+- [THAVO Immobilien AG](thavo-immobilien-ag.md) · Zug · ``
+- [TI Teco Immo GmbH](ti-teco-immo-gmbh.md) · Hünenberg · `?`
+- [TRION immo ag](trion-immo-ag.md) · Hünenberg · `info@trionimmo.ch`
+- [TSL Immobilien AG](tsl-immobilien-ag.md) · Zug · `info@tsl-immobilien.ch`
+- [TWG Immobilien AG](twg-immobilien-ag.md) · Oberägeri · ``
+- [Tellco Immobilien AG](tellco-immobilien-ag.md) · Baar · `?`
+- [Temp Immobilien AG](temp-immobilien-ag.md) · Risch · ``
+- [Terravia Immobilien GmbH](terravia-immobilien-gmbh.md) · Steinhausen · `?`
+- [Thoba Immobilien AG](thoba-immobilien-ag.md) · Cham · `?`
+- [Tomic+Horat Immobilien GmbH](tomic-horat-immobilien-gmbh.md) · Steinhausen · `info@tomic-horat.ch (+4)`
+- [Toni Immo AG](toni-immo-ag.md) · Steinhausen · ``
+- [Top-Bau Immobilien AG](top-bau-immobilien-ag.md) · Baar · `info@topbau.ch`
+- [Trebor Immobilien AG](trebor-immobilien-ag.md) · Baar · ``
+- [Triga Immobilien AG](triga-immobilien-ag.md) · Hünenberg · `info@triga.ch`
+- [Trinovo Immo GmbH](trinovo-immo-gmbh.md) · Cham · `?`
+- [Unique Immobilien AG](unique-immobilien-ag.md) · Zug · `info@unique-immobilien.com (+1)`
+- [Unterfeld Immobilien AG](unterfeld-immobilien-ag.md) · Zug · ``
+- [V + G Immo GmbH](v-g-immo-gmbh.md) · Risch · `?`
+- [VERTURIN Immo AG](verturin-immo-ag.md) · Baar · ``
+- [VLG Immobilien AG](vlg-immobilien-ag.md) · Baar · `info@vlgimmobilien.ch (+2)`
+- [VONI Immobilien AG](voni-immobilien-ag.md) · Baar · `?`
+- [Valkovsky Immobilien AG](valkovsky-immobilien-ag.md) · Zug · `?`
+- [Valkovsky Immobilienmanagement GmbH](valkovsky-immobilienmanagement-gmbh.md) · Zug · `?`
+- [Valssen Immobilien AG](valssen-immobilien-ag.md) · Zug · `?`
+- [WEIBEL Immo Invest AG](weibel-immo-invest-ag.md) · Hünenberg · ``
+- [WEWI Immobilien AG](wewi-immobilien-ag.md) · Baar · `?`
+- [Weiss Immobilien AG](weiss-immobilien-ag.md) · Zug · `info@weissimmobilien.com (+16)`
+- [Wilerzelg B Immobilien AG](wilerzelg-b-immobilien-ag.md) · Zug · `?`
+- [Willow Immobilien GmbH](willow-immobilien-gmbh.md) · Baar · ``
+- [Wisca Immo SA](wisca-immo-sa.md) · Walchwil · `info@wisca.ch`
+- [Wyss Objektverwaltung GmbH](wyss-objektverwaltung-gmbh.md) · Risch · ``
+- [WÜTHRICH & PARTNER IMMOBILIEN GmbH](wuthrich-partner-immobilien-gmbh.md) · Cham · `info@wuethrich-immobilien.ch`
+- [ZAWIL Immobilien AG](zawil-immobilien-ag.md) · Cham · `?`
+- [ZUMBÜHL IMMOBILIEN AG](zumbuhl-immobilien-ag.md) · Unterägeri · `?`
+- [Zelg Immobilien AG](zelg-immobilien-ag.md) · Baar · `?`
+- [Zingg Verwaltungs GmbH](zingg-verwaltungs-gmbh.md) · Steinhausen · ``
+- [Zobel Verwaltungs GmbH](zobel-verwaltungs-gmbh.md) · Baar · `?`
+- [Zollhaus Immo AG](zollhaus-immo-ag.md) · Hünenberg · ``
+- [Zugana Immobilien AG](zugana-immobilien-ag.md) · Risch · `?`
+- [Zugerland Immobilien GmbH](zugerland-immobilien-gmbh.md) · Zug · `?`
+- [Zugersee Immobilien AG](zugersee-immobilien-ag.md) · Zug · `info@zugersee-immobilien.ch`
+- [elle Immobiliencoaching GmbH](elle-immobiliencoaching-gmbh.md) · Baar · ``
+- [up Immobilien AG](up-immobilien-ag.md) · Hünenberg · `?`
+- [von Euw Immobilien AG](von-euw-immobilien-ag.md) · Neuheim · ``
+- [winiker immobilien-verwaltungs ag](winiker-immobilien-verwaltungs-ag.md) · Zug · `-`
+
+## regie-letting (224)
+
+lets property; the administration may sit elsewhere
+
+- [4P Immobilien AG](4p-immobilien-ag.md) · Zug · ``
+- [A & H Immobilien AG](a-h-immobilien-ag.md) · Baar · ``
+- [A&F Immobilien AG](a-f-immobilien-ag.md) · Hünenberg · ``
+- [AAA Swiss-Immobilien AG](aaa-swiss-immobilien-ag.md) · Zug · ``
+- [AFW Immobilien & Beteiligungen AG](afw-immobilien-beteiligungen-ag.md) · Risch · ``
+- [ARYS Immobilien AG](arys-immobilien-ag.md) · Oberägeri · ``
+- [ASARI Immobilien AG](asari-immobilien-ag.md) · Zug · ``
+- [AZ-Verwaltung AG](az-verwaltung-ag.md) · Walchwil · ``
+- [Acierto Immobilien AG](acierto-immobilien-ag.md) · Zug · ``
+- [Acklin & Suter Immobilien AG](acklin-suter-immobilien-ag.md) · Zug · ``
+- [Adatta Immobilien AG](adatta-immobilien-ag.md) · Zug · ``
+- [Albex Immobilien AG](albex-immobilien-ag.md) · Zug · ``
+- [Altay Immo AG](altay-immo-ag.md) · Hünenberg · ``
+- [Anklin Liegenschaft AG](anklin-liegenschaft-ag.md) · Cham · ``
+- [Arnold + Arnold Immobilien AG](arnold-arnold-immobilien-ag.md) · Menzingen · ``
+- [Artemisia Immobilien GmbH](artemisia-immobilien-gmbh.md) · Zug · ``
+- [Astoria Immobilien AG](astoria-immobilien-ag.md) · Cham · ``
+- [August Hausheer Immobilien AG](august-hausheer-immobilien-ag.md) · Hünenberg · ``
+- [B&W Immo AG](b-w-immo-ag.md) · Cham · ``
+- [B3 Liegenschaften AG](b3-liegenschaften-ag.md) · Risch · ``
+- [BCO IMMO INVEST AG](bco-immo-invest-ag.md) · Baar · ``
+- [BIGE Immobilien AG](bige-immobilien-ag.md) · Zug · ``
+- [Baumann & Partner Immobilien AG](baumann-partner-immobilien-ag.md) · Hünenberg · ``
+- [Beatus Immo Invest AG](beatus-immo-invest-ag.md) · Zug · ``
+- [Bechtle Immobilien Schweiz AG](bechtle-immobilien-schweiz-ag.md) · Risch · ``
+- [Belmo Immobilien AG](belmo-immobilien-ag.md) · Hünenberg · ``
+- [Biber Immobilien GmbH](biber-immobilien-gmbh.md) · Hünenberg · ``
+- [Blattmann AG, Haustechnik und Immobilien](blattmann-ag-haustechnik-und-immobilien.md) · Risch · ``
+- [Blumenzauber Immo GmbH](blumenzauber-immo-gmbh.md) · Baar · ``
+- [Bossert Immobilien GmbH](bossert-immobilien-gmbh.md) · Steinhausen · ``
+- [Bowal Immobilien AG](bowal-immobilien-ag.md) · Zug · ``
+- [Bremo Liegenschaften AG](bremo-liegenschaften-ag.md) · Cham · ``
+- [CAPS Immo AG](caps-immo-ag.md) · Oberägeri · ``
+- [CDX-Immobilien GmbH](cdx-immobilien-gmbh.md) · Unterägeri · ``
+- [CGA Liegenschaften AG](cga-liegenschaften-ag.md) · Cham · ``
+- [CRF Immobilien AG](crf-immobilien-ag.md) · Baar · ``
+- [Caprice Verwaltungs AG](caprice-verwaltungs-ag.md) · Hünenberg · ``
+- [Casa Genico Immobilien AG](casa-genico-immobilien-ag.md) · Zug · ``
+- [Cham Immobilien AG](cham-immobilien-ag.md) · Cham · `?`
+- [Cherry Immobilien AG](cherry-immobilien-ag.md) · Zug · ``
+- [Cine Immo AG](cine-immo-ag.md) · Zug · ``
+- [Claire Immobilier Sàrl](claire-immobilier-sarl.md) · Risch · ``
+- [Clarius Immo AG](clarius-immo-ag.md) · Baar · ``
+- [Condes Immobilien GmbH](condes-immobilien-gmbh.md) · Risch · ``
+- [Confido Immobilien AG](confido-immobilien-ag.md) · Hünenberg · ``
+- [Corfam Immo AG](corfam-immo-ag.md) · Zug · ``
+- [DO Immobilien AG](do-immobilien-ag.md) · Zug · ``
+- [DSK Immobilien AG](dsk-immobilien-ag.md) · Zug · ``
+- [DWH Immobilien AG](dwh-immobilien-ag.md) · Hünenberg · ``
+- [Devigus Immobilien AG](devigus-immobilien-ag.md) · Risch · ``
+- [Duag Immobilien AG](duag-immobilien-ag.md) · Steinhausen · ``
+- [Dünnenberger Immobilien AG](dunnenberger-immobilien-ag.md) · Baar · ``
+- [E - Immobilien GmbH](e-immobilien-gmbh.md) · Hünenberg · ``
+- [EPL Immo Holding AG](epl-immo-holding-ag.md) · Hünenberg · ``
+- [EV Ostschweiz Immobilien AG](ev-ostschweiz-immobilien-ag.md) · Zug · ``
+- [ElSta Immobilien AG](elsta-immobilien-ag.md) · Baar · ``
+- [Elsener AG, Bau und Immobilien](elsener-ag-bau-und-immobilien.md) · Zug · ``
+- [Ennetsee-Immobilien AG](ennetsee-immobilien-ag.md) · Cham · ``
+- [Enzian Liegenschaften AG](enzian-liegenschaften-ag.md) · Walchwil · ``
+- [Etter Immobilien AG](etter-immobilien-ag.md) · Zug · ``
+- [FIMO Immobilien & SwissEventure (Schweiz) AG](fimo-immobilien-swisseventure-schweiz-ag.md) · Cham · ``
+- [FREDO Immo GmbH](fredo-immo-gmbh.md) · Unterägeri · ``
+- [FW Immobilien & Beteiligungen AG](fw-immobilien-beteiligungen-ag.md) · Risch · ``
+- [Felina Immobilien AG](felina-immobilien-ag.md) · Baar · ``
+- [Flachsacker Immobilien AG](flachsacker-immobilien-ag.md) · Cham · ``
+- [Fore Immobilien AG](fore-immobilien-ag.md) · Zug · ``
+- [Fritz Weber Immobilien AG](fritz-weber-immobilien-ag.md) · Zug · ``
+- [G&K Immobilien GmbH](g-k-immobilien-gmbh.md) · Zug · ``
+- [G4 Immobilien AG](g4-immobilien-ag.md) · Cham · ``
+- [GG Immobilien-Treuhand AG](gg-immobilien-treuhand-ag.md) · Baar · ``
+- [GKG Immobilien GmbH](gkg-immobilien-gmbh.md) · Cham · ``
+- [GOLDEN HILL IMMOBILIEN AG](golden-hill-immobilien-ag.md) · Zug · ``
+- [Gemeinde Risch Immobilien AG](gemeinde-risch-immobilien-ag.md) · Risch · ``
+- [Glaub Immo GmbH](glaub-immo-gmbh.md) · Neuheim · ``
+- [Goldmann Immobilien GmbH](goldmann-immobilien-gmbh.md) · Zug · ``
+- [Grienbach Immobilien AG](grienbach-immobilien-ag.md) · Zug · ``
+- [Gsebo Immobilien AG](gsebo-immobilien-ag.md) · Zug · ``
+- [Gysi-Betimag Beteiligungs- und Immobilien AG](gysi-betimag-beteiligungs-und-immobilien-ag.md) · Baar · ``
+- [HEER IMMO AG](heer-immo-ag.md) · Baar · `?`
+- [Haab Immobilien AG](haab-immobilien-ag.md) · Walchwil · ``
+- [Haeni Immobilien Projekte AG](haeni-immobilien-projekte-ag.md) · Baar · ``
+- [Homberg Immo AG](homberg-immo-ag.md) · Baar · ``
+- [Home & Castle Immobilien AG](home-castle-immobilien-ag.md) · Risch · ``
+- [Hufa Immobilien GmbH](hufa-immobilien-gmbh.md) · Baar · ``
+- [IHUFH Immobilien AG](ihufh-immobilien-ag.md) · Zug · ``
+- [IMOGI Immobilien AG](imogi-immobilien-ag.md) · Cham · ``
+- [INTERSWISS Immobilien AG](interswiss-immobilien-ag.md) · Zug · ``
+- [IP Immo Projekt GmbH](ip-immo-projekt-gmbh.md) · Zug · ``
+- [ISMA Immobilien AG](isma-immobilien-ag.md) · Baar · ``
+- [IVF Immobilien, Verwaltungs- und Finanz AG](ivf-immobilien-verwaltungs-und-finanz-ag.md) · Neuheim · `info@ivfag.ch`
+- [Im Rank Immobilien AG](im-rank-immobilien-ag.md) · Zug · ``
+- [Immo Group A.Z. SA](immo-group-a-z-sa.md) · Zug · ``
+- [Immo Rêves SA](immo-reves-sa.md) · Cham · ``
+- [Immobilien AG Kirchbühl](immobilien-ag-kirchbuhl.md) · Cham · ``
+- [Immobilien Keiser AG](immobilien-keiser-ag.md) · Zug · ``
+- [Immobilienzentrum Schweiz GmbH](immobilienzentrum-schweiz-gmbh.md) · Baar · ``
+- [Invora Immobilien AG](invora-immobilien-ag.md) · Zug · ``
+- [JKN-Immobilien AG](jkn-immobilien-ag.md) · Cham · ``
+- [JS Immo Consulting GmbH](js-immo-consulting-gmbh.md) · Baar · ``
+- [Joy Immobilien GmbH](joy-immobilien-gmbh.md) · Baar · ``
+- [KAVO-Immobilien AG](kavo-immobilien-ag.md) · Zug · ``
+- [KFZ - Immobilien AG](kfz-immobilien-ag.md) · Zug · ``
+- [Karjalan Immobilien AG](karjalan-immobilien-ag.md) · Zug · ``
+- [Kista Immobilien AG](kista-immobilien-ag.md) · Cham · ``
+- [Klausfeld-Immobilien AG](klausfeld-immobilien-ag.md) · Baar · ``
+- [Knutti Immobilien GmbH](knutti-immobilien-gmbh.md) · Zug · ``
+- [Kretz Immo AG](kretz-immo-ag.md) · Risch · ``
+- [Käppeli Liegenschaften AG](kappeli-liegenschaften-ag.md) · Cham · ``
+- [Käserei Liegenschaft GmbH Ober-Hünenberg](kaserei-liegenschaft-gmbh-ober-hunenberg.md) · Hünenberg · ``
+- [L&D Immobilien AG](l-d-immobilien-ag.md) · Zug · ``
+- [LDJ Immobilien AG](ldj-immobilien-ag.md) · Baar · ``
+- [LEAH Immobilien AG](leah-immobilien-ag.md) · Zug · ``
+- [LEDO Immo AG](ledo-immo-ag.md) · Baar · ``
+- [LOR Immobilien GmbH](lor-immobilien-gmbh.md) · Zug · ``
+- [LUTHIGER Immobilien AG](luthiger-immobilien-ag.md) · Steinhausen · ``
+- [LUX Verwaltungs & Beteiligungs AG](lux-verwaltungs-beteiligungs-ag.md) · Unterägeri · ``
+- [LYREY Immo AG](lyrey-immo-ag.md) · Baar · ``
+- [La Sosta Immobilien AG](la-sosta-immobilien-ag.md) · Zug · ``
+- [Laluc Immobilien AG](laluc-immobilien-ag.md) · Risch · ``
+- [Land in Sicht Immobilien GmbH](land-in-sicht-immobilien-gmbh.md) · Unterägeri · ``
+- [Landtwing Immobilien AG](landtwing-immobilien-ag.md) · Zug · ``
+- [Lenz immobilien ag](lenz-immobilien-ag.md) · Baar · ``
+- [Liegenschaftsgenossenschaft zum Morgarten](liegenschaftsgenossenschaft-zum-morgarten.md) · Baar · ``
+- [Like Immobilien AG](like-immobilien-ag.md) · Baar · ``
+- [Linaria-Immobilien AG](linaria-immobilien-ag.md) · Zug · ``
+- [Lind Immobilien AG](lind-immobilien-ag.md) · Cham · ``
+- [Lägern Immobilien AG](lagern-immobilien-ag.md) · Zug · ``
+- [M&M Immobilien Invest AG](m-m-immobilien-invest-ag.md) · Unterägeri · ``
+- [MAJG Immobilien AG](majg-immobilien-ag.md) · Hünenberg · ``
+- [MCG Immobilien AG](mcg-immobilien-ag.md) · Cham · ``
+- [MICAS Immobilien AG](micas-immobilien-ag.md) · Hünenberg · ``
+- [MIUR Immobilien AG](miur-immobilien-ag.md) · Zug · ``
+- [MR Immo GmbH](mr-immo-gmbh.md) · Zug · ``
+- [Mabora Immobilien AG](mabora-immobilien-ag.md) · Oberägeri · ``
+- [Maurus Weber Immobilien AG](maurus-weber-immobilien-ag.md) · Steinhausen · ``
+- [Miklos Liegenschaften AG](miklos-liegenschaften-ag.md) · Zug · ``
+- [Mimosa Immobilien AG](mimosa-immobilien-ag.md) · Zug · ``
+- [Montana Immo AG](montana-immo-ag.md) · Zug · ``
+- [Montepark Immobilien und Finanz AG](montepark-immobilien-und-finanz-ag.md) · Zug · ``
+- [Mugeren Immobilien AG](mugeren-immobilien-ag.md) · Cham · ``
+- [Mächler & Töngi Immobilien AG](machler-tongi-immobilien-ag.md) · Risch · ``
+- [N11 Immobilien AG](n11-immobilien-ag.md) · Risch · ``
+- [NAROBA Immobilien GmbH](naroba-immobilien-gmbh.md) · Risch · ``
+- [NBS Immobilien-Planung GmbH](nbs-immobilien-planung-gmbh.md) · Risch · ``
+- [NJ Immo AG](nj-immo-ag.md) · Baar · ``
+- [NWZ Immobilien AG](nwz-immobilien-ag.md) · Zug · ``
+- [Nussbaumer Immobilien AG](nussbaumer-immobilien-ag.md) · Steinhausen · ``
+- [Obermühle Immobilien AG](obermuhle-immobilien-ag.md) · Baar · ``
+- [Oele Immobilien AG](oele-immobilien-ag.md) · Steinhausen · ``
+- [PANORAMA-INVEST AG Immobilien & Finanzierungen](panorama-invest-ag-immobilien-finanzierungen.md) · Risch · ``
+- [PD Immo GU AG](pd-immo-gu-ag.md) · Steinhausen · ``
+- [PEARL Immo AG](pearl-immo-ag.md) · Baar · ``
+- [PR 2 Immobilien AG](pr-2-immobilien-ag.md) · Baar · ``
+- [Pegase Immobilien AG](pegase-immobilien-ag.md) · Zug · ``
+- [Presida Verwaltungs AG](presida-verwaltungs-ag.md) · Baar · ``
+- [Proflex Immobilien AG](proflex-immobilien-ag.md) · Baar · ``
+- [Provista Immobilien AG](provista-immobilien-ag.md) · Hünenberg · ``
+- [QUINN Immobilien AG](quinn-immobilien-ag.md) · Zug · ``
+- [R & R Immo AG](r-r-immo-ag.md) · Baar · ``
+- [RBP Immobilien AG](rbp-immobilien-ag.md) · Zug · ``
+- [RBS Immobilien AG](rbs-immobilien-ag.md) · Baar · ``
+- [RM GmbH Immobilien](rm-gmbh-immobilien.md) · Baar · ``
+- [Reuss Bau- und Verwaltungs AG](reuss-bau-und-verwaltungs-ag.md) · Menzingen · ``
+- [Reusszopf Immobilien AG](reusszopf-immobilien-ag.md) · Cham · ``
+- [Risi Immo AG](risi-immo-ag.md) · Hünenberg · ``
+- [Roefs Immobilien AG](roefs-immobilien-ag.md) · Zug · ``
+- [Romaco Verwaltungs- und Finanz AG](romaco-verwaltungs-und-finanz-ag.md) · Zug · ``
+- [Ronola Immobilien AG](ronola-immobilien-ag.md) · Baar · ``
+- [Röck Baggenstos Immobilien AG](rock-baggenstos-immobilien-ag.md) · Baar · ``
+- [S-L Immobilien & Partners AG](s-l-immobilien-partners-ag.md) · Risch · ``
+- [SCM Immobilien AG](scm-immobilien-ag.md) · Hünenberg · ``
+- [SEWAG IMMO AG](sewag-immo-ag.md) · Baar · ``
+- [SFAX Immobilien GmbH](sfax-immobilien-gmbh.md) · Cham · ``
+- [SIAT Immobilien AG](siat-immobilien-ag.md) · Zug · ``
+- [STM Immobilien AG](stm-immobilien-ag.md) · Menzingen · ``
+- [SWISS IMMOBILIEN PARTNERS AG](swiss-immobilien-partners-ag.md) · Cham · ``
+- [SWISSLUXX IMMO GmbH](swissluxx-immo-gmbh.md) · Steinhausen · ``
+- [Salena Immobilien GmbH](salena-immobilien-gmbh.md) · Zug · ``
+- [Samag Immobilien AG](samag-immobilien-ag.md) · Baar · ``
+- [Sarbach-Immobilien AG](sarbach-immobilien-ag.md) · Neuheim · ``
+- [Schlagenhauf Immobilien AG](schlagenhauf-immobilien-ag.md) · Baar · ``
+- [Schleiss + Partner Immobilien AG](schleiss-partner-immobilien-ag.md) · Steinhausen · ``
+- [Schlittler Immobilien AG](schlittler-immobilien-ag.md) · Zug · ``
+- [Schmidiger Immobilien AG Baar](schmidiger-immobilien-ag-baar.md) · Baar · ``
+- [Schwerzmann Immobilien AG](schwerzmann-immobilien-ag.md) · Baar · ``
+- [Seestern Immobilien AG](seestern-immobilien-ag.md) · Baar · ``
+- [Seroph Immobilien AG](seroph-immobilien-ag.md) · Cham · ``
+- [Seven Estates Immo AG](seven-estates-immo-ag.md) · Zug · ``
+- [Sorbus 5 Immobilien AG](sorbus-5-immobilien-ag.md) · Walchwil · ``
+- [Spectrum Immobilien AG](spectrum-immobilien-ag.md) · Baar · ``
+- [Stadelmann & Partner Immobilien AG](stadelmann-partner-immobilien-ag.md) · Hünenberg · `?`
+- [Stiegelmeyer Immobilien (Schweiz) GmbH](stiegelmeyer-immobilien-schweiz-gmbh.md) · Hünenberg · ``
+- [Stowa Immobilien AG](stowa-immobilien-ag.md) · Steinhausen · ``
+- [Strickler Immobilien AG](strickler-immobilien-ag.md) · Baar · ``
+- [Styger Verwaltungen GmbH](styger-verwaltungen-gmbh.md) · Steinhausen · ``
+- [Sunca Immobilien GmbH](sunca-immobilien-gmbh.md) · Baar · ``
+- [Swiss Twins Immobilien GmbH](swiss-twins-immobilien-gmbh.md) · Zug · `info@swiss-twinsimmobilien.ch (+5)`
+- [TIKARO Immobilien AG](tikaro-immobilien-ag.md) · Steinhausen · ``
+- [TINIT Immobilien AG](tinit-immobilien-ag.md) · Baar · ``
+- [Terra Pioneers Immobilien AG](terra-pioneers-immobilien-ag.md) · Zug · ``
+- [UM Immobilien AG](um-immobilien-ag.md) · Cham · ``
+- [Uranium Immobilien GmbH](uranium-immobilien-gmbh.md) · Steinhausen · ``
+- [VAREN Immobilien AG](varen-immobilien-ag.md) · Zug · ``
+- [Vallma Immobilien AG](vallma-immobilien-ag.md) · Baar · ``
+- [Vanoli Immobilien AG](vanoli-immobilien-ag.md) · Zug · ``
+- [Victoria Liegenschaften AG](victoria-liegenschaften-ag.md) · Baar · ``
+- [Vögele Immobilien AG Zug](vogele-immobilien-ag-zug.md) · Zug · ``
+- [W. Scherrer Verwaltungs AG](w-scherrer-verwaltungs-ag.md) · Cham · ``
+- [WH Immobilien und Bau AG](wh-immobilien-und-bau-ag.md) · Cham · ``
+- [Werner Immobilien AG](werner-immobilien-ag.md) · Walchwil · ``
+- [Yugen Immobilien AG](yugen-immobilien-ag.md) · Zug · ``
+- [ZG-Immobilien AG](zg-immobilien-ag.md) · Steinhausen · ``
+- [Zentral Immo AG](zentral-immo-ag.md) · Menzingen · ``
+- [Zollweid Immobilien AG](zollweid-immobilien-ag.md) · Risch · ``
+- [ZüriNord Immo GmbH](zurinord-immo-gmbh.md) · Baar · ``
+- [Zürichsee Immobilien AG](zurichsee-immobilien-ag.md) · Zug · ``
+- [bt-immo ag](bt-immo-ag.md) · Zug · ``
+- [elas immobilien & mobilien GmbH](elas-immobilien-mobilien-gmbh.md) · Baar · ``
+- [immo conex gmbh](immo-conex-gmbh.md) · Risch · ``
+- [immo swiss assets ag](immo-swiss-assets-ag.md) · Zug · ``
+- [mathis & meier immobilien ag](mathis-meier-immobilien-ag.md) · Oberägeri · ``
+- [mba immobilien ag](mba-immobilien-ag.md) · Zug · ``
+- [nera immobilien AG](nera-immobilien-ag.md) · Baar · ``
+- [trendline Immobilien AG](trendline-immobilien-ag.md) · Unterägeri · ``

@@ -1,0 +1,36 @@
+# Société Immobilière Chemin de Belmont Gare SA
+
+| | |
+|---|---|
+| UID | `CHE103119856` |
+| Legal form | Société anonyme |
+| Canton | GE (fr) |
+| Registered seat | Lancy |
+| Address | route du Grand-Lancy 6A, 1227 Les Acacias |
+| Register status | ACTIVE |
+
+## Relevance for Limen
+
+**regie-letting** — lets property; the administration may sit elsewhere
+
+purpose names letting but not administration, name agrees
+
+## Where to write
+
+- not looked for yet
+
+No website resolved.
+
+## What the register says it does
+
+> exploitation, administration, rénovation et transformation de l'immeuble sis à Genève, chemin Clos Belmont-route de Chêne 28 bis; location à ses propres actionnaires des appartements ou locaux commerciaux qui existent dans ledit immeuble.
+
+## Sources
+
+- Register entry: https://www.zefix.admin.ch/fr/search/entity/list?name=CHE103119856&directLink=true
+- Grading: rule over the registered purpose, see `scripts/classify_regies.py`
+- Addresses: none held
+- Cascade: `intel.address_hunt`, outcome `not run`
+
+The register carries no warranty and has no legal effect; only the certified
+cantonal excerpt and the FOSC publication text are binding.

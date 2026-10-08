@@ -1,0 +1,498 @@
+[
+ {
+  "uid": "CHE398913658",
+  "sector": "hospitality",
+  "sector_confidence": 0.7,
+  "sector_rationale": "passer une soirée dans la nature en dormant dans une tente, dégustation de produits de la région",
+  "segments": [
+   {"segment": "sme-owner", "confidence": 0.8, "rationale": "entreprise individuelle exploitée par Joël Hirschi"}
+  ]
+ },
+ {
+  "uid": "CHE440559474",
+  "sector": "consulting",
+  "sector_confidence": 0.7,
+  "sector_rationale": "conseil - coaching - communication - formation en gestion de projets complexes",
+  "segments": [
+   {"segment": "sme-owner", "confidence": 0.8, "rationale": "expert-conseil en raison individuelle"}
+  ]
+ },
+ {
+  "uid": "CHE104964966",
+  "sector": "engineering",
+  "sector_confidence": 0.5,
+  "sector_rationale": "Planification en région de montagne",
+  "segments": [
+   {"segment": "sme-owner", "confidence": 0.8, "rationale": "bureau de planification tenu par Thomas Ammann"}
+  ]
+ },
+ {
+  "uid": "CHE447156172",
+  "sector": "marketing-media",
+  "sector_confidence": 0.95,
+  "sector_rationale": "Agence de design, graphisme, identité visuelle, publicité, communication",
+  "segments": [
+   {"segment": "sme-owner", "confidence": 0.8, "rationale": "agence en entreprise individuelle"},
+   {"segment": "ai-adopter", "confidence": 0.5, "rationale": "création de sites internet, multimédias"}
+  ]
+ },
+ {
+  "uid": "CHE399391366",
+  "sector": "personal-services",
+  "sector_confidence": 0.98,
+  "sector_rationale": "exploitation d'un salon de coiffure",
+  "segments": [
+   {"segment": "sme-owner", "confidence": 0.85, "rationale": "salon exploité par son titulaire"}
+  ]
+ },
+ {
+  "uid": "CHE297669604",
+  "sector": "education",
+  "sector_confidence": 0.6,
+  "sector_rationale": "coaching personnel, de groupe, ateliers de supervision et ateliers à thèmes",
+  "segments": [
+   {"segment": "sme-owner", "confidence": 0.8, "rationale": "entreprise individuelle de coaching"}
+  ]
+ },
+ {
+  "uid": "CHE107512158",
+  "sector": "engineering",
+  "sector_confidence": 0.95,
+  "sector_rationale": "Exploitation d'un bureau d'architecture",
+  "segments": [
+   {"segment": "sme-owner", "confidence": 0.85, "rationale": "bureau exploité par Michel Troillet"}
+  ]
+ },
+ {
+  "uid": "CHE368720356",
+  "sector": "engineering",
+  "sector_confidence": 0.9,
+  "sector_rationale": "Betrieb eines Büros für Architektur, Innenarchitektur sowie Bauleitung",
+  "segments": [
+   {"segment": "sme-owner", "confidence": 0.85, "rationale": "Einzelfirma von Arno Perren"}
+  ]
+ },
+ {
+  "uid": "CHE440334320",
+  "sector": "engineering",
+  "sector_confidence": 0.85,
+  "sector_rationale": "Architecture, direction de travaux",
+  "segments": [
+   {"segment": "sme-owner", "confidence": 0.8, "rationale": "bureau individuel de Patrick Moro"}
+  ]
+ },
+ {
+  "uid": "CHE320973947",
+  "sector": "marketing-media",
+  "sector_confidence": 0.8,
+  "sector_rationale": "Erstellung von Architekturfotografien für Privat- und Geschäftskunden",
+  "segments": [
+   {"segment": "sme-owner", "confidence": 0.8, "rationale": "Einzelunternehmen von Jennifer Jordan"}
+  ]
+ },
+ {
+  "uid": "CHE106813663",
+  "sector": "marketing-media",
+  "sector_confidence": 0.85,
+  "sector_rationale": "Atelier de photographies: studio, reportages, portraits et publicité",
+  "segments": [
+   {"segment": "sme-owner", "confidence": 0.8, "rationale": "atelier photo exploité en nom propre"}
+  ]
+ },
+ {
+  "uid": "CHE431289867",
+  "sector": "agriculture",
+  "sector_confidence": 0.6,
+  "sector_rationale": "travaux relatifs au paysagisme et l'horticulture; culture de plante et commercialisation",
+  "segments": [
+   {"segment": "sme-owner", "confidence": 0.8, "rationale": "entreprise individuelle de Guillaume Cettou"}
+  ]
+ },
+ {
+  "uid": "CHE410904738",
+  "sector": "engineering",
+  "sector_confidence": 0.95,
+  "sector_rationale": "exploitation d'un bureau d'architecture",
+  "segments": [
+   {"segment": "sme-owner", "confidence": 0.85, "rationale": "bureau exploité par Simon Pellouchoud"}
+  ]
+ },
+ {
+  "uid": "CHE271518085",
+  "sector": "engineering",
+  "sector_confidence": 0.6,
+  "sector_rationale": "prestataire de service dans les domaines de l'architecture, du bâtiment et de la construction",
+  "segments": [
+   {"segment": "sme-owner", "confidence": 0.8, "rationale": "prestataire individuel Laurent Gudit"}
+  ]
+ },
+ {
+  "uid": "CHE114973211",
+  "sector": "engineering",
+  "sector_confidence": 0.95,
+  "sector_rationale": "Architekturbüro",
+  "segments": [
+   {"segment": "sme-owner", "confidence": 0.85, "rationale": "Einzelfirma des Architekten Hans Keller"}
+  ]
+ },
+ {
+  "uid": "CHE108058759",
+  "sector": "engineering",
+  "sector_confidence": 0.95,
+  "sector_rationale": "Betrieb eines Architekturbüros",
+  "segments": [
+   {"segment": "sme-owner", "confidence": 0.85, "rationale": "Einzelunternehmen von Beat Lochmatter"}
+  ]
+ },
+ {
+  "uid": "CHE113740259",
+  "sector": "engineering",
+  "sector_confidence": 0.85,
+  "sector_rationale": "Architekturbüro; Erwerb und Veräusserung von Immobilien",
+  "segments": [
+   {"segment": "sme-owner", "confidence": 0.8, "rationale": "Einzelfirma von Hans Ritz"}
+  ]
+ },
+ {
+  "uid": "CHE110005235",
+  "sector": "engineering",
+  "sector_confidence": 0.85,
+  "sector_rationale": "Betrieb eines Architekturbüros, daneben Verwaltung von Liegenschaften",
+  "segments": [
+   {"segment": "sme-owner", "confidence": 0.8, "rationale": "Einzelunternehmen von Kurt Studer"}
+  ]
+ },
+ {
+  "uid": "CHE106431356",
+  "sector": "engineering",
+  "sector_confidence": 0.9,
+  "sector_rationale": "Betrieb eines Architekturbüros und damit zusammenhängende Tätigkeiten",
+  "segments": [
+   {"segment": "sme-owner", "confidence": 0.85, "rationale": "Einzelfirma von Stefan Eyer"}
+  ]
+ },
+ {
+  "uid": "CHE275020393",
+  "sector": "construction",
+  "sector_confidence": 0.95,
+  "sector_rationale": "exploitation d'une entreprise de ferblanterie-couverture",
+  "segments": [
+   {"segment": "sme-owner", "confidence": 0.85, "rationale": "entreprise de toiture en nom propre"}
+  ]
+ },
+ {
+  "uid": "CHE113401596",
+  "sector": "hospitality",
+  "sector_confidence": 0.95,
+  "sector_rationale": "Exploitation d'une buvette",
+  "segments": [
+   {"segment": "sme-owner", "confidence": 0.85, "rationale": "buvette exploitée par son titulaire"}
+  ]
+ },
+ {
+  "uid": "CHE289660268",
+  "sector": "real-estate",
+  "sector_confidence": 0.9,
+  "sector_rationale": "Exercice de toute activité dans le domaine immobilier",
+  "segments": [
+   {"segment": "sme-owner", "confidence": 0.75, "rationale": "activité immobilière en entreprise individuelle"}
+  ]
+ },
+ {
+  "uid": "CHE472518255",
+  "sector": "hospitality",
+  "sector_confidence": 0.85,
+  "sector_rationale": "Food Truck",
+  "segments": [
+   {"segment": "sme-owner", "confidence": 0.85, "rationale": "food truck tenu par Paolo Bertucci"}
+  ]
+ },
+ {
+  "uid": "CHE197250541",
+  "sector": "marketing-media",
+  "sector_confidence": 0.95,
+  "sector_rationale": "Agence créative. Création publicitaire et direction artistique",
+  "segments": [
+   {"segment": "sme-owner", "confidence": 0.8, "rationale": "agence en entreprise individuelle"}
+  ]
+ },
+ {
+  "uid": "CHE213988073",
+  "sector": "personal-services",
+  "sector_confidence": 0.95,
+  "sector_rationale": "das Führen eines Coiffeurgeschäfts",
+  "segments": [
+   {"segment": "sme-owner", "confidence": 0.85, "rationale": "Coiffeurgeschäft als Einzelunternehmen"}
+  ]
+ },
+ {
+  "uid": "CHE492166739",
+  "sector": "energy-environment",
+  "sector_confidence": 0.9,
+  "sector_rationale": "recyclage et service de bennes",
+  "segments": [
+   {"segment": "sme-owner", "confidence": 0.8, "rationale": "entreprise individuelle de recyclage"}
+  ]
+ },
+ {
+  "uid": "CHE305713221",
+  "sector": "transport-logistics",
+  "sector_confidence": 0.6,
+  "sector_rationale": "Entreprise de déménagement, de débarras",
+  "segments": [
+   {"segment": "sme-owner", "confidence": 0.8, "rationale": "entreprise individuelle de déménagement"}
+  ]
+ },
+ {
+  "uid": "CHE194462006",
+  "sector": "consulting",
+  "sector_confidence": 0.8,
+  "sector_rationale": "assistante commerciale et administrative indépendante, aide aux PME... gestion administrative",
+  "segments": [
+   {"segment": "sme-owner", "confidence": 0.8, "rationale": "indépendante travaillant seule"}
+  ]
+ },
+ {
+  "uid": "CHE304783153",
+  "sector": "agriculture",
+  "sector_confidence": 0.95,
+  "sector_rationale": "Production et vente de fruits et de produits agricoles du domaine, viticulture, vinification",
+  "segments": [
+   {"segment": "sme-owner", "confidence": 0.8, "rationale": "domaine exploité par Daniel Béguin"}
+  ]
+ },
+ {
+  "uid": "CHE154515122",
+  "sector": "personal-services",
+  "sector_confidence": 0.85,
+  "sector_rationale": "toutes activités de conciergerie et de nettoyage intérieur et extérieur",
+  "segments": [
+   {"segment": "sme-owner", "confidence": 0.8, "rationale": "entreprise de nettoyage en nom propre"}
+  ]
+ },
+ {
+  "uid": "CHE107014794",
+  "sector": "engineering",
+  "sector_confidence": 0.65,
+  "sector_rationale": "Études techniques",
+  "segments": [
+   {"segment": "sme-owner", "confidence": 0.75, "rationale": "bureau d'études en raison individuelle"}
+  ]
+ },
+ {
+  "uid": "CHE160414989",
+  "sector": "health-care",
+  "sector_confidence": 0.95,
+  "sector_rationale": "toutes activités dans le domaine de la podologie",
+  "segments": [
+   {"segment": "sme-owner", "confidence": 0.8, "rationale": "cabinet individuel de podologie"},
+   {"segment": "compliance-sector", "confidence": 0.75, "rationale": "activité paramédicale réglementée"}
+  ]
+ },
+ {
+  "uid": "CHE250993061",
+  "sector": "construction",
+  "sector_confidence": 0.55,
+  "sector_rationale": "conseils et services dans le domaine de la menuiserie",
+  "segments": [
+   {"segment": "sme-owner", "confidence": 0.8, "rationale": "entreprise individuelle Bouisse"}
+  ]
+ },
+ {
+  "uid": "CHE222955724",
+  "sector": "transport-logistics",
+  "sector_confidence": 0.95,
+  "sector_rationale": "Transport de marchandises en véhicules légers jusqu'à 3.5T",
+  "segments": [
+   {"segment": "sme-owner", "confidence": 0.8, "rationale": "transporteur en entreprise individuelle"}
+  ]
+ },
+ {
+  "uid": "CHE241733058",
+  "sector": "legal-accounting",
+  "sector_confidence": 0.95,
+  "sector_rationale": "Bureau fiduciaire, comptabilité, fiscalité et conseils",
+  "segments": [
+   {"segment": "sme-owner", "confidence": 0.8, "rationale": "fiduciaire tenue par Bernard Chabbey"},
+   {"segment": "compliance-sector", "confidence": 0.7, "rationale": "comptabilité et fiscalité soumises à réglementation"}
+  ]
+ },
+ {
+  "uid": "CHE495922325",
+  "sector": "engineering",
+  "sector_confidence": 0.85,
+  "sector_rationale": "conseil et études pour la technique du bâtiment (chauffage, ventilation, climatisation, sanitaire)",
+  "segments": [
+   {"segment": "sme-owner", "confidence": 0.8, "rationale": "bureau d'études individuel"}
+  ]
+ },
+ {
+  "uid": "CHE422994323",
+  "sector": "health-care",
+  "sector_confidence": 0.65,
+  "sector_rationale": "Drainage lymphatique thérapeutique, cabinet de massothérapie",
+  "segments": [
+   {"segment": "sme-owner", "confidence": 0.8, "rationale": "cabinet individuel de Camille Breit"}
+  ]
+ },
+ {
+  "uid": "CHE317144011",
+  "sector": "construction",
+  "sector_confidence": 0.95,
+  "sector_rationale": "travaux spéciaux dans le domaine du bâtiment, notamment l'étanchéité, l'assainissement",
+  "segments": [
+   {"segment": "sme-owner", "confidence": 0.8, "rationale": "entreprise individuelle de travaux spéciaux"}
+  ]
+ },
+ {
+  "uid": "CHE334039763",
+  "sector": "personal-services",
+  "sector_confidence": 0.8,
+  "sector_rationale": "exploitation d'une entreprise de nettoyage, d'entretien et de maintenance d'immeubles",
+  "segments": [
+   {"segment": "sme-owner", "confidence": 0.8, "rationale": "entreprise de nettoyage en nom propre"}
+  ]
+ },
+ {
+  "uid": "CHE397416618",
+  "sector": "construction",
+  "sector_confidence": 0.55,
+  "sector_rationale": "multiservices... menuiserie, serrurerie et petits travaux de rénovation",
+  "segments": [
+   {"segment": "sme-owner", "confidence": 0.8, "rationale": "entreprise multiservices individuelle"}
+  ]
+ },
+ {
+  "uid": "CHE197331599",
+  "sector": "construction",
+  "sector_confidence": 0.9,
+  "sector_rationale": "entreprise de chauffage, de sanitaire et de constructions métalliques",
+  "segments": [
+   {"segment": "sme-owner", "confidence": 0.8, "rationale": "entreprise individuelle d'installations"}
+  ]
+ },
+ {
+  "uid": "CHE353466290",
+  "sector": "construction",
+  "sector_confidence": 0.95,
+  "sector_rationale": "Ausführung von Maler- und Gipserarbeiten im Innenbereich",
+  "segments": [
+   {"segment": "sme-owner", "confidence": 0.8, "rationale": "Einzelunternehmen im Malerhandwerk"}
+  ]
+ },
+ {
+  "uid": "CHE184907550",
+  "sector": "retail",
+  "sector_confidence": 0.9,
+  "sector_rationale": "commerce de détail, notamment la vente de vêtements... en magasin et en ligne",
+  "segments": [
+   {"segment": "sme-owner", "confidence": 0.8, "rationale": "boutique tenue en nom propre"}
+  ]
+ },
+ {
+  "uid": "CHE452275351",
+  "sector": "health-care",
+  "sector_confidence": 0.8,
+  "sector_rationale": "Medizinische Massagen",
+  "segments": [
+   {"segment": "sme-owner", "confidence": 0.8, "rationale": "Einzelpraxis von Heidi Schär"}
+  ]
+ },
+ {
+  "uid": "CHE239898069",
+  "sector": "legal-accounting",
+  "sector_confidence": 0.9,
+  "sector_rationale": "mandats fiduciaires et fiscaux, tenue de comptabilité et salaires, TVA et assurances sociales",
+  "segments": [
+   {"segment": "sme-owner", "confidence": 0.8, "rationale": "fiduciaire en entreprise individuelle"},
+   {"segment": "compliance-sector", "confidence": 0.7, "rationale": "fiscalité, TVA et assurances sociales"}
+  ]
+ },
+ {
+  "uid": "CHE371377514",
+  "sector": "marketing-media",
+  "sector_confidence": 0.6,
+  "sector_rationale": "services dans les domaines de la sonorisation et de la gestion de spectacle",
+  "segments": [
+   {"segment": "sme-owner", "confidence": 0.8, "rationale": "entreprise individuelle de Marc Givord"},
+   {"segment": "ai-adopter", "confidence": 0.5, "rationale": "développement de solutions informatiques"}
+  ]
+ },
+ {
+  "uid": "CHE286965487",
+  "sector": "construction",
+  "sector_confidence": 0.55,
+  "sector_rationale": "rénovation d'habitat, conciergerie et nettoyage",
+  "segments": [
+   {"segment": "sme-owner", "confidence": 0.8, "rationale": "multiservices en entreprise individuelle"}
+  ]
+ },
+ {
+  "uid": "CHE331827333",
+  "sector": "personal-services",
+  "sector_confidence": 0.5,
+  "sector_rationale": "l'entretien paysager des entourages, le nettoyage, la réparation et l'entretien des bâtiments",
+  "segments": [
+   {"segment": "sme-owner", "confidence": 0.8, "rationale": "entreprise individuelle de Raphaël Antonier"}
+  ]
+ },
+ {
+  "uid": "CHE458814571",
+  "sector": "it-services",
+  "sector_confidence": 0.95,
+  "sector_rationale": "Développement, édition et exploitation de logiciels et de services en ligne",
+  "segments": [
+   {"segment": "ai-adopter", "confidence": 0.9, "rationale": "recherche documentaire assistée par intelligence artificielle"},
+   {"segment": "lean-startup", "confidence": 0.6, "rationale": "but purement logiciel, produit en ligne"},
+   {"segment": "sme-owner", "confidence": 0.7, "rationale": "entreprise individuelle"}
+  ]
+ },
+ {
+  "uid": "CHE449666656",
+  "sector": "it-services",
+  "sector_confidence": 0.95,
+  "sector_rationale": "Dienstleistungen in den Bereichen künstliche Intelligenz, Software, digitale Automatisierung",
+  "segments": [
+   {"segment": "ai-adopter", "confidence": 0.95, "rationale": "KI-basierte Lösungen, Chatbots, Automatisierung von Arbeitsprozessen"},
+   {"segment": "lean-startup", "confidence": 0.6, "rationale": "Technologiezweck im Lizenzmodell"},
+   {"segment": "sme-owner", "confidence": 0.7, "rationale": "Einzelunternehmen"}
+  ]
+ },
+ {
+  "uid": "CHE454056966",
+  "sector": "construction",
+  "sector_confidence": 0.8,
+  "sector_rationale": "Autres travaux de construction... isolation, plâtrerie, peinture, sols, petits travaux de maçonnerie",
+  "segments": [
+   {"segment": "sme-owner", "confidence": 0.8, "rationale": "entreprise individuelle Rey"}
+  ]
+ },
+ {
+  "uid": "CHE474746376",
+  "sector": "hospitality",
+  "sector_confidence": 0.95,
+  "sector_rationale": "exploitation d'une auberge... mets et/ou boissons... ainsi qu'un service d'hébergement",
+  "segments": [
+   {"segment": "sme-owner", "confidence": 0.8, "rationale": "auberge exploitée en nom propre"}
+  ]
+ },
+ {
+  "uid": "CHE473602800",
+  "sector": "personal-services",
+  "sector_confidence": 0.5,
+  "sector_rationale": "réparation, maintenance, dépannage dans les secteurs mécaniques et électroniques",
+  "segments": [
+   {"segment": "sme-owner", "confidence": 0.8, "rationale": "entreprise individuelle de maintenance"}
+  ]
+ },
+ {
+  "uid": "CHE103895771",
+  "sector": "non-profit",
+  "sector_confidence": 0.8,
+  "sector_rationale": "la Fondation a pour but de venir en aide à toute personne défavorisée",
+  "segments": [
+   {"segment": "compliance-sector", "confidence": 0.75, "rationale": "établissement psycho-social médicalisé, soins et accompagnement"},
+   {"segment": "mature-sme", "confidence": 0.6, "rationale": "elle exploite différentes institutions"}
+  ]
+ }
+]

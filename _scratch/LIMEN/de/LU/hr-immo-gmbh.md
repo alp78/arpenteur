@@ -1,0 +1,36 @@
+# HR Immo GmbH
+
+| | |
+|---|---|
+| UID | `CHE155571324` |
+| Legal form | Société à responsabilité limitée |
+| Canton | LU (de) |
+| Registered seat | Kriens |
+| Address | Gallusstrasse 2, 6010 Kriens |
+| Register status | ACTIVE |
+
+## Relevance for Limen
+
+**regie-core** — manages property for third parties, so runs inspections routinely
+
+purpose names management of property for others, name agrees
+
+## Where to write
+
+- nothing yet, and the search is unfinished — ran without the search tier
+
+No website resolved.
+
+## What the register says it does
+
+> Die Gesellschaft bezweckt den Kauf, Verkauf, die Finanzierung und die Verwaltung von Immobilien aller Art. Sie kann zudem mit Waren aller Art handeln. Die Gesellschaft kann sich zudem an anderen Unternehmungen des In- und Auslandes beteiligen sowie alle Geschäfte eingehen und Verträge abschliessen, die geeignet sind, ihren Zweck zu fördern oder die direkt oder indirekt damit im Zusammenhang stehen. Sie kann ferner im In- und Ausland Zweigniederlassungen errichten; Immobilien erstellen, erwerben, verkaufen, verwalten und finanzieren sowie Unternehmen, Unternehmensteile, Immaterialgüterrechte und Wertschriften im In- und Ausland erwerben, verwalten und verkaufen.
+
+## Sources
+
+- Register entry: https://www.zefix.admin.ch/fr/search/entity/list?name=CHE155571324&directLink=true
+- Grading: rule over the registered purpose, see `scripts/classify_regies.py`
+- Addresses: none held
+- Cascade: `intel.address_hunt`, outcome `partial`
+
+The register carries no warranty and has no legal effect; only the certified
+cantonal excerpt and the FOSC publication text are binding.

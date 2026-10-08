@@ -1,0 +1,212 @@
+# JU · 200 firms
+
+
+## regie-core (183)
+
+manages property for third parties, so runs inspections routinely
+
+- [A&G Immobilier SA](a-g-immobilier-sa.md) · Courrendlin · `-`
+- [A4 Consulting Sàrl](a4-consulting-sarl.md) · Porrentruy · `info@a4consulting.ch`
+- [ABE Carrosserie Sàrl](abe-carrosserie-sarl.md) · Delémont · `info@abecarrosserie.ch`
+- [AC Solutions Sàrl](ac-solutions-sarl.md) · Courgenay · `-`
+- [AD immobilier Sàrl](ad-immobilier-sarl.md) · Bure · `-`
+- [ADL Building Sàrl](adl-building-sarl.md) · Haute-Sorne · `-`
+- [ADP Fiduciaire Sàrl](adp-fiduciaire-sarl.md) · Delémont · `info@adp-fiduciaire.ch`
+- [ADS Immobilier Sàrl](ads-immobilier-sarl.md) · Delémont · `info@ads-immobilier.ch`
+- [ALEVI Sàrl](alevi-sarl.md) · Delémont · `-`
+- [ALTENIA IMMOBILIER SA](altenia-immobilier-sa.md) · Courrendlin · `?`
+- [APE IMMO Sàrl](ape-immo-sarl.md) · Porrentruy · `info@apeimmobilier.ch`
+- [ARI Immobiliers Sàrl](ari-immobiliers-sarl.md) · Delémont · `info@ariimmobiliers.ch`
+- [ARMA Immo SA](arma-immo-sa.md) · Le Noirmont · `-`
+- [ATIK Patrimoine Sàrl](atik-patrimoine-sarl.md) · Clos du Doubs · `atik@atikpatrimoine.ch`
+- [Adestone Sàrl](adestone-sarl.md) · Delémont · `-`
+- [Afrim'immo SA](afrim-immo-sa.md) · Delémont · ``
+- [Agerim Sàrl](agerim-sarl.md) · Delémont · `info@agerim.ch`
+- [Aid'Admin Sàrl](aid-admin-sarl.md) · Porrentruy · `ulsah@book.admin.com`
+- [Ajoie Home Sàrl](ajoie-home-sarl.md) · Fontenais · `-`
+- [Alga Invest Immobilier Sàrl](alga-invest-immobilier-sarl.md) · Courroux · `-`
+- [Amepar Sàrl](amepar-sarl.md) · Soyhières · `-`
+- [Angelus management Sàrl](angelus-management-sarl.md) · Delémont · `?`
+- [Aranor Immobilier SA](aranor-immobilier-sa.md) · Delémont · `-`
+- [Arc Ajoie Sàrl](arc-ajoie-sarl.md) · Basse-Vendline · `?`
+- [Arc-Immob Sàrl](arc-immob-sarl.md) · Haute-Sorne · `?`
+- [Arcogestim Services Sàrl](arcogestim-services-sarl.md) · Delémont · `?`
+- [Artemps Sàrl](artemps-sarl.md) · Porrentruy · `marion.baumann@artemps.ch`
+- [Atelier.22 Sàrl](atelier-22-sarl.md) · Porrentruy · `?`
+- [Athénée Immobilière SA](athenee-immobiliere-sa.md) · Soyhières · `-`
+- [Atika Immobilier Sàrl](atika-immobilier-sarl.md) · Delémont · `?`
+- [Aufigest Immobilier Sàrl](aufigest-immobilier-sarl.md) · Delémont · `info@aufigest.ch (+6)`
+- [Aux Prés de Chez Vous Sàrl](aux-pres-de-chez-vous-sarl.md) · Porrentruy · `info@chez-vous.com`
+- [B/C Bureau Comptable Olivier Cortat Sàrl](b-c-bureau-comptable-olivier-cortat-sarl.md) · Les Bois · `?`
+- [BAME Immobilier SA](bame-immobilier-sa.md) · Haute-Sorne · `?`
+- [BATIGENIE Immobilier SA](batigenie-immobilier-sa.md) · Courgenay · `info@batigenie.ch`
+- [BATIjura Sàrl](batijura-sarl.md) · Haute-Sorne · `-`
+- [BIMmob Sàrl](bimmob-sarl.md) · Courroux · `?`
+- [BINE Sàrl](bine-sarl.md) · Clos du Doubs · `-`
+- [BLANCHOT Immo SA](blanchot-immo-sa.md) · Delémont · ``
+- [Bailly Solutions Sàrl](bailly-solutions-sarl.md) · Delémont · `?`
+- [Bantry Immobilière SA](bantry-immobiliere-sa.md) · Soyhières · `?`
+- [BeFran Sàrl](befran-sarl.md) · Rossemaison · `?`
+- [Beline Immobilière SA](beline-immobiliere-sa.md) · Soyhières · `?`
+- [Belle Oasis Sàrl](belle-oasis-sarl.md) · Courroux · `-`
+- [Bellotech Sàrl](bellotech-sarl.md) · Haute-Sorne · `?`
+- [Belo-Rénovation Sàrl](belo-renovation-sarl.md) · Delémont · `?`
+- [Belton Immobilier SA](belton-immobilier-sa.md) · Soyhières · `?`
+- [Benston Immobilière SA](benston-immobiliere-sa.md) · Delémont · `?`
+- [BiB'Immo Sàrl](bib-immo-sarl.md) · Courtételle · `info@bibimmo.com`
+- [Bilur Immobilier SA](bilur-immobilier-sa.md) · Soyhières · `?`
+- [Biry-Lux Sàrl](biry-lux-sarl.md) · Les Breuleux · `?`
+- [Bowden Immobilier SA](bowden-immobilier-sa.md) · Soyhières · `?`
+- [Branly Immobilier SA](branly-immobilier-sa.md) · Delémont · `?`
+- [Brooklyn Bar Sàrl](brooklyn-bar-sarl.md) · Delémont · `joann@brooklyn-bar.com`
+- [Bât Innov Sàrl](bat-innov-sarl.md) · Haute-Sorne · `info@innov.ch`
+- [Bâti Expo Sàrl](bati-expo-sarl.md) · Delémont · `info@batiexpo.ch`
+- [Bâticoncept-immo Sàrl](baticoncept-immo-sarl.md) · Boncourt · `?`
+- [CRF Comptabilité et Immobilier Sàrl](crf-comptabilite-et-immobilier-sarl.md) · Porrentruy · `?`
+- [CW Immo SA](cw-immo-sa.md) · Delémont · `-`
+- [Cal'immo SA](cal-immo-sa.md) · Les Breuleux · `?`
+- [Calinton Immobilière SA](calinton-immobiliere-sa.md) · Delémont · `?`
+- [Cancale Immobilier SA](cancale-immobilier-sa.md) · Soyhières · `?`
+- [Cantel Immobilière SA](cantel-immobiliere-sa.md) · Delémont · `?`
+- [Chaignat Immobilier SA](chaignat-immobilier-sa.md) · Le Noirmont · `?`
+- [Chapuis Immo S.A.](chapuis-immo-s-a.md) · Grandfontaine · `-`
+- [Chelva Immobilière SA](chelva-immobiliere-sa.md) · Soyhières · `?`
+- [Cimnova Immobilier SA](cimnova-immobilier-sa.md) · Courrendlin · `info@cimnova.ch`
+- [Comte Immo SA](comte-immo-sa.md) · Delémont · ``
+- [Comte Immobilier Sàrl](comte-immobilier-sarl.md) · Haute-Sorne · `info@comteimmobilier.ch`
+- [Culver Immobilière SA](culver-immobiliere-sa.md) · Soyhières · ``
+- [Cyjé Immobilier SA](cyje-immobilier-sa.md) · Soyhières · `-`
+- [DAJ'immo SA](daj-immo-sa.md) · Boécourt · `-`
+- [DALAN Immobilier SA](dalan-immobilier-sa.md) · Saignelégier · `?`
+- [DIS Immo SA](dis-immo-sa.md) · Porrentruy · ``
+- [Dalgader Immobilière SA](dalgader-immobiliere-sa.md) · Delémont · `?`
+- [Dinac Immobilier SA](dinac-immobilier-sa.md) · Soyhières · ``
+- [Doug Immo SA](doug-immo-sa.md) · Delémont · `-`
+- [E&G MEIER immo SA](e-g-meier-immo-sa.md) · Porrentruy · `info@egmeierimmo.ch`
+- [E.S.S.T. Immobilier SA](e-s-s-t-immobilier-sa.md) · Haute-Ajoie · `?`
+- [ELTE IMMO Sàrl](elte-immo-sarl.md) · Haute-Sorne · ``
+- [Elme-Immo Sàrl](elme-immo-sarl.md) · Courroux · `?`
+- [Erard Immo SA](erard-immo-sa.md) · Saignelégier · ``
+- [Estebane Marquis Immobilier Sàrl](estebane-marquis-immobilier-sarl.md) · Alle · `-`
+- [Expertimmobilier Sàrl](expertimmobilier-sarl.md) · Haute-Sorne · `?`
+- [FSGC Immobilier SA](fsgc-immobilier-sa.md) · Courroux · `?`
+- [Franar Immobilière SA](franar-immobiliere-sa.md) · Soyhières · ``
+- [François Studer Immobilier SA](francois-studer-immobilier-sa.md) · Courroux · `?`
+- [GB Immo Sàrl](gb-immo-sarl.md) · Fahy · ``
+- [GNG FIDUCIAIRE ET IMMOBILIER SA](gng-fiduciaire-et-immobilier-sa.md) · Porrentruy · `denis.nappiot@gngjura.ch`
+- [Gembroker Immobilier SA](gembroker-immobilier-sa.md) · Soyhières · `?`
+- [Gendon Immobilier SA](gendon-immobilier-sa.md) · Soyhières · `?`
+- [H.N.B. Immobilier Sàrl](h-n-b-immobilier-sarl.md) · Fontenais · `?`
+- [HCA Immobilier SA](hca-immobilier-sa.md) · Porrentruy · ``
+- [HL Theurillat Immobilier Sàrl](hl-theurillat-immobilier-sarl.md) · Basse-Allaine · `info@hltheurillatimmobilier.com`
+- [HSBR Immobilier SA](hsbr-immobilier-sa.md) · Delémont · ``
+- [Haldel Immobilier SA](haldel-immobilier-sa.md) · Soyhières · `?`
+- [Hiso Immobilier Sàrl](hiso-immobilier-sarl.md) · Moutier · `?`
+- [Hêche Immobilier SA](heche-immobilier-sa.md) · Courgenay · `?`
+- [ISIN Immo Sàrl](isin-immo-sarl.md) · Haute-Sorne · ``
+- [Immo 13 SA](immo-13-sa.md) · Saignelégier · `?`
+- [Immo Dona SA](immo-dona-sa.md) · Delémont · ``
+- [Immo Guélat SA](immo-guelat-sa.md) · Courrendlin · `?`
+- [Immo Investor Sàrl](immo-investor-sarl.md) · Delémont · `?`
+- [Immo Semia Sàrl](immo-semia-sarl.md) · Courrendlin · `?`
+- [Immo Tabourat SA](immo-tabourat-sa.md) · Haute-Sorne · ``
+- [Immo-Ajoie Sàrl](immo-ajoie-sarl.md) · Fontenais · `?`
+- [Immo-Chaux S.A.](immo-chaux-s-a.md) · Delémont · ``
+- [Immo-Gare45 Sàrl](immo-gare45-sarl.md) · Porrentruy · `?`
+- [Immobilier Graino Sàrl](immobilier-graino-sarl.md) · Delémont · `?`
+- [Immobilier Pour Tous Sàrl](immobilier-pour-tous-sarl.md) · Porrentruy · `info@immobilierpourtous.com`
+- [Immobilière MaMaison Sàrl](immobiliere-mamaison-sarl.md) · Les Breuleux · `?`
+- [Invest'immo 2050 SA](invest-immo-2050-sa.md) · Boécourt · `?`
+- [Jol'Immo Sàrl](jol-immo-sarl.md) · Haute-Sorne · `info@jolimmo.ch (+3)`
+- [Jubin Immobilier Sàrl](jubin-immobilier-sarl.md) · Porrentruy · ``
+- [Jura-casa SA](jura-casa-sa.md) · Fontenais · `manu.monnerat@gmail.com`
+- [Juraimmobilier SA](juraimmobilier-sa.md) · Delémont · `info@juraimmobilier.ch`
+- [Jurassic Immo SA](jurassic-immo-sa.md) · Porrentruy · `?`
+- [Kogar Immobilier SA](kogar-immobilier-sa.md) · Soyhières · `?`
+- [Kottelat Immo SA](kottelat-immo-sa.md) · Courroux · ``
+- [LBC Immobilier SA](lbc-immobilier-sa.md) · Porrentruy · `?`
+- [La Noye Immobilier Sàrl](la-noye-immobilier-sarl.md) · Fontenais · ``
+- [Lacha Immobilier SA](lacha-immobilier-sa.md) · Develier · `?`
+- [Lamerton Immobilier SA](lamerton-immobilier-sa.md) · Delémont · `?`
+- [Legal Business Immo Sàrl](legal-business-immo-sarl.md) · Porrentruy · `info@legal.com`
+- [Lemaral Immobilier SA](lemaral-immobilier-sa.md) · Develier · ``
+- [LocaGestion Sàrl](locagestion-sarl.md) · Moutier · `info@locagestion.ch`
+- [Lotina Immobilier SA](lotina-immobilier-sa.md) · Soyhières · `?`
+- [Lyman Immobilière SA](lyman-immobiliere-sa.md) · Soyhières · ``
+- [MO Immobiliers SA](mo-immobiliers-sa.md) · Montfaucon · `?`
+- [MS Fiduciaire et Gérance Sàrl](ms-fiduciaire-et-gerance-sarl.md) · Delémont · `?`
+- [Magod Immobilière SA](magod-immobiliere-sa.md) · Soyhières · `?`
+- [Maitre Immobilier SA](maitre-immobilier-sa.md) · Courtételle · ``
+- [Mandchourie Immobilier SA](mandchourie-immobilier-sa.md) · Delémont · `?`
+- [Martial Immobilier Sàrl](martial-immobilier-sarl.md) · Haute-Sorne · ``
+- [MeMi Immobilière SA](memi-immobiliere-sa.md) · Soyhières · `?`
+- [Moneton Immobilière SA](moneton-immobiliere-sa.md) · Delémont · `?`
+- [NEUSCHWANDER IMMOBILIER SARL](neuschwander-immobilier-sarl.md) · Delémont · `?`
+- [NICASA Immobilier SA](nicasa-immobilier-sa.md) · Delémont · ``
+- [NLine Immobilier SA](nline-immobilier-sa.md) · Courroux · `info@nline-immobilier.ch`
+- [Nuvola Immobilier SA](nuvola-immobilier-sa.md) · Soyhières · ``
+- [OASIA Immobilier Sàrl](oasia-immobilier-sarl.md) · Courroux · `info@oasiaimmobilier.ch`
+- [Oceanide Immobilière SA](oceanide-immobiliere-sa.md) · Soyhières · `?`
+- [PROGRESS IMMOBILIER SA](progress-immobilier-sa.md) · Delémont · `?`
+- [PRYCA Immobilier SA](pryca-immobilier-sa.md) · Le Noirmont · ``
+- [PWI Immo Reno Sàrl](pwi-immo-reno-sarl.md) · Boncourt · `info@pwiimmoreno.ch`
+- [Parlinton Immobilière SA](parlinton-immobiliere-sa.md) · Les Breuleux · ``
+- [Passiflora Immo SA](passiflora-immo-sa.md) · Porrentruy · `?`
+- [Pataro Immobilière SA](pataro-immobiliere-sa.md) · Soyhières · `?`
+- [Pavonia Immobilier SA](pavonia-immobilier-sa.md) · Delémont · `?`
+- [Pirgos Immobilière SA](pirgos-immobiliere-sa.md) · Soyhières · ``
+- [Polyadès Immobilier SA](polyades-immobilier-sa.md) · Delémont · `info@polyades.ch`
+- [Project Immo Jura Sàrl](project-immo-jura-sarl.md) · Delémont · ``
+- [Promar Immobilier SA](promar-immobilier-sa.md) · Soyhières · `?`
+- [Prospère Immobilière SA](prospere-immobiliere-sa.md) · Soyhières · `?`
+- [RF Immobilier Sàrl](rf-immobilier-sarl.md) · Delémont · `rfimmobilier@bluewin.ch`
+- [SFL Immobilier Sàrl](sfl-immobilier-sarl.md) · Val Terbi · `?`
+- [SP Immobilier Sàrl](sp-immobilier-sarl.md) · Saignelégier · ``
+- [STALLA Immo Sàrl](stalla-immo-sarl.md) · Le Noirmont · `?`
+- [Saint-Charles Immobilier SA](saint-charles-immobilier-sa.md) · Porrentruy · ``
+- [Scala Immo SA](scala-immo-sa.md) · Delémont · `info@scala-immo.ch`
+- [Seven immobilier Sàrl](seven-immobilier-sarl.md) · Delémont · `?`
+- [Sisco Immobilier SA](sisco-immobilier-sa.md) · Haute-Sorne · `?`
+- [Soguitex Immobilier SA](soguitex-immobilier-sa.md) · Soyhières · ``
+- [Steulet Immobilier SA](steulet-immobilier-sa.md) · Delémont · `?`
+- [Swiss Immo Concept SA](swiss-immo-concept-sa.md) · Porrentruy · ``
+- [TESK Immo Sàrl](tesk-immo-sarl.md) · Rossemaison · `?`
+- [TS Immobilier Sàrl](ts-immobilier-sarl.md) · Courgenay · `?`
+- [Texler Immobilière SA](texler-immobiliere-sa.md) · Soyhières · `?`
+- [Tolaga Immobilier SA](tolaga-immobilier-sa.md) · Soyhières · ``
+- [Tomas Immo Sàrl](tomas-immo-sarl.md) · Courrendlin · `?`
+- [Treshuit Immobilier SA](treshuit-immobilier-sa.md) · Soyhières · ``
+- [VALKEV IMMO SA](valkev-immo-sa.md) · Courgenay · `info@valkevimmo.ch`
+- [VDG Immo SA](vdg-immo-sa.md) · Courtedoux · `?`
+- [VIC'Immobilier Sàrl](vic-immobilier-sarl.md) · Porrentruy · `info@vic-immobilier.com`
+- [Vernier Immobilier SA](vernier-immobilier-sa.md) · Boécourt · ``
+- [Versalias Immobilier SA](versalias-immobilier-sa.md) · Delémont · `?`
+- [Vimar Immobilier Sàrl](vimar-immobilier-sarl.md) · Haute-Sorne · ``
+- [Vistucle Immobilier SA](vistucle-immobilier-sa.md) · Delémont · `?`
+- [Vox-immo SA](vox-immo-sa.md) · Porrentruy · `info@vox-immo.ch`
+- [Warden Immobilier SA](warden-immobilier-sa.md) · Soyhières · `?`
+- [Wilin Immobilier SA](wilin-immobilier-sa.md) · Soyhières · ``
+- [atelier.frd Sàrl](atelier-frd-sarl.md) · Courtedoux · `info@atelierfrd.ch`
+- [bad idea production Sàrl](bad-idea-production-sarl.md) · Porrentruy · `?`
+
+## regie-letting (17)
+
+lets property; the administration may sit elsewhere
+
+- [ARMONI Sàrl](armoni-sarl.md) · Delémont · ``
+- [Agence Sphère Immo Sàrl](agence-sphere-immo-sarl.md) · Courroux · ``
+- [Ajdini Immobilier Sàrl](ajdini-immobilier-sarl.md) · Saignelégier · ``
+- [Au Cheval Blanc Sàrl](au-cheval-blanc-sarl.md) · La Baroche · ``
+- [BR PRESTIGE Sàrl](br-prestige-sarl.md) · Moutier · ``
+- [Bellevimmo Sàrl](bellevimmo-sarl.md) · Moutier · ``
+- [GRS Immo Sàrl](grs-immo-sarl.md) · Les Breuleux · ``
+- [Immo Imer SA](immo-imer-sa.md) · Soubey · ``
+- [Immo-Passion Invest Sàrl](immo-passion-invest-sarl.md) · Courroux · ``
+- [JuraHorizon SÀRL](jurahorizon-sarl.md) · Delémont · `contact@jurahorizon.ch`
+- [LOXO immo Sàrl](loxo-immo-sarl.md) · Boncourt · ``
+- [Meier Immobilier Sàrl](meier-immobilier-sarl.md) · Moutier · ``
+- [Perrin Immobilier S.A.](perrin-immobilier-s-a.md) · Porrentruy · ``
+- [RUG Immobilier Sàrl](rug-immobilier-sarl.md) · Moutier · ``
+- [Spahiu Immobilier SA](spahiu-immobilier-sa.md) · Moutier · ``
+- [Tx immo Sàrl](tx-immo-sarl.md) · Saignelégier · ``
+- [Z&M IMMO SA](z-m-immo-sa.md) · Moutier · ``

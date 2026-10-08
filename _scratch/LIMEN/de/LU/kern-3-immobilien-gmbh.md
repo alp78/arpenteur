@@ -1,0 +1,36 @@
+# KERN 3 Immobilien GmbH
+
+| | |
+|---|---|
+| UID | `CHE178028870` |
+| Legal form | Société à responsabilité limitée |
+| Canton | LU (de) |
+| Registered seat | Schenkon |
+| Address | Murerhüsli 7, 6214 Schenkon |
+| Register status | ACTIVE |
+
+## Relevance for Limen
+
+**regie-letting** — lets property; the administration may sit elsewhere
+
+purpose names letting but not administration, name agrees
+
+## Where to write
+
+- not looked for yet
+
+No website resolved.
+
+## What the register says it does
+
+> Die Gesellschaft bezweckt Vermittlung, Kauf, Verkauf, Vermietung und Verwaltung von Grundstücken sowie die Entwicklung von Immobilienprojekten. Die Gesellschaft kann im In- und Ausland alle mit dem Geschäftszweck direkt oder indirekt im Zusammenhang stehenden Geschäfte tätigen, Grundstücke erwerben, belasten, veräussern und verwalten, Zweigniederlassungen und Tochtergesellschaften errichten und sich an Unternehmen beteiligen. Die Gesellschaft kann ihren Gesellschaftern oder anderen Gesellschaften des Konzerns Darlehen gewähren und für deren Verbindlichkeiten gegenüber Dritten Sicherheiten aller Art bestellen, einschliesslich mittels Verpfändung oder Sicherungsübereignung eigener Aktiven oder Garantien jeglicher Art, auch wenn diese Darlehen oder Sicherheiten im ausschliesslichen Interesse ihrer Gesellschafter oder anderen Konzerngesellschaften liegen und unentgeltlich gewährt werden.
+
+## Sources
+
+- Register entry: https://www.zefix.admin.ch/fr/search/entity/list?name=CHE178028870&directLink=true
+- Grading: rule over the registered purpose, see `scripts/classify_regies.py`
+- Addresses: none held
+- Cascade: `intel.address_hunt`, outcome `not run`
+
+The register carries no warranty and has no legal effect; only the certified
+cantonal excerpt and the FOSC publication text are binding.

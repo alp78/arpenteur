@@ -1,0 +1,3258 @@
+[
+ {
+  "uid": "CHE105324350",
+  "sector": "engineering",
+  "sector_confidence": 0.85,
+  "sector_rationale": "toutes activités en rapport avec l'architecture",
+  "segments": [
+   {
+    "segment": "sme-owner",
+    "confidence": 0.6,
+    "rationale": "bureau d'architecte à l'échelle d'un indépendant"
+   }
+  ]
+ },
+ {
+  "uid": "CHE109676291",
+  "sector": "construction",
+  "sector_confidence": 0.6,
+  "sector_rationale": "études et réalisations dans le domaine de la construction",
+  "segments": [
+   {
+    "segment": "sme-owner",
+    "confidence": 0.55,
+    "rationale": "petite structure de construction et conseil immobilier"
+   }
+  ]
+ },
+ {
+  "uid": "CHE326701212",
+  "sector": "engineering",
+  "sector_confidence": 0.85,
+  "sector_rationale": "exploitation d'un bureau d'architectes",
+  "segments": [
+   {
+    "segment": "sme-owner",
+    "confidence": 0.6,
+    "rationale": "bureau d'architectes indépendant"
+   }
+  ]
+ },
+ {
+  "uid": "CHE264873902",
+  "sector": "construction",
+  "sector_confidence": 0.9,
+  "sector_rationale": "travaux de rénovation, de peinture et de finitions",
+  "segments": [
+   {
+    "segment": "sme-owner",
+    "confidence": 0.6,
+    "rationale": "entreprise de rénovation dirigée par son propriétaire"
+   }
+  ]
+ },
+ {
+  "uid": "CHE375665840",
+  "sector": "engineering",
+  "sector_confidence": 0.6,
+  "sector_rationale": "exploitation d'un bureau technique, d'architecture, d'urbanisme",
+  "segments": [
+   {
+    "segment": "sme-owner",
+    "confidence": 0.5,
+    "rationale": "bureau technique de petite taille"
+   }
+  ]
+ },
+ {
+  "uid": "CHE112679367",
+  "sector": "personal-services",
+  "sector_confidence": 0.65,
+  "sector_rationale": "exploitation d'une entreprise générale de nettoyage",
+  "segments": [
+   {
+    "segment": "sme-owner",
+    "confidence": 0.6,
+    "rationale": "entreprise de nettoyage et services aux PME"
+   }
+  ]
+ },
+ {
+  "uid": "CHE104180232",
+  "sector": "construction",
+  "sector_confidence": 0.9,
+  "sector_rationale": "travaux dans le domaine du bâtiment, gypserie, peinture",
+  "segments": [
+   {
+    "segment": "sme-owner",
+    "confidence": 0.6,
+    "rationale": "corps de métier du bâtiment"
+   }
+  ]
+ },
+ {
+  "uid": "CHE482648178",
+  "sector": "finance",
+  "sector_confidence": 0.7,
+  "sector_rationale": "conseils et courtage dans le domaine des assurances et de la finance",
+  "segments": [
+   {
+    "segment": "compliance-sector",
+    "confidence": 0.7,
+    "rationale": "courtage en assurances et finance, activité réglementée"
+   },
+   {
+    "segment": "sme-owner",
+    "confidence": 0.5,
+    "rationale": "petit cabinet de courtage"
+   }
+  ]
+ },
+ {
+  "uid": "CHE266564748",
+  "sector": "engineering",
+  "sector_confidence": 0.6,
+  "sector_rationale": "contrôles et expertises d'installations électriques",
+  "segments": [
+   {
+    "segment": "sme-owner",
+    "confidence": 0.55,
+    "rationale": "bureau de contrôle électrique de petite taille"
+   }
+  ]
+ },
+ {
+  "uid": "CHE105241497",
+  "sector": "transport-logistics",
+  "sector_confidence": 0.5,
+  "sector_rationale": "services de location de voitures, avec ou sans chauffeur",
+  "segments": [
+   {
+    "segment": "sme-owner",
+    "confidence": 0.5,
+    "rationale": "activité de location et conciergerie à petite échelle"
+   }
+  ]
+ },
+ {
+  "uid": "CHE165590599",
+  "sector": "legal-accounting",
+  "sector_confidence": 0.9,
+  "sector_rationale": "comptabilité, fiscalité, gestion et domiciliation de société",
+  "segments": [
+   {
+    "segment": "compliance-sector",
+    "confidence": 0.6,
+    "rationale": "mandats fiduciaires réglementés"
+   },
+   {
+    "segment": "sme-owner",
+    "confidence": 0.55,
+    "rationale": "petite fiduciaire"
+   }
+  ]
+ },
+ {
+  "uid": "CHE284367973",
+  "sector": "finance",
+  "sector_confidence": 0.55,
+  "sector_rationale": "conseil et intermédiation dans les domaines de l'assurance et de la prévoyance",
+  "segments": [
+   {
+    "segment": "compliance-sector",
+    "confidence": 0.65,
+    "rationale": "intermédiation en assurance et prévoyance"
+   },
+   {
+    "segment": "sme-owner",
+    "confidence": 0.5,
+    "rationale": "petite structure de conseil"
+   }
+  ]
+ },
+ {
+  "uid": "CHE271630730",
+  "sector": "construction",
+  "sector_confidence": 0.9,
+  "sector_rationale": "pose de gypseries, faux plafonds, cloisons, peinture",
+  "segments": [
+   {
+    "segment": "sme-owner",
+    "confidence": 0.6,
+    "rationale": "entreprise de second oeuvre"
+   }
+  ]
+ },
+ {
+  "uid": "CHE354420942",
+  "sector": "engineering",
+  "sector_confidence": 0.7,
+  "sector_rationale": "projets d'architecture, dessins de plan, direction de travaux",
+  "segments": [
+   {
+    "segment": "sme-owner",
+    "confidence": 0.55,
+    "rationale": "bureau d'architecture de petite taille"
+   }
+  ]
+ },
+ {
+  "uid": "CHE432569482",
+  "sector": "engineering",
+  "sector_confidence": 0.85,
+  "sector_rationale": "exploitation d'un bureau d'architecture et d'urbanisme",
+  "segments": [
+   {
+    "segment": "sme-owner",
+    "confidence": 0.6,
+    "rationale": "bureau d'architecture indépendant"
+   }
+  ]
+ },
+ {
+  "uid": "CHE133810101",
+  "sector": "it-services",
+  "sector_confidence": 0.7,
+  "sector_rationale": "analyse de données économiques, modélisation statistique et automatisation de processus",
+  "segments": [
+   {
+    "segment": "data-driven",
+    "confidence": 0.8,
+    "rationale": "tableaux de bord, API et flux de données automatisés"
+   },
+   {
+    "segment": "ai-adopter",
+    "confidence": 0.7,
+    "rationale": "automatisation et solutions techniques de traitement de l'information"
+   }
+  ]
+ },
+ {
+  "uid": "CHE109374051",
+  "sector": "marketing-media",
+  "sector_confidence": 0.6,
+  "sector_rationale": "activités dans les domaines de l'art, de l'édition, de l'audiovisuel et de l'événementiel",
+  "segments": []
+ },
+ {
+  "uid": "CHE113295733",
+  "sector": "construction",
+  "sector_confidence": 0.5,
+  "sector_rationale": "marbrerie et taille de pierre",
+  "segments": [
+   {
+    "segment": "sme-owner",
+    "confidence": 0.6,
+    "rationale": "atelier artisanal de taille de pierre"
+   }
+  ]
+ },
+ {
+  "uid": "CHE403138772",
+  "sector": "marketing-media",
+  "sector_confidence": 0.7,
+  "sector_rationale": "conseil en stratégie de marque, marketing, communication, relations publiques",
+  "segments": [
+   {
+    "segment": "sme-owner",
+    "confidence": 0.5,
+    "rationale": "petite agence de conseil en communication"
+   }
+  ]
+ },
+ {
+  "uid": "CHE340137368",
+  "sector": "construction",
+  "sector_confidence": 0.9,
+  "sector_rationale": "exploitation d'une entreprise générale du bâtiment",
+  "segments": [
+   {
+    "segment": "sme-owner",
+    "confidence": 0.55,
+    "rationale": "entreprise générale du bâtiment"
+   }
+  ]
+ },
+ {
+  "uid": "CHE189776433",
+  "sector": "construction",
+  "sector_confidence": 0.8,
+  "sector_rationale": "le montage, le démontage et la location d'échafaudages",
+  "segments": [
+   {
+    "segment": "sme-owner",
+    "confidence": 0.55,
+    "rationale": "entreprise d'échafaudages"
+   }
+  ]
+ },
+ {
+  "uid": "CHE468580481",
+  "sector": "construction",
+  "sector_confidence": 0.8,
+  "sector_rationale": "exploitation d'une entreprise d'échafaudages",
+  "segments": [
+   {
+    "segment": "sme-owner",
+    "confidence": 0.55,
+    "rationale": "entreprise d'échafaudages"
+   }
+  ]
+ },
+ {
+  "uid": "CHE239159718",
+  "sector": "hospitality",
+  "sector_confidence": 0.95,
+  "sector_rationale": "exploitation d'un restaurant-pizzeria",
+  "segments": [
+   {
+    "segment": "sme-owner",
+    "confidence": 0.7,
+    "rationale": "exploitation d'un seul établissement"
+   }
+  ]
+ },
+ {
+  "uid": "CHE284815977",
+  "sector": "personal-services",
+  "sector_confidence": 0.9,
+  "sector_rationale": "exploitation d'un salon de coiffure, d'un institut de beauté",
+  "segments": [
+   {
+    "segment": "sme-owner",
+    "confidence": 0.7,
+    "rationale": "salon exploité par son propriétaire"
+   }
+  ]
+ },
+ {
+  "uid": "CHE321334750",
+  "sector": "holding",
+  "sector_confidence": 0.9,
+  "sector_rationale": "acquisition, vente, détention et gestion de participations, dans le sens d'une société holding",
+  "segments": []
+ },
+ {
+  "uid": "CHE433980236",
+  "sector": "construction",
+  "sector_confidence": 0.95,
+  "sector_rationale": "exploitation d'une entreprise générale du bâtiment (gros et second oeuvre)",
+  "segments": [
+   {
+    "segment": "sme-owner",
+    "confidence": 0.55,
+    "rationale": "entreprise générale du bâtiment"
+   }
+  ]
+ },
+ {
+  "uid": "CHE449119874",
+  "sector": "wholesale-trade",
+  "sector_confidence": 0.5,
+  "sector_rationale": "commerce, achat, vente, importation, exportation et représentation de cartes à jouer, jouets",
+  "segments": [
+   {
+    "segment": "sme-owner",
+    "confidence": 0.5,
+    "rationale": "petite structure multi-activités"
+   }
+  ]
+ },
+ {
+  "uid": "CHE236973639",
+  "sector": "transport-logistics",
+  "sector_confidence": 0.55,
+  "sector_rationale": "service de voiturier et valet de parking, transport de marchandises",
+  "segments": [
+   {
+    "segment": "sme-owner",
+    "confidence": 0.5,
+    "rationale": "exploitation de parcs pour véhicules"
+   }
+  ]
+ },
+ {
+  "uid": "CHE488985668",
+  "sector": "legal-accounting",
+  "sector_confidence": 0.8,
+  "sector_rationale": "service et conseil dans les domaines fiduciaire, comptable et fiscal",
+  "segments": [
+   {
+    "segment": "compliance-sector",
+    "confidence": 0.65,
+    "rationale": "révision et contrôle de comptabilité"
+   },
+   {
+    "segment": "sme-owner",
+    "confidence": 0.5,
+    "rationale": "petite fiduciaire"
+   }
+  ]
+ },
+ {
+  "uid": "CHE100475042",
+  "sector": "consulting",
+  "sector_confidence": 0.55,
+  "sector_rationale": "conseil, formation et communication dans les domaines pharmaceutiques et médicaux",
+  "segments": [
+   {
+    "segment": "compliance-sector",
+    "confidence": 0.45,
+    "rationale": "domaine pharmaceutique et médical réglementé"
+   },
+   {
+    "segment": "sme-owner",
+    "confidence": 0.5,
+    "rationale": "cabinet de conseil de petite taille"
+   }
+  ]
+ },
+ {
+  "uid": "CHE402399270",
+  "sector": "it-services",
+  "sector_confidence": 0.75,
+  "sector_rationale": "conseil, formation et développement dans le domaine informatique",
+  "segments": [
+   {
+    "segment": "ai-adopter",
+    "confidence": 0.6,
+    "rationale": "développement informatique"
+   },
+   {
+    "segment": "sme-owner",
+    "confidence": 0.5,
+    "rationale": "petite structure informatique"
+   }
+  ]
+ },
+ {
+  "uid": "CHE135772693",
+  "sector": "engineering",
+  "sector_confidence": 0.85,
+  "sector_rationale": "exploitation d'un bureau d'architectes",
+  "segments": [
+   {
+    "segment": "sme-owner",
+    "confidence": 0.6,
+    "rationale": "bureau d'architectes indépendant"
+   }
+  ]
+ },
+ {
+  "uid": "CHE194865918",
+  "sector": "retail",
+  "sector_confidence": 0.85,
+  "sector_rationale": "exploitation de commerces de détails, tenues et accessoires vestimentaires",
+  "segments": [
+   {
+    "segment": "sme-owner",
+    "confidence": 0.55,
+    "rationale": "magasins et site internet de détail"
+   }
+  ]
+ },
+ {
+  "uid": "CHE477464460",
+  "sector": "wholesale-trade",
+  "sector_confidence": 0.7,
+  "sector_rationale": "négoce et commerce de toutes marchandises, matières premières et énergies renouvelables",
+  "segments": []
+ },
+ {
+  "uid": "CHE416245963",
+  "sector": "transport-logistics",
+  "sector_confidence": 0.5,
+  "sector_rationale": "plateformes électroniques et services de transport commercial de personnes",
+  "segments": [
+   {
+    "segment": "ai-adopter",
+    "confidence": 0.65,
+    "rationale": "développement et exploitation de plateformes électroniques"
+   }
+  ]
+ },
+ {
+  "uid": "CHE112627040",
+  "sector": "marketing-media",
+  "sector_confidence": 0.8,
+  "sector_rationale": "production de films, composition de musiques, spectacles, évènements artistiques",
+  "segments": [
+   {
+    "segment": "sme-owner",
+    "confidence": 0.5,
+    "rationale": "petite maison de production"
+   }
+  ]
+ },
+ {
+  "uid": "CHE361102080",
+  "sector": "wholesale-trade",
+  "sector_confidence": 0.45,
+  "sector_rationale": "le courtage, l'achat, la vente de biens dans le domaine des objets de luxe et de collection",
+  "segments": []
+ },
+ {
+  "uid": "CHE100879758",
+  "sector": "legal-accounting",
+  "sector_confidence": 0.9,
+  "sector_rationale": "exploitation d'une fiduciaire",
+  "segments": [
+   {
+    "segment": "compliance-sector",
+    "confidence": 0.6,
+    "rationale": "mandats fiduciaires réglementés"
+   },
+   {
+    "segment": "sme-owner",
+    "confidence": 0.6,
+    "rationale": "petite fiduciaire"
+   }
+  ]
+ },
+ {
+  "uid": "CHE179857461",
+  "sector": "manufacturing",
+  "sector_confidence": 0.55,
+  "sector_rationale": "la production et vente d'injéra (galettes) érythréennes ou éthiopiennes",
+  "segments": [
+   {
+    "segment": "sme-owner",
+    "confidence": 0.6,
+    "rationale": "production artisanale et restauration"
+   }
+  ]
+ },
+ {
+  "uid": "CHE315598967",
+  "sector": "finance",
+  "sector_confidence": 0.6,
+  "sector_rationale": "apporteur d'affaire dans le domaine assurantiel, bancaire et financier",
+  "segments": [
+   {
+    "segment": "compliance-sector",
+    "confidence": 0.6,
+    "rationale": "domaine bancaire et assurantiel réglementé"
+   }
+  ]
+ },
+ {
+  "uid": "CHE431382768",
+  "sector": "personal-services",
+  "sector_confidence": 0.9,
+  "sector_rationale": "exploitation de salons de coiffures et barbier",
+  "segments": [
+   {
+    "segment": "sme-owner",
+    "confidence": 0.7,
+    "rationale": "salon exploité par son propriétaire"
+   }
+  ]
+ },
+ {
+  "uid": "CHE109333827",
+  "sector": "personal-services",
+  "sector_confidence": 0.7,
+  "sector_rationale": "activités dans le domaine de l'entretien, de la maintenance, du nettoyage",
+  "segments": [
+   {
+    "segment": "sme-owner",
+    "confidence": 0.55,
+    "rationale": "entreprise de nettoyage"
+   }
+  ]
+ },
+ {
+  "uid": "CHE108625440",
+  "sector": "it-services",
+  "sector_confidence": 0.85,
+  "sector_rationale": "services dans le domaine de l'informatique",
+  "segments": [
+   {
+    "segment": "sme-owner",
+    "confidence": 0.55,
+    "rationale": "petite société informatique"
+   }
+  ]
+ },
+ {
+  "uid": "CHE107585559",
+  "sector": "retail",
+  "sector_confidence": 0.7,
+  "sector_rationale": "exploitation d'une épicerie et activité de grossiste de produits comestibles",
+  "segments": [
+   {
+    "segment": "sme-owner",
+    "confidence": 0.65,
+    "rationale": "exploitation d'une épicerie"
+   }
+  ]
+ },
+ {
+  "uid": "CHE283311993",
+  "sector": "wholesale-trade",
+  "sector_confidence": 0.5,
+  "sector_rationale": "achat, vente, importation, stockage et distribution de tous produits alimentaires",
+  "segments": [
+   {
+    "segment": "sme-owner",
+    "confidence": 0.5,
+    "rationale": "épicerie et négoce de proximité"
+   }
+  ]
+ },
+ {
+  "uid": "CHE305772293",
+  "sector": "consulting",
+  "sector_confidence": 0.85,
+  "sector_rationale": "recherche, sélection et recrutement de cadres et spécialistes",
+  "segments": [
+   {
+    "segment": "sme-owner",
+    "confidence": 0.5,
+    "rationale": "cabinet de recrutement de petite taille"
+   }
+  ]
+ },
+ {
+  "uid": "CHE352648374",
+  "sector": "consulting",
+  "sector_confidence": 0.4,
+  "sector_rationale": "services de représentation, intermédiation, gestion et restructuration de projets commerciaux",
+  "segments": []
+ },
+ {
+  "uid": "CHE114441434",
+  "sector": "real-estate",
+  "sector_confidence": 0.8,
+  "sector_rationale": "exploitation d'une agence de location de propriétés privées ainsi que le courtage immobilier",
+  "segments": [
+   {
+    "segment": "sme-owner",
+    "confidence": 0.5,
+    "rationale": "agence immobilière de petite taille"
+   }
+  ]
+ },
+ {
+  "uid": "CHE193499030",
+  "sector": "consulting",
+  "sector_confidence": 0.55,
+  "sector_rationale": "services de consulting dans le domaine médical",
+  "segments": [
+   {
+    "segment": "compliance-sector",
+    "confidence": 0.4,
+    "rationale": "domaine médical réglementé"
+   },
+   {
+    "segment": "sme-owner",
+    "confidence": 0.5,
+    "rationale": "cabinet de conseil individuel"
+   }
+  ]
+ },
+ {
+  "uid": "CHE159782104",
+  "sector": "holding",
+  "sector_confidence": 0.9,
+  "sector_rationale": "agir en tant que holding sur le plan international, acquisition et gestion de participations",
+  "segments": []
+ },
+ {
+  "uid": "CHE393079924",
+  "sector": "personal-services",
+  "sector_confidence": 0.7,
+  "sector_rationale": "électrostimulation à visée sportive, salle de sport, coaching sportif, bien-être",
+  "segments": [
+   {
+    "segment": "sme-owner",
+    "confidence": 0.55,
+    "rationale": "exploitation d'une salle de sport"
+   }
+  ]
+ },
+ {
+  "uid": "CHE423358673",
+  "sector": "transport-logistics",
+  "sector_confidence": 0.9,
+  "sector_rationale": "transport et déménagement",
+  "segments": [
+   {
+    "segment": "sme-owner",
+    "confidence": 0.6,
+    "rationale": "petite entreprise de transport"
+   }
+  ]
+ },
+ {
+  "uid": "CHE137376411",
+  "sector": "it-services",
+  "sector_confidence": 0.7,
+  "sector_rationale": "développement, mise en oeuvre et distribution de logiciels, y compris la technologie blockchain",
+  "segments": [
+   {
+    "segment": "ai-adopter",
+    "confidence": 0.75,
+    "rationale": "développement de logiciels et technologies blockchain"
+   },
+   {
+    "segment": "lean-startup",
+    "confidence": 0.55,
+    "rationale": "but technologique fintech plutôt que commercial"
+   }
+  ]
+ },
+ {
+  "uid": "CHE114653479",
+  "sector": "personal-services",
+  "sector_confidence": 0.85,
+  "sector_rationale": "exploitation d'une entreprise de nettoyage",
+  "segments": [
+   {
+    "segment": "sme-owner",
+    "confidence": 0.6,
+    "rationale": "entreprise de nettoyage"
+   }
+  ]
+ },
+ {
+  "uid": "CHE396176512",
+  "sector": "finance",
+  "sector_confidence": 0.85,
+  "sector_rationale": "conseils dans le domaine du family office, gestion de fortune et placement de capitaux",
+  "segments": [
+   {
+    "segment": "compliance-sector",
+    "confidence": 0.7,
+    "rationale": "gestion de fortune, clientèle privée et institutionnelle"
+   }
+  ]
+ },
+ {
+  "uid": "CHE453992691",
+  "sector": "marketing-media",
+  "sector_confidence": 0.5,
+  "sector_rationale": "prestations de services et conseils dans le domaine de l'évènementiel",
+  "segments": [
+   {
+    "segment": "sme-owner",
+    "confidence": 0.5,
+    "rationale": "petite structure événementielle"
+   }
+  ]
+ },
+ {
+  "uid": "CHE427239205",
+  "sector": "engineering",
+  "sector_confidence": 0.85,
+  "sector_rationale": "exploitation d'un bureau d'ingénieurs, activité de l'ingénieur civil",
+  "segments": [
+   {
+    "segment": "sme-owner",
+    "confidence": 0.55,
+    "rationale": "bureau d'ingénieurs de petite taille"
+   }
+  ]
+ },
+ {
+  "uid": "CHE297360615",
+  "sector": "holding",
+  "sector_confidence": 0.9,
+  "sector_rationale": "dans le sens d'une holding, prise, achat, vente et gestion de participations",
+  "segments": []
+ },
+ {
+  "uid": "CHE187826853",
+  "sector": "holding",
+  "sector_confidence": 0.9,
+  "sector_rationale": "investir, acquérir, détenir et gérer des participations dans des sociétés",
+  "segments": []
+ },
+ {
+  "uid": "CHE144564981",
+  "sector": "consulting",
+  "sector_confidence": 0.75,
+  "sector_rationale": "services dans le domaine du conseil aux entreprises, enquêtes administratives, renseignement commercial",
+  "segments": [
+   {
+    "segment": "sme-owner",
+    "confidence": 0.5,
+    "rationale": "petit cabinet de conseil"
+   }
+  ]
+ },
+ {
+  "uid": "CHE183194422",
+  "sector": "real-estate",
+  "sector_confidence": 0.65,
+  "sector_rationale": "analyse et recherche de biens immobiliers à louer, assistance en lien avec le logement",
+  "segments": []
+ },
+ {
+  "uid": "CHE314295197",
+  "sector": "retail",
+  "sector_confidence": 0.75,
+  "sector_rationale": "achat, vente et exploitation de commerces de détails, chaussure et maroquinerie, e-commerce",
+  "segments": [
+   {
+    "segment": "sme-owner",
+    "confidence": 0.5,
+    "rationale": "commerces de détail et vente en ligne"
+   }
+  ]
+ },
+ {
+  "uid": "CHE259029987",
+  "sector": "hospitality",
+  "sector_confidence": 0.85,
+  "sector_rationale": "exploitation de cafés, bars, restaurants",
+  "segments": [
+   {
+    "segment": "sme-owner",
+    "confidence": 0.6,
+    "rationale": "exploitation d'établissements publics"
+   }
+  ]
+ },
+ {
+  "uid": "CHE484030664",
+  "sector": "it-services",
+  "sector_confidence": 0.7,
+  "sector_rationale": "le développement et la vente de jeux vidéo",
+  "segments": [
+   {
+    "segment": "ai-adopter",
+    "confidence": 0.7,
+    "rationale": "développement de produits logiciels"
+   },
+   {
+    "segment": "lean-startup",
+    "confidence": 0.6,
+    "rationale": "but produit technologique"
+   }
+  ]
+ },
+ {
+  "uid": "CHE114560642",
+  "sector": "consulting",
+  "sector_confidence": 0.55,
+  "sector_rationale": "conseil et mise en place de stratégies pour l'implantation et le développement de produits et marques",
+  "segments": [
+   {
+    "segment": "sme-owner",
+    "confidence": 0.5,
+    "rationale": "petite structure de conseil"
+   }
+  ]
+ },
+ {
+  "uid": "CHE142950557",
+  "sector": "hospitality",
+  "sector_confidence": 0.9,
+  "sector_rationale": "exploitation de tous établissements publics, café, bars, restaurants, service traiteur",
+  "segments": [
+   {
+    "segment": "sme-owner",
+    "confidence": 0.6,
+    "rationale": "exploitation d'établissements publics"
+   }
+  ]
+ },
+ {
+  "uid": "CHE446700357",
+  "sector": "engineering",
+  "sector_confidence": 0.5,
+  "sector_rationale": "direction de travaux tous corps d'état, maîtrise d'ouvrage, planification, pilotage",
+  "segments": [
+   {
+    "segment": "sme-owner",
+    "confidence": 0.5,
+    "rationale": "bureau de pilotage de projets"
+   }
+  ]
+ },
+ {
+  "uid": "CHE427092184",
+  "sector": "construction",
+  "sector_confidence": 0.85,
+  "sector_rationale": "exploitation d'une entreprise générale du bâtiment",
+  "segments": [
+   {
+    "segment": "sme-owner",
+    "confidence": 0.5,
+    "rationale": "entreprise générale du bâtiment"
+   }
+  ]
+ },
+ {
+  "uid": "CHE487065883",
+  "sector": "consulting",
+  "sector_confidence": 0.5,
+  "sector_rationale": "conseils et assistance opérationnelle en matière de gestion, investissements et développement des affaires",
+  "segments": []
+ },
+ {
+  "uid": "CHE482821005",
+  "sector": "wholesale-trade",
+  "sector_confidence": 0.65,
+  "sector_rationale": "le commerce et la distribution de vêtements prêt-à-porter ainsi que d'accessoires",
+  "segments": []
+ },
+ {
+  "uid": "CHE263159630",
+  "sector": "engineering",
+  "sector_confidence": 0.5,
+  "sector_rationale": "services dans le domaine de l'architecture, du design intérieur, de l'image de synthèse",
+  "segments": [
+   {
+    "segment": "sme-owner",
+    "confidence": 0.5,
+    "rationale": "petit studio d'architecture et de design"
+   }
+  ]
+ },
+ {
+  "uid": "CHE108049163",
+  "sector": "personal-services",
+  "sector_confidence": 0.75,
+  "sector_rationale": "entreprise de nettoyage, désinfection, travaux d'entretien d'immeubles",
+  "segments": [
+   {
+    "segment": "sme-owner",
+    "confidence": 0.6,
+    "rationale": "entreprise de nettoyage"
+   }
+  ]
+ },
+ {
+  "uid": "CHE180566616",
+  "sector": "retail",
+  "sector_confidence": 0.6,
+  "sector_rationale": "vente et commerce de jouets et de produits pour enfants, exploitation d'un site de vente en ligne",
+  "segments": [
+   {
+    "segment": "sme-owner",
+    "confidence": 0.5,
+    "rationale": "commerce en ligne de petite taille"
+   }
+  ]
+ },
+ {
+  "uid": "CHE345905726",
+  "sector": "legal-accounting",
+  "sector_confidence": 0.85,
+  "sector_rationale": "la fourniture de tous services juridiques, conseil en droit suédois et international",
+  "segments": [
+   {
+    "segment": "compliance-sector",
+    "confidence": 0.7,
+    "rationale": "services juridiques par des conseillers qualifiés"
+   },
+   {
+    "segment": "sme-owner",
+    "confidence": 0.5,
+    "rationale": "petit cabinet juridique"
+   }
+  ]
+ },
+ {
+  "uid": "CHE109104445",
+  "sector": "real-estate",
+  "sector_confidence": 0.8,
+  "sector_rationale": "achat, vente, location, pilotage, courtage, promotion de tous biens immobiliers",
+  "segments": [
+   {
+    "segment": "sme-owner",
+    "confidence": 0.5,
+    "rationale": "régie immobilière de petite taille"
+   }
+  ]
+ },
+ {
+  "uid": "CHE422568618",
+  "sector": "wholesale-trade",
+  "sector_confidence": 0.75,
+  "sector_rationale": "importation, exportation, vente en gros et distribution de produits pharmaceutiques",
+  "segments": [
+   {
+    "segment": "compliance-sector",
+    "confidence": 0.55,
+    "rationale": "distribution de produits pharmaceutiques, secteur réglementé"
+   }
+  ]
+ },
+ {
+  "uid": "CHE473427514",
+  "sector": "consulting",
+  "sector_confidence": 0.45,
+  "sector_rationale": "le conseil, la gestion, le développement de produits et technologies, notamment dans le domaine médical",
+  "segments": [
+   {
+    "segment": "sme-owner",
+    "confidence": 0.5,
+    "rationale": "structure de conseil individuelle"
+   }
+  ]
+ },
+ {
+  "uid": "CHE333885502",
+  "sector": "it-services",
+  "sector_confidence": 0.85,
+  "sector_rationale": "développements de solutions informatiques, visualisation 3D, accès aux bases de données",
+  "segments": [
+   {
+    "segment": "data-driven",
+    "confidence": 0.6,
+    "rationale": "bases de données et systèmes de reporting"
+   },
+   {
+    "segment": "ai-adopter",
+    "confidence": 0.7,
+    "rationale": "développement d'algorithmes et de logiciels"
+   }
+  ]
+ },
+ {
+  "uid": "CHE494393223",
+  "sector": "consulting",
+  "sector_confidence": 0.45,
+  "sector_rationale": "conseils et services en stratégie digitale, direction générale, marketing et ressources humaines",
+  "segments": [
+   {
+    "segment": "ai-adopter",
+    "confidence": 0.6,
+    "rationale": "création et diffusion de sites et applications E-Commerce"
+   }
+  ]
+ },
+ {
+  "uid": "CHE203217784",
+  "sector": "real-estate",
+  "sector_confidence": 0.6,
+  "sector_rationale": "services et conseils dans l'immobilier, gestion, vente et location de biens immobiliers, courtage",
+  "segments": [
+   {
+    "segment": "sme-owner",
+    "confidence": 0.5,
+    "rationale": "petite structure immobilière"
+   }
+  ]
+ },
+ {
+  "uid": "CHE207490540",
+  "sector": "transport-logistics",
+  "sector_confidence": 0.85,
+  "sector_rationale": "toute activité de transport de marchandises, livraison et emballage de colis, déménagements",
+  "segments": [
+   {
+    "segment": "sme-owner",
+    "confidence": 0.55,
+    "rationale": "petite entreprise de transport"
+   }
+  ]
+ },
+ {
+  "uid": "CHE352154497",
+  "sector": "it-services",
+  "sector_confidence": 0.85,
+  "sector_rationale": "prestations et conseils en rapport avec l'informatique et les télécommunications",
+  "segments": [
+   {
+    "segment": "sme-owner",
+    "confidence": 0.5,
+    "rationale": "petite société informatique"
+   }
+  ]
+ },
+ {
+  "uid": "CHE183193227",
+  "sector": "construction",
+  "sector_confidence": 0.75,
+  "sector_rationale": "installation, dépannage et service après-vente en climatisation, ventilation, pompe à chaleur",
+  "segments": [
+   {
+    "segment": "sme-owner",
+    "confidence": 0.6,
+    "rationale": "entreprise d'installation technique"
+   }
+  ]
+ },
+ {
+  "uid": "CHE456424650",
+  "sector": "it-services",
+  "sector_confidence": 0.85,
+  "sector_rationale": "expertise, conseil, gestion de projets en informatique et sécurité informatique",
+  "segments": [
+   {
+    "segment": "ai-adopter",
+    "confidence": 0.5,
+    "rationale": "développements informatiques"
+   },
+   {
+    "segment": "sme-owner",
+    "confidence": 0.5,
+    "rationale": "petite société de conseil informatique"
+   }
+  ]
+ },
+ {
+  "uid": "CHE334355804",
+  "sector": "health-care",
+  "sector_confidence": 0.5,
+  "sector_rationale": "promotion des arts et sciences de la santé, gestion de cliniques et conseil médical",
+  "segments": [
+   {
+    "segment": "compliance-sector",
+    "confidence": 0.45,
+    "rationale": "préparations médicales et gestion de cliniques"
+   }
+  ]
+ },
+ {
+  "uid": "CHE189488164",
+  "sector": "wholesale-trade",
+  "sector_confidence": 0.7,
+  "sector_rationale": "l'achat, la vente et la distribution de produits alimentaires",
+  "segments": []
+ },
+ {
+  "uid": "CHE393237873",
+  "sector": "consulting",
+  "sector_confidence": 0.7,
+  "sector_rationale": "conseils technico-commerciaux et stratégiques dans l'approvisionnement et la production d'ingrédients",
+  "segments": [
+   {
+    "segment": "sme-owner",
+    "confidence": 0.5,
+    "rationale": "cabinet de conseil spécialisé"
+   }
+  ]
+ },
+ {
+  "uid": "CHE244288830",
+  "sector": "wholesale-trade",
+  "sector_confidence": 0.5,
+  "sector_rationale": "achat, vente et commerce de diffuseurs de parfums électriques",
+  "segments": [
+   {
+    "segment": "sme-owner",
+    "confidence": 0.5,
+    "rationale": "petit commerce de produits"
+   }
+  ]
+ },
+ {
+  "uid": "CHE214236716",
+  "sector": "construction",
+  "sector_confidence": 0.9,
+  "sector_rationale": "activités dans le domaine du bâtiment, gypserie, peinture et papier peint",
+  "segments": [
+   {
+    "segment": "sme-owner",
+    "confidence": 0.6,
+    "rationale": "entreprise de second oeuvre"
+   }
+  ]
+ },
+ {
+  "uid": "CHE267869966",
+  "sector": "wholesale-trade",
+  "sector_confidence": 0.6,
+  "sector_rationale": "intermédiaire et représentante commerciale dans le secteur de la parfumerie",
+  "segments": [
+   {
+    "segment": "sme-owner",
+    "confidence": 0.5,
+    "rationale": "activité de représentation individuelle"
+   }
+  ]
+ },
+ {
+  "uid": "CHE115842899",
+  "sector": "hospitality",
+  "sector_confidence": 0.95,
+  "sector_rationale": "exploitation d'un restaurant thaï",
+  "segments": [
+   {
+    "segment": "sme-owner",
+    "confidence": 0.7,
+    "rationale": "exploitation d'un seul restaurant"
+   }
+  ]
+ },
+ {
+  "uid": "CHE402723471",
+  "sector": "hospitality",
+  "sector_confidence": 0.9,
+  "sector_rationale": "exploitation de restaurants, d'hôtels, de boulangeries et d'autres établissements publics",
+  "segments": [
+   {
+    "segment": "sme-owner",
+    "confidence": 0.5,
+    "rationale": "exploitation d'établissements publics"
+   }
+  ]
+ },
+ {
+  "uid": "CHE257057122",
+  "sector": "legal-accounting",
+  "sector_confidence": 0.9,
+  "sector_rationale": "services et conseil dans le domaine fiduciaire et de la comptabilité",
+  "segments": [
+   {
+    "segment": "compliance-sector",
+    "confidence": 0.6,
+    "rationale": "mandats fiduciaires et fiscaux"
+   },
+   {
+    "segment": "sme-owner",
+    "confidence": 0.5,
+    "rationale": "petite fiduciaire"
+   }
+  ]
+ },
+ {
+  "uid": "CHE199068639",
+  "sector": "holding",
+  "sector_confidence": 0.9,
+  "sector_rationale": "acquisition, détention, administration de participations d'entreprises",
+  "segments": []
+ },
+ {
+  "uid": "CHE132157184",
+  "sector": "hospitality",
+  "sector_confidence": 0.9,
+  "sector_rationale": "exploitation d'un café-restaurant, service traiteur",
+  "segments": [
+   {
+    "segment": "sme-owner",
+    "confidence": 0.65,
+    "rationale": "exploitation d'un établissement unique"
+   }
+  ]
+ },
+ {
+  "uid": "CHE112756631",
+  "sector": "wholesale-trade",
+  "sector_confidence": 0.55,
+  "sector_rationale": "commerce, représentation, distribution d'articles de maroquinerie et d'habillement",
+  "segments": [
+   {
+    "segment": "sme-owner",
+    "confidence": 0.5,
+    "rationale": "exploitation commerciale d'établissements"
+   }
+  ]
+ },
+ {
+  "uid": "CHE345122635",
+  "sector": "legal-accounting",
+  "sector_confidence": 0.9,
+  "sector_rationale": "mandats entrant dans le domaine d'activité d'une société fiduciaire, services comptables et fiscaux",
+  "segments": [
+   {
+    "segment": "compliance-sector",
+    "confidence": 0.65,
+    "rationale": "révision et contrôle de comptabilités"
+   },
+   {
+    "segment": "sme-owner",
+    "confidence": 0.5,
+    "rationale": "fiduciaire de taille modeste"
+   }
+  ]
+ },
+ {
+  "uid": "CHE480758956",
+  "sector": "engineering",
+  "sector_confidence": 0.8,
+  "sector_rationale": "tous travaux et mandats d'architecture, d'urbanisme et d'architecture du paysage",
+  "segments": [
+   {
+    "segment": "sme-owner",
+    "confidence": 0.5,
+    "rationale": "bureau d'architecture"
+   }
+  ]
+ },
+ {
+  "uid": "CHE363279921",
+  "sector": "consulting",
+  "sector_confidence": 0.5,
+  "sector_rationale": "conseil, expertise et accompagnement de projets dans le secteur culturel",
+  "segments": [
+   {
+    "segment": "sme-owner",
+    "confidence": 0.5,
+    "rationale": "activité de conseil individuelle"
+   }
+  ]
+ },
+ {
+  "uid": "CHE218160093",
+  "sector": "engineering",
+  "sector_confidence": 0.75,
+  "sector_rationale": "exécution de travaux d'architecture, conseils et planification dans la construction",
+  "segments": [
+   {
+    "segment": "sme-owner",
+    "confidence": 0.5,
+    "rationale": "bureau d'architecture"
+   }
+  ]
+ },
+ {
+  "uid": "CHE114103090",
+  "sector": "agriculture",
+  "sector_confidence": 0.55,
+  "sector_rationale": "entretien et aménagement de jardins, jardinerie",
+  "segments": [
+   {
+    "segment": "sme-owner",
+    "confidence": 0.6,
+    "rationale": "entreprise de jardinage"
+   }
+  ]
+ },
+ {
+  "uid": "CHE298415791",
+  "sector": "real-estate",
+  "sector_confidence": 0.8,
+  "sector_rationale": "acquisition, vente, détention, gestion, promotion et courtage de biens immobiliers",
+  "segments": []
+ },
+ {
+  "uid": "CHE226459619",
+  "sector": "wholesale-trade",
+  "sector_confidence": 0.6,
+  "sector_rationale": "l'achat, la vente, l'importation et l'exportation de tous produits, matériaux et fibres de haute performance",
+  "segments": [
+   {
+    "segment": "mature-sme",
+    "confidence": 0.5,
+    "rationale": "distribution pour un groupe international, vente à des clients à l'étranger"
+   }
+  ]
+ },
+ {
+  "uid": "CHE158719729",
+  "sector": "construction",
+  "sector_confidence": 0.9,
+  "sector_rationale": "exploitation d'une entreprise de pose de carrelage, revêtements et maçonnerie",
+  "segments": [
+   {
+    "segment": "sme-owner",
+    "confidence": 0.6,
+    "rationale": "entreprise de carrelage"
+   }
+  ]
+ },
+ {
+  "uid": "CHE460644746",
+  "sector": "wholesale-trade",
+  "sector_confidence": 0.45,
+  "sector_rationale": "vente et commerce d'oeuvres d'art et d'objets artistiques",
+  "segments": [
+   {
+    "segment": "sme-owner",
+    "confidence": 0.5,
+    "rationale": "négoce d'art de petite taille"
+   }
+  ]
+ },
+ {
+  "uid": "CHE241416416",
+  "sector": "construction",
+  "sector_confidence": 0.5,
+  "sector_rationale": "conception, réalisation, transformation, rénovation en design et architecture d'intérieur, plâtrerie et peinture",
+  "segments": [
+   {
+    "segment": "sme-owner",
+    "confidence": 0.55,
+    "rationale": "entreprise d'aménagement intérieur"
+   }
+  ]
+ },
+ {
+  "uid": "CHE210111398",
+  "sector": "manufacturing",
+  "sector_confidence": 0.85,
+  "sector_rationale": "conception, fabrication et commercialisation de pièces et mouvements d'horlogerie",
+  "segments": [
+   {
+    "segment": "sme-owner",
+    "confidence": 0.5,
+    "rationale": "atelier horloger"
+   }
+  ]
+ },
+ {
+  "uid": "CHE456011495",
+  "sector": "engineering",
+  "sector_confidence": 0.75,
+  "sector_rationale": "prestations de services dans le domaine de l'architecture, de l'urbanisme et du design",
+  "segments": [
+   {
+    "segment": "sme-owner",
+    "confidence": 0.5,
+    "rationale": "bureau d'architecture"
+   }
+  ]
+ },
+ {
+  "uid": "CHE320915246",
+  "sector": "consulting",
+  "sector_confidence": 0.45,
+  "sector_rationale": "prestations de conseil, développement d'entreprises, audit organisationnel ou méthodologique",
+  "segments": [
+   {
+    "segment": "ai-adopter",
+    "confidence": 0.45,
+    "rationale": "vente de logiciels et de matériel"
+   }
+  ]
+ },
+ {
+  "uid": "CHE481287623",
+  "sector": "hospitality",
+  "sector_confidence": 0.9,
+  "sector_rationale": "exploitation d'un restaurant de sushis, café et bar",
+  "segments": [
+   {
+    "segment": "sme-owner",
+    "confidence": 0.65,
+    "rationale": "exploitation d'un établissement unique"
+   }
+  ]
+ },
+ {
+  "uid": "CHE145726358",
+  "sector": "it-services",
+  "sector_confidence": 0.85,
+  "sector_rationale": "prestations de service de type informatique et travaux de traitement de l'information",
+  "segments": [
+   {
+    "segment": "ai-adopter",
+    "confidence": 0.5,
+    "rationale": "fourniture de matériels informatiques et de logiciels"
+   }
+  ]
+ },
+ {
+  "uid": "CHE225305132",
+  "sector": "hospitality",
+  "sector_confidence": 0.85,
+  "sector_rationale": "exploitation de restaurants, hôtels, chambres d'hôte",
+  "segments": [
+   {
+    "segment": "sme-owner",
+    "confidence": 0.55,
+    "rationale": "exploitation d'établissements de restauration"
+   }
+  ]
+ },
+ {
+  "uid": "CHE433485994",
+  "sector": "engineering",
+  "sector_confidence": 0.6,
+  "sector_rationale": "conseil en entreprise de construction, l'ingénierie, la fourniture de services d'ingénierie",
+  "segments": [
+   {
+    "segment": "sme-owner",
+    "confidence": 0.5,
+    "rationale": "bureau d'ingénierie de petite taille"
+   }
+  ]
+ },
+ {
+  "uid": "CHE483046059",
+  "sector": "transport-logistics",
+  "sector_confidence": 0.85,
+  "sector_rationale": "activités dans les domaines du transport de marchandises et de personnes, livraison et déménagement",
+  "segments": [
+   {
+    "segment": "sme-owner",
+    "confidence": 0.5,
+    "rationale": "entreprise de transport"
+   }
+  ]
+ },
+ {
+  "uid": "CHE223799875",
+  "sector": "construction",
+  "sector_confidence": 0.9,
+  "sector_rationale": "exploitation d'une entreprise générale du bâtiment, exécution de tous travaux de construction",
+  "segments": [
+   {
+    "segment": "sme-owner",
+    "confidence": 0.5,
+    "rationale": "entreprise générale du bâtiment"
+   }
+  ]
+ },
+ {
+  "uid": "CHE153369065",
+  "sector": "consulting",
+  "sector_confidence": 0.7,
+  "sector_rationale": "missions de conseils dans les domaines technologiques et organisationnels",
+  "segments": [
+   {
+    "segment": "sme-owner",
+    "confidence": 0.5,
+    "rationale": "activité de conseil individuelle"
+   }
+  ]
+ },
+ {
+  "uid": "CHE487021756",
+  "sector": "marketing-media",
+  "sector_confidence": 0.6,
+  "sector_rationale": "gestion d'exposition d'art, préparation des événements artistiques",
+  "segments": [
+   {
+    "segment": "sme-owner",
+    "confidence": 0.5,
+    "rationale": "petite structure événementielle"
+   }
+  ]
+ },
+ {
+  "uid": "CHE262504322",
+  "sector": "wholesale-trade",
+  "sector_confidence": 0.8,
+  "sector_rationale": "sourcing, conseil en achats, achat/vente, import/export, distribution",
+  "segments": [
+   {
+    "segment": "sme-owner",
+    "confidence": 0.5,
+    "rationale": "négoce de petite taille"
+   }
+  ]
+ },
+ {
+  "uid": "CHE285683069",
+  "sector": "wholesale-trade",
+  "sector_confidence": 0.45,
+  "sector_rationale": "l'acquisition, la vente et l'intermédiation d'oeuvres d'art",
+  "segments": [
+   {
+    "segment": "sme-owner",
+    "confidence": 0.5,
+    "rationale": "activité de marchand-conseil en art"
+   }
+  ]
+ },
+ {
+  "uid": "CHE114662716",
+  "sector": "wholesale-trade",
+  "sector_confidence": 0.5,
+  "sector_rationale": "commerce, courtage, échanges dans le domaine de l'art, des antiquités",
+  "segments": [
+   {
+    "segment": "sme-owner",
+    "confidence": 0.5,
+    "rationale": "négoce d'art de petite taille"
+   }
+  ]
+ },
+ {
+  "uid": "CHE298556210",
+  "sector": "marketing-media",
+  "sector_confidence": 0.8,
+  "sector_rationale": "activités de production audiovisuelle, film, documentaire, publicité",
+  "segments": [
+   {
+    "segment": "sme-owner",
+    "confidence": 0.5,
+    "rationale": "petite structure de production"
+   }
+  ]
+ },
+ {
+  "uid": "CHE482492829",
+  "sector": "engineering",
+  "sector_confidence": 0.7,
+  "sector_rationale": "services comme architecte, architecte d'intérieur, infographiste 3D",
+  "segments": [
+   {
+    "segment": "sme-owner",
+    "confidence": 0.6,
+    "rationale": "studio d'architecture individuel"
+   }
+  ]
+ },
+ {
+  "uid": "CHE236109457",
+  "sector": "personal-services",
+  "sector_confidence": 0.95,
+  "sector_rationale": "exploitation d'un salon de coiffure et d'esthétique",
+  "segments": [
+   {
+    "segment": "sme-owner",
+    "confidence": 0.7,
+    "rationale": "salon exploité par son propriétaire"
+   }
+  ]
+ },
+ {
+  "uid": "CHE258678611",
+  "sector": "personal-services",
+  "sector_confidence": 0.6,
+  "sector_rationale": "tout service et prestation de conciergerie privée, assistance personnelle",
+  "segments": [
+   {
+    "segment": "sme-owner",
+    "confidence": 0.5,
+    "rationale": "service de conciergerie de petite taille"
+   }
+  ]
+ },
+ {
+  "uid": "CHE413133517",
+  "sector": "marketing-media",
+  "sector_confidence": 0.9,
+  "sector_rationale": "exploitation d'une agence de communication, marketing digital",
+  "segments": [
+   {
+    "segment": "ai-adopter",
+    "confidence": 0.5,
+    "rationale": "création de sites web et commerces en ligne"
+   },
+   {
+    "segment": "sme-owner",
+    "confidence": 0.5,
+    "rationale": "petite agence"
+   }
+  ]
+ },
+ {
+  "uid": "CHE181328663",
+  "sector": "consulting",
+  "sector_confidence": 0.4,
+  "sector_rationale": "le conseil en investissement et l'accompagnement dans la sélection d'artistes et d'oeuvres",
+  "segments": [
+   {
+    "segment": "sme-owner",
+    "confidence": 0.5,
+    "rationale": "structure de conseil individuelle"
+   }
+  ]
+ },
+ {
+  "uid": "CHE228302176",
+  "sector": "construction",
+  "sector_confidence": 0.9,
+  "sector_rationale": "entreprise générale du bâtiment, carrelage, plâtrerie, peinture, démolition",
+  "segments": [
+   {
+    "segment": "sme-owner",
+    "confidence": 0.55,
+    "rationale": "entreprise générale du bâtiment"
+   }
+  ]
+ },
+ {
+  "uid": "CHE334545428",
+  "sector": "agriculture",
+  "sector_confidence": 0.45,
+  "sector_rationale": "vente de plantes et de créations florales, création de parcs et jardins",
+  "segments": [
+   {
+    "segment": "sme-owner",
+    "confidence": 0.5,
+    "rationale": "petite entreprise horticole et événementielle"
+   }
+  ]
+ },
+ {
+  "uid": "CHE361774227",
+  "sector": "personal-services",
+  "sector_confidence": 0.55,
+  "sector_rationale": "services de bien-être à domicile pour personnes âgées",
+  "segments": [
+   {
+    "segment": "sme-owner",
+    "confidence": 0.5,
+    "rationale": "prestations à domicile à petite échelle"
+   }
+  ]
+ },
+ {
+  "uid": "CHE104794730",
+  "sector": "marketing-media",
+  "sector_confidence": 0.7,
+  "sector_rationale": "organisation d'évènements tels que soirées, mariages et spectacles",
+  "segments": [
+   {
+    "segment": "sme-owner",
+    "confidence": 0.55,
+    "rationale": "petite structure événementielle"
+   }
+  ]
+ },
+ {
+  "uid": "CHE276780271",
+  "sector": "retail",
+  "sector_confidence": 0.5,
+  "sector_rationale": "l'exploitation d'une galerie d'art",
+  "segments": [
+   {
+    "segment": "sme-owner",
+    "confidence": 0.6,
+    "rationale": "exploitation d'une galerie unique"
+   }
+  ]
+ },
+ {
+  "uid": "CHE328279129",
+  "sector": "wholesale-trade",
+  "sector_confidence": 0.7,
+  "sector_rationale": "l'importation, la vente et la réparation d'équipements professionnels d'hôtellerie",
+  "segments": [
+   {
+    "segment": "sme-owner",
+    "confidence": 0.5,
+    "rationale": "import et vente d'équipements"
+   }
+  ]
+ },
+ {
+  "uid": "CHE307290734",
+  "sector": "construction",
+  "sector_confidence": 0.85,
+  "sector_rationale": "construction de piscines, entretien, étanchéité",
+  "segments": [
+   {
+    "segment": "sme-owner",
+    "confidence": 0.6,
+    "rationale": "entreprise de piscines"
+   }
+  ]
+ },
+ {
+  "uid": "CHE112159211",
+  "sector": "construction",
+  "sector_confidence": 0.5,
+  "sector_rationale": "construction et réalisation de tout type de construction métallique, serrureries et vitreries",
+  "segments": [
+   {
+    "segment": "sme-owner",
+    "confidence": 0.5,
+    "rationale": "atelier de serrurerie et aménagement"
+   }
+  ]
+ },
+ {
+  "uid": "CHE311516373",
+  "sector": "manufacturing",
+  "sector_confidence": 0.5,
+  "sector_rationale": "conception d'objets dans le domaine de l'horlogerie, la joaillerie et les métiers d'art",
+  "segments": [
+   {
+    "segment": "sme-owner",
+    "confidence": 0.5,
+    "rationale": "atelier de travail fin à la main"
+   }
+  ]
+ },
+ {
+  "uid": "CHE202467930",
+  "sector": "wholesale-trade",
+  "sector_confidence": 0.5,
+  "sector_rationale": "achat, vente, distribution de pièces de joaillerie et création de bijoux",
+  "segments": [
+   {
+    "segment": "sme-owner",
+    "confidence": 0.5,
+    "rationale": "création et commerce sous une marque unique"
+   }
+  ]
+ },
+ {
+  "uid": "CHE497363158",
+  "sector": "real-estate",
+  "sector_confidence": 0.45,
+  "sector_rationale": "toute activité dans le domaine de l'immobilier, de la promotion, promotion immobilière",
+  "segments": [
+   {
+    "segment": "sme-owner",
+    "confidence": 0.5,
+    "rationale": "structure d'architecture et de promotion de petite taille"
+   }
+  ]
+ },
+ {
+  "uid": "CHE159057173",
+  "sector": "construction",
+  "sector_confidence": 0.85,
+  "sector_rationale": "services dans le domaine du bâtiment, peinture, papier peint et crépi",
+  "segments": [
+   {
+    "segment": "sme-owner",
+    "confidence": 0.6,
+    "rationale": "entreprise de peinture"
+   }
+  ]
+ },
+ {
+  "uid": "CHE420846019",
+  "sector": "hospitality",
+  "sector_confidence": 0.5,
+  "sector_rationale": "développement commercial hôtelier ainsi que le développement hôtelier",
+  "segments": [
+   {
+    "segment": "sme-owner",
+    "confidence": 0.5,
+    "rationale": "petite structure de développement hôtelier"
+   }
+  ]
+ },
+ {
+  "uid": "CHE108390136",
+  "sector": "wholesale-trade",
+  "sector_confidence": 0.6,
+  "sector_rationale": "commerce de céramiques, marbres, carrelages, sanitaires et matériaux de construction",
+  "segments": [
+   {
+    "segment": "sme-owner",
+    "confidence": 0.5,
+    "rationale": "commerce de matériaux"
+   }
+  ]
+ },
+ {
+  "uid": "CHE362929449",
+  "sector": "legal-accounting",
+  "sector_confidence": 0.95,
+  "sector_rationale": "services juridiques par des avocats inscrits dans un registre des avocats suisse",
+  "segments": [
+   {
+    "segment": "compliance-sector",
+    "confidence": 0.8,
+    "rationale": "représentation devant les tribunaux par des avocats inscrits"
+   }
+  ]
+ },
+ {
+  "uid": "CHE499602948",
+  "sector": "agriculture",
+  "sector_confidence": 0.7,
+  "sector_rationale": "l'achat, la production, la vente et la transformation de tous produits végétaux, entreprise paysagiste",
+  "segments": [
+   {
+    "segment": "sme-owner",
+    "confidence": 0.55,
+    "rationale": "entreprise paysagiste"
+   }
+  ]
+ },
+ {
+  "uid": "CHE113989385",
+  "sector": "hospitality",
+  "sector_confidence": 0.9,
+  "sector_rationale": "exploitation et gestion d'établissements dans le domaine de l'hôtellerie et la restauration",
+  "segments": [
+   {
+    "segment": "sme-owner",
+    "confidence": 0.5,
+    "rationale": "exploitation d'établissements"
+   }
+  ]
+ },
+ {
+  "uid": "CHE110046062",
+  "sector": "marketing-media",
+  "sector_confidence": 0.5,
+  "sector_rationale": "organisations de manifestations artistiques, représentation d'artistes",
+  "segments": [
+   {
+    "segment": "sme-owner",
+    "confidence": 0.5,
+    "rationale": "petite structure artistique"
+   }
+  ]
+ },
+ {
+  "uid": "CHE108264595",
+  "sector": "wholesale-trade",
+  "sector_confidence": 0.45,
+  "sector_rationale": "commercialisation d'articles nécessaires à la peinture sur porcelaine",
+  "segments": [
+   {
+    "segment": "sme-owner",
+    "confidence": 0.55,
+    "rationale": "commerce spécialisé de très petite taille"
+   }
+  ]
+ },
+ {
+  "uid": "CHE215482117",
+  "sector": "it-services",
+  "sector_confidence": 0.7,
+  "sector_rationale": "la conception de sites web et d'applications multimédia",
+  "segments": [
+   {
+    "segment": "ai-adopter",
+    "confidence": 0.7,
+    "rationale": "conception de sites web et d'applications"
+   },
+   {
+    "segment": "sme-owner",
+    "confidence": 0.5,
+    "rationale": "petite structure de développement"
+   }
+  ]
+ },
+ {
+  "uid": "CHE116009183",
+  "sector": "consulting",
+  "sector_confidence": 0.5,
+  "sector_rationale": "consulting, analyse et cadrage stratégique en matière financière et bancaire",
+  "segments": [
+   {
+    "segment": "compliance-sector",
+    "confidence": 0.6,
+    "rationale": "contrôle interne bancaire et maîtrise des risques"
+   },
+   {
+    "segment": "data-driven",
+    "confidence": 0.5,
+    "rationale": "analyse et exploitation de données financières"
+   }
+  ]
+ },
+ {
+  "uid": "CHE410421718",
+  "sector": "wholesale-trade",
+  "sector_confidence": 0.55,
+  "sector_rationale": "importation, exportation, achat, commercialisation de produits dans le domaine de l'architecture d'intérieur",
+  "segments": []
+ },
+ {
+  "uid": "CHE163748576",
+  "sector": "other",
+  "sector_confidence": 0.35,
+  "sector_rationale": "prestations de services et activités opérationnelles dans les domaines créatifs, techniques et manuels",
+  "segments": [
+   {
+    "segment": "sme-owner",
+    "confidence": 0.5,
+    "rationale": "prestations pour particuliers et professionnels"
+   }
+  ]
+ },
+ {
+  "uid": "CHE298504354",
+  "sector": "consulting",
+  "sector_confidence": 0.45,
+  "sector_rationale": "l'exécution de toutes prestations de conseil aux entreprises",
+  "segments": [
+   {
+    "segment": "sme-owner",
+    "confidence": 0.5,
+    "rationale": "petite structure de conseil"
+   }
+  ]
+ },
+ {
+  "uid": "CHE404954107",
+  "sector": "marketing-media",
+  "sector_confidence": 0.7,
+  "sector_rationale": "l'organisation de tous types d'événements, services de communication et marketing",
+  "segments": [
+   {
+    "segment": "sme-owner",
+    "confidence": 0.5,
+    "rationale": "petite structure de communication"
+   }
+  ]
+ },
+ {
+  "uid": "CHE149402630",
+  "sector": "construction",
+  "sector_confidence": 0.9,
+  "sector_rationale": "activités de carrelage, petite maçonnerie, peinture, parquet et sanitaires",
+  "segments": [
+   {
+    "segment": "sme-owner",
+    "confidence": 0.6,
+    "rationale": "entreprise de carrelage"
+   }
+  ]
+ },
+ {
+  "uid": "CHE319819297",
+  "sector": "construction",
+  "sector_confidence": 0.9,
+  "sector_rationale": "travaux généraux du bâtiment, carrelages, petite maçonnerie, peintures",
+  "segments": [
+   {
+    "segment": "sme-owner",
+    "confidence": 0.6,
+    "rationale": "entreprise du bâtiment"
+   }
+  ]
+ },
+ {
+  "uid": "CHE394172354",
+  "sector": "holding",
+  "sector_confidence": 0.4,
+  "sector_rationale": "prise de participations à toutes entreprises et sociétés commerciales et financières",
+  "segments": []
+ },
+ {
+  "uid": "CHE370827199",
+  "sector": "consulting",
+  "sector_confidence": 0.55,
+  "sector_rationale": "la consultance stratégique et l'accompagnement sur mesure d'entrepreneurs et de marques",
+  "segments": [
+   {
+    "segment": "sme-owner",
+    "confidence": 0.5,
+    "rationale": "activité de conseil individuelle"
+   }
+  ]
+ },
+ {
+  "uid": "CHE443499779",
+  "sector": "holding",
+  "sector_confidence": 0.9,
+  "sector_rationale": "acquérir, détenir, gérer et aliéner des participations directes et indirectes",
+  "segments": []
+ },
+ {
+  "uid": "CHE371832984",
+  "sector": "wholesale-trade",
+  "sector_confidence": 0.5,
+  "sector_rationale": "achat, vente, vente aux enchères, commerce de collections d'objets et d'oeuvres d'art",
+  "segments": [
+   {
+    "segment": "sme-owner",
+    "confidence": 0.5,
+    "rationale": "maison de négoce d'art"
+   }
+  ]
+ },
+ {
+  "uid": "CHE284847150",
+  "sector": "construction",
+  "sector_confidence": 0.9,
+  "sector_rationale": "exploiter une entreprise générale de revêtements de sols et tous travaux du second oeuvre",
+  "segments": [
+   {
+    "segment": "sme-owner",
+    "confidence": 0.6,
+    "rationale": "entreprise de second oeuvre"
+   }
+  ]
+ },
+ {
+  "uid": "CHE431273234",
+  "sector": "construction",
+  "sector_confidence": 0.95,
+  "sector_rationale": "exploitation d'une entreprise générale du bâtiment, gros oeuvre et second oeuvre",
+  "segments": [
+   {
+    "segment": "sme-owner",
+    "confidence": 0.5,
+    "rationale": "entreprise générale du bâtiment"
+   }
+  ]
+ },
+ {
+  "uid": "CHE435492137",
+  "sector": "agriculture",
+  "sector_confidence": 0.6,
+  "sector_rationale": "prestations de paysagiste, création, aménagement et entretien de jardins et espaces verts",
+  "segments": [
+   {
+    "segment": "sme-owner",
+    "confidence": 0.6,
+    "rationale": "entreprise paysagiste"
+   }
+  ]
+ },
+ {
+  "uid": "CHE257620885",
+  "sector": "construction",
+  "sector_confidence": 0.85,
+  "sector_rationale": "exploitation d'une entreprise de menuiserie et charpente",
+  "segments": [
+   {
+    "segment": "sme-owner",
+    "confidence": 0.6,
+    "rationale": "entreprise de menuiserie"
+   }
+  ]
+ },
+ {
+  "uid": "CHE138924060",
+  "sector": "construction",
+  "sector_confidence": 0.9,
+  "sector_rationale": "exploitation d'une entreprise de plâtrerie, de peinture, de faux-plafonds",
+  "segments": [
+   {
+    "segment": "sme-owner",
+    "confidence": 0.6,
+    "rationale": "entreprise de plâtrerie"
+   }
+  ]
+ },
+ {
+  "uid": "CHE107609929",
+  "sector": "manufacturing",
+  "sector_confidence": 0.55,
+  "sector_rationale": "fabrication, commerce, importation dans le domaine de la bijouterie et de l'horlogerie",
+  "segments": [
+   {
+    "segment": "sme-owner",
+    "confidence": 0.55,
+    "rationale": "atelier artisanal"
+   }
+  ]
+ },
+ {
+  "uid": "CHE265231735",
+  "sector": "construction",
+  "sector_confidence": 0.85,
+  "sector_rationale": "activités dans le domaine de la rénovation du bâtiment, parquets, moquettes et linos",
+  "segments": [
+   {
+    "segment": "sme-owner",
+    "confidence": 0.6,
+    "rationale": "entreprise de rénovation"
+   }
+  ]
+ },
+ {
+  "uid": "CHE361104854",
+  "sector": "marketing-media",
+  "sector_confidence": 0.85,
+  "sector_rationale": "produire, distribuer, exploiter des programmes de télévision, de cinéma, de musique",
+  "segments": [
+   {
+    "segment": "sme-owner",
+    "confidence": 0.5,
+    "rationale": "studio de production"
+   }
+  ]
+ },
+ {
+  "uid": "CHE284931951",
+  "sector": "construction",
+  "sector_confidence": 0.85,
+  "sector_rationale": "rénovation, aménagement d'intérieur, plâtrerie, peinture et services de plomberie",
+  "segments": [
+   {
+    "segment": "sme-owner",
+    "confidence": 0.6,
+    "rationale": "entreprise de rénovation et plomberie"
+   }
+  ]
+ },
+ {
+  "uid": "CHE105345412",
+  "sector": "construction",
+  "sector_confidence": 0.95,
+  "sector_rationale": "exploitation d'une entreprise générale du bâtiment",
+  "segments": [
+   {
+    "segment": "sme-owner",
+    "confidence": 0.55,
+    "rationale": "entreprise générale du bâtiment"
+   }
+  ]
+ },
+ {
+  "uid": "CHE109901329",
+  "sector": "engineering",
+  "sector_confidence": 0.5,
+  "sector_rationale": "exploitation d'un bureau d'architecture d'intérieur",
+  "segments": [
+   {
+    "segment": "sme-owner",
+    "confidence": 0.6,
+    "rationale": "bureau d'architecture d'intérieur"
+   }
+  ]
+ },
+ {
+  "uid": "CHE384034236",
+  "sector": "consulting",
+  "sector_confidence": 0.8,
+  "sector_rationale": "services et conseils en matière de gestion d'entreprise, de ressources humaines, de marketing",
+  "segments": [
+   {
+    "segment": "sme-owner",
+    "confidence": 0.5,
+    "rationale": "petite structure de conseil"
+   }
+  ]
+ },
+ {
+  "uid": "CHE479183210",
+  "sector": "agriculture",
+  "sector_confidence": 0.75,
+  "sector_rationale": "soins, tailles, élagages, abattages, plantations d'arbres, bucheronnage",
+  "segments": [
+   {
+    "segment": "sme-owner",
+    "confidence": 0.6,
+    "rationale": "entreprise d'arboriculture"
+   }
+  ]
+ },
+ {
+  "uid": "CHE167109369",
+  "sector": "marketing-media",
+  "sector_confidence": 0.5,
+  "sector_rationale": "exploitation d'une agence artistique",
+  "segments": [
+   {
+    "segment": "sme-owner",
+    "confidence": 0.6,
+    "rationale": "agence de petite taille"
+   }
+  ]
+ },
+ {
+  "uid": "CHE357327003",
+  "sector": "construction",
+  "sector_confidence": 0.95,
+  "sector_rationale": "exploitation d'une entreprise du bâtiment, terrassement, maçonnerie, gros oeuvre",
+  "segments": [
+   {
+    "segment": "sme-owner",
+    "confidence": 0.55,
+    "rationale": "entreprise de gros oeuvre"
+   }
+  ]
+ },
+ {
+  "uid": "CHE485515585",
+  "sector": "it-services",
+  "sector_confidence": 0.6,
+  "sector_rationale": "services en lien avec les nouvelles technologies en général et la blockchain en particulier",
+  "segments": [
+   {
+    "segment": "ai-adopter",
+    "confidence": 0.65,
+    "rationale": "nouvelles technologies et blockchain"
+   },
+   {
+    "segment": "lean-startup",
+    "confidence": 0.5,
+    "rationale": "but technologique plutôt que commercial"
+   }
+  ]
+ },
+ {
+  "uid": "CHE381380771",
+  "sector": "construction",
+  "sector_confidence": 0.8,
+  "sector_rationale": "exploitation d'une entreprise générale incluant tous travaux du gros et second oeuvre",
+  "segments": [
+   {
+    "segment": "sme-owner",
+    "confidence": 0.5,
+    "rationale": "entreprise générale"
+   }
+  ]
+ },
+ {
+  "uid": "CHE433615883",
+  "sector": "hospitality",
+  "sector_confidence": 0.9,
+  "sector_rationale": "exploitation de tous établissements publics tel que des cafés-bars et restaurants",
+  "segments": [
+   {
+    "segment": "sme-owner",
+    "confidence": 0.55,
+    "rationale": "exploitation d'établissements publics"
+   }
+  ]
+ },
+ {
+  "uid": "CHE285734608",
+  "sector": "retail",
+  "sector_confidence": 0.5,
+  "sector_rationale": "commerce, dépannage, réparation d'électroménager, agencement de cuisines",
+  "segments": [
+   {
+    "segment": "sme-owner",
+    "confidence": 0.6,
+    "rationale": "commerce de proximité"
+   }
+  ]
+ },
+ {
+  "uid": "CHE385503073",
+  "sector": "wholesale-trade",
+  "sector_confidence": 0.7,
+  "sector_rationale": "la distribution et le commerce d'articles dans le domaine de la marine et de la navigation",
+  "segments": [
+   {
+    "segment": "sme-owner",
+    "confidence": 0.5,
+    "rationale": "négoce spécialisé de petite taille"
+   }
+  ]
+ },
+ {
+  "uid": "CHE299382912",
+  "sector": "engineering",
+  "sector_confidence": 0.85,
+  "sector_rationale": "tous travaux de topographie et cubatures, établissement de plans",
+  "segments": [
+   {
+    "segment": "data-driven",
+    "confidence": 0.45,
+    "rationale": "relevés topographiques et CAO/DAO"
+   },
+   {
+    "segment": "sme-owner",
+    "confidence": 0.5,
+    "rationale": "bureau de géomètre"
+   }
+  ]
+ },
+ {
+  "uid": "CHE306328819",
+  "sector": "finance",
+  "sector_confidence": 0.4,
+  "sector_rationale": "le conseil en investissement, notamment dans le domaine de l'art",
+  "segments": [
+   {
+    "segment": "sme-owner",
+    "confidence": 0.5,
+    "rationale": "structure de conseil individuelle"
+   }
+  ]
+ },
+ {
+  "uid": "CHE162376897",
+  "sector": "personal-services",
+  "sector_confidence": 0.9,
+  "sector_rationale": "exploitation d'un institut de beauté, d'onglerie, soins esthétiques",
+  "segments": [
+   {
+    "segment": "sme-owner",
+    "confidence": 0.7,
+    "rationale": "institut exploité par son propriétaire"
+   }
+  ]
+ },
+ {
+  "uid": "CHE313122401",
+  "sector": "wholesale-trade",
+  "sector_confidence": 0.4,
+  "sector_rationale": "la location, le prêt et la vente d'oeuvres d'art et des droits liés",
+  "segments": []
+ },
+ {
+  "uid": "CHE383023069",
+  "sector": "construction",
+  "sector_confidence": 0.4,
+  "sector_rationale": "réalisation de concepts et conseils pour tout type de système d'irrigation et d'éclairage extérieur",
+  "segments": [
+   {
+    "segment": "sme-owner",
+    "confidence": 0.55,
+    "rationale": "petite entreprise d'installation et d'entretien"
+   }
+  ]
+ },
+ {
+  "uid": "CHE454759068",
+  "sector": "personal-services",
+  "sector_confidence": 0.7,
+  "sector_rationale": "création et exploitation de centres de fitness, soins esthétiques et solariums",
+  "segments": [
+   {
+    "segment": "sme-owner",
+    "confidence": 0.5,
+    "rationale": "exploitation de centres de remise en forme"
+   }
+  ]
+ },
+ {
+  "uid": "CHE106820137",
+  "sector": "marketing-media",
+  "sector_confidence": 0.5,
+  "sector_rationale": "vente et location de matériel de spectacles, création de spectacles",
+  "segments": [
+   {
+    "segment": "sme-owner",
+    "confidence": 0.55,
+    "rationale": "petite structure de spectacle"
+   }
+  ]
+ },
+ {
+  "uid": "CHE115963250",
+  "sector": "engineering",
+  "sector_confidence": 0.7,
+  "sector_rationale": "exploitation d'un bureau d'études en scénographie d'équipement et ingénierie scénique",
+  "segments": [
+   {
+    "segment": "sme-owner",
+    "confidence": 0.55,
+    "rationale": "bureau d'études de petite taille"
+   }
+  ]
+ },
+ {
+  "uid": "CHE338800217",
+  "sector": "retail",
+  "sector_confidence": 0.55,
+  "sector_rationale": "exploitation d'un commerce d'optique, lentilles de contact et d'acoustique",
+  "segments": [
+   {
+    "segment": "sme-owner",
+    "confidence": 0.65,
+    "rationale": "commerce exploité par son propriétaire"
+   }
+  ]
+ },
+ {
+  "uid": "CHE155197674",
+  "sector": "health-care",
+  "sector_confidence": 0.5,
+  "sector_rationale": "exploitation d'un laboratoire de technicien dentiste",
+  "segments": [
+   {
+    "segment": "compliance-sector",
+    "confidence": 0.4,
+    "rationale": "activité dentaire réglementée"
+   },
+   {
+    "segment": "sme-owner",
+    "confidence": 0.6,
+    "rationale": "laboratoire de petite taille"
+   }
+  ]
+ },
+ {
+  "uid": "CHE427892641",
+  "sector": "construction",
+  "sector_confidence": 0.85,
+  "sector_rationale": "prestations d'une entreprise générale du bâtiment, travaux de revêtements de sols",
+  "segments": [
+   {
+    "segment": "sme-owner",
+    "confidence": 0.55,
+    "rationale": "entreprise de revêtements et nettoyage"
+   }
+  ]
+ },
+ {
+  "uid": "CHE115403442",
+  "sector": "manufacturing",
+  "sector_confidence": 0.45,
+  "sector_rationale": "conception, fabrication, commerce d'articles d'horlogerie, de bijouterie, de joaillerie",
+  "segments": []
+ },
+ {
+  "uid": "CHE108316341",
+  "sector": "wholesale-trade",
+  "sector_confidence": 0.45,
+  "sector_rationale": "commerce, conseil et intermédiation dans le domaine de l'art",
+  "segments": []
+ },
+ {
+  "uid": "CHE428681029",
+  "sector": "marketing-media",
+  "sector_confidence": 0.85,
+  "sector_rationale": "prestations dans les domaines de la communication et du marketing digital",
+  "segments": [
+   {
+    "segment": "ai-adopter",
+    "confidence": 0.5,
+    "rationale": "conception de campagnes et vente en ligne"
+   },
+   {
+    "segment": "sme-owner",
+    "confidence": 0.5,
+    "rationale": "petite agence"
+   }
+  ]
+ },
+ {
+  "uid": "CHE192625065",
+  "sector": "retail",
+  "sector_confidence": 0.45,
+  "sector_rationale": "vente, commercialisation, conception et installation de mobiliers de cuisine et de salle de bains",
+  "segments": [
+   {
+    "segment": "sme-owner",
+    "confidence": 0.55,
+    "rationale": "commerce d'agencement de petite taille"
+   }
+  ]
+ },
+ {
+  "uid": "CHE224254176",
+  "sector": "hospitality",
+  "sector_confidence": 0.5,
+  "sector_rationale": "acquisition, exploitation, gestion et gérance d'établissements publics",
+  "segments": [
+   {
+    "segment": "sme-owner",
+    "confidence": 0.5,
+    "rationale": "exploitation d'établissements publics"
+   }
+  ]
+ },
+ {
+  "uid": "CHE208308939",
+  "sector": "marketing-media",
+  "sector_confidence": 0.85,
+  "sector_rationale": "conception, création et développement de médias, conception graphique, audiovisuel",
+  "segments": [
+   {
+    "segment": "sme-owner",
+    "confidence": 0.5,
+    "rationale": "petite structure média"
+   }
+  ]
+ },
+ {
+  "uid": "CHE102229034",
+  "sector": "retail",
+  "sector_confidence": 0.5,
+  "sector_rationale": "gestion, exploitation et approvisionnement d'une ou plusieurs stations service et commerces annexes",
+  "segments": [
+   {
+    "segment": "sme-owner",
+    "confidence": 0.5,
+    "rationale": "exploitation de commerces de proximité"
+   }
+  ]
+ },
+ {
+  "uid": "CHE336027067",
+  "sector": "consulting",
+  "sector_confidence": 0.5,
+  "sector_rationale": "conseils et services en matière de gestion d'entreprise, promotion et développement de projets",
+  "segments": [
+   {
+    "segment": "sme-owner",
+    "confidence": 0.5,
+    "rationale": "petite structure de conseil"
+   }
+  ]
+ },
+ {
+  "uid": "CHE352598701",
+  "sector": "agriculture",
+  "sector_confidence": 0.65,
+  "sector_rationale": "création et entretien d'espaces verts, activités de jardinerie, paysagiste",
+  "segments": [
+   {
+    "segment": "sme-owner",
+    "confidence": 0.6,
+    "rationale": "entreprise paysagiste"
+   }
+  ]
+ },
+ {
+  "uid": "CHE101063222",
+  "sector": "engineering",
+  "sector_confidence": 0.85,
+  "sector_rationale": "exploitation d'un bureau d'architecte, études, projets, expertises, direction de travaux",
+  "segments": [
+   {
+    "segment": "sme-owner",
+    "confidence": 0.5,
+    "rationale": "bureau d'architecte"
+   }
+  ]
+ },
+ {
+  "uid": "CHE385475844",
+  "sector": "real-estate",
+  "sector_confidence": 0.85,
+  "sector_rationale": "courtage, promotion, achat, vente et conseil en matière immobilière",
+  "segments": [
+   {
+    "segment": "sme-owner",
+    "confidence": 0.5,
+    "rationale": "petite structure immobilière"
+   }
+  ]
+ },
+ {
+  "uid": "CHE384075577",
+  "sector": "engineering",
+  "sector_confidence": 0.6,
+  "sector_rationale": "toute conception et réalisation en matière d'architecture d'intérieur",
+  "segments": [
+   {
+    "segment": "sme-owner",
+    "confidence": 0.6,
+    "rationale": "bureau d'architecture d'intérieur"
+   }
+  ]
+ },
+ {
+  "uid": "CHE111999846",
+  "sector": "hospitality",
+  "sector_confidence": 0.95,
+  "sector_rationale": "exploitation de cafés-restaurants",
+  "segments": [
+   {
+    "segment": "sme-owner",
+    "confidence": 0.65,
+    "rationale": "exploitation d'établissements de restauration"
+   }
+  ]
+ },
+ {
+  "uid": "CHE110252667",
+  "sector": "wholesale-trade",
+  "sector_confidence": 0.4,
+  "sector_rationale": "commercialisation de tous produits, procédés et services se rapportant à l'informatique et la téléphonie",
+  "segments": []
+ },
+ {
+  "uid": "CHE322633540",
+  "sector": "construction",
+  "sector_confidence": 0.9,
+  "sector_rationale": "toute activité dans le domaine de la construction et de la rénovation, peinture et plâtrerie",
+  "segments": [
+   {
+    "segment": "sme-owner",
+    "confidence": 0.6,
+    "rationale": "entreprise de peinture"
+   }
+  ]
+ },
+ {
+  "uid": "CHE144853385",
+  "sector": "manufacturing",
+  "sector_confidence": 0.6,
+  "sector_rationale": "la production, la vente et la distribution de boissons aromatisées et de toutes boissons",
+  "segments": [
+   {
+    "segment": "sme-owner",
+    "confidence": 0.5,
+    "rationale": "petite production de boissons"
+   }
+  ]
+ },
+ {
+  "uid": "CHE105117437",
+  "sector": "construction",
+  "sector_confidence": 0.75,
+  "sector_rationale": "serrurerie générale du bâtiment, constructions métalliques et dispositifs de sécurité",
+  "segments": [
+   {
+    "segment": "sme-owner",
+    "confidence": 0.6,
+    "rationale": "atelier de serrurerie"
+   }
+  ]
+ },
+ {
+  "uid": "CHE183653186",
+  "sector": "finance",
+  "sector_confidence": 0.75,
+  "sector_rationale": "l'offre de tous conseils, en matière financière et d'investissement",
+  "segments": [
+   {
+    "segment": "compliance-sector",
+    "confidence": 0.6,
+    "rationale": "conseil financier et d'investissement réglementé"
+   }
+  ]
+ },
+ {
+  "uid": "CHE107503113",
+  "sector": "construction",
+  "sector_confidence": 0.8,
+  "sector_rationale": "exploitation d'une entreprise de charpente, de menuiserie et de couverture",
+  "segments": [
+   {
+    "segment": "sme-owner",
+    "confidence": 0.6,
+    "rationale": "entreprise de charpente"
+   }
+  ]
+ },
+ {
+  "uid": "CHE274912662",
+  "sector": "construction",
+  "sector_confidence": 0.8,
+  "sector_rationale": "fabrication et pose de menuiserie et charpente",
+  "segments": [
+   {
+    "segment": "sme-owner",
+    "confidence": 0.6,
+    "rationale": "entreprise de menuiserie"
+   }
+  ]
+ },
+ {
+  "uid": "CHE445290440",
+  "sector": "legal-accounting",
+  "sector_confidence": 0.9,
+  "sector_rationale": "activités dans le domaine fiduciaire, comptabilité, fiscalité, gestion du personnel",
+  "segments": [
+   {
+    "segment": "compliance-sector",
+    "confidence": 0.6,
+    "rationale": "mandats fiduciaires et fiscaux"
+   },
+   {
+    "segment": "sme-owner",
+    "confidence": 0.5,
+    "rationale": "petite fiduciaire"
+   }
+  ]
+ },
+ {
+  "uid": "CHE145425862",
+  "sector": "legal-accounting",
+  "sector_confidence": 0.95,
+  "sector_rationale": "prestation de services juridiques par des avocats inscrits en Suisse",
+  "segments": [
+   {
+    "segment": "compliance-sector",
+    "confidence": 0.8,
+    "rationale": "services juridiques par avocats inscrits"
+   }
+  ]
+ },
+ {
+  "uid": "CHE407324842",
+  "sector": "engineering",
+  "sector_confidence": 0.6,
+  "sector_rationale": "conseil, expertise, planification, gestion de projets liés aux ascenseurs et monte-charges",
+  "segments": [
+   {
+    "segment": "sme-owner",
+    "confidence": 0.55,
+    "rationale": "bureau de conseil technique"
+   }
+  ]
+ },
+ {
+  "uid": "CHE394512349",
+  "sector": "it-services",
+  "sector_confidence": 0.85,
+  "sector_rationale": "prestations dans les technologies de l'information et la transformation digitale",
+  "segments": [
+   {
+    "segment": "ai-adopter",
+    "confidence": 0.7,
+    "rationale": "développement de solutions informatiques, sites, applications et logiciels"
+   },
+   {
+    "segment": "sme-owner",
+    "confidence": 0.5,
+    "rationale": "petite société de services informatiques"
+   }
+  ]
+ },
+ {
+  "uid": "CHE284233462",
+  "sector": "holding",
+  "sector_confidence": 0.5,
+  "sector_rationale": "la détention, l'acquisition et la gestion de participations dans des sociétés et autres entités",
+  "segments": []
+ },
+ {
+  "uid": "CHE274123783",
+  "sector": "wholesale-trade",
+  "sector_confidence": 0.85,
+  "sector_rationale": "commerce de machines agricoles, de véhicules et d'équipements industriels, import/export",
+  "segments": []
+ },
+ {
+  "uid": "CHE285583031",
+  "sector": "marketing-media",
+  "sector_confidence": 0.85,
+  "sector_rationale": "prestations de services dans les domaines du marketing, de la publicité et de l'événementiel",
+  "segments": [
+   {
+    "segment": "sme-owner",
+    "confidence": 0.5,
+    "rationale": "petite agence"
+   }
+  ]
+ },
+ {
+  "uid": "CHE356869827",
+  "sector": "personal-services",
+  "sector_confidence": 0.9,
+  "sector_rationale": "exploitation d'un salon de coiffure et barber",
+  "segments": [
+   {
+    "segment": "sme-owner",
+    "confidence": 0.7,
+    "rationale": "salon exploité par son propriétaire"
+   }
+  ]
+ },
+ {
+  "uid": "CHE215804095",
+  "sector": "wholesale-trade",
+  "sector_confidence": 0.55,
+  "sector_rationale": "vente d'articles dans le domaine de la publicité par objets et cadeaux d'entreprises, import et export",
+  "segments": [
+   {
+    "segment": "sme-owner",
+    "confidence": 0.5,
+    "rationale": "négoce de petite taille"
+   }
+  ]
+ },
+ {
+  "uid": "CHE338505988",
+  "sector": "personal-services",
+  "sector_confidence": 0.45,
+  "sector_rationale": "entreprise de dépannage et d'intervention d'urgence en matière de serrurerie",
+  "segments": [
+   {
+    "segment": "sme-owner",
+    "confidence": 0.6,
+    "rationale": "service de dépannage de proximité"
+   }
+  ]
+ },
+ {
+  "uid": "CHE302376044",
+  "sector": "consulting",
+  "sector_confidence": 0.7,
+  "sector_rationale": "activités de consultation en entreprise et de formation professionnelle",
+  "segments": [
+   {
+    "segment": "sme-owner",
+    "confidence": 0.5,
+    "rationale": "activité de conseil individuelle"
+   }
+  ]
+ },
+ {
+  "uid": "CHE453307232",
+  "sector": "marketing-media",
+  "sector_confidence": 0.65,
+  "sector_rationale": "la prestation de conseils en marketing digital et la monétisation de bases de données",
+  "segments": [
+   {
+    "segment": "data-driven",
+    "confidence": 0.7,
+    "rationale": "monétisation de bases de données"
+   },
+   {
+    "segment": "ai-adopter",
+    "confidence": 0.6,
+    "rationale": "marketing digital"
+   }
+  ]
+ },
+ {
+  "uid": "CHE286812180",
+  "sector": "hospitality",
+  "sector_confidence": 0.9,
+  "sector_rationale": "exploitation d'un restaurant, d'un bar à salade",
+  "segments": [
+   {
+    "segment": "sme-owner",
+    "confidence": 0.65,
+    "rationale": "exploitation d'un établissement unique"
+   }
+  ]
+ },
+ {
+  "uid": "CHE345066095",
+  "sector": "education",
+  "sector_confidence": 0.5,
+  "sector_rationale": "formation et enseignement dans le domaine des sports équestres",
+  "segments": [
+   {
+    "segment": "sme-owner",
+    "confidence": 0.5,
+    "rationale": "petite structure équestre"
+   }
+  ]
+ },
+ {
+  "uid": "CHE211854409",
+  "sector": "personal-services",
+  "sector_confidence": 0.45,
+  "sector_rationale": "activités dans les domaines de l'esthétique, du bien-être et de la formation y relative",
+  "segments": [
+   {
+    "segment": "sme-owner",
+    "confidence": 0.5,
+    "rationale": "petite structure d'esthétique et de formation"
+   }
+  ]
+ },
+ {
+  "uid": "CHE114649549",
+  "sector": "transport-logistics",
+  "sector_confidence": 0.85,
+  "sector_rationale": "transport en véhicule léger de produits soumis ADR/SDR, matières radioactives, sang",
+  "segments": [
+   {
+    "segment": "sme-owner",
+    "confidence": 0.5,
+    "rationale": "petite entreprise de transport spécialisé"
+   }
+  ]
+ },
+ {
+  "uid": "CHE319511801",
+  "sector": "hospitality",
+  "sector_confidence": 0.85,
+  "sector_rationale": "exploitation d'établissements publics et d'un service traiteur",
+  "segments": [
+   {
+    "segment": "sme-owner",
+    "confidence": 0.55,
+    "rationale": "exploitation d'établissements et traiteur"
+   }
+  ]
+ },
+ {
+  "uid": "CHE240482853",
+  "sector": "transport-logistics",
+  "sector_confidence": 0.9,
+  "sector_rationale": "toutes livraisons express de courriers et de colis",
+  "segments": [
+   {
+    "segment": "sme-owner",
+    "confidence": 0.55,
+    "rationale": "service de livraison de petite taille"
+   }
+  ]
+ },
+ {
+  "uid": "CHE496209804",
+  "sector": "finance",
+  "sector_confidence": 0.5,
+  "sector_rationale": "conseil, assistance, intermédiation en gestion de patrimoine, financements, fiscalité, assurances",
+  "segments": [
+   {
+    "segment": "compliance-sector",
+    "confidence": 0.6,
+    "rationale": "intermédiation en assurances et gestion de patrimoine"
+   }
+  ]
+ },
+ {
+  "uid": "CHE114644871",
+  "sector": "hospitality",
+  "sector_confidence": 0.9,
+  "sector_rationale": "exploitations de cafés, restaurants et de commerces de produits alimentaires",
+  "segments": [
+   {
+    "segment": "sme-owner",
+    "confidence": 0.6,
+    "rationale": "exploitation d'établissements de restauration"
+   }
+  ]
+ },
+ {
+  "uid": "CHE146420726",
+  "sector": "education",
+  "sector_confidence": 0.55,
+  "sector_rationale": "formation sanitaire ainsi que soutien sanitaire lors d'évènements",
+  "segments": [
+   {
+    "segment": "sme-owner",
+    "confidence": 0.5,
+    "rationale": "petite structure de formation"
+   }
+  ]
+ },
+ {
+  "uid": "CHE252099171",
+  "sector": "construction",
+  "sector_confidence": 0.8,
+  "sector_rationale": "toutes activités dans le domaine de l'électricité, installations électriques",
+  "segments": [
+   {
+    "segment": "sme-owner",
+    "confidence": 0.6,
+    "rationale": "entreprise d'installations électriques"
+   }
+  ]
+ },
+ {
+  "uid": "CHE218261185",
+  "sector": "personal-services",
+  "sector_confidence": 0.85,
+  "sector_rationale": "exploitation d'une entreprise de nettoyage, de bureaux, locaux commerciaux et chantiers",
+  "segments": [
+   {
+    "segment": "sme-owner",
+    "confidence": 0.6,
+    "rationale": "entreprise de nettoyage"
+   }
+  ]
+ },
+ {
+  "uid": "CHE467033503",
+  "sector": "hospitality",
+  "sector_confidence": 0.5,
+  "sector_rationale": "organisation et vente de voyages ou de séjours autour du bien-être",
+  "segments": [
+   {
+    "segment": "sme-owner",
+    "confidence": 0.5,
+    "rationale": "petite structure de voyages bien-être"
+   }
+  ]
+ },
+ {
+  "uid": "CHE273258989",
+  "sector": "personal-services",
+  "sector_confidence": 0.4,
+  "sector_rationale": "exploitation d'ateliers fournissant des services de réparation dans la mobilité douce",
+  "segments": [
+   {
+    "segment": "sme-owner",
+    "confidence": 0.55,
+    "rationale": "atelier de réparation de cycles"
+   }
+  ]
+ },
+ {
+  "uid": "CHE143022743",
+  "sector": "construction",
+  "sector_confidence": 0.9,
+  "sector_rationale": "entreprise dans le domaine du second oeuvre, peinture, plâtrerie et lissage",
+  "segments": [
+   {
+    "segment": "sme-owner",
+    "confidence": 0.6,
+    "rationale": "entreprise de second oeuvre"
+   }
+  ]
+ },
+ {
+  "uid": "CHE259088607",
+  "sector": "retail",
+  "sector_confidence": 0.85,
+  "sector_rationale": "exploitation d'une épicerie, commerce d'alimentation, vente de boissons et tabac",
+  "segments": [
+   {
+    "segment": "sme-owner",
+    "confidence": 0.65,
+    "rationale": "épicerie exploitée par son propriétaire"
+   }
+  ]
+ },
+ {
+  "uid": "CHE314545833",
+  "sector": "hospitality",
+  "sector_confidence": 0.95,
+  "sector_rationale": "exploitation d'un café-restaurant et toutes activités de restauration",
+  "segments": [
+   {
+    "segment": "sme-owner",
+    "confidence": 0.65,
+    "rationale": "exploitation d'un établissement unique"
+   }
+  ]
+ },
+ {
+  "uid": "CHE110362994",
+  "sector": "consulting",
+  "sector_confidence": 0.5,
+  "sector_rationale": "conseil dans le domaine de la santé et des technologies",
+  "segments": [
+   {
+    "segment": "compliance-sector",
+    "confidence": 0.4,
+    "rationale": "domaine de la santé"
+   },
+   {
+    "segment": "sme-owner",
+    "confidence": 0.5,
+    "rationale": "activité de conseil individuelle"
+   }
+  ]
+ },
+ {
+  "uid": "CHE389900898",
+  "sector": "retail",
+  "sector_confidence": 0.7,
+  "sector_rationale": "exploitation d'un commerce de détail, commercialisation de produits alimentaires",
+  "segments": [
+   {
+    "segment": "sme-owner",
+    "confidence": 0.6,
+    "rationale": "commerce de détail de proximité"
+   }
+  ]
+ },
+ {
+  "uid": "CHE245246679",
+  "sector": "consulting",
+  "sector_confidence": 0.6,
+  "sector_rationale": "conseiller les entreprises actives dans le commerce des matières premières",
+  "segments": [
+   {
+    "segment": "sme-owner",
+    "confidence": 0.5,
+    "rationale": "cabinet de conseil spécialisé"
+   }
+  ]
+ },
+ {
+  "uid": "CHE149982334",
+  "sector": "it-services",
+  "sector_confidence": 0.85,
+  "sector_rationale": "conseil dans l'intelligence artificielle, l'automatisation et l'architecture de données",
+  "segments": [
+   {
+    "segment": "ai-adopter",
+    "confidence": 0.9,
+    "rationale": "intelligence artificielle et apprentissage machine"
+   },
+   {
+    "segment": "data-driven",
+    "confidence": 0.8,
+    "rationale": "architecture de données et systèmes de données intelligents"
+   },
+   {
+    "segment": "lean-startup",
+    "confidence": 0.5,
+    "rationale": "conception de produits et technologies propriétaires"
+   }
+  ]
+ },
+ {
+  "uid": "CHE350975684",
+  "sector": "legal-accounting",
+  "sector_confidence": 0.75,
+  "sector_rationale": "conseil juridique, arbitrage",
+  "segments": [
+   {
+    "segment": "compliance-sector",
+    "confidence": 0.6,
+    "rationale": "conseil juridique et arbitrage"
+   }
+  ]
+ },
+ {
+  "uid": "CHE465511874",
+  "sector": "finance",
+  "sector_confidence": 0.9,
+  "sector_rationale": "services de gestion de fortune individuelle et de placements collectifs",
+  "segments": [
+   {
+    "segment": "compliance-sector",
+    "confidence": 0.8,
+    "rationale": "gestion de fortune et placements collectifs, activité surveillée"
+   }
+  ]
+ },
+ {
+  "uid": "CHE394059568",
+  "sector": "it-services",
+  "sector_confidence": 0.9,
+  "sector_rationale": "la conception, la réalisation et la commercialisation de logiciels et de solutions informatiques",
+  "segments": [
+   {
+    "segment": "ai-adopter",
+    "confidence": 0.7,
+    "rationale": "conception de logiciels"
+   },
+   {
+    "segment": "sme-owner",
+    "confidence": 0.5,
+    "rationale": "petite société de développement"
+   }
+  ]
+ },
+ {
+  "uid": "CHE204413313",
+  "sector": "wholesale-trade",
+  "sector_confidence": 0.85,
+  "sector_rationale": "achat, vente, distribution, importation et exportation de boissons et de produits alimentaires",
+  "segments": []
+ },
+ {
+  "uid": "CHE242896970",
+  "sector": "real-estate",
+  "sector_confidence": 0.5,
+  "sector_rationale": "services dans le domaine immobilier (achat, vente et location) et décoration intérieure",
+  "segments": [
+   {
+    "segment": "sme-owner",
+    "confidence": 0.5,
+    "rationale": "petite structure de services"
+   }
+  ]
+ },
+ {
+  "uid": "CHE265261067",
+  "sector": "real-estate",
+  "sector_confidence": 0.9,
+  "sector_rationale": "conseils et prestations dans le domaine de l'immobilier, transaction, courtage et location",
+  "segments": [
+   {
+    "segment": "sme-owner",
+    "confidence": 0.5,
+    "rationale": "agence immobilière de petite taille"
+   }
+  ]
+ },
+ {
+  "uid": "CHE303753712",
+  "sector": "wholesale-trade",
+  "sector_confidence": 0.4,
+  "sector_rationale": "ventes et location de tentes et de chapiteaux",
+  "segments": [
+   {
+    "segment": "sme-owner",
+    "confidence": 0.55,
+    "rationale": "activité de location de petite taille"
+   }
+  ]
+ },
+ {
+  "uid": "CHE202940300",
+  "sector": "retail",
+  "sector_confidence": 0.7,
+  "sector_rationale": "exploitation de commerce de détail dans le domaine d'épiceries, tabacs, journaux",
+  "segments": [
+   {
+    "segment": "sme-owner",
+    "confidence": 0.6,
+    "rationale": "commerce de détail de proximité"
+   }
+  ]
+ },
+ {
+  "uid": "CHE345644402",
+  "sector": "construction",
+  "sector_confidence": 0.85,
+  "sector_rationale": "réalisation de tous travaux de toiture et de serrurerie",
+  "segments": [
+   {
+    "segment": "sme-owner",
+    "confidence": 0.6,
+    "rationale": "entreprise de toiture"
+   }
+  ]
+ },
+ {
+  "uid": "CHE322831471",
+  "sector": "personal-services",
+  "sector_confidence": 0.35,
+  "sector_rationale": "tout service dans les domaines de la sécurité, de l'entretien et de la décoration",
+  "segments": [
+   {
+    "segment": "sme-owner",
+    "confidence": 0.5,
+    "rationale": "petite entreprise multiservices"
+   }
+  ]
+ }
+]

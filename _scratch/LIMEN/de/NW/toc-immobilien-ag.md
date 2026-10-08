@@ -1,0 +1,36 @@
+# TOC Immobilien AG
+
+| | |
+|---|---|
+| UID | `CHE169629183` |
+| Legal form | Société anonyme |
+| Canton | NW (de) |
+| Registered seat | Ennetmoos |
+| Address | Rütlistrasse 38, 6372 Ennetmoos |
+| Register status | ACTIVE |
+
+## Relevance for Limen
+
+**regie-letting** — lets property; the administration may sit elsewhere
+
+purpose names letting but not administration, name agrees
+
+## Where to write
+
+- not looked for yet
+
+No website resolved.
+
+## What the register says it does
+
+> Die Gesellschaft bezweckt den Erwerb, das Halten, die Verwaltung, das Vermieten und das Veräussern von Grundstücken aller Art. Die Gesellschaft kann alle Geschäfte eingehen, Massnahmen ergreifen und Verträge abschliessen, die damit in Verbindung stehen oder geeignet sind, den Gesellschaftszweck zu fördern. Die Gesellschaft kann im In- und Ausland Zweigniederlassungen errichten, Lizenzen erwerben, halten und vergeben, sich an Unternehmen gleicher oder verwandter Branchen beteiligen oder derartige Unternehmungen erwerben oder errichten und finanzieren, ebenfalls Finanzierungen für eigene oder fremde Rechnung vornehmen sowie Garantien, Darlehen und Bürgschaften für verbundene und nahestehende Gesellschaften gewähren.
+
+## Sources
+
+- Register entry: https://www.zefix.admin.ch/fr/search/entity/list?name=CHE169629183&directLink=true
+- Grading: rule over the registered purpose, see `scripts/classify_regies.py`
+- Addresses: none held
+- Cascade: `intel.address_hunt`, outcome `not run`
+
+The register carries no warranty and has no legal effect; only the certified
+cantonal excerpt and the FOSC publication text are binding.

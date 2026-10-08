@@ -1,0 +1,36 @@
+# GRÜNENWALD Immo AG
+
+| | |
+|---|---|
+| UID | `CHE102561936` |
+| Legal form | Société anonyme |
+| Canton | ZH (de) |
+| Registered seat | Gossau (ZH) |
+| Address | Fochenmattweg 12, 8624 Grüt (Gossau ZH) |
+| Register status | ACTIVE |
+
+## Relevance for Limen
+
+**regie-letting** — lets property; the administration may sit elsewhere
+
+purpose names letting but not administration, name agrees
+
+## Where to write
+
+- not looked for yet
+
+No website resolved.
+
+## What the register says it does
+
+> Die Gesellschaft bezweckt den Erwerb, das Halten, Verwalten, Vermieten, Veräussern und Entwickeln von Immobilien aller Art im In- und Ausland. Sie kann zudem Bauprojekte planen und realisieren, Immobilien sanieren sowie Beratungs- und Dienstleistungsangebote im Zusammenhang mit Immobilien erbringen. Die Gesellschaft kann Beteiligungen an anderen Unternehmen im In- und Ausland erwerben, verwalten und veräussern sowie alle Geschäfte tätigen, die geeignet sind den Zweck der Gesellschaft zu fördern oder die direkt oder indirekt damit im Zusammenhang stehen. Die Gesellschaft kann Zweigniederlassungen und Tochtergesellschaften im In- und Ausland errichten und sich an anderen Unternehmen im In- und Ausland beteiligen sowie alle Geschäfte tätigen, die direkt oder indirekt mit ihrem Zweck in Zusammenhang stehen. Die Gesellschaft kann im In- und Ausland Grundeigentum erwerben, belasten, veräussern und verwalten. Sie kann auch Finanzierungen für eigene oder fremde Rechnung vornehmen sowie Garantien und Bürgschaften für Tochtergesellschaften und Dritte eingehen.
+
+## Sources
+
+- Register entry: https://www.zefix.admin.ch/fr/search/entity/list?name=CHE102561936&directLink=true
+- Grading: rule over the registered purpose, see `scripts/classify_regies.py`
+- Addresses: none held
+- Cascade: `intel.address_hunt`, outcome `not run`
+
+The register carries no warranty and has no legal effect; only the certified
+cantonal excerpt and the FOSC publication text are binding.

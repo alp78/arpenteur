@@ -1,0 +1,382 @@
+# TI · 370 firms
+
+
+## regie-core (152)
+
+manages property for third parties, so runs inspections routinely
+
+- [AEDIFICAT IMMOBILIEN AG](aedificat-immobilien-ag.md) · Lugano · `-`
+- [AL-AL Immobiliare SA](al-al-immobiliare-sa.md) · Torricella-Taverne · `-`
+- [ARCHIMEDIA Immobiliare Sagl](archimedia-immobiliare-sagl.md) · Gambarogno · ``
+- [ARCI Immobiliare Sagl](arci-immobiliare-sagl.md) · Castel San Pietro · `-`
+- [Albicocca Immobiliare Sagl](albicocca-immobiliare-sagl.md) · Lugano · `-`
+- [Amtrim Amministrazioni transazioni immobiliari e turistiche SA](amtrim-amministrazioni-transazioni-immobiliari-e-turistiche.md) · Chiasso · `?`
+- [Ares Immo SA](ares-immo-sa.md) · Magliaso · ``
+- [Atlantide Immobiliare SA](atlantide-immobiliare-sa.md) · Savosa · `info@atlantideimmobiliare.com`
+- [Axim Gestioni SA](axim-gestioni-sa.md) · Lugano · ``
+- [B & T Immobilien AG](b-t-immobilien-ag.md) · Chiasso · `-`
+- [BSS Immobilien AG](bss-immobilien-ag.md) · Muralto · `?`
+- [Bar.Lo Immobilier SA](bar-lo-immobilier-sa.md) · Bellinzona · `info@bar-lo.ch`
+- [Bicka Immobiliare SA](bicka-immobiliare-sa.md) · Chiasso · ``
+- [Bosshard Immobilien AG](bosshard-immobilien-ag.md) · Ascona · `info@bosshardimmobilien.com`
+- [C & C BAU IMMOBILIEN SA](c-c-bau-immobilien-sa.md) · Lugano · ``
+- [Casafile Immobilien Sagl](casafile-immobilien-sagl.md) · Gambarogno · `?`
+- [Cata Liegenschaftsverwaltung AG](cata-liegenschaftsverwaltung-ag.md) · Lugano · `?`
+- [Catenazzi Servizi Immobiliari Sagl](catenazzi-servizi-immobiliari-sagl.md) · Ronco sopra Ascona · `info@catenazzi-servizi.ch`
+- [Cindy Immobiliare SA](cindy-immobiliare-sa.md) · Lugano · `info@cindyimmobiliare.com`
+- [Curzio Rapelli Promozioni Immobiliari SA](curzio-rapelli-promozioni-immobiliari-sa.md) · Mendrisio · `-`
+- [CÀ DEL Immobiliare SA](ca-del-immobiliare-sa.md) · Val Mara · ``
+- [DM Immobiliare SA](dm-immobiliare-sa.md) · Ascona · `info@dmimmobiliare.ch`
+- [Dongio Immobiliare SA](dongio-immobiliare-sa.md) · Acquarossa · `-`
+- [EMPORIO Immobiliare SA](emporio-immobiliare-sa.md) · Locarno · `info@emporioimmobiliare.ch`
+- [ERCA SA servizi immobiliari](erca-sa-servizi-immobiliari.md) · Porza · ``
+- [Evy Immobiliare Sagl](evy-immobiliare-sagl.md) · Monteceneri · `?`
+- [F2S Immobiliare SA](f2s-immobiliare-sa.md) · Porza · ``
+- [FIGNO IMMOBILIARE SA](figno-immobiliare-sa.md) · Lugano · `-`
+- [Fideconto gestioni immobiliari SA](fideconto-gestioni-immobiliari-sa.md) · Bellinzona · `info@fideconto.com`
+- [Fiduciaria Immobiliare San Gottardo Sagl](fiduciaria-immobiliare-san-gottardo-sagl.md) · Grancia · `?`
+- [Frauen Immobiliare SA](frauen-immobiliare-sa.md) · Lugano · ``
+- [GIRO IMMOBILIARE SA](giro-immobiliare-sa.md) · Melide · `info@giroimmobiliare.com`
+- [GWRI Immobiliare SA](gwri-immobiliare-sa.md) · Lugano · ``
+- [Gerda Layton Immobilien SA](gerda-layton-immobilien-sa.md) · Ascona · `?`
+- [Gescofid Immobiliare Sagl](gescofid-immobiliare-sagl.md) · Chiasso · `info@gescofid.ch (+13)`
+- [Gestioni Mary SA](gestioni-mary-sa.md) · Lugano · `?`
+- [Ginko Immobiliare SA](ginko-immobiliare-sa.md) · Bioggio · ``
+- [IL BORGO IMMOBILIARE SA](il-borgo-immobiliare-sa.md) · Mendrisio · `info@borgoimmobiliare.com`
+- [IMMO DODI SA](immo-dodi-sa.md) · Minusio · ``
+- [IMMO-NIKLAUS SA](immo-niklaus-sa.md) · Lugano · `?`
+- [IMMOBILIARE ALFA SA](immobiliare-alfa-sa.md) · Lugano · `info@immobiliarealfa.com`
+- [IMMOBILIARE EMERA SA](immobiliare-emera-sa.md) · Lugano · `?`
+- [IMMOBILIARE IMMOMACA SA](immobiliare-immomaca-sa.md) · Cadempino · ``
+- [IMMOBILIARE MEGISTI SA](immobiliare-megisti-sa.md) · Collina d'Oro · `?`
+- [INT Immobiliare Nord Ticino SA](int-immobiliare-nord-ticino-sa.md) · Lugano · ``
+- [ISL Immobiliare Sagl](isl-immobiliare-sagl.md) · Muralto · `?`
+- [Idrizi Immobiliare SA](idrizi-immobiliare-sa.md) · Arbedo-Castione · `?`
+- [Immo La Plaine Sagl](immo-la-plaine-sagl.md) · Lugano · `?`
+- [Immo-Rusca Sagl](immo-rusca-sagl.md) · Muralto · ``
+- [Immobiliare Alessandro Magno SA](immobiliare-alessandro-magno-sa.md) · Balerna · `?`
+- [Immobiliare Amical SA](immobiliare-amical-sa.md) · Ascona · ``
+- [Immobiliare Andrena SA](immobiliare-andrena-sa.md) · Lugano · `?`
+- [Immobiliare Antonella SA](immobiliare-antonella-sa.md) · Lugano · `?`
+- [Immobiliare Argar SA](immobiliare-argar-sa.md) · Riva San Vitale · `info@argar.com`
+- [Immobiliare Arixenia SA](immobiliare-arixenia-sa.md) · Lugano · ``
+- [Immobiliare Balbina SA](immobiliare-balbina-sa.md) · Morbio Inferiore · `?`
+- [Immobiliare Bellacosta B SA](immobiliare-bellacosta-b-sa.md) · Lugano · ``
+- [Immobiliare Castelletto SA](immobiliare-castelletto-sa.md) · Lugano · `?`
+- [Immobiliare Hans Keller SA](immobiliare-hans-keller-sa.md) · Savosa · `?`
+- [Immobiliare Lucius SA](immobiliare-lucius-sa.md) · Lugano · `?`
+- [Immobiliare Magnolia SA](immobiliare-magnolia-sa.md) · Manno · ``
+- [Immobiliare Marazza Sagl](immobiliare-marazza-sagl.md) · Minusio · `info@marazza.ch`
+- [Immobiliare Mizzy SA](immobiliare-mizzy-sa.md) · Lugano · ``
+- [Immobiliare Montrose SA](immobiliare-montrose-sa.md) · Bellinzona · `?`
+- [Immobiliare Pabar SA](immobiliare-pabar-sa.md) · Novazzano · `?`
+- [Immobiliare Park Lugano SA](immobiliare-park-lugano-sa.md) · Lugano · `?`
+- [Immobiliare Piancorella SA](immobiliare-piancorella-sa.md) · Castel San Pietro · ``
+- [Immobiliare Prada SA](immobiliare-prada-sa.md) · Monteceneri · `?`
+- [Immobiliare Prati Chiusi SA](immobiliare-prati-chiusi-sa.md) · Comano · ``
+- [Immobiliare Red SA](immobiliare-red-sa.md) · Chiasso · `?`
+- [Immobiliare Residenze Valleverde SA](immobiliare-residenze-valleverde-sa.md) · Lugano · `?`
+- [Immobiliare Sciaroni Sagl](immobiliare-sciaroni-sagl.md) · Lugano · `info@immobiliaresciaroni.ch (+2)`
+- [Immobiliare Soave SA](immobiliare-soave-sa.md) · Lugano · ``
+- [Immobiliare Spinola SA](immobiliare-spinola-sa.md) · Bellinzona · `?`
+- [Immobiliare Tettamanti Sagl](immobiliare-tettamanti-sagl.md) · Lugano · ``
+- [Immobiliare Vedeggio SA](immobiliare-vedeggio-sa.md) · Collina d'Oro · `?`
+- [Immobiliare Veneziana SA](immobiliare-veneziana-sa.md) · Chiasso · `?`
+- [Immobiliare by Kathleen Sagl](immobiliare-by-kathleen-sagl.md) · Ascona · `?`
+- [Immobilien Gherten SA](immobilien-gherten-sa.md) · Lugano · ``
+- [Immogestione SA](immogestione-sa.md) · Manno · `?`
+- [Ital-Suisse Immobiliare Sagl](ital-suisse-immobiliare-sagl.md) · Lugano · ``
+- [JDG Immobiliare SA](jdg-immobiliare-sa.md) · Bedano · `?`
+- [Kataltherm Immo SA](kataltherm-immo-sa.md) · Bedano · `?`
+- [Kondo Immobiliare SA](kondo-immobiliare-sa.md) · Lugano · `?`
+- [L'Idea Immobiliare SA](l-idea-immobiliare-sa.md) · Bellinzona · `?`
+- [LA TUA IMMOBILIARE SA](la-tua-immobiliare-sa.md) · Monteceneri · `info@tuaimmobiliare.com`
+- [LARIS IMMOBILIARE SA](laris-immobiliare-sa.md) · Lugano · ``
+- [LPF Immobili SA](lpf-immobili-sa.md) · Lugano · `?`
+- [LRV Immo SA](lrv-immo-sa.md) · Collina d'Oro · `?`
+- [La Prella Immobiliare Sagl](la-prella-immobiliare-sagl.md) · Mendrisio · `?`
+- [Lambertini & Partners Gestioni Immobiliari SA](lambertini-partners-gestioni-immobiliari-sa.md) · Lugano · `immo@lepartners.com`
+- [Le Vele sul lago Immobiliare Sagl](le-vele-sul-lago-immobiliare-sagl.md) · Lugano · ``
+- [Les Hirondelles Immobilière SA](les-hirondelles-immobiliere-sa.md) · Bioggio · `?`
+- [Leventina Immobiliare SA](leventina-immobiliare-sa.md) · Airolo · ``
+- [Liberty Immobiliare SA](liberty-immobiliare-sa.md) · Lugano · `info@liberty.ch`
+- [Lugi Immobiliare SA](lugi-immobiliare-sa.md) · Lugano · `?`
+- [MAG CONSULENZE AZIENDALI FISCALI E IMMOBILIARI SA](mag-consulenze-aziendali-fiscali-e-immobiliari-sa.md) · Losone · `info@mag-consulenze.com`
+- [MAWI Immobiliare SA](mawi-immobiliare-sa.md) · Monteceneri · ``
+- [MM Società Immobili SA](mm-societa-immobili-sa.md) · Cureglia · `?`
+- [MOSER IMMOBILIEN UND ARCHITEKTUR SA](moser-immobilien-und-architektur-sa.md) · Ascona · ``
+- [MSC immo trust SAGL](msc-immo-trust-sagl.md) · Lugano · `info@msc-immo.ch`
+- [Mobi Immobiliare SA](mobi-immobiliare-sa.md) · Lugano · `?`
+- [Motto del Gallo Immobiliare SA](motto-del-gallo-immobiliare-sa.md) · Torricella-Taverne · `?`
+- [New Immo Sagl](new-immo-sagl.md) · Lugano · ``
+- [NewDomo SA](newdomo-sa.md) · Bellinzona · `janette.sumovski@newdomo.ch`
+- [Noemi Immobiliare SA](noemi-immobiliare-sa.md) · Chiasso · `?`
+- [P-Immobiliare Sagl](p-immobiliare-sagl.md) · Lugano · `?`
+- [Pedoval Immobiliare SA](pedoval-immobiliare-sa.md) · Sant'Antonino · `info@pedovalimmobiliare.ch`
+- [Perizie Immobiliari e Job Consulting FMB Sagl](perizie-immobiliari-e-job-consulting-fmb-sagl.md) · Cadenazzo · `?`
+- [Private Fine Immobilien AG](private-fine-immobilien-ag.md) · Ascona · `info@privatefine.ch (+7)`
+- [Profilio Verwaltungs AG](profilio-verwaltungs-ag.md) · Melide · ``
+- [QUEEN IMMOBILIARE SA](queen-immobiliare-sa.md) · Lugano · `?`
+- [Quartinasc Immobiliare Sagl](quartinasc-immobiliare-sagl.md) · Dalpe · ``
+- [RMB Immobilien SAGL](rmb-immobilien-sagl.md) · Minusio · `?`
+- [ROGA Immobiliare Sagl](roga-immobiliare-sagl.md) · Vico Morcote · `?`
+- [Reamco Immobiliare SA](reamco-immobiliare-sa.md) · Locarno · `info@reamco.ch`
+- [Rischa Immobilien AG](rischa-immobilien-ag.md) · Paradiso · ``
+- [Rusca Studio Immobiliare Sagl](rusca-studio-immobiliare-sagl.md) · Lugano · `?`
+- [SAN NICOLA IMMOBILIARE SA](san-nicola-immobiliare-sa.md) · Val Mara · ``
+- [SC Süd AG für Immobilienmanagement](sc-sud-ag-fur-immobilienmanagement.md) · Muralto · `info@immobilienmanagement.ch`
+- [SEVERO IMMOBILIEN SA](severo-immobilien-sa.md) · Ascona · `?`
+- [SOCASA IMMOBILIARE SAGL](socasa-immobiliare-sagl.md) · Locarno · `?`
+- [STG Immobiliare Sagl](stg-immobiliare-sagl.md) · Lugano · ``
+- [STUDIO FIDUCIARIO E IMMOBILIARE ROBERTA PANTANI TETTAMANTI SA](studio-fiduciario-e-immobiliare-roberta-pantani-tettamanti-s.md) · Chiasso · `?`
+- [Silarus Immobiliare SA](silarus-immobiliare-sa.md) · Bellinzona · ``
+- [Società Anonima Immobiliare Del Carlino](societa-anonima-immobiliare-del-carlino.md) · Chiasso · `?`
+- [Società Locarnese di Partecipazioni e Immobiliare SA](societa-locarnese-di-partecipazioni-e-immobiliare-sa.md) · Locarno · `?`
+- [Società anonima immobiliare PAX](societa-anonima-immobiliare-pax.md) · Lugano · `?`
+- [St. Antonio Società Immobiliare SA](st-antonio-societa-immobiliare-sa.md) · Chiasso · ``
+- [Studio Fiduciario Immobiliare SA](studio-fiduciario-immobiliare-sa.md) · Lugano · `?`
+- [Studio Immobiliare Stefania Carmine Sagl](studio-immobiliare-stefania-carmine-sagl.md) · Cadempino · ``
+- [Suisse Immobilien Group Sagl](suisse-immobilien-group-sagl.md) · Lugano · `?`
+- [T.A.I.S.A Ticino Ambiente Immobiliare SA](t-a-i-s-a-ticino-ambiente-immobiliare-sa.md) · Lugano · `?`
+- [TCC IMMOBILIARE SA](tcc-immobiliare-sa.md) · Massagno · `info@tccimmobiliare.ch`
+- [TLA Immobiliare Industriale SA](tla-immobiliare-industriale-sa.md) · Stabio · ``
+- [Taso Immobiliare SA](taso-immobiliare-sa.md) · Lugano · `?`
+- [Tech-Insta Immobiliare SA](tech-insta-immobiliare-sa.md) · Torricella-Taverne · ``
+- [Tessimo E Immobiliare SA](tessimo-e-immobiliare-sa.md) · Bedretto · `?`
+- [Texcotton Immobiliare SA](texcotton-immobiliare-sa.md) · Lugano · `?`
+- [TiCasa Immobiliare SA](ticasa-immobiliare-sa.md) · Paradiso · `info@ticasa.ch`
+- [Tipesca Immobiliare SA](tipesca-immobiliare-sa.md) · Monteceneri · ``
+- [Trachsel Fiduciaria Immobiliare SA](trachsel-fiduciaria-immobiliare-sa.md) · Origlio · `?`
+- [UC Gestioni Sagl](uc-gestioni-sagl.md) · Gambarogno · ``
+- [Vai Immobiliare SA](vai-immobiliare-sa.md) · Chiasso · `?`
+- [Veco Immobiliare SA](veco-immobiliare-sa.md) · Lugano · `info@vecoimmobiliare.ch`
+- [VistaLago Immobiliare Sagl](vistalago-immobiliare-sagl.md) · Paradiso · `?`
+- [Vitali Gestioni Immobiliari Sagl](vitali-gestioni-immobiliari-sagl.md) · Gambarogno · ``
+- [Wetag Commercial Immobiliare SA](wetag-commercial-immobiliare-sa.md) · Lugano · `info@wetag.ch`
+- [Wetag Consulting Immobiliare SA](wetag-consulting-immobiliare-sa.md) · Lugano · ``
+- [YA. Akbas Immobiliare SA](ya-akbas-immobiliare-sa.md) · Orselina · `?`
+- [eVita immobiliare SA](evita-immobiliare-sa.md) · Bellinzona · `?`
+- [elle.A.esse gestione immobiliare Sagl](elle-a-esse-gestione-immobiliare-sagl.md) · Vezia · `pub@elle.ch (+4)`
+
+## regie-letting (218)
+
+lets property; the administration may sit elsewhere
+
+- [3C Immobiliare SA](3c-immobiliare-sa.md) · Origlio · ``
+- [3F IMMOBILIARE SA](3f-immobiliare-sa.md) · Balerna · ``
+- [3M Immobiliare One SA](3m-immobiliare-one-sa.md) · Bellinzona · ``
+- [A&G Immobiliare SA](a-g-immobiliare-sa.md) · Collina d'Oro · ``
+- [ACSOR Immobiliare Sagl](acsor-immobiliare-sagl.md) · Lugano · ``
+- [AKCA Immo SA](akca-immo-sa.md) · Bellinzona · ``
+- [ALEAN Immobiliare SA](alean-immobiliare-sa.md) · Lugano · ``
+- [ALLRE Immobiliare SA](allre-immobiliare-sa.md) · Bioggio · ``
+- [ANY/WAY IMMOBILIARE SA](any-way-immobiliare-sa.md) · Arbedo-Castione · ``
+- [AVECA Immobiliare SA](aveca-immobiliare-sa.md) · Mendrisio · ``
+- [Ability Immobiliare Sagl](ability-immobiliare-sagl.md) · Stabio · ``
+- [Acla Nova Immobilien AG](acla-nova-immobilien-ag.md) · Ascona · ``
+- [Alpi Svizzere Immobiliare Sagl](alpi-svizzere-immobiliare-sagl.md) · Lugano · ``
+- [Amal Immobilien AG](amal-immobilien-ag.md) · Cadempino · ``
+- [Ambra Immobiliare SA](ambra-immobiliare-sa.md) · Monteceneri · ``
+- [Angelo Immobiliare SA](angelo-immobiliare-sa.md) · Lugano · ``
+- [Area Gestioni Sagl](area-gestioni-sagl.md) · Lugano · `?`
+- [Arema Immobili SA](arema-immobili-sa.md) · Locarno · ``
+- [Azzurra Immo SA](azzurra-immo-sa.md) · Ascona · ``
+- [B & B IMMOBILIARE SA](b-b-immobiliare-sa.md) · Bedano · ``
+- [B&G Immobiliare Sagl](b-g-immobiliare-sagl.md) · Lugano · ``
+- [BRINA SA immobiliare](brina-sa-immobiliare.md) · Melide · ``
+- [BV IMMOBILIARE SAGL](bv-immobiliare-sagl.md) · Stabio · ``
+- [BXL IMMOBILIEN AG](bxl-immobilien-ag.md) · Lugano · ``
+- [Best Vision Immo & Advisory SA](best-vision-immo-advisory-sa.md) · Lugano · ``
+- [Blackpearl Immobiliare SA](blackpearl-immobiliare-sa.md) · Paradiso · ``
+- [Brenno Immobiliare SA](brenno-immobiliare-sa.md) · Monteceneri · ``
+- [C.E.M. Immobiliare SA](c-e-m-immobiliare-sa.md) · Biasca · ``
+- [C2 Agenzia Immobiliare Sagl](c2-agenzia-immobiliare-sagl.md) · Biasca · ``
+- [CAROSIO IMMOBILIARE Sagl](carosio-immobiliare-sagl.md) · Lugano · `?`
+- [CASALE IMMOBILIARE SA](casale-immobiliare-sa.md) · Lugano · ``
+- [CELLULAR IMMOBILIARE HELVETICA SA](cellular-immobiliare-helvetica-sa.md) · Lugano · ``
+- [CESCAR IMMOBILIARE Sagl](cescar-immobiliare-sagl.md) · Bedano · ``
+- [CFG Immobiliare International SA](cfg-immobiliare-international-sa.md) · Lugano · ``
+- [CLR Immobiliare SA](clr-immobiliare-sa.md) · Bellinzona · ``
+- [CP Immobiliare SA](cp-immobiliare-sa.md) · Torricella-Taverne · ``
+- [CaSe Immobiliare Sagl](case-immobiliare-sagl.md) · Lugano · `?`
+- [CamBia Immobiliare SA](cambia-immobiliare-sa.md) · Bellinzona · ``
+- [Cippà Immobiliare SA](cippa-immobiliare-sa.md) · Chiasso · ``
+- [Consulenze Immobiliari SA](consulenze-immobiliari-sa.md) · Lugano · ``
+- [DAEL Immobiliare Sagl](dael-immobiliare-sagl.md) · Lugano · ``
+- [DCF Promozione Immobiliare SA](dcf-promozione-immobiliare-sa.md) · Lugano · ``
+- [DELAG Promozioni Immobiliari SA](delag-promozioni-immobiliari-sa.md) · Lugano · ``
+- [DESIR Immobiliare SA](desir-immobiliare-sa.md) · Mendrisio · ``
+- [DICIANNOVE IMMOBILIARE SAGL](diciannove-immobiliare-sagl.md) · Agno · ``
+- [Daianna Immobiliare SA](daianna-immobiliare-sa.md) · Biasca · ``
+- [Dalmore Immobiliare SA](dalmore-immobiliare-sa.md) · Lugano · ``
+- [EB3 immobiliare SA](eb3-immobiliare-sa.md) · Chiasso · ``
+- [EBIT IMMO SAGL](ebit-immo-sagl.md) · Chiasso · ``
+- [ELVEZIA IMMOBILIARE SA](elvezia-immobiliare-sa.md) · Paradiso · ``
+- [EMME Immobiliare Sagl](emme-immobiliare-sagl.md) · Lugano · ``
+- [ESSELLE GESTIONI SA](esselle-gestioni-sa.md) · Mendrisio · ``
+- [Eymann Immobilien AG](eymann-immobilien-ag.md) · Lugano · ``
+- [FALT Immobiliare SA](falt-immobiliare-sa.md) · Stabio · ``
+- [FB Immobiliare SA](fb-immobiliare-sa.md) · Stabio · ``
+- [GAMI Immobiliare SA](gami-immobiliare-sa.md) · Porza · ``
+- [GM Immobiliare SA](gm-immobiliare-sa.md) · Mendrisio · ``
+- [GP IMMO INVEST TICINO SAGL](gp-immo-invest-ticino-sagl.md) · Caslano · ``
+- [GPC Immobiliare SA](gpc-immobiliare-sa.md) · Bissone · ``
+- [GRDS Immobiliare SA](grds-immobiliare-sa.md) · Lugano · ``
+- [GTL Immobiliare SA](gtl-immobiliare-sa.md) · Gravesano · ``
+- [GUIDIN IMMOBILIARE SA](guidin-immobiliare-sa.md) · Lugano · ``
+- [Gameto Immobiliare SA](gameto-immobiliare-sa.md) · Vacallo · ``
+- [Gecko Gestioni SA](gecko-gestioni-sa.md) · Ascona · ``
+- [Genial Immobiliare & Holding SA](genial-immobiliare-holding-sa.md) · Porza · ``
+- [Gestione Immobiliare per Istituzionali SA](gestione-immobiliare-per-istituzionali-sa.md) · Lugano · `?`
+- [Girasole Immobiliare SA](girasole-immobiliare-sa.md) · Lugano · ``
+- [Grano Immobili SA](grano-immobili-sa.md) · Vezia · `?`
+- [Handels Immobilien Group AG](handels-immobilien-group-ag.md) · Lugano · ``
+- [IL SOGNO IMMOBILIARE SA](il-sogno-immobiliare-sa.md) · Castel San Pietro · ``
+- [ILA Immobiliare SA](ila-immobiliare-sa.md) · Lugano · ``
+- [IMMAP IMMOBILIARE SA](immap-immobiliare-sa.md) · Lugano · ``
+- [IMMO 3 SAGL](immo-3-sagl.md) · Cadempino · ``
+- [IMMOBILIARE DEI FIORI SA](immobiliare-dei-fiori-sa.md) · Arbedo-Castione · ``
+- [IMMOBILIARE LIBECCIO SA](immobiliare-libeccio-sa.md) · Lugano · ``
+- [IMMOBILIARE MAG SA](immobiliare-mag-sa.md) · Chiasso · ``
+- [IMMOBILIARE PRISCAS SA](immobiliare-priscas-sa.md) · Chiasso · ``
+- [IMMOBILIARE RAFFAELLO SA](immobiliare-raffaello-sa.md) · Lugano · ``
+- [Immo Alpine SA](immo-alpine-sa.md) · Paradiso · ``
+- [Immo Erre SA](immo-erre-sa.md) · Gambarogno · ``
+- [Immo Linea SA](immo-linea-sa.md) · Bedretto · ``
+- [Immo Maggio SA](immo-maggio-sa.md) · Lugano · ``
+- [Immo Maurino SA](immo-maurino-sa.md) · Ascona · ``
+- [Immo Misa Sagl](immo-misa-sagl.md) · Losone · ``
+- [Immo Sport SA](immo-sport-sa.md) · Cadempino · ``
+- [Immo-rail SA](immo-rail-sa.md) · Lugano · ``
+- [Immobili LUSA SA](immobili-lusa-sa.md) · Lugano · ``
+- [Immobilia Vallemaggia SA](immobilia-vallemaggia-sa.md) · Maggia · ``
+- [Immobiliare 3G Group SA](immobiliare-3g-group-sa.md) · Mezzovico-Vira · ``
+- [Immobiliare 5 Stelle Sagl](immobiliare-5-stelle-sagl.md) · Lugano · ``
+- [Immobiliare 5 Vie Sagl](immobiliare-5-vie-sagl.md) · Bioggio · ``
+- [Immobiliare Al Sole SA](immobiliare-al-sole-sa.md) · Lugano · ``
+- [Immobiliare Alla Molina SA](immobiliare-alla-molina-sa.md) · Vezia · ``
+- [Immobiliare Andrus Sagl](immobiliare-andrus-sagl.md) · Tresa · ``
+- [Immobiliare Anna Maria SA](immobiliare-anna-maria-sa.md) · Paradiso · ``
+- [Immobiliare Atman SA](immobiliare-atman-sa.md) · Bellinzona · ``
+- [Immobiliare Banchette SA](immobiliare-banchette-sa.md) · Chiasso · ``
+- [Immobiliare Bianca SA](immobiliare-bianca-sa.md) · Lugano · ``
+- [Immobiliare Bletilla SA](immobiliare-bletilla-sa.md) · Muralto · ``
+- [Immobiliare Bonasco SA](immobiliare-bonasco-sa.md) · Bellinzona · ``
+- [Immobiliare Bora SA](immobiliare-bora-sa.md) · Airolo · ``
+- [Immobiliare Camilla SA](immobiliare-camilla-sa.md) · Comano · ``
+- [Immobiliare Campagnone SA](immobiliare-campagnone-sa.md) · Collina d'Oro · ``
+- [Immobiliare Cilinda SA](immobiliare-cilinda-sa.md) · Lugano · ``
+- [Immobiliare Claris SA](immobiliare-claris-sa.md) · Lugano · ``
+- [Immobiliare Corso Elvezia SA](immobiliare-corso-elvezia-sa.md) · Lugano · ``
+- [Immobiliare De Bernardis SA](immobiliare-de-bernardis-sa.md) · Massagno · ``
+- [Immobiliare Egon SA](immobiliare-egon-sa.md) · Lugano · ``
+- [Immobiliare Fausto Bernasconi SA](immobiliare-fausto-bernasconi-sa.md) · Balerna · ``
+- [Immobiliare Giorgio SA](immobiliare-giorgio-sa.md) · Biasca · ``
+- [Immobiliare Grotto del Cavicc SA](immobiliare-grotto-del-cavicc-sa.md) · Collina d'Oro · ``
+- [Immobiliare Inter Vezia SA](immobiliare-inter-vezia-sa.md) · Vezia · ``
+- [Immobiliare Jeal SA](immobiliare-jeal-sa.md) · Gravesano · ``
+- [Immobiliare La Cascata Sagl](immobiliare-la-cascata-sagl.md) · Lugano · ``
+- [Immobiliare La Rungia Sagl](immobiliare-la-rungia-sagl.md) · Lugano · ``
+- [Immobiliare Lago SA](immobiliare-lago-sa.md) · Locarno · ``
+- [Immobiliare Marjorie SA](immobiliare-marjorie-sa.md) · Lugano · ``
+- [Immobiliare Monte Erto SA](immobiliare-monte-erto-sa.md) · Airolo · ``
+- [Immobiliare Neuroni SA](immobiliare-neuroni-sa.md) · Mendrisio · ``
+- [Immobiliare Nido SA](immobiliare-nido-sa.md) · Lugano · ``
+- [Immobiliare Oasi SA](immobiliare-oasi-sa.md) · Lugano · ``
+- [Immobiliare Ottilia SA](immobiliare-ottilia-sa.md) · Biasca · ``
+- [Immobiliare Piazzale alla Valle SA](immobiliare-piazzale-alla-valle-sa.md) · Mendrisio · ``
+- [Immobiliare Picayo SA](immobiliare-picayo-sa.md) · Lugano · ``
+- [Immobiliare Picmo SA](immobiliare-picmo-sa.md) · Biasca · ``
+- [Immobiliare Piozzini & Boggini SA](immobiliare-piozzini-boggini-sa.md) · Losone · ``
+- [Immobiliare Plat SA](immobiliare-plat-sa.md) · Lugano · ``
+- [Immobiliare Pragerra SA](immobiliare-pragerra-sa.md) · Balerna · ``
+- [Immobiliare Prò SA](immobiliare-pro-sa.md) · Quinto · ``
+- [Immobiliare Rudy Sagl](immobiliare-rudy-sagl.md) · Stabio · ``
+- [Immobiliare San Leone SA](immobiliare-san-leone-sa.md) · Lugano · ``
+- [Immobiliare San Provino Sagl](immobiliare-san-provino-sagl.md) · Agno · ``
+- [Immobiliare San Salvatore SA](immobiliare-san-salvatore-sa.md) · Paradiso · ``
+- [Immobiliare Savosella SA](immobiliare-savosella-sa.md) · Lugano · ``
+- [Immobiliare Selva Piana Sagl](immobiliare-selva-piana-sagl.md) · Lugano · ``
+- [Immobiliare Spazio SA](immobiliare-spazio-sa.md) · Lugano · ``
+- [Immobiliare Sulegan SA](immobiliare-sulegan-sa.md) · Lugano · ``
+- [Immobiliare Tania SA](immobiliare-tania-sa.md) · Bellinzona · ``
+- [Immobiliare Vedova SA](immobiliare-vedova-sa.md) · Lavizzara · ``
+- [Immobiliare Via al Fiume SA](immobiliare-via-al-fiume-sa.md) · Lugano · ``
+- [Immobiliare View 31 Sagl](immobiliare-view-31-sagl.md) · Lugano · ``
+- [Immobiliare Vignazza SA](immobiliare-vignazza-sa.md) · Agno · ``
+- [Immobiliare Wiget SA](immobiliare-wiget-sa.md) · Locarno · ``
+- [Immobiliare del Corso SA](immobiliare-del-corso-sa.md) · Chiasso · ``
+- [Immobiliare del Golf SA](immobiliare-del-golf-sa.md) · Collina d'Oro · ``
+- [Immobiliare del Larice SA](immobiliare-del-larice-sa.md) · Lugano · ``
+- [Inno Immobiliare & Consulenze SA](inno-immobiliare-consulenze-sa.md) · Lugano · ``
+- [JMA Immobiliare SA](jma-immobiliare-sa.md) · Bellinzona · ``
+- [JOE Jr IMMOBILIER SA](joe-jr-immobilier-sa.md) · Lugano · ``
+- [Jelminimmobiliare Sagl](jelminimmobiliare-sagl.md) · Mendrisio · ``
+- [Kessel Immobiliare SA](kessel-immobiliare-sa.md) · Grancia · ``
+- [LILLA Immobiliare SA](lilla-immobiliare-sa.md) · Lugano · ``
+- [LMR Immobiliare Sagl](lmr-immobiliare-sagl.md) · Lugano · ``
+- [LOKRETT IMMOBILIARE SA](lokrett-immobiliare-sa.md) · Lugano · ``
+- [LPM Immobilien Treuhand Sagl](lpm-immobilien-treuhand-sagl.md) · Collina d'Oro · ``
+- [LSA Immobiliare SA](lsa-immobiliare-sa.md) · Bellinzona · ``
+- [LUZON IMMOBILIARE SA](luzon-immobiliare-sa.md) · Lugano · ``
+- [Lamberti Immobiliare Sagl](lamberti-immobiliare-sagl.md) · Arbedo-Castione · ``
+- [Leonardi Immobili SA](leonardi-immobili-sa.md) · Bedretto · ``
+- [Lindos Investimenti Immobiliari Sagl](lindos-investimenti-immobiliari-sagl.md) · Lugano · ``
+- [Lucky Investimenti Immobiliari Sagl](lucky-investimenti-immobiliari-sagl.md) · Lugano · ``
+- [M&M Immobiliare SA](m-m-immobiliare-sa.md) · Muzzano · ``
+- [M&M Müller Immobiliare SA](m-m-muller-immobiliare-sa.md) · Biasca · ``
+- [MCS Immobiliare SA](mcs-immobiliare-sa.md) · Muralto · ``
+- [MELU Immo SA](melu-immo-sa.md) · Lugano · ``
+- [MG FIDUCIARIA IMMOBILIARE SAGL](mg-fiduciaria-immobiliare-sagl.md) · Lugano · ``
+- [Manibex Immobilien SAGL](manibex-immobilien-sagl.md) · Bioggio · ``
+- [Mastri Immobiliare Sagl](mastri-immobiliare-sagl.md) · Stabio · ``
+- [Mawana Immobiliare SA](mawana-immobiliare-sa.md) · Bellinzona · ``
+- [Merlini & Ferrari immobiliare SA](merlini-ferrari-immobiliare-sa.md) · Minusio · ``
+- [Monder Immobiliare SA](monder-immobiliare-sa.md) · Mendrisio · ``
+- [N & L Immobiliare SA](n-l-immobiliare-sa.md) · Comano · ``
+- [NAC Immobiliare SA](nac-immobiliare-sa.md) · Minusio · ``
+- [NASTON IMMOBILIARE SA](naston-immobiliare-sa.md) · Lugano · ``
+- [Newciass Immobiliare SA](newciass-immobiliare-sa.md) · Lugano · ``
+- [Oikos Immobiliare Sagl](oikos-immobiliare-sagl.md) · Lugano · ``
+- [Ormannimmobiliare SAGL](ormannimmobiliare-sagl.md) · Biasca · ``
+- [PG Immobiliare SA](pg-immobiliare-sa.md) · Lugano · ``
+- [PIO - TI Immobili SA](pio-ti-immobili-sa.md) · Lugano · ``
+- [PROX Immobiliare Sagl](prox-immobiliare-sagl.md) · Lugano · ``
+- [Palazzo San Jorio SA, Società Immobiliare](palazzo-san-jorio-sa-societa-immobiliare.md) · Lugano · ``
+- [Pico SA Società Immobiliare](pico-sa-societa-immobiliare.md) · Lugano · ``
+- [Promozioni Immobiliari Le IV Mura Sagl](promozioni-immobiliari-le-iv-mura-sagl.md) · Capriasca · ``
+- [Quadrium Immo SA](quadrium-immo-sa.md) · Cadempino · ``
+- [REVO IMMOBILIARE SA](revo-immobiliare-sa.md) · Lugano · ``
+- [RSM IMMOBILIARE SA](rsm-immobiliare-sa.md) · Magliaso · ``
+- [Rose Verwaltung SA](rose-verwaltung-sa.md) · Balerna · ``
+- [SACOLEX IMMOBILIARE SA](sacolex-immobiliare-sa.md) · Lugano · ``
+- [SAF Immobiliare e Partecipazioni Sagl](saf-immobiliare-e-partecipazioni-sagl.md) · Capriasca · ``
+- [SB Gestioni Sagl](sb-gestioni-sagl.md) · Gambarogno · ``
+- [SII-Società di Investimenti Immobiliari SAGL](sii-societa-di-investimenti-immobiliari-sagl.md) · Lugano · ``
+- [SIS Sviluppo Immobiliare Svizzero SA](sis-sviluppo-immobiliare-svizzero-sa.md) · Lugano · ``
+- [SNB IMMOBILIARE SA](snb-immobiliare-sa.md) · Arbedo-Castione · ``
+- [SOLANDER IMMOBILIEN AG](solander-immobilien-ag.md) · Lugano · ``
+- [SOPRACENERI IMMOBILIARE SA](sopraceneri-immobiliare-sa.md) · Lugano · ``
+- [SOREMA IMMOBILIARE SA](sorema-immobiliare-sa.md) · Magliaso · ``
+- [STEMA Immobiliare SA](stema-immobiliare-sa.md) · Lugano · ``
+- [SWS Immobilien AG](sws-immobilien-ag.md) · Lugano · ``
+- [Same Immobiliare Sagl](same-immobiliare-sagl.md) · Chiasso · ``
+- [Società Immobiliare Centesimus Annus Sagl](societa-immobiliare-centesimus-annus-sagl.md) · Lema · ``
+- [Solaria SA Società Immobiliare](solaria-sa-societa-immobiliare.md) · Lugano · ``
+- [Sore Immobiliare SA](sore-immobiliare-sa.md) · Mendrisio · ``
+- [Stark Fiduciaria Immobiliare GmbH](stark-fiduciaria-immobiliare-gmbh.md) · Lugano · ``
+- [Swiss Group Immobiliare SA](swiss-group-immobiliare-sa.md) · Massagno · ``
+- [T Immobiliare SA](t-immobiliare-sa.md) · Chiasso · ``
+- [Tessimo A Immobiliare SA](tessimo-a-immobiliare-sa.md) · Bedretto · ``
+- [Tipo Print Immobiliare SA](tipo-print-immobiliare-sa.md) · Mendrisio · ``
+- [Tuttoimmobili Sagl](tuttoimmobili-sagl.md) · Melide · ``
+- [VA.RO Immobiliare SA](va-ro-immobiliare-sa.md) · Stabio · ``
+- [VISTA IMMO 1 GmbH](vista-immo-1-gmbh.md) · Vernate · ``
+- [Valdo Immobiliare SA](valdo-immobiliare-sa.md) · Cugnasco-Gerra · ``
+- [Valeggimmobiliare Sagl](valeggimmobiliare-sagl.md) · Mendrisio · ``
+- [Victory Immo SA](victory-immo-sa.md) · Muralto · ``
+- [Vilan Immobiliare SA](vilan-immobiliare-sa.md) · Lugano · ``
+- [Voigt Verwaltungs AG](voigt-verwaltungs-ag.md) · Lugano · ``
+- [Wasser SA Commercio industriale e Immobili](wasser-sa-commercio-industriale-e-immobili.md) · Arbedo-Castione · ``
+- [Wilke Immobiliare SA](wilke-immobiliare-sa.md) · Vezia · ``
+- [elle.A.esse immobiliare SA](elle-a-esse-immobiliare-sa.md) · Vezia · ``

@@ -1,0 +1,36 @@
+# arba immo ag
+
+| | |
+|---|---|
+| UID | `CHE461239963` |
+| Legal form | Société anonyme |
+| Canton | ZH (de) |
+| Registered seat | Winterthur |
+| Address | Hard 1, 8408 Winterthur |
+| Register status | ACTIVE |
+
+## Relevance for Limen
+
+**regie-letting** — lets property; the administration may sit elsewhere
+
+purpose names letting but not administration, name agrees
+
+## Where to write
+
+- not looked for yet
+
+No website resolved.
+
+## What the register says it does
+
+> Die Gesellschaft bezweckt den Erwerb und Verkauf von Liegenschaften und Grundstücken, sowie Erstellen, Vermieten, Verpachten und Verwalten von Bauten aller Art. Ist zu allen Massnahmen und Geschäften berechtigt, die geeignet sind, den Gesellschaftszweck unmittelbar oder mittelbar zu fördern. Zudem bezweckt die Gesellschaft den Erwerb und die direkte oder indirekte Entwicklung von Immaterialgüterrechten, deren Verwendung durch Ausgabe von Lizenzen, deren Veräusserung sowie die Finanzierung von sämtlichen Aktivitäten der Gesellschaft. Die Gesellschaft kann Zweigniederlassungen und Tochtergesellschaften im In- und Ausland errichten und sich an anderen Unternehmen im In- und Ausland beteiligen sowie alle Geschäfte tätigen, die direkt oder indirekt mit ihrem Zweck in Zusammenhang stehen. Die Gesellschaft kann im In- und Ausland Grundeigentum erwerben, belasten, veräussern und verwalten. Sie kann auch Finanzierungen für eigene oder fremde Rechnung vornehmen sowie Garantien, Bürgschaften und übrige Sicherheiten für Verbindlichkeiten nahestehende Gesellschaften und Dritte eingehen.
+
+## Sources
+
+- Register entry: https://www.zefix.admin.ch/fr/search/entity/list?name=CHE461239963&directLink=true
+- Grading: rule over the registered purpose, see `scripts/classify_regies.py`
+- Addresses: none held
+- Cascade: `intel.address_hunt`, outcome `not run`
+
+The register carries no warranty and has no legal effect; only the certified
+cantonal excerpt and the FOSC publication text are binding.

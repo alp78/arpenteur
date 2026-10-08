@@ -1,0 +1,36 @@
+# Schatzmann Liegenschaften AG
+
+| | |
+|---|---|
+| UID | `CHE193324347` |
+| Legal form | Société anonyme |
+| Canton | AG (de) |
+| Registered seat | Lupfig |
+| Address | Geisshaldenweg 20, 5242 Lupfig |
+| Register status | ACTIVE |
+
+## Relevance for Limen
+
+**regie-letting** — lets property; the administration may sit elsewhere
+
+purpose names letting but not administration, name agrees
+
+## Where to write
+
+- nothing yet, and the search is unfinished — ImmoScout24 agency directory, public agent addresses only; the directory had none, the cascade is still owed
+
+No website resolved.
+
+## What the register says it does
+
+> Erbringung von Dienstleistungen im Zusammenhang mit Grundstücken im In- und Ausland, insbesondere den Kauf und Verkauf, die Verwaltung, Vermittlung und Vermietung von Liegenschaften und Grundstücken, ferner Planung, Erstellung, Sanierung und Umnutzung von Gebäuden auf eigene oder fremde Rechnung; kann sich an anderen Unternehmungen beteiligen, Tochtergesellschaften und Zweigniederlassungen errichten, Darlehen gewähren, Schuldbriefe als Sicherheiten errichten und ausserdem alle Rechtshandlungen vornehmen, die der Zweck der Gesellschaft mit sich bringen kann.
+
+## Sources
+
+- Register entry: https://www.zefix.admin.ch/fr/search/entity/list?name=CHE193324347&directLink=true
+- Grading: rule over the registered purpose, see `scripts/classify_regies.py`
+- Addresses: none held
+- Cascade: `intel.address_hunt`, outcome `partial`
+
+The register carries no warranty and has no legal effect; only the certified
+cantonal excerpt and the FOSC publication text are binding.

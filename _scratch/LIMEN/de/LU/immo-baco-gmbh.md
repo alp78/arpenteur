@@ -1,0 +1,36 @@
+# Immo Baco GmbH
+
+| | |
+|---|---|
+| UID | `CHE110352412` |
+| Legal form | Société à responsabilité limitée |
+| Canton | LU (de) |
+| Registered seat | Buchrain |
+| Address | Pilatusstrasse 9, 6033 Buchrain |
+| Register status | ACTIVE |
+
+## Relevance for Limen
+
+**regie-letting** — lets property; the administration may sit elsewhere
+
+purpose names letting but not administration, name agrees
+
+## Where to write
+
+- not looked for yet
+
+No website resolved.
+
+## What the register says it does
+
+> Erwerb, Halten, Vermietung, Überbauung und Veräusserung von Grundstücken sowie Verwaltung von Wertschriften; Beteiligungen.
+
+## Sources
+
+- Register entry: https://www.zefix.admin.ch/fr/search/entity/list?name=CHE110352412&directLink=true
+- Grading: rule over the registered purpose, see `scripts/classify_regies.py`
+- Addresses: none held
+- Cascade: `intel.address_hunt`, outcome `not run`
+
+The register carries no warranty and has no legal effect; only the certified
+cantonal excerpt and the FOSC publication text are binding.

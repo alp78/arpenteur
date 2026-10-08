@@ -1,0 +1,36 @@
+# ERKA Immo Group AG
+
+| | |
+|---|---|
+| UID | `CHE378663027` |
+| Legal form | Société anonyme |
+| Canton | TG (de) |
+| Registered seat | Steckborn |
+| Address | Rodelstrasse 30, 8266 Steckborn |
+| Register status | ACTIVE |
+
+## Relevance for Limen
+
+**regie-core** — manages property for third parties, so runs inspections routinely
+
+purpose names management of property for others, name agrees
+
+## Where to write
+
+- nothing yet, and the search is unfinished — ran without the search tier
+
+No website resolved.
+
+## What the register says it does
+
+> Die Gesellschaft bezweckt die Vermögensverwaltung sowie insbesondere die Verwaltung von Immobilien und anderen Vermögenswerten. Die Gesellschaft kann Zweigniederlassungen und Tochtergesellschaften im In- und Ausland errichten und sich an anderen Unternehmen im In- und Ausland beteiligen sowie alle Geschäfte tätigen, die direkt oder indirekt mit ihrem Zweck in Zusammenhang stehen. Die Gesellschaft kann im In- und Ausland (direkt oder indirekt) Grundeigentum erwerben, belasten, veräussern und verwalten. Sie kann auch Finanzierungen für eigene oder fremde Rechnung vornehmen sowie Garantien und Bürgschaften für Tochtergesellschaften und Dritte eingehen; ferner kann sie mit Waren aller Art handeln.
+
+## Sources
+
+- Register entry: https://www.zefix.admin.ch/fr/search/entity/list?name=CHE378663027&directLink=true
+- Grading: rule over the registered purpose, see `scripts/classify_regies.py`
+- Addresses: none held
+- Cascade: `intel.address_hunt`, outcome `partial`
+
+The register carries no warranty and has no legal effect; only the certified
+cantonal excerpt and the FOSC publication text are binding.

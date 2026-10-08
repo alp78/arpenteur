@@ -1,0 +1,148 @@
+# GL · 136 firms
+
+
+## regie-core (80)
+
+manages property for third parties, so runs inspections routinely
+
+- [A & I Verwaltungs AG](a-i-verwaltungs-ag.md) · Glarus Nord · `-`
+- [Adani Immobilien GmbH](adani-immobilien-gmbh.md) · Glarus · `-`
+- [AnWaG Immobilien AG](anwag-immobilien-ag.md) · Glarus Süd · `-`
+- [BBI Betriebs-Beratung und Immobilien AG](bbi-betriebs-beratung-und-immobilien-ag.md) · Glarus Süd · `welcome@bbi.ch`
+- [BRIMO-Architektur und Immobilien AG](brimo-architektur-und-immobilien-ag.md) · Glarus Süd · `?`
+- [Bader Immo AG](bader-immo-ag.md) · Glarus · `info@baderimmo.ch`
+- [Bascco Immobilien GmbH](bascco-immobilien-gmbh.md) · Glarus Nord · `-`
+- [Bodati Immobilien AG](bodati-immobilien-ag.md) · Glarus Nord · `?`
+- [Bäbler Immobilien AG](babler-immobilien-ag.md) · Glarus · `info@babler-immobilien.com`
+- [Bühler Immo AG](buhler-immo-ag.md) · Glarus · ``
+- [Chriesi Immobilie GmbH](chriesi-immobilie-gmbh.md) · Glarus · `?`
+- [Churfirstenblick Immobilien AG](churfirstenblick-immobilien-ag.md) · Glarus Nord · `?`
+- [Climmo Immobilien AG](climmo-immobilien-ag.md) · Glarus Nord · `-`
+- [Dacama Immobilien AG](dacama-immobilien-ag.md) · Glarus Nord · `?`
+- [Dietrich Häuser GmbH Architektur und Immobilien](dietrich-hauser-gmbh-architektur-und-immobilien.md) · Glarus Nord · `-`
+- [FUCHS IMMO GmbH](fuchs-immo-gmbh.md) · Glarus Nord · ``
+- [FZ Neutal-Immobilien GmbH](fz-neutal-immobilien-gmbh.md) · Glarus Süd · `?`
+- [Fauster Immobilien AG](fauster-immobilien-ag.md) · Glarus · `?`
+- [Fischli Liegenschaften AG](fischli-liegenschaften-ag.md) · Glarus Nord · `?`
+- [Frick Immobilien AG](frick-immobilien-ag.md) · Glarus Nord · `?`
+- [Fuchs Immobilien AG](fuchs-immobilien-ag.md) · Glarus Nord · `info@fuchsimmobilien.ch (+5)`
+- [Fusta Immobilien AG](fusta-immobilien-ag.md) · Glarus Nord · ``
+- [GIG Generalunternehmung Immobilien Gesellschaft AG](gig-generalunternehmung-immobilien-gesellschaft-ag.md) · Glarus · `?`
+- [GS Immo Trade GmbH](gs-immo-trade-gmbh.md) · Glarus · `info@gsimmotrade.ch`
+- [GTLM Immobilien AG](gtlm-immobilien-ag.md) · Glarus · `?`
+- [Glarner Liegenschaften AG](glarner-liegenschaften-ag.md) · Glarus Nord · `?`
+- [Grünenfelder Immobilien AG](grunenfelder-immobilien-ag.md) · Glarus Nord · `?`
+- [Gässli Liegenschaften AG](gassli-liegenschaften-ag.md) · Glarus · ``
+- [HO-Q IMMO AG](ho-q-immo-ag.md) · Glarus Süd · `?`
+- [Hans Eberle AG Immobilien](hans-eberle-ag-immobilien.md) · Glarus · `contact@hans-eberle.ch (+2)`
+- [Haschy Immobilien GmbH](haschy-immobilien-gmbh.md) · Glarus · `?`
+- [Hauser Immo AG](hauser-immo-ag.md) · Glarus Nord · `office@hauser.com (+7)`
+- [Hoch3 Immobilien GmbH](hoch3-immobilien-gmbh.md) · Glarus · `?`
+- [Immo Ganz GmbH](immo-ganz-gmbh.md) · Glarus Süd · ``
+- [Immo Rothenberger AG](immo-rothenberger-ag.md) · Glarus Nord · `?`
+- [Immo-Schwan AG](immo-schwan-ag.md) · Glarus Süd · `?`
+- [Immobilien Linthal AG](immobilien-linthal-ag.md) · Glarus Süd · `info@immobilienlinthal.ch`
+- [J. Müller Immo AG](j-muller-immo-ag.md) · Glarus · `?`
+- [JANDAS Immobilien AG](jandas-immobilien-ag.md) · Glarus Nord · `?`
+- [JAROGA Immobilien AG](jaroga-immobilien-ag.md) · Glarus Süd · ``
+- [JaFu Immobilien AG](jafu-immobilien-ag.md) · Glarus Nord · `?`
+- [Jenny Immobilien AG](jenny-immobilien-ag.md) · Glarus · `?`
+- [Kamm-Immobilien und Verwaltungs-AG](kamm-immobilien-und-verwaltungs-ag.md) · Glarus Nord · `info@kammimmobilien.ch`
+- [Küng + Fischli Immobilien GmbH](kung-fischli-immobilien-gmbh.md) · Glarus Nord · `?`
+- [Läderach Immobilien AG](laderach-immobilien-ag.md) · Glarus · `?`
+- [MALIVI Immobilien AG](malivi-immobilien-ag.md) · Glarus · ``
+- [MASU Immobilien AG](masu-immobilien-ag.md) · Glarus Nord · `?`
+- [MASU Verwaltungen GmbH](masu-verwaltungen-gmbh.md) · Glarus Nord · `?`
+- [MM Mario Müller Immo GmbH](mm-mario-muller-immo-gmbh.md) · Glarus Nord · `?`
+- [NANO Immobilien AG](nano-immobilien-ag.md) · Glarus Süd · `?`
+- [NHL Immobilien GmbH](nhl-immobilien-gmbh.md) · Glarus Nord · `info@nhlimmobilien.ch`
+- [Oberer Immobilien AG](oberer-immobilien-ag.md) · Glarus · ``
+- [Peter von Rotz Immobilien AG](peter-von-rotz-immobilien-ag.md) · Glarus · `?`
+- [Pido Immobilien GmbH](pido-immobilien-gmbh.md) · Glarus · `?`
+- [REPA Immobilien AG](repa-immobilien-ag.md) · Glarus · `?`
+- [RYZ Immo GmbH](ryz-immo-gmbh.md) · Glarus Süd · `?`
+- [Rasiti Immobilien GmbH](rasiti-immobilien-gmbh.md) · Glarus · `info@rasiti.ch`
+- [Rimann Immobilien AG](rimann-immobilien-ag.md) · Glarus · ``
+- [Rorwis Immobilien AG](rorwis-immobilien-ag.md) · Glarus Nord · `?`
+- [Rosengarten Liegenschaften AG](rosengarten-liegenschaften-ag.md) · Glarus · `?`
+- [RuRu Immobilien GmbH](ruru-immobilien-gmbh.md) · Glarus · `info@ruru-immobilien.ch`
+- [Sandra Wermelinger Immobilien-Verwaltung GmbH](sandra-wermelinger-immobilien-verwaltung-gmbh.md) · Glarus Nord · `?`
+- [Seidenstrasse 4 Immobilien AG](seidenstrasse-4-immobilien-ag.md) · Glarus Nord · `?`
+- [Steinkohlen Immobilien AG](steinkohlen-immobilien-ag.md) · Glarus · `?`
+- [Stüssi Immobilien AG](stussi-immobilien-ag.md) · Glarus · ``
+- [TS Immobilien AG](ts-immobilien-ag.md) · Glarus · `?`
+- [Teen Challenge Immobilien GmbH](teen-challenge-immobilien-gmbh.md) · Glarus · `info@teenchallenge.ch (+4)`
+- [Trümpi Immobilien AG](trumpi-immobilien-ag.md) · Glarus · `?`
+- [Tschudi Immo GmbH](tschudi-immo-gmbh.md) · Glarus · `?`
+- [UTQ Liegenschaften AG](utq-liegenschaften-ag.md) · Glarus Nord · `?`
+- [VEBA Immobilien AG](veba-immobilien-ag.md) · Glarus Nord · ``
+- [VIU Immobilien GmbH](viu-immobilien-gmbh.md) · Glarus Süd · `?`
+- [WRM Immobilien AG](wrm-immobilien-ag.md) · Glarus Nord · `?`
+- [Werkhallen Immo AG](werkhallen-immo-ag.md) · Glarus Süd · `?`
+- [Wies Immobilien AG](wies-immobilien-ag.md) · Glarus · `?`
+- [Winta Immobilien AG](winta-immobilien-ag.md) · Glarus Nord · `?`
+- [ZL Immobilien GmbH](zl-immobilien-gmbh.md) · Glarus · ``
+- [Zinggen Immobilien AG](zinggen-immobilien-ag.md) · Glarus Nord · `?`
+- [elnena Immobilien AG](elnena-immobilien-ag.md) · Glarus · `?`
+- [riposa Immobilien AG](riposa-immobilien-ag.md) · Glarus Nord · `info@riposa.ch`
+
+## regie-letting (56)
+
+lets property; the administration may sit elsewhere
+
+- [2fel Immobilien AG](2fel-immobilien-ag.md) · Glarus Süd · ``
+- [4MF Immobilien AG](4mf-immobilien-ag.md) · Glarus Nord · ``
+- [Alfons Seliner Immobilien AG](alfons-seliner-immobilien-ag.md) · Glarus Nord · ``
+- [Aminta Immobilien AG](aminta-immobilien-ag.md) · Glarus Nord · ``
+- [Casaluma Immobilien AG](casaluma-immobilien-ag.md) · Glarus Nord · ``
+- [D71 Immobilien AG](d71-immobilien-ag.md) · Glarus · ``
+- [Darja Immobilia AG](darja-immobilia-ag.md) · Glarus · ``
+- [ELMA Immobilien AG](elma-immobilien-ag.md) · Glarus · ``
+- [FA Immobilien Glarus AG](fa-immobilien-glarus-ag.md) · Glarus · ``
+- [FELINOYA Immobilien GmbH](felinoya-immobilien-gmbh.md) · Glarus Süd · ``
+- [Frohsinn Immobilien AG](frohsinn-immobilien-ag.md) · Glarus Nord · ``
+- [Froni Immo AG](froni-immo-ag.md) · Glarus Nord · ``
+- [HES Immobilien GmbH](hes-immobilien-gmbh.md) · Glarus Nord · ``
+- [Hösli Immobilien AG](hosli-immobilien-ag.md) · Glarus Nord · ``
+- [Immo BEAG AG](immo-beag-ag.md) · Glarus Nord · ``
+- [Immo Gold AG Niederurnen](immo-gold-ag-niederurnen.md) · Glarus Nord · ``
+- [Immo S plus GmbH](immo-s-plus-gmbh.md) · Glarus Nord · ``
+- [Immobiliosi GmbH](immobiliosi-gmbh.md) · Glarus · ``
+- [J Immobilien AG](j-immobilien-ag.md) · Glarus Nord · ``
+- [JF IMMO AG](jf-immo-ag.md) · Glarus Nord · ``
+- [Kamm Immobilien GmbH](kamm-immobilien-gmbh.md) · Glarus Nord · ``
+- [Künzler & Partner Immobilien GmbH](kunzler-partner-immobilien-gmbh.md) · Glarus · `liviamaho@kuenzlerundpartner.ch (+1)`
+- [LUXMA Immobilien GmbH](luxma-immobilien-gmbh.md) · Glarus Nord · ``
+- [Linth Immo Invest GmbH](linth-immo-invest-gmbh.md) · Glarus Süd · ``
+- [Linthof Immobilien GmbH](linthof-immobilien-gmbh.md) · Glarus Nord · ``
+- [M & B Immobilien AG](m-b-immobilien-ag.md) · Glarus Nord · ``
+- [MTA Immobilien AG](mta-immobilien-ag.md) · Glarus · ``
+- [Neuraum Immobilien AG](neuraum-immobilien-ag.md) · Glarus · ``
+- [Pfeiffer Immobilien AG](pfeiffer-immobilien-ag.md) · Glarus Nord · ``
+- [R. Oertli Immobilien AG](r-oertli-immobilien-ag.md) · Glarus · ``
+- [RPM Immobilien AG](rpm-immobilien-ag.md) · Glarus Nord · ``
+- [RUFU Immobilien & Investment AG](rufu-immobilien-investment-ag.md) · Glarus Nord · ``
+- [Reax Immobilien AG](reax-immobilien-ag.md) · Glarus · ``
+- [Rhyn AG Immobilien](rhyn-ag-immobilien.md) · Glarus · ``
+- [Röllin Liegenschaften AG](rollin-liegenschaften-ag.md) · Glarus Nord · ``
+- [SEGGEN IMMO INVEST AG](seggen-immo-invest-ag.md) · Glarus Süd · ``
+- [Schilta Immobilien AG](schilta-immobilien-ag.md) · Glarus · ``
+- [Sonnenau Immobilien AG](sonnenau-immobilien-ag.md) · Glarus Nord · ``
+- [Spielhof Immobilien AG](spielhof-immobilien-ag.md) · Glarus Nord · ``
+- [TAMI Immobilien AG](tami-immobilien-ag.md) · Glarus Nord · ``
+- [Tellus Immobilien AG](tellus-immobilien-ag.md) · Glarus · ``
+- [Tibisch Immobilien AG](tibisch-immobilien-ag.md) · Glarus · ``
+- [Tödi Immo AG](todi-immo-ag.md) · Glarus Nord · ``
+- [VITALPHA IMMOBILIEN GmbH](vitalpha-immobilien-gmbh.md) · Glarus · ``
+- [Vitale Immobilien GmbH](vitale-immobilien-gmbh.md) · Glarus · ``
+- [WEMARE Immobilien AG](wemare-immobilien-ag.md) · Glarus Nord · ``
+- [Walhalla Immobilien AG](walhalla-immobilien-ag.md) · Glarus · ``
+- [Weinberg Immobilien AG](weinberg-immobilien-ag.md) · Glarus Nord · ``
+- [Windegg-Immobilien AG](windegg-immobilien-ag.md) · Glarus Nord · ``
+- [Zweifel Immo AG](zweifel-immo-ag.md) · Glarus Nord · ``
+- [activa immobilien gmbh](activa-immobilien-gmbh.md) · Glarus · ``
+- [asa immobilien ag](asa-immobilien-ag.md) · Glarus Nord · ``
+- [bb-immo GmbH](bb-immo-gmbh.md) · Glarus Süd · ``
+- [casa.immo gmbh](casa-immo-gmbh.md) · Glarus Nord · ``
+- [ra immobilien gmbh](ra-immobilien-gmbh.md) · Glarus · ``
+- [stega immobilien ag](stega-immobilien-ag.md) · Glarus Nord · ``

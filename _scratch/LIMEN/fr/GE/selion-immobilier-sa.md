@@ -1,0 +1,36 @@
+# Selion Immobilier SA
+
+| | |
+|---|---|
+| UID | `CHE402927275` |
+| Legal form | Société anonyme |
+| Canton | GE (fr) |
+| Registered seat | Carouge (GE) |
+| Address | Chemin Charles-Poluzzi 22, 1227 Carouge GE |
+| Register status | ACTIVE |
+
+## Relevance for Limen
+
+**regie-core** — manages property for third parties, so runs inspections routinely
+
+purpose names management of property for others, name agrees
+
+## Where to write
+
+- nothing yet, and the search is unfinished — ran without the search tier
+
+No website resolved.
+
+## What the register says it does
+
+> toutes opérations immobilières, pour son compte et le compte de tiers, notamment: l'achat, la vente, le courtage, la construction, la location, la gérance et l'administration de tous biens immobiliers; la fourniture de tous services dans le domaine immobilier, notamment la promotion, la gestion, le courtage, le pilotage et l'expertise; les conseils en développement et en financement de toutes affaires immobilières; l'achat, la vente et l'exploitation de toutes licences, procédés et brevets dans le domaine de la construction; l'étude, la réalisation, le financement, la fourniture de conseils et l'assistance en matière de travaux publics; la prise de participations, la gestion et l'administration de sociétés immobilières.
+
+## Sources
+
+- Register entry: https://www.zefix.admin.ch/fr/search/entity/list?name=CHE402927275&directLink=true
+- Grading: rule over the registered purpose, see `scripts/classify_regies.py`
+- Addresses: none held
+- Cascade: `intel.address_hunt`, outcome `partial`
+
+The register carries no warranty and has no legal effect; only the certified
+cantonal excerpt and the FOSC publication text are binding.

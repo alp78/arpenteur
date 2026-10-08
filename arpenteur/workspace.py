@@ -41,6 +41,7 @@ DUMP = "database.dump"
 CONFIG = "arpenteur.toml"
 SECRETS = ".env"
 ATTACHMENTS = "attachments/"
+HARVESTS = "harvests/"
 
 # Bumped only when the archive's own shape changes, which is a different
 # question from which migrations the data inside it has seen.
@@ -91,6 +92,8 @@ class Manifest:
     attachments: int
     attachment_bytes: int
     has_secrets: bool
+    harvests: int = 0
+    harvest_bytes: int = 0
     extensions: tuple[str, ...] = ()
     note: str = ""
 
@@ -120,6 +123,8 @@ class Manifest:
             attachments=int(raw.get("attachments", 0)),
             attachment_bytes=int(raw.get("attachment_bytes", 0)),
             has_secrets=bool(raw.get("has_secrets", False)),
+            harvests=int(raw.get("harvests", 0)),
+            harvest_bytes=int(raw.get("harvest_bytes", 0)),
             extensions=tuple(raw.get("extensions") or ()),
             note=str(raw.get("note", "")),
         )
@@ -133,7 +138,9 @@ class Manifest:
             f"modules: {', '.join(self.modules) or 'none recorded'}\n"
             f"{rows:,} rows in {len(self.counts)} counted tables, "
             f"{self.attachments:,} attachment(s) "
-            f"({self.attachment_bytes / 1048576:.1f} MB)\n"
+            f"({self.attachment_bytes / 1048576:.1f} MB), "
+            f"{self.harvests:,} harvest file(s) "
+            f"({self.harvest_bytes / 1048576:.1f} MB)\n"
             f"secrets included: {'yes' if self.has_secrets else 'no'}"
         )
 
@@ -299,6 +306,27 @@ def _app_version() -> str:
         return ""
 
 
+def harvest_files(data_dir: Any) -> list[Path]:
+    """The directory harvests kept beside the database, and nothing else.
+
+    Only `*.jsonl` sitting directly in the data directory, which is where
+    `immobilier_directory.py` and the two scripts beside it write and read
+    them. They are scraped source rather than derived data: a directory that
+    has since changed its markup, or started refusing the fetch, cannot be
+    harvested a second time, so an installation restored without them loses
+    inputs it cannot rebuild.
+
+    Deliberately not a recursive glob. The same folder holds `http-cache/`,
+    3.4 GB across 64'610 files on the machine this was written for, which is
+    refetchable by definition; a pattern that descended would carry the cache
+    into every archive.
+    """
+    return sorted(
+        (p for p in Path(data_dir).glob("*.jsonl") if p.is_file()),
+        key=lambda p: p.as_posix(),
+    )
+
+
 # --- export -------------------------------------------------------------------
 
 
@@ -327,6 +355,7 @@ def export(
         (p for p in att.root_for(settings.data_dir).rglob("*") if p.is_file()),
         key=lambda p: p.as_posix(),
     ) if with_attachments else []
+    harvests = harvest_files(settings.data_dir) if with_attachments else []
 
     manifest = Manifest(
         format=FORMAT,
@@ -341,6 +370,8 @@ def export(
         counts=counts(conn),
         attachments=len(files),
         attachment_bytes=sum(p.stat().st_size for p in files),
+        harvests=len(harvests),
+        harvest_bytes=sum(p.stat().st_size for p in harvests),
         has_secrets=with_secrets,
         extensions=_extensions(conn),
         note=note,
@@ -374,6 +405,8 @@ def export(
             base = att.root_for(settings.data_dir)
             for path in files:
                 zf.write(path, ATTACHMENTS + path.relative_to(base).as_posix())
+            for path in harvests:
+                zf.write(path, HARVESTS + path.name)
         staging.replace(out)
     finally:
         dump.unlink(missing_ok=True)
@@ -394,6 +427,8 @@ def _as_json(manifest: Manifest) -> dict[str, Any]:
         "migrations": manifest.migrations,
         "counts": manifest.counts,
         "attachments": manifest.attachments,
+        "harvests": manifest.harvests,
+        "harvest_bytes": manifest.harvest_bytes,
         "attachment_bytes": manifest.attachment_bytes,
         "has_secrets": manifest.has_secrets,
         "extensions": list(manifest.extensions),
@@ -493,10 +528,10 @@ def _occupied(conn: kernel_db.Connection) -> dict[str, int]:
     return {k: v for k, v in counts(conn).items() if v}
 
 
-def _attachments_in(
-    zf: zipfile.ZipFile, base: Path
+def _members_in(
+    zf: zipfile.ZipFile, prefix: str, base: Path
 ) -> list[tuple[str, Path]]:
-    """The archive's attachments, each checked to stay inside `base`.
+    """The archive members under `prefix`, each checked to stay inside `base`.
 
     A zip member carries whatever name was written into it, and `base / name`
     honours that name rather than questioning it: `attachments/../../x` climbs
@@ -504,18 +539,21 @@ def _attachments_in(
     path that discards `base` entirely. Both are refused here, by name, before
     the database is touched, because an import is run against a file that
     arrived from somewhere else.
+
+    One function for every category the archive writes, rather than one per
+    category. A second copy of this check is a second place to forget it.
     """
     root = base.resolve()
     out: list[tuple[str, Path]] = []
     for name in zf.namelist():
-        if not name.startswith(ATTACHMENTS) or name.endswith("/"):
+        if not name.startswith(prefix) or name.endswith("/"):
             continue
-        target = base / name[len(ATTACHMENTS):]
+        target = base / name[len(prefix):]
         if not target.resolve().is_relative_to(root):
             raise WorkspaceError(
-                f"the workspace holds an attachment named {name!r}, which "
-                f"would be written to {target.resolve()}, outside {root}. "
-                "Refusing the import: a file that does this was built to do it."
+                f"the workspace holds a file named {name!r}, which would be "
+                f"written to {target.resolve()}, outside {root}. Refusing the "
+                "import: a file that does this was built to do it."
             )
         out.append((name, target))
     return out
@@ -583,7 +621,11 @@ def import_(
         # started with.
         tool = _tool("pg_restore")
         base = att.root_for(settings.data_dir)
-        members = _attachments_in(zf, base) if with_attachments else []
+        members = _members_in(zf, ATTACHMENTS, base) if with_attachments else []
+        if with_attachments:
+            members += _members_in(
+                zf, HARVESTS, Path(settings.data_dir)
+            )
 
         # `ZipFile.open` hands back a stream with no file descriptor behind
         # it, which `subprocess` cannot pass to a child, and a custom-format

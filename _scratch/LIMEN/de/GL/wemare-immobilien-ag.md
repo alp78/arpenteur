@@ -1,0 +1,36 @@
+# WEMARE Immobilien AG
+
+| | |
+|---|---|
+| UID | `CHE372765178` |
+| Legal form | Société anonyme |
+| Canton | GL (de) |
+| Registered seat | Glarus Nord |
+| Address | Espenstrasse 2a, 8867 Niederurnen |
+| Register status | ACTIVE |
+
+## Relevance for Limen
+
+**regie-letting** — lets property; the administration may sit elsewhere
+
+purpose names letting but not administration, name agrees
+
+## Where to write
+
+- not looked for yet
+
+No website resolved.
+
+## What the register says it does
+
+> Erwerb, Halten, Belastung, Vermietung/Verpachtung, Immobilienbewertung und das Veräussern von Grundstücken, Liegenschaften und Wohnungen im In- und Ausland; Verwaltung und Vermittlung von Grundstücken und Liegenschaften im In- und Ausland; das Projektieren und Ausführen von Neubauten, Renovationen und Umbauten aller Art im In- und Ausland; Erstellung, Betrieb, Unterhaltung und Vermarktung von Internetplattformen im Immobilienbereich sowie Erbringung von damit zusammenhängenden weiteren Dienstleistungen im In- und Ausland; Handel (Import und Export) von Waren aller Art. Die Gesellschaft kann Zweigniederlassungen und Tochtergesellschaften im In- und Ausland errichten und sich an anderen Unternehmen im In- und Ausland beteiligen sowie alle Ge-schäfte tätigen, die direkt oder indirekt mit ihrem Zweck in Zusammenhang stehen. Die Gesellschaft kann im In- und Ausland Grundeigentum erwerben, belasten, veräussern und verwalten. Sie kann auch Finanzierungen für eigene oder fremde Rechnung vornehmen sowie Garantien und Bürgschaften für Tochtergesellschaften und Dritte eingehen.
+
+## Sources
+
+- Register entry: https://www.zefix.admin.ch/fr/search/entity/list?name=CHE372765178&directLink=true
+- Grading: rule over the registered purpose, see `scripts/classify_regies.py`
+- Addresses: none held
+- Cascade: `intel.address_hunt`, outcome `not run`
+
+The register carries no warranty and has no legal effect; only the certified
+cantonal excerpt and the FOSC publication text are binding.

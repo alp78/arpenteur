@@ -1,0 +1,36 @@
+# Claude Goy Verwaltungen AG
+
+| | |
+|---|---|
+| UID | `CHE103936708` |
+| Legal form | Société anonyme |
+| Canton | ZH (de) |
+| Registered seat | Zürich |
+| Address | Sihlamtsstrasse 9, 8001 Zürich |
+| Register status | ACTIVE |
+
+## Relevance for Limen
+
+**regie-core** — manages property for third parties, so runs inspections routinely
+
+purpose names management of property for others, name agrees
+
+## Where to write
+
+- nothing yet, and the search is unfinished — ran without the search tier
+
+No website resolved.
+
+## What the register says it does
+
+> Zweck der Gesellschaft ist: Übernahme von Beratungs-, Vertretungs- und Organisationsaufgaben. Gründung, Verwaltung, Beteiligung an und Finanzierung von Tochtergesellschaften und Dritt-Unternehmungen des Handels, der Industrie und des Finanzsektors. Kauf, Verkauf, Vermittlung sowie Verwaltung von Liegenschaften. Alle mit dem vorstehenden Gesellschaftszweck direkt oder indirekt verbundenen Geschäfte und Aktivitäten.
+
+## Sources
+
+- Register entry: https://www.zefix.admin.ch/fr/search/entity/list?name=CHE103936708&directLink=true
+- Grading: rule over the registered purpose, see `scripts/classify_regies.py`
+- Addresses: none held
+- Cascade: `intel.address_hunt`, outcome `partial`
+
+The register carries no warranty and has no legal effect; only the certified
+cantonal excerpt and the FOSC publication text are binding.

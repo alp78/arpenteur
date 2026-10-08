@@ -1,0 +1,259 @@
+# NE · 247 firms
+
+
+## regie-core (199)
+
+manages property for third parties, so runs inspections routinely
+
+- [2k46 Immo Sàrl](2k46-immo-sarl.md) · Val-de-Ruz · `-`
+- [3AR Immobilier Sàrl](3ar-immobilier-sarl.md) · Neuchâtel · `-`
+- [9 Immo SA](9-immo-sa.md) · Neuchâtel · `hello@9immo.ch`
+- [A & P Gérance Sàrl](a-p-gerance-sarl.md) · Val-de-Travers · `-`
+- [A & P Immobilier SA](a-p-immobilier-sa.md) · Val-de-Travers · `-`
+- [A+M Immo SA](a-m-immo-sa.md) · Neuchâtel · `-`
+- [A-Clerc Immobilier Sàrl](a-clerc-immobilier-sarl.md) · Val-de-Travers · `-`
+- [A. Gesteam Sàrl](a-gesteam-sarl.md) · Milvignes · `info@agesteam.ch`
+- [ABISOFT Sàrl](abisoft-sarl.md) · Val-de-Travers · `-`
+- [ADT Immobilier Sàrl](adt-immobilier-sarl.md) · La Chaux-de-Fonds · `-`
+- [AGATEC IMMOBILIER ET CONSTRUCTION SARL](agatec-immobilier-et-construction-sarl.md) · Neuchâtel · `?`
+- [AGP IMMOBILIERS Sàrl](agp-immobiliers-sarl.md) · Val-de-Travers · `-`
+- [AIS Immobilier SA](ais-immobilier-sa.md) · Neuchâtel · `info@ais-immobilier.com`
+- [AJ La Casa Sàrl](aj-la-casa-sarl.md) · Neuchâtel · `-`
+- [AJF Patrimoine Sàrl](ajf-patrimoine-sarl.md) · Neuchâtel · `-`
+- [ALFAJETRimmob Sàrl](alfajetrimmob-sarl.md) · Laténa · `-`
+- [ALOGIS IMMO SA](alogis-immo-sa.md) · Neuchâtel · `info@alogisimmo.ch`
+- [AMAPAX Sàrl](amapax-sarl.md) · Laténa · `-`
+- [AMMETIS Sàrl](ammetis-sarl.md) · Neuchâtel · `info@ammetis.ch`
+- [AMOTEP CONCEPT Sàrl](amotep-concept-sarl.md) · Neuchâtel · `-`
+- [AMT Immobilier Sàrl](amt-immobilier-sarl.md) · Cortaillod · `info@amtimmobilier.com`
+- [AMT Totale Sàrl](amt-totale-sarl.md) · Cortaillod · `amt@amt-totale.ch`
+- [ARP Gestion Sàrl](arp-gestion-sarl.md) · Rochefort · `-`
+- [ART Conception Immobilière Sàrl](art-conception-immobiliere-sarl.md) · Neuchâtel · `info@art-conception-immobiliere.ch`
+- [ASP-Immobilier SA](asp-immobilier-sa.md) · La Chaux-de-Fonds · `-`
+- [AZEN Immo SA](azen-immo-sa.md) · Neuchâtel · `-`
+- [AZUR Immobilier SA](azur-immobilier-sa.md) · Neuchâtel · `info@azurimmobilier.com`
+- [Aartis Immobilier SA](aartis-immobilier-sa.md) · Cortaillod · `-`
+- [Ad Equa Sàrl](ad-equa-sarl.md) · Neuchâtel · `?`
+- [AdMN-Assist Sàrl](admn-assist-sarl.md) · Le Locle · `mike.nussbaumer@admn-assist.ch (+1)`
+- [Adara Immobilier SA](adara-immobilier-sa.md) · Laténa · `info@adara-immo.ch`
+- [Adoc Immobilier Sàrl](adoc-immobilier-sarl.md) · Neuchâtel · `?`
+- [Agence Immobilière et Commerciale S.A. Fidimmobil](agence-immobiliere-et-commerciale-s-a-fidimmobil.md) · Neuchâtel · `fidimmobil@fidimmobil.ch`
+- [Agence M&M Immobilier Sàrl](agence-m-m-immobilier-sarl.md) · La Chaux-de-Fonds · `info@mm-immobilier.ch`
+- [AgriTallan Sàrl](agritallan-sarl.md) · Neuchâtel · `?`
+- [Alcôve, Manon Roueche Sàrl](alcove-manon-roueche-sarl.md) · Neuchâtel · `-`
+- [Allfinco Sàrl](allfinco-sarl.md) · Milvignes · `-`
+- [Altaripa Sàrl](altaripa-sarl.md) · Neuchâtel · `info@altaripa.ch`
+- [Americo Immobilier Sàrl](americo-immobilier-sarl.md) · Val-de-Ruz · `-`
+- [Ameyfrais Sàrl](ameyfrais-sarl.md) · La Chaux-de-Fonds · `?`
+- [Amoreal Immobilier Sàrl](amoreal-immobilier-sarl.md) · La Chaux-de-Fonds · `-`
+- [Amoreal Totale Sàrl](amoreal-totale-sarl.md) · La Chaux-de-Fonds · `?`
+- [Angela Adam Architecture Sàrl](angela-adam-architecture-sarl.md) · Cressier (NE) · `?`
+- [Arcadia Immobilier & Services SA](arcadia-immobilier-services-sa.md) · Neuchâtel · `?`
+- [Arista Immobilier SA](arista-immobilier-sa.md) · Neuchâtel · `-`
+- [Arnaud & Zbinden Sàrl](arnaud-zbinden-sarl.md) · La Grande Béroche · `info@arnaud-zbinden.ch (+2)`
+- [ArtEdge Immobilier SA](artedge-immobilier-sa.md) · Milvignes · `?`
+- [Atec Immobilier Sàrl](atec-immobilier-sarl.md) · Neuchâtel · `-`
+- [Athema Immobilier SA](athema-immobilier-sa.md) · Neuchâtel · `?`
+- [Atrium, conseils et gestion immobilière Sàrl](atrium-conseils-et-gestion-immobiliere-sarl.md) · Cortaillod · `info@atrium2016.ch`
+- [B & C Immo SA](b-c-immo-sa.md) · La Chaux-de-Fonds · `?`
+- [B2P SA](b2p-sa.md) · Milvignes · `info@b2p.ch`
+- [BCMi Immo SA](bcmi-immo-sa.md) · Val-de-Travers · ``
+- [BR Immobilier Corporate Sàrl](br-immobilier-corporate-sarl.md) · Boudry · `info@br-immobilier.ch (+1)`
+- [BZImmobilier Sàrl](bzimmobilier-sarl.md) · Val-de-Ruz · `info@bzisa.ch`
+- [Bard & Demarta Société Immobilière Sàrl](bard-demarta-societe-immobiliere-sarl.md) · Cressier (NE) · `-`
+- [Bolliger Immobilier SA](bolliger-immobilier-sa.md) · La Chaux-de-Fonds · `info@bolliger-immobilier.ch (+1)`
+- [Brunner & Cie Immobilier SA](brunner-cie-immobilier-sa.md) · Boudry · `info@brunner.com`
+- [C-lagérance Sàrl](c-lagerance-sarl.md) · Milvignes · `cwalter@c-lagerance.ch`
+- [CFDL Immo Sàrl](cfdl-immo-sarl.md) · Val-de-Travers · `-`
+- [CGC Immobilier Sàrl](cgc-immobilier-sarl.md) · Laténa · `cg@cgc-immobilier.ch`
+- [CJ2300 immo SA](cj2300-immo-sa.md) · La Chaux-de-Fonds · `-`
+- [CM Jacquet Immobilier Sàrl](cm-jacquet-immobilier-sarl.md) · La Chaux-de-Fonds · `?`
+- [CMM Immo Sàrl](cmm-immo-sarl.md) · Neuchâtel · `?`
+- [CPA Ribaudes SA](cpa-ribaudes-sa.md) · Neuchâtel · `cpa.ribaudes@hotmail.com`
+- [CTM Immobilier S.A.](ctm-immobilier-s-a.md) · Val-de-Ruz · `?`
+- [CYMA Immobilier SA](cyma-immobilier-sa.md) · Le Locle · `?`
+- [Cabanel Immo Sàrl](cabanel-immo-sarl.md) · Val-de-Ruz · `info@cabanelimmo.ch`
+- [Canaris Immobilier SA](canaris-immobilier-sa.md) · Neuchâtel · `constantin@canaris-immobilier.ch`
+- [Carré-Noir Sàrl](carre-noir-sarl.md) · Cornaux · `contact@carre-noir.ch`
+- [Casa + Immobilier Sàrl](casa-immobilier-sarl.md) · La Chaux-de-Fonds · `-`
+- [Castel Régie S.A.](castel-regie-s-a.md) · Neuchâtel · `?`
+- [Castella & Rossato Immobilier Sàrl](castella-rossato-immobilier-sarl.md) · Neuchâtel · `?`
+- [Castoldi Immobilier Sàrl](castoldi-immobilier-sarl.md) · Neuchâtel · `info@castoldi-immobilier.ch`
+- [Clémençon Immobilier Sàrl](clemencon-immobilier-sarl.md) · Lignières · `?`
+- [Confort Immobilier Sàrl](confort-immobilier-sarl.md) · La Grande Béroche · `?`
+- [Cristal Gérance SA](cristal-gerance-sa.md) · La Chaux-de-Fonds · `info@cristal-gerance.ch`
+- [D&D Gérance Sàrl](d-d-gerance-sarl.md) · Neuchâtel · `-`
+- [D&D Immo Sàrl](d-d-immo-sarl.md) · Neuchâtel · `?`
+- [D'Angelo Immobilier Sàrl](d-angelo-immobilier-sarl.md) · Milvignes · `-`
+- [DPH Immobilier SA](dph-immobilier-sa.md) · Neuchâtel · `?`
+- [DS Construction et Immobilier SA](ds-construction-et-immobilier-sa.md) · Cornaux · `info@dsimmobiliersa.ch (+1)`
+- [Diatimis Sàrl](diatimis-sarl.md) · Laténa · `info@diatimis.ch`
+- [Duperrex Immobilier SA](duperrex-immobilier-sa.md) · Cornaux · `?`
+- [Durini Immobilier Sàrl](durini-immobilier-sarl.md) · Les Ponts-de-Martel · `-`
+- [E.A.D. Immobilier SA](e-a-d-immobilier-sa.md) · Val-de-Ruz · `?`
+- [EC Immobilier SA](ec-immobilier-sa.md) · La Grande Béroche · `-`
+- [EP Immobilière SA](ep-immobiliere-sa.md) · La Chaux-de-Fonds · ``
+- [Ellipsis SA](ellipsis-sa.md) · La Chaux-de-Fonds · `location@ellipsis-sa.ch`
+- [Endres Immobilier Sàrl](endres-immobilier-sarl.md) · La Chaux-de-Fonds · `-`
+- [Endriti Immo Sàrl](endriti-immo-sarl.md) · Le Landeron · `?`
+- [Espace et Habitat SA](espace-et-habitat-sa.md) · La Chaux-de-Fonds · `jason.vuille@espace-et-habitat.ch`
+- [Expertissimmo Sàrl](expertissimmo-sarl.md) · Val-de-Ruz · `info@expertissimmo.ch`
+- [FKS Immobilier S.A.](fks-immobilier-s-a.md) · La Chaux-de-Fonds · `info@fks.ch`
+- [FaLo Immobilière Sàrl](falo-immobiliere-sarl.md) · Cornaux · `?`
+- [Facchinetti Immobilier S.A.](facchinetti-immobilier-s-a.md) · Neuchâtel · `info@facchinetti.ch`
+- [Fiduciaire-Gérance Raynaud Sàrl](fiduciaire-gerance-raynaud-sarl.md) · Le Locle · `?`
+- [FiscaPlus SA](fiscaplus-sa.md) · Milvignes · `info@fiscaplus.ch`
+- [GC Immo Sàrl](gc-immo-sarl.md) · Val-de-Travers · `?`
+- [GHB Gérance Sàrl](ghb-gerance-sarl.md) · Val-de-Travers · `info@ghb-gerance.ch`
+- [GLM immo Sàrl](glm-immo-sarl.md) · Val-de-Travers · `?`
+- [GLN Immo SA](gln-immo-sa.md) · Cortaillod · `?`
+- [GPC Gérance PPE Courtage SA](gpc-gerance-ppe-courtage-sa.md) · Neuchâtel · `info@gpc.ch`
+- [GRJ Immobilier SA](grj-immobilier-sa.md) · La Chaux-de-Fonds · `?`
+- [Gjocaj Immo SA](gjocaj-immo-sa.md) · Boudry · ``
+- [Group G Immo Sàrl](group-g-immo-sarl.md) · La Grande Béroche · `?`
+- [Gérance Bosshart & Gautschi SA](gerance-bosshart-gautschi-sa.md) · La Chaux-de-Fonds · `p.steiner@gerancebg.ch`
+- [Gérance Charles Berset SA](gerance-charles-berset-sa.md) · La Chaux-de-Fonds · `direction@berset-gerance.ch (+1)`
+- [Gérance et entretien d'immeubles Lionel et Fabrice Jaccard Sàrl](gerance-et-entretien-d-immeubles-lionel-et-fabrice-jaccard-s.md) · Neuchâtel · `?`
+- [HOTZ Immobilier SA](hotz-immobilier-sa.md) · Val-de-Travers · `?`
+- [ISP Immobilier SA](isp-immobilier-sa.md) · La Chaux-de-Fonds · `?`
+- [Ifimmob Sàrl](ifimmob-sarl.md) · La Grande Béroche · `info@ifimmob.ch`
+- [Immo Garavaldi Sàrl](immo-garavaldi-sarl.md) · La Grande Béroche · `?`
+- [Immo Globi Partners Sàrl](immo-globi-partners-sarl.md) · La Chaux-de-Fonds · ``
+- [Immo Pro Group Sàrl](immo-pro-group-sarl.md) · Neuchâtel · `kontakt@immopro.ch (+18)`
+- [Immo S&E Sàrl](immo-s-e-sarl.md) · Laténa · `?`
+- [Immo'Sphère SA](immo-sphere-sa.md) · La Sagne · `info@immosphere.com`
+- [Immo-P SA](immo-p-sa.md) · Boudry · `?`
+- [Immobilier - NE.ch Sàrl](immobilier-ne-ch-sarl.md) · La Chaux-de-Fonds · `info@immobilier-ne.ch`
+- [Immobilis S.A.](immobilis-s-a.md) · La Chaux-de-Fonds · `?`
+- [Immobilière MFA Grandjean S.A.](immobiliere-mfa-grandjean-s-a.md) · La Chaux-de-Fonds · ``
+- [Immodéfi Conseils Sàrl](immodefi-conseils-sarl.md) · Neuchâtel · `info@immodefi.ch`
+- [Inbox Immo SA](inbox-immo-sa.md) · Boudry · `?`
+- [JANS SA Immobilier](jans-sa-immobilier.md) · Laténa · `?`
+- [JD Planification Sàrl](jd-planification-sarl.md) · Neuchâtel · `jeremy@jdplanification.ch`
+- [KB Immobilier SA](kb-immobilier-sa.md) · Val-de-Travers · `?`
+- [KDD Immo SA](kdd-immo-sa.md) · Val-de-Travers · `?`
+- [KLCM Immobilier SA](klcm-immobilier-sa.md) · Val-de-Ruz · `?`
+- [KSK Immobilier Sàrl](ksk-immobilier-sarl.md) · Neuchâtel · ``
+- [Kaarb immo Sàrl](kaarb-immo-sarl.md) · Val-de-Travers · `?`
+- [Kasapimmo SA](kasapimmo-sa.md) · La Chaux-de-Fonds · `info@kasapi.ch`
+- [Kaufmann Immobilier - Finance Sàrl](kaufmann-immobilier-finance-sarl.md) · Cortaillod · `?`
+- [L & C IMMO Sàrl](l-c-immo-sarl.md) · Val-de-Travers · `?`
+- [L'Atelier Immobilier Sàrl](l-atelier-immobilier-sarl.md) · Le Landeron · `giliane.storrer@atelier-immobilier.ch`
+- [LAFIDU Immobilier Sàrl](lafidu-immobilier-sarl.md) · Milvignes · `info@lafidu.ch`
+- [LARAL Immobilier SA](laral-immobilier-sa.md) · Neuchâtel · `?`
+- [LES AVENTURIERS IMMOBILIERS SA](les-aventuriers-immobiliers-sa.md) · Val-de-Ruz · `?`
+- [LOTA IMMO SA](lota-immo-sa.md) · Neuchâtel · ``
+- [LRI, LAURENT ROCHAT IMMOBILIER SARL](lri-laurent-rochat-immobilier-sarl.md) · Milvignes · `?`
+- [La Régie de l'Administrateur - Sibelle SA](la-regie-de-l-administrateur-sibelle-sa.md) · La Grande Béroche · `?`
+- [Le Crêt Immobilier Sàrl](le-cret-immobilier-sarl.md) · Neuchâtel · `?`
+- [Lenzlinger Immo SA](lenzlinger-immo-sa.md) · Neuchâtel · `?`
+- [Littoral-Gérance SA](littoral-gerance-sa.md) · Neuchâtel · `info@littoralgerance.ch`
+- [Lopes Immobilier Sàrl](lopes-immobilier-sarl.md) · La Grande Béroche · `?`
+- [MG Immobilier Sàrl](mg-immobilier-sarl.md) · Milvignes · ``
+- [MRJ Immobilier Sàrl](mrj-immobilier-sarl.md) · Le Locle · `?`
+- [MYL Immobilier SA](myl-immobilier-sa.md) · Le Locle · `?`
+- [Maintenance-Immobilière Addor Sàrl](maintenance-immobiliere-addor-sarl.md) · Cortaillod · `?`
+- [Marti Gérance et Conseils Sàrl](marti-gerance-et-conseils-sarl.md) · Laténa · `ivana@martigerance.ch`
+- [Marti Patrimoine Immobilier Sàrl](marti-patrimoine-immobilier-sarl.md) · Laténa · `?`
+- [Métropole Gérance SA](metropole-gerance-sa.md) · La Chaux-de-Fonds · `?`
+- [Nautilus Immobiliers SA](nautilus-immobiliers-sa.md) · La Chaux-de-Fonds · ``
+- [Neuch'Immo Sàrl](neuch-immo-sarl.md) · Laténa · `?`
+- [Noro Immobilier S.A.](noro-immobilier-s-a.md) · Cortaillod · `info@noroimmobilier.com`
+- [OCG Immobilier Sàrl](ocg-immobilier-sarl.md) · La Grande Béroche · `?`
+- [Offidus Régie Immobilière SA](offidus-regie-immobiliere-sa.md) · Cortaillod · `bernard.fabbri@offidus.ch`
+- [Onyx Promotion Immobilière SA](onyx-promotion-immobiliere-sa.md) · Neuchâtel · `?`
+- [Optigestion Services Immobiliers SA](optigestion-services-immobiliers-sa.md) · Neuchâtel · `info@optigestionsa.ch`
+- [PIMM Immobilier Sàrl](pimm-immobilier-sarl.md) · La Chaux-de-Fonds · `hello@pimm.ch (+5)`
+- [POLE-IMMO SA](pole-immo-sa.md) · Cortaillod · ``
+- [Patrimoine Gérance SA](patrimoine-gerance-sa.md) · Laténa · `location@patrimoine.immo`
+- [Paysage IMMO Sàrl](paysage-immo-sarl.md) · Val-de-Ruz · `?`
+- [Perspectives, promotions immobilières SA](perspectives-promotions-immobilieres-sa.md) · La Chaux-de-Fonds · `?`
+- [Proud-Immo Sàrl](proud-immo-sarl.md) · Neuchâtel · `contact@proud-immo.ch`
+- [R2 Immo SA](r2-immo-sa.md) · Milvignes · `?`
+- [RB immobilier Sàrl](rb-immobilier-sarl.md) · Val-de-Travers · `?`
+- [RBA Immobilier SA](rba-immobilier-sa.md) · Val-de-Ruz · ``
+- [RELSI Immobilier Sàrl](relsi-immobilier-sarl.md) · Laténa · `?`
+- [RFP Immo Sàrl](rfp-immo-sarl.md) · Le Locle · `?`
+- [RT-Immo SA](rt-immo-sa.md) · Milvignes · `info@rt-immo.ch (+1)`
+- [Raffaello Radicchi immobilier SA](raffaello-radicchi-immobilier-sa.md) · La Chaux-de-Fonds · `?`
+- [Reysus Gérance SA](reysus-gerance-sa.md) · Milvignes · `gerance@reysus.ch (+1)`
+- [Ribaux von Kessel, services immobiliers, SA](ribaux-von-kessel-services-immobiliers-sa.md) · Neuchâtel · `info@rvksa.ch (+1)`
+- [Régie des Montagnes Sàrl](regie-des-montagnes-sarl.md) · La Chaux-de-Fonds · `info@regiedesmontagnes.ch`
+- [Régie immobilière Jouval SA](regie-immobiliere-jouval-sa.md) · Neuchâtel · `info@jouval.ch (+1)`
+- [Régie immobilière Muller et Christe S.A.](regie-immobiliere-muller-et-christe-s-a.md) · Neuchâtel · `?`
+- [SVM Immobilier Sàrl](svm-immobilier-sarl.md) · La Chaux-de-Fonds · `contact@svmimmobilier.com`
+- [Société de Gestion et Gérance SGG SA](societe-de-gestion-et-gerance-sgg-sa.md) · Neuchâtel · ``
+- [Société de Service Immobilier Sisa SA](societe-de-service-immobilier-sisa-sa.md) · Neuchâtel · `?`
+- [Soguel Immo SA](soguel-immo-sa.md) · Neuchâtel · `info@soguelimmo.ch`
+- [Surdez Immobilier Sàrl](surdez-immobilier-sarl.md) · La Chaux-de-Fonds · `?`
+- [Swiss Select Immo SA](swiss-select-immo-sa.md) · Neuchâtel · `info@swissselect.ch`
+- [TERRIER SA](terrier-sa.md) · Val-de-Ruz · `info@terriersa.ch`
+- [TLH Immo Sàrl](tlh-immo-sarl.md) · Val-de-Travers · `?`
+- [TOP Suisse Immobilier Sàrl](top-suisse-immobilier-sarl.md) · Le Landeron · `?`
+- [TR Agence immobilière SA](tr-agence-immobiliere-sa.md) · Val-de-Travers · `?`
+- [Tala Agence Immobilière Sàrl](tala-agence-immobiliere-sarl.md) · Val-de-Ruz · `?`
+- [Transact Immobilier SA](transact-immobilier-sa.md) · La Chaux-de-Fonds · `?`
+- [Trivium Immo Sàrl](trivium-immo-sarl.md) · La Chaux-de-Fonds · `contact@trivium-immo.ch`
+- [Tschäppät & Moret Immobilier S.A.](tschappat-moret-immobilier-s-a.md) · Cornaux · `info@tschappat-moret.ch`
+- [VB Immo SA](vb-immo-sa.md) · Val-de-Travers · ``
+- [VDS Immobilier Sàrl](vds-immobilier-sarl.md) · La Chaux-de-Fonds · `p.vieira@vds-immo.ch`
+- [ViaTerra SA](viaterra-sa.md) · Neuchâtel · `laurence.schmutz@viaterra.ch`
+- [XLS Immobilier SA](xls-immobilier-sa.md) · Neuchâtel · `?`
+- [Y&H Immo Sàrl](y-h-immo-sarl.md) · Neuchâtel · `?`
+- [aa GIFS Sàrl](aa-gifs-sarl.md) · Neuchâtel · `?`
+- [afa-immo SA](afa-immo-sa.md) · Laténa · `?`
+- [cip compagnie immobilière de participations SA](cip-compagnie-immobiliere-de-participations-sa.md) · Neuchâtel · `?`
+- [j2s Immo SA](j2s-immo-sa.md) · Neuchâtel · ``
+
+## regie-letting (48)
+
+lets property; the administration may sit elsewhere
+
+- [A&D Sàrl](a-d-sarl.md) · La Grande Béroche · ``
+- [ADOC Nettoyage et Entretien Sàrl](adoc-nettoyage-et-entretien-sarl.md) · Neuchâtel · ``
+- [AIFOS Sàrl](aifos-sarl.md) · Val-de-Ruz · ``
+- [ALEA Capital Sàrl](alea-capital-sarl.md) · Neuchâtel · ``
+- [ARALAND Sàrl](araland-sarl.md) · Cortaillod · ``
+- [Alternative Immo SA](alternative-immo-sa.md) · La Chaux-de-Fonds · ``
+- [Ark Investments Sàrl](ark-investments-sarl.md) · Neuchâtel · ``
+- [Artimmo Sàrl](artimmo-sarl.md) · La Sagne · ``
+- [Bibi Immobilier S.A.](bibi-immobilier-s-a.md) · Neuchâtel · ``
+- [CONSTANCE IMMOBILIER SA](constance-immobilier-sa.md) · Laténa · ``
+- [Closel2b Immo SA](closel2b-immo-sa.md) · Neuchâtel · ``
+- [Couceiro Immobilier Sàrl](couceiro-immobilier-sarl.md) · Val-de-Ruz · ``
+- [DB Immobilier & Conseils SA](db-immobilier-conseils-sa.md) · La Grande Béroche · ``
+- [DVE-immo Sàrl](dve-immo-sarl.md) · La Chaux-de-Fonds · ``
+- [DZ Immo Sàrl](dz-immo-sarl.md) · Le Landeron · ``
+- [EJ Immobilier SA](ej-immobilier-sa.md) · La Grande Béroche · ``
+- [EJS Immobiliers SA](ejs-immobiliers-sa.md) · Neuchâtel · ``
+- [ELEONORE Immobilier SA](eleonore-immobilier-sa.md) · Neuchâtel · ``
+- [FIDAGO-IMMO SA](fidago-immo-sa.md) · La Grande Béroche · ``
+- [FSC Immo SA](fsc-immo-sa.md) · La Chaux-de-Fonds · ``
+- [Flip & Rex Immo Sàrl](flip-rex-immo-sarl.md) · Le Locle · ``
+- [GMH Immo Sàrl](gmh-immo-sarl.md) · Milvignes · ``
+- [Gil Immo SA](gil-immo-sa.md) · La Chaux-de-Fonds · ``
+- [IMG Immobilier Sàrl](img-immobilier-sarl.md) · Laténa · ``
+- [Immo 1902 SA](immo-1902-sa.md) · Neuchâtel · ``
+- [Immo Lora Sàrl](immo-lora-sarl.md) · Neuchâtel · ``
+- [Jeanmaire Immobilier SA](jeanmaire-immobilier-sa.md) · La Chaux-de-Fonds · ``
+- [LFI Immobilier SA](lfi-immobilier-sa.md) · La Chaux-de-Fonds · ``
+- [LaSuite Immo SA](lasuite-immo-sa.md) · Neuchâtel · ``
+- [Legacy Immobiliers SA](legacy-immobiliers-sa.md) · Val-de-Ruz · ``
+- [MIG immo SA](mig-immo-sa.md) · Laténa · ``
+- [MOVY Immobilier Sàrl](movy-immobilier-sarl.md) · La Chaux-de-Fonds · ``
+- [Martin's Immobilier Sàrl](martin-s-immobilier-sarl.md) · La Grande Béroche · ``
+- [Mingu Immo SA](mingu-immo-sa.md) · La Chaux-de-Fonds · ``
+- [Mivelle immo Sàrl](mivelle-immo-sarl.md) · La Grande Béroche · ``
+- [My-Defensor Sàrl](my-defensor-sarl.md) · Neuchâtel · `admin@my-defensor.ch`
+- [NFS Immobiliers SA](nfs-immobiliers-sa.md) · Neuchâtel · ``
+- [NOCO Immobilier Sàrl](noco-immobilier-sarl.md) · La Chaux-de-Fonds · ``
+- [Nemeta Immobilier SA](nemeta-immobilier-sa.md) · La Grande Béroche · ``
+- [OAK PARK IMMOBILIER SA](oak-park-immobilier-sa.md) · La Grande Béroche · ``
+- [Petoud-Calame Immobilier SA](petoud-calame-immobilier-sa.md) · La Chaux-de-Fonds · ``
+- [RCH IMMOBILIER Sàrl](rch-immobilier-sarl.md) · Milvignes · ``
+- [Robert Immobilier SA](robert-immobilier-sa.md) · Laténa · ``
+- [Skyroad Immo Sàrl](skyroad-immo-sarl.md) · Val-de-Ruz · ``
+- [Société coopérative immobilière de Môtiers](societe-cooperative-immobiliere-de-motiers.md) · Val-de-Travers · ``
+- [Société coopérative immobilière de Noiraigue](societe-cooperative-immobiliere-de-noiraigue.md) · Val-de-Travers · ``
+- [VDR Immobilier SA](vdr-immobilier-sa.md) · Val-de-Ruz · ``
+- [W+W Immo SA](w-w-immo-sa.md) · Neuchâtel · ``

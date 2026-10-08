@@ -1,0 +1,36 @@
+# Rochelle Immobilien AG
+
+| | |
+|---|---|
+| UID | `CHE288468202` |
+| Legal form | Société anonyme |
+| Canton | SZ (de) |
+| Registered seat | Wollerau |
+| Address | Roosweidstrasse 11f, 8832 Wollerau |
+| Register status | ACTIVE |
+
+## Relevance for Limen
+
+**regie-letting** — lets property; the administration may sit elsewhere
+
+purpose names letting but not administration, name agrees
+
+## Where to write
+
+- not looked for yet
+
+No website resolved.
+
+## What the register says it does
+
+> Die Gesellschaft bezweckt den An- und Verkauf von Liegenschaften sowie deren Überbauung, Vermietung, Vermittlung und Verwaltung. Die Gesellschaft ist befugt, alle Geschäfte durchzuführen, welche mit diesem Geschäftszweck direkt oder indirekt im Zusammenhang stehen oder ihn zu fördern geeignet sind. Sie kann Grundstücke im In- und Ausland kaufen, verkaufen und bewirtschaften. Die Gesellschaft kann Zweigniederlassungen errichten, sich an Unternehmungen mit ähnlichem oder anderem Geschäftsbereich beteiligen und sich mit solchen Unternehmungen zusammenschliessen sowie die Finanzierung und die Bewirtschaftung von Lizenzen, Patenten und weiteren Schutzrechten übernehmen.
+
+## Sources
+
+- Register entry: https://www.zefix.admin.ch/fr/search/entity/list?name=CHE288468202&directLink=true
+- Grading: rule over the registered purpose, see `scripts/classify_regies.py`
+- Addresses: none held
+- Cascade: `intel.address_hunt`, outcome `not run`
+
+The register carries no warranty and has no legal effect; only the certified
+cantonal excerpt and the FOSC publication text are binding.
