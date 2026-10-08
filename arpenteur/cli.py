@@ -38,6 +38,7 @@ from .stages import (
     sync,
     verify,
 )
+from .stages import bounces as bounce_stage
 
 
 def _split(value: str | None) -> list[str] | None:
@@ -330,6 +331,38 @@ def cmd_sendlist(args: argparse.Namespace) -> int:
         print("individual is a different act under the nLPD and UWG Art.")
         print("3(1)(o), and the unclear group has not been established")
         print("either way, so neither belongs in a first send by default.")
+    return 0
+
+
+def cmd_bounces(args: argparse.Namespace) -> int:
+    """Read delivery failures out of the mailbox and record them.
+
+    The mailbox-level half of `verify`: DNS says a domain takes mail, and only
+    a delivery attempt says whether the mailbox at it exists. Nothing is sent
+    from here; the send goes through the operator's own provider.
+    """
+    settings = load_settings()
+    conn = db.open_db(settings.database_url)
+    run_id = db.start_run(conn, "bounces", vars(args))
+    since = None
+    if args.since:
+        try:
+            since = dt.datetime.fromisoformat(args.since)
+        except ValueError:
+            print(f"error: --since wants a date like 2026-10-01, not {args.since!r}",
+                  file=sys.stderr)
+            return 1
+    try:
+        stats = bounce_stage.run(
+            settings, conn, folder=args.folder, limit=args.limit,
+            since=since, dry_run=args.dry_run,
+        )
+    except Exception as exc:
+        conn.rollback()
+        db.finish_run(conn, run_id, error=str(exc))
+        print(f"error: {exc}", file=sys.stderr)
+        return 1
+    db.finish_run(conn, run_id, stats)
     return 0
 
 
@@ -2035,6 +2068,25 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--out", default="", help="write a CSV here instead of printing")
     p.add_argument("--limit", type=int, default=0, help="how many to print")
     p.set_defaults(func=cmd_sendlist)
+
+    p = sub.add_parser(
+        "bounces",
+        help="read delivery failures from the mailbox into the address verdicts",
+    )
+    p.add_argument("--folder", default="INBOX", help="which folder to read")
+    p.add_argument(
+        "--since", default="", metavar="YYYY-MM-DD",
+        help="only messages the server dates on or after this day",
+    )
+    p.add_argument(
+        "--limit", type=int, default=500,
+        help="how many of the most recent messages to screen (default 500)",
+    )
+    p.add_argument(
+        "--dry-run", action="store_true",
+        help="report what would be recorded, write nothing",
+    )
+    p.set_defaults(func=cmd_bounces)
 
     p = sub.add_parser(
         "workspace",

@@ -1656,8 +1656,16 @@ def domains_to_check(
     ]
 
 
+# A verdict reached by trying the mailbox, which a verdict about the domain
+# must not overwrite. Held here as names rather than imported, because the
+# vocabulary belongs to `sources` and `scout` may not depend on it; the store's
+# only interest is that these outrank a DNS answer.
+MAILBOX_VERDICTS = ("bounced",)
+
+
 def save_domain_verdict(
-    conn: Connection, domain: str, *, status: str, note: str
+    conn: Connection, domain: str, *, status: str, note: str,
+    outranked_by: tuple[str, ...] = MAILBOX_VERDICTS,
 ) -> int:
     """Write one domain's verdict to every address at it. Returns the count.
 
@@ -1665,16 +1673,57 @@ def save_domain_verdict(
     domain rather than in a table of its own. A domain table would be the
     normalised shape and would also be a second place for an address to exist,
     which is how a send list and a verdict list come to disagree.
+
+    WHAT IT WILL NOT TOUCH. An address that bounced is skipped. A domain
+    resolving says nothing about a mailbox at it, so a DNS sweep run after a
+    send would otherwise mark `info@live-domain.ch` deliverable again on the
+    strength of the MX record that was never in doubt, erasing the one answer
+    that cost a delivery attempt to get.
     """
     done = conn.execute(
         """
         UPDATE core.contact
            SET status = %s, status_note = %s, status_at = %s
          WHERE kind = 'email' AND lower(split_part(value, '@', 2)) = %s
+           AND (status IS NULL OR NOT (status = ANY(%s)))
         """,
-        (status, note, now(), domain.strip().lower()),
+        (status, note, now(), domain.strip().lower(), list(outranked_by)),
     )
     return int(getattr(done, "rowcount", 0) or 0)
+
+
+def save_mailbox_verdict(
+    conn: Connection, address: str, *, status: str, note: str
+) -> int:
+    """Write a verdict about one mailbox. Returns 1 when a row was held.
+
+    Scoped to the address and not the domain, which is the whole difference
+    from `save_domain_verdict`: `info@x.ch` failing says nothing about
+    `location@x.ch`, and a régie commonly runs one and not the other.
+    """
+    done = conn.execute(
+        """
+        UPDATE core.contact
+           SET status = %s, status_note = %s, status_at = %s
+         WHERE kind = 'email' AND lower(value) = %s
+        """,
+        (status, note, now(), address.strip().lower()),
+    )
+    return int(getattr(done, "rowcount", 0) or 0)
+
+
+def addresses_held(conn: Connection) -> frozenset[str]:
+    """Every email address the survey holds, for matching a report against.
+
+    A delivery report quotes the operator's own sending address and whatever
+    list plumbing sits in the headers. Without this set those get recorded as
+    bounced.
+    """
+    return frozenset(
+        r["value"] for r in conn.execute(
+            "SELECT lower(value) AS value FROM core.contact WHERE kind = 'email'"
+        )
+    )
 
 
 def send_list(

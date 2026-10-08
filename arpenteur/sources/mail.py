@@ -385,6 +385,23 @@ class Mailbox:
             for uid, raw in _pairs(data):
                 yield header_from(folder, uid, raw)
 
+    def raw(self, folder: str, uid: int) -> bytes:
+        """One message exactly as it arrived. PEEK, so it stays unread.
+
+        `body` is the right reader for correspondence and the wrong one for a
+        delivery report: it keeps `text/plain` and `text/html` and discards
+        everything else, and a report's verdict lives in a
+        `message/delivery-status` part that is neither. The MIME tree has to
+        survive, so the bytes come back whole and the caller parses them.
+        """
+        self._select(folder)
+        ok, data = self.imap.uid("FETCH", str(uid), "(BODY.PEEK[])")
+        if ok != "OK":
+            raise MailError(f"The server refused FETCH of {uid} in {folder}")
+        for _uid, blob in _pairs(data):
+            return blob
+        return b""
+
     def body(self, folder: str, uid: int) -> Body:
         """The full text of one message. PEEK, so it stays unread."""
         self._select(folder)
