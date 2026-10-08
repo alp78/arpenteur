@@ -86,10 +86,36 @@ def _scoped(args: argparse.Namespace):
     )
 
 
+def _search_words(args: argparse.Namespace) -> list[str]:
+    """The words a name search asks for, from the flag or from a file.
+
+    A file because a campaign's word list runs to a couple of dozen entries in
+    three languages and belongs under version control, where a diff says what
+    changed between two runs. Blank lines and `#` comments are skipped so the
+    list can be annotated with what each word was meant to catch.
+    """
+    words: list[str] = []
+    for raw in (getattr(args, "name", "") or "").split(","):
+        if raw.strip():
+            words.append(raw.strip())
+    path = getattr(args, "name_file", "") or ""
+    if path:
+        for line in Path(path).read_text(encoding="utf-8").splitlines():
+            line = line.split("#", 1)[0].strip()
+            if line:
+                words.append(line)
+    # Order preserved, duplicates dropped: the log reads in the order the file
+    # is written, and a word listed twice is one request wasted per canton.
+    return list(dict.fromkeys(words))
+
+
 def cmd_source(args: argparse.Namespace) -> int:
     settings = _scoped(args)
+    words = _search_words(args)
     conn = db.open_db(_database_url(settings, args.fixture))
     stage = f"source:{args.provider}" + (":fixture" if args.fixture else "")
+    if words:
+        stage += ":by-name"
     run_id = db.start_run(conn, stage, vars(args))
     # The fixture set is its own small territory, so announcing the configured
     # one would name cantons the run is not going to touch.
@@ -98,25 +124,49 @@ def cmd_source(args: argparse.Namespace) -> int:
         if args.fixture
         else f"territory: {settings.territory.describe()}"
     )
+    if words:
+        unit = "word" if len(words) == 1 else "words"
+        print(f"searching {len(words)} {unit}, every legal form")
     try:
-        stats = source.run_zefix(
-            settings,
-            conn,
-            resume=not args.no_resume,
-            hydrate=not args.no_hydrate,
-            limit=args.limit,
-            bulk=args.bulk,
-            fixture=args.fixture,
-        )
+        if words:
+            stats = source.run_by_name(
+                settings,
+                conn,
+                words=words,
+                hydrate=not args.no_hydrate,
+                limit=args.limit,
+                bulk=args.bulk,
+                fixture=args.fixture,
+                dry_run=args.dry_run,
+            )
+        else:
+            stats = source.run_zefix(
+                settings,
+                conn,
+                resume=not args.no_resume,
+                hydrate=not args.no_hydrate,
+                limit=args.limit,
+                bulk=args.bulk,
+                fixture=args.fixture,
+            )
     except Exception as exc:
         db.finish_run(conn, run_id, error=str(exc))
         print(f"error: {exc}", file=sys.stderr)
         return 1
     db.finish_run(conn, run_id, stats)
-    print(
-        f"searched {stats['searched']} prefixes, "
-        f"{stats['seen']} company rows, {stats['hydrated']} hydrated"
-    )
+    if words:
+        print(
+            f"searched {stats['searched']} canton-word "f"{'pair' if stats['searched'] == 1 else 'pairs'}, "
+            f"{stats['found']} distinct companies, {stats['hydrated']} hydrated"
+            + (" (dry run, nothing written)" if args.dry_run else "")
+        )
+        if stats["refused"]:
+            print(f"{stats['refused']} searches refused as too broad")
+    else:
+        print(
+            f"searched {stats['searched']} prefixes, "
+            f"{stats['seen']} company rows, {stats['hydrated']} hydrated"
+        )
     conn.close()
     return 0
 
@@ -1669,7 +1719,8 @@ def cmd_programme(args: argparse.Namespace) -> int:
     if args.action == "bring-in":
         added = clients_store.bring_in_members(
             conn, programme_id, sector=args.sector, canton=args.canton,
-            band=args.band, segment=args.segment, limit=args.limit,
+            band=args.band, segment=args.segment, legal_form=args.legal_form,
+            limit=args.limit,
         )
         conn.commit()
         print(f"{added} companies added to {programme['code']}"
@@ -1993,6 +2044,23 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--no-resume", action="store_true", help="re-sweep completed prefixes")
     p.add_argument("--no-hydrate", action="store_true", help="skip the detail pass")
     p.add_argument("--limit", type=int, help="cap the detail pass")
+    p.add_argument(
+        "--name",
+        default="",
+        help="comma separated name patterns, e.g. '*tourisme*,*bergbahn*'. The "
+             "registry accepts a leading wildcard, so this finds a trade "
+             "instead of sweeping a territory, across every legal form",
+    )
+    p.add_argument(
+        "--name-file",
+        default="",
+        help="a file of name patterns, one per line, # for a comment",
+    )
+    p.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="with --name: search and count, write nothing",
+    )
     p.add_argument(
         "--bulk",
         action="store_true",
@@ -2471,6 +2539,13 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--segment", default="", help="for bring-in")
     p.add_argument("--canton", default="", help="comma separated, for bring-in")
     p.add_argument("--band", default="", help="fit band, for bring-in")
+    p.add_argument(
+        "--legal-form",
+        default="",
+        help="comma separated eCH-0097 uids, for bring-in. Naming any excludes "
+             "the rest, 0101 included: a sole trader is a named person, and "
+             "writing to one carries nLPD obligations a company does not",
+    )
     p.add_argument("--limit", type=int, default=25, help="how many, for bring-in")
     p.add_argument(
         "--from-stage", dest="from_stage", default="contacted",

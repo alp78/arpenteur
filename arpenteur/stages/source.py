@@ -15,7 +15,7 @@ from .. import db
 from ..config import Settings
 from ..kernel.db import Connection
 from ..http import PoliteClient
-from ..sources.zefix import ZefixClient, walk_prefixes
+from ..sources.zefix import ResultListTooLarge, ZefixClient, walk_prefixes
 from ..sources.zefix_fixture import (
     DEFAULT_CANTONS as FIXTURE_CANTONS,
     DEFAULT_LEGAL_FORMS as FIXTURE_LEGAL_FORMS,
@@ -186,6 +186,122 @@ def _run_zefix(
             settings, conn, zefix=zefix, limit=limit, bulk=bulk, log=log
         )
 
+    return stats
+
+
+def run_by_name(
+    settings: Settings,
+    conn: Connection,
+    *,
+    words: list[str],
+    cantons: list[str] | None = None,
+    hydrate: bool = True,
+    limit: int | None = None,
+    bulk: bool = False,
+    fixture: bool = False,
+    dry_run: bool = False,
+    log: Callable[[str], None] = print,
+) -> dict[str, Any]:
+    """Find the companies whose registered name carries a given word.
+
+    The sweep walks every name prefix because it wants a whole territory. This
+    wants a trade: the organisations whose name says `tourismus`, `bergbahn` or
+    `naturpark`. Zefix answers a leading wildcard, measured on 08.10.2026 in
+    Valais, where `*tourisme*` returns 19 companies and `Tourisme*` returns
+    none. A trade costs one request per canton per word, against the several
+    hundred a prefix walk spends on the same cantons.
+
+    Three differences from the sweep, each deliberate.
+
+    **Every legal form comes back**, because `legal_form_id` is left unset. The
+    forms a trade uses are not the forms a survey of companies sweeps: 104 of
+    the 798 tourism organisations found this way are associations, and
+    `survey.legal_forms` has never collected one.
+
+    **Nothing is written to `intel.sweep`.** A name search has not completed a
+    prefix, and recording one would make a later full sweep skip territory it
+    never read. The run is recorded in `intel.run` with its words, which is
+    where the Limen name gate is auditable today.
+
+    **Hydration is asked for by uid.** The found set is a few hundred companies
+    inside a register of half a million, so `hydrate_pending` is handed the uids
+    rather than a canton list that would pull in everything else awaiting
+    detail.
+    """
+    if fixture:
+        return _run_names(
+            settings, conn, zefix=FixtureZefixClient(),
+            cantons=cantons or list(FIXTURE_CANTONS), words=words,
+            hydrate=hydrate, limit=limit, bulk=bulk, dry_run=dry_run, log=log,
+        )
+
+    with _client(settings) as http:
+        return _run_names(
+            settings, conn, zefix=ZefixClient(http, settings.zefix.base_url),
+            cantons=cantons or settings.cantons, words=words,
+            hydrate=hydrate, limit=limit, bulk=bulk, dry_run=dry_run, log=log,
+        )
+
+
+def _run_names(
+    settings: Settings,
+    conn: Connection,
+    *,
+    zefix: ZefixClient | FixtureZefixClient,
+    cantons: list[str],
+    words: list[str],
+    hydrate: bool,
+    limit: int | None,
+    bulk: bool,
+    dry_run: bool,
+    log: Callable[[str], None] = print,
+) -> dict[str, Any]:
+    stats: dict[str, Any] = {
+        "searched": 0,
+        "seen": 0,
+        "found": 0,
+        "refused": 0,
+        "hydrated": 0,
+        "words": words,
+        "cantons": cantons,
+    }
+    # Distinct companies, because a tourism office whose name carries both
+    # `tourismus` and `bergbahn` is one organisation answering twice, and a
+    # count of rows seen would report the word list rather than the cohort.
+    found: set[str] = set()
+
+    for canton in cantons:
+        for word in words:
+            stats["searched"] += 1
+            try:
+                companies = zefix.search(name=word, canton=canton)
+            except ResultListTooLarge:
+                # The sweep narrows a refused prefix. A word cannot be narrowed
+                # without changing what was asked for, so this is reported and
+                # left to the operator.
+                stats["refused"] += 1
+                log(f"  ! {word} is too broad in {canton}, narrow the word")
+                continue
+            for company in companies:
+                if not company.uid:
+                    continue
+                # The search answer carries no canton, exactly as in the sweep.
+                company.canton = company.canton or canton
+                found.add(company.uid)
+                if not dry_run:
+                    db.upsert_company(conn, company.as_row())
+                stats["seen"] += 1
+            if companies:
+                log(f"{canton} {word}: {len(companies)}")
+        if not dry_run:
+            conn.commit()
+
+    stats["found"] = len(found)
+    if hydrate and found and not dry_run:
+        stats["hydrated"] = hydrate_pending(
+            settings, conn, zefix=zefix, uids=sorted(found),
+            limit=limit, bulk=bulk, log=log,
+        )
     return stats
 
 

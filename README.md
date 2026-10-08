@@ -242,6 +242,15 @@ uv run arpenteur source zefix --canton VS --legal-form 0107
 # a sweep is resumable: re-running skips prefixes already covered
 uv run arpenteur source zefix --canton VS --legal-form 0107
 
+# or find one trade across the whole country instead of sweeping a territory.
+# The register accepts a leading wildcard, so a word inside a name is
+# searchable: `*tourisme*` answers with 19 companies in Valais where
+# `Tourisme*` answers with none. Every legal form comes back, which is the
+# point: the associations and public-law institutes a company survey never
+# sweeps are where a trade like this one lives.
+uv run arpenteur source --name '*tourisme*,*bergbahn*' --region suisse --dry-run
+uv run arpenteur source --name-file words/drymos.txt --region suisse
+
 # sort what was found into sectors and segments (--dry-run writes nothing)
 uv run arpenteur profile --limit 100 --dry-run
 uv run arpenteur profile

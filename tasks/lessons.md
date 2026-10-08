@@ -48,3 +48,37 @@ case; a guessed column name in an f-string fails only when that branch runs.
 Two state changes written in one transaction share `at` to the microsecond, so
 `ORDER BY at` returns them in whichever order Postgres likes. Order by `id`
 when the sequence is the thing under test.
+
+## A patch that matches nothing changes nothing, and says so to nobody
+
+`--legal-form` was added to the programme parser by replacing a line of
+`cli.py`. The line in the file carried `default=""` and the pattern did not, so
+the replacement matched zero times, the file was rewritten unchanged, and
+`ruff` passed. The flag was missing from `--help`, which is the only reason it
+was caught.
+
+**The rule.** A patch applied by pattern asserts its own match count, or the
+edit is verified by reading the thing a user would see. `assert old in t`
+before the replace; `--help` after it.
+
+## A classifier is scoped before its rules are tuned
+
+The first tourism run graded all 33'212 hydrated companies and the output was
+mostly Geneva service firms: a landscaper on `paysage`, a travel agent on
+`forfaits touristiques`, a sports agency on `encadrement`. Two rounds went into
+tightening patterns before the real fault surfaced, which was the selection.
+The cohort is the population the search went looking for, and once the grading
+ran over that instead, the same patterns behaved.
+
+**The rule.** State which rows are even candidates before writing a rule that
+sorts them. A rule tuned against the wrong population is tuned against noise.
+
+## The register matches accents literally
+
+`*telecabine*` answers with nothing and `*télécabine*` finds the Vercorin
+company; `*remontees*` answers with 1 against 8 for `*remontées*`. The same
+holds for German umlauts.
+
+**The rule.** A name search carries both spellings of every accented word, and
+a word that answers with nothing is recorded as checked rather than quietly
+dropped, so the next person does not spend the requests again.

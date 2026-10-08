@@ -667,7 +667,11 @@ def load_settings(root: Path | None = None) -> Settings:
             if str(name).strip()
         ),
         zefix=ZefixConfig(
-            base_url=zefix_raw.get("base_url", ""),
+            # `ZEFIX_URL` beside the credentials it belongs with. It sat in a
+            # working `.env` for weeks and was read by nothing, so a key that
+            # looked like configuration was not: whoever set it would have
+            # believed the tool was calling the host they named.
+            base_url=os.environ.get("ZEFIX_URL") or zefix_raw.get("base_url", ""),
             rate_limit=float(zefix_raw.get("rate_limit", 2.0)),
             max_retries=int(zefix_raw.get("max_retries", 4)),
             contact=zefix_raw.get("contact", "arpenteur"),

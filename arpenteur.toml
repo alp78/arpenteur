@@ -441,6 +441,15 @@ regie-letting = "Lets property without naming management: location, Vermietung, 
 regie-brokerage = "Brokerage, sale or development only: courtage, promotion, Vermittlung, Makler. Sees a handover occasionally rather than weekly."
 regie-owner = "Holds or invests in property and names no management or letting activity. The handovers happen, but an agency runs them."
 
+# Who advises a visitor about Swiss nature, graded by how close that advice sits
+# to the lakes, summits, woods and protected areas an atlas lists. None of these
+# is the reader of the application: a tourism office recommends it, and the
+# distinction decides what a message may claim.
+tourism-office = "The registered purpose names tourism promotion or visitor information for a place or a region: tourisme, Tourismusförderung, Verkehrsverein, promozione turistica, ente turistico."
+nature-park = "A protected area managed, interpreted or presented to the public: parc naturel régional, Naturpark, biosphère, réserve, Naturzentrum, sentier didactique."
+mountain-transport = "Carries people up a mountain: remontées mécaniques, Bergbahn, Luftseilbahn, Sesselbahn, funiculaire, Skilift, impianti di risalita."
+outdoor-guide = "Guides walkers or maintains marked routes: randonnée, sentiers balisés, Wanderwege, Bergführer, Alpinschule, escursioni accompagnate."
+
 # What line of business a company is in, which is a different question from how
 # it fits a campaign. Exactly one per company, chosen from this list and never
 # invented, so `restaurants in Vaud` is a filter rather than a search for the

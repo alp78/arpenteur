@@ -1,0 +1,94 @@
+# Name patterns for the Drymos cohort, read by `arpenteur source --name-file`.
+#
+# The register cannot be searched by activity, so a trade has to be found by the
+# words its members put in their own name. Zefix accepts a leading wildcard:
+# measured in Valais on 08.10.2026, `*tourisme*` answers with 19 companies and
+# `Tourisme*` with none.
+#
+# Every count below is a national search run on 08.10.2026, before the file was
+# written. A word earns its line by answering; the words that answered with
+# nothing are recorded at the foot so nobody spends 26 requests on them again.
+#
+# The name casts the net. `scripts/classify_tourism.py` grades the catch on the
+# registered purpose, which is what separates a destination organisation from a
+# billboard-advertising firm that happens to be called Outdoor something.
+
+# --- tourism offices and destination organisations --------------------------
+*tourisme*                 # 52
+*tourismus*                # 148
+*turismo*                  # 23
+*tourist*                  # 85
+*verkehrsverein*           # 4
+*kurverein*                # 1
+*ente turistico*           # 1
+*tourismusverein*          # 4
+*société de développement* # 9, the Valais form of a local office, mixed with
+                           #    companies that share the words
+*ferien*                   # 226, noisy: holiday lets and animal boarding, but
+                           #      Graubünden Ferien is named this way
+*welcome*                  # 45, noisy, and Bern Welcome AG is in it
+*destination*              # 41, mixed: real destination organisations beside
+                           #     travel wholesalers and event agencies
+
+# --- mountain railways, cable cars and lifts --------------------------------
+*bergbahn*                 # 44
+*seilbahn*                 # 76
+*luftseilbahn*             # 36
+*standseilbahn*            # 2
+*sesselbahn*               # 2
+*gondelbahn*               # 3
+*sportbahn*                # 18
+*skilift*                  # 103
+*remontées*                # 8
+*remontees*                # 1, the unaccented spelling answers separately
+*funiculaire*              # 5
+*téléphérique*             # 3
+*télécabine*               # 1
+*télésiège*                # 1
+*téléski*                  # 16
+*funivia*                  # 2
+*sciovie*                  # 1
+
+# --- parks, reserves and nature centres -------------------------------------
+*naturpark*                # 5
+*parc naturel*             # 1
+*naturzentrum*             # 1
+*naturerlebnis*            # 5
+*biosphäre*                # 4
+*nationalpark*             # 1, the Swiss National Park itself
+*pro natura*               # 5
+
+# --- marked routes, guiding and mountain schools ----------------------------
+*wanderweg*                # 5
+*sentier*                  # 21
+*randonnée*                # 3
+*randonnee*                # 1
+*bergführer*               # 12
+*bergsteig*                # 4
+*alpinschule*              # 6
+*trekking*                 # 16
+*outdoor*                  # 147, and mostly not this trade: gyms, grills,
+                           #      clothing and billboard advertising. Kept
+                           #      because the purpose gate rejects those and
+                           #      the real outdoor operators are in here.
+
+# Searched on 08.10.2026 and answered with nothing, nationally:
+#   *verkehrsbüro*  *verkehrsbuero*  *office du tourisme*  *telecabine*
+#   *funivie*  *parco naturale*  *biosphaere*  *escursion*  *escursioni*
+#   *bergfuehrer*  *bergfuhrer*  *guide de montagne*  *tourismusorganisation*
+#   *parc regional*  *wanderland*  *randoland*  *geopark*
+#
+# The register is accent-sensitive, which this file learned twice. `*remontees*`
+# answers with 1 against 8 for `*remontées*`, and `*telecabine*` answers with
+# nothing while `*télécabine*` finds the Vercorin company. Both spellings of a
+# French word go in.
+#
+# Subsumed by a shorter word already in the list, so not repeated:
+#   *wanderwege* under *wanderweg*, *kur- und verkehrsverein* under
+#   *verkehrsverein*, *ente turistico regionale* under *ente turistico*
+#
+# Searched and rejected as too noisy to grade:
+#   *wander*   186, and the hits are surnames: Schwander, Wandeler
+#   *alpine*   566, a word every trade in the Alps uses
+#   *parco*     57, Italian restaurants
+#   *excursion* 26, catches Alexcursion and similar names

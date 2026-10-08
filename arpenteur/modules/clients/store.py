@@ -1677,7 +1677,7 @@ def remove_member(conn: Connection, member_id: int) -> int | None:
 
 def bring_in_members(
     conn: Connection, programme_id: int, *, sector: str = "", canton: str = "",
-    band: str = "", segment: str = "", limit: int = 25,
+    band: str = "", segment: str = "", legal_form: str = "", limit: int = 25,
 ) -> int:
     """Put companies matching a survey filter on the programme, in bulk.
 
@@ -1688,6 +1688,12 @@ def bring_in_members(
     It only ever inserts. A company already a member keeps whatever stage it
     has reached, so running this again after another sweep cannot walk an
     agency at `testing` back to `selected`.
+
+    `legal_form` takes eCH-0097 codes and exists for a reason `arpenteur.toml`
+    states in its own words: a sole proprietorship is registered in a natural
+    person's name, so putting one on a programme that will write to it carries
+    obligations under the nLPD that writing to a company does not. A campaign
+    may choose to accept that; it should not do so without saying so.
     """
     stages = _stages_of(conn, programme_id)
     where = ["c.status = 'ACTIVE'",
@@ -1714,6 +1720,9 @@ def bring_in_members(
     if canton:
         where.append("c.canton = ANY(%s)")
         params.append([part.strip().upper() for part in canton.split(",") if part.strip()])
+    if legal_form:
+        where.append("c.legal_form_uid = ANY(%s)")
+        params.append([part.strip() for part in legal_form.split(",") if part.strip()])
     order = "f.score DESC NULLS LAST" if band else "c.name"
     rows = conn.execute(
         f"""

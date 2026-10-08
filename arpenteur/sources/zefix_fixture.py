@@ -13,6 +13,7 @@ problem. A test asserts they survive those filters.
 
 from __future__ import annotations
 
+import re
 from typing import Any
 
 from .zefix import Company
@@ -98,9 +99,36 @@ class FixtureZefixClient:
         legal_form_id: int | None = None,
         active_only: bool = True,
     ) -> list[Company]:
-        if name != "a*" or canton != "VD" or legal_form_id != _FORM["id"] or not active_only:
+        """Match the pattern against the recorded names, as the register does.
+
+        This answered exactly one query until the name search existed: `a*`, in
+        VD, for a Sàrl, and nothing at all for anything else. That served the
+        sweep, which asks only that. A name search asks for `*fiduciaire*` with
+        no legal form named, and a fixture that answers nothing cannot test it.
+
+        So the pattern is honoured instead of compared. `*` stands for any run
+        of characters, at either end or both, which is the whole of the syntax
+        this tool ever sends.
+        """
+        if legal_form_id is not None and legal_form_id != _FORM["id"]:
             return []
-        return [self._company(uid, hydrated=False) for uid in _COMPANIES]
+        pattern = re.compile(
+            "".join(
+                ".*" if part == "*" else re.escape(part)
+                for part in re.split(r"(\*)", name or "")
+            ),
+            re.IGNORECASE,
+        )
+        hits = []
+        for uid, row in _COMPANIES.items():
+            if canton and row["canton"] != canton:
+                continue
+            if active_only and row["status"] != "ACTIVE":
+                continue
+            if not pattern.fullmatch(row["name"]):
+                continue
+            hits.append(self._company(uid, hydrated=False))
+        return hits
 
     def company(self, uid: str, *, max_age: float | None = None) -> Company | None:
         """`max_age` is accepted and ignored: nothing here is cached, so there

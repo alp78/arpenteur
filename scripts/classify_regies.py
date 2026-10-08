@@ -35,7 +35,6 @@ from __future__ import annotations
 import argparse
 import re
 import sys
-import unicodedata
 from collections import Counter
 
 sys.path.insert(0, str(__import__("pathlib").Path(__file__).resolve().parents[1]))
@@ -43,6 +42,7 @@ sys.path.insert(0, str(__import__("pathlib").Path(__file__).resolve().parents[1]
 from arpenteur import db  # noqa: E402
 from arpenteur.config import load_settings  # noqa: E402
 from arpenteur.modules.scout import store as scout_store  # noqa: E402
+from arpenteur.sources.purpose import fold, head, near  # noqa: E402
 
 # Managing somebody else's property. The words a Swiss register actually uses,
 # in the four languages a purpose is filed in.
@@ -135,70 +135,15 @@ TRADE_NAME = re.compile(
     re.IGNORECASE,
 )
 
-# Where a Swiss registered purpose stops describing the business and starts
-# listing what the company is permitted to do.
-#
-# This clause is the single largest source of false positives, and it is
-# boilerplate a notary adds to almost every Sàrl: "elle peut acquérir, détenir
-# et aliéner des immeubles". Graded on the whole text, a transport firm, a
-# jewellery school and a dental practice all read as property companies,
-# because every one of them may buy premises and every one of them says so.
-#
-# So the text is cut here and only the head is graded. What a company is for
-# comes first in a purpose; what it may also do comes after one of these.
-BOILERPLATE = re.compile(
-    r"\b(?:elle\s+peut|la\s+societe\s+peut|elle\s+pourra|"
-    r"pour\s+atteindre\s+ce\s+but|peut\s+en\s+outre|elle\s+peut\s+en\s+outre|"
-    r"sie\s+kann|die\s+gesellschaft\s+kann|kann\s+sie\s+auch|"
-    r"essa\s+puo|la\s+societa\s+puo|puo\s+inoltre|"
-    r"vollstandige\s+zweckumschreibung|"
-    r"ainsi\s+que\s+toutes\s+operations|toutes\s+operations\s+"
-    r"(?:commerciales\s+)?(?:financieres|mobilieres)\s+et\s+immobilieres)\b",
-    re.IGNORECASE,
-)
-
-
-def head(purpose: str) -> str:
-    """The purpose up to the permissions boilerplate."""
-    text = fold(purpose or "")
-    cut = BOILERPLATE.search(text)
-    return text[: cut.start()] if cut else text
-
-
-def fold(text: str) -> str:
-    """Accents away, so `gérance` and `gerance` are one word to a pattern."""
-    return "".join(
-        ch for ch in unicodedata.normalize("NFKD", text or "")
-        if not unicodedata.combining(ch)
-    )
-
-
-# How close an activity word has to sit to a property word before the two are
-# read as one statement.
-#
-# Testing them independently was the first version and it was wrong in both
-# directions at once. `AAB Group Sàrl` graded as a managing agency on "mise en
-# gérance et exploitation d'établissements publics tels que kiosques", which is
-# the management of kiosks; `A7 Services Sàrl` graded as a property broker on
-# "courtage dans les domaines des assurances"; a dental practice graded as a
-# property owner because its purpose mentioned acquiring premises. In every
-# case both words were present and they were about different things.
-#
-# Sixty characters is about a clause. It keeps "gérance d'immeubles" and
-# "Verwaltung von Liegenschaften" while separating two items of a list.
-NEAR = 60
+# The permissions clause, the clause-proximity rule and the accent fold all
+# moved to `arpenteur/sources/purpose.py` when the tourism classifier needed the
+# same three. They were earned here, over this corpus; the module carries the
+# reasoning with them.
 
 
 def _near(activity: re.Pattern[str], text: str) -> bool:
     """Whether an activity word and a property word share a clause."""
-    spots = [m.start() for m in PROPERTY.finditer(text)]
-    if not spots:
-        return False
-    for hit in activity.finditer(text):
-        start = hit.start()
-        if any(abs(start - spot) <= NEAR for spot in spots):
-            return True
-    return False
+    return near(activity, PROPERTY, text)
 
 
 def grade(purpose: str, name: str) -> tuple[str, str] | None:
