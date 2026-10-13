@@ -1,7 +1,7 @@
 """Reading the replies to the enrolment message, and proposing what they say.
 
-The mail stage brings every message in from `alexis@peringer.ch` and attributes
-it to a firm. This stage reads the ones that arrived after a firm was written
+The mail stage brings every message in from the configured mailbox and
+attributes it to a firm. This stage reads the ones that arrived after a firm was written
 to, says what each carries, and leaves the record where it was.
 
 **It proposes an enrolment and records none.** The platform and the account

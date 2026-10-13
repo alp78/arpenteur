@@ -709,7 +709,7 @@ def create_invoice(
 def next_invoice_reference(
     conn: Connection, client_id: int, slug: str, *, series: bool = False,
 ) -> str:
-    """A reference for a client's invoice: FBG-EXPERTISE, or FBG-SEANCE-01.
+    """A reference for a client's invoice: ABC-EXPERTISE, or ABC-SEANCE-01.
 
     The client code and the object, folded the way `make_code` folds a company
     name, because the same string is read down a telephone and typed into a
@@ -718,7 +718,7 @@ def next_invoice_reference(
 
     `series=True` numbers it from the first one, for work that recurs: a client
     who will receive several sessions needs to see which one they are paying,
-    and `FBG-SEANCE` followed by `FBG-SEANCE-2` reads as a correction of the
+    and `ABC-SEANCE` followed by `ABC-SEANCE-2` reads as a correction of the
     first rather than as the second of a set. The count is of this client's
     invoices for this object, which they already know, and says nothing about
     the practice as a whole.

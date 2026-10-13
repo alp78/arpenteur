@@ -54,11 +54,11 @@ def test_an_accented_reply_still_reads() -> None:
 def test_the_firms_own_address_is_never_the_testers_account() -> None:
     body = (
         "Bonjour, oui pour Android.\n\n"
-        "> De: alexis@peringer.ch\n"
+        "> De: me@arpenteur-demo.ch\n"
         "> A: info@regie-x.ch\n"
     )
     at, why = enrol.account_in(
-        body, ours=frozenset({"peringer.ch"}),
+        body, ours=frozenset({"arpenteur-demo.ch"}),
         theirs=frozenset({"info@regie-x.ch"}),
     )
     assert at == "", why
@@ -73,7 +73,7 @@ def test_a_google_account_wins_over_any_other_address() -> None:
 
 def test_an_address_at_the_operators_domain_is_never_offered() -> None:
     at, _ = enrol.account_in(
-        "ecrivez a alexis@peringer.ch", ours=frozenset({"peringer.ch"})
+        "ecrivez a me@arpenteur-demo.ch", ours=frozenset({"arpenteur-demo.ch"})
     )
     assert at == ""
 

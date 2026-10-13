@@ -27,7 +27,7 @@ Une application mobile destinée aux états des lieux de logements en Suisse.
 
 ## L'expéditeur
 
-Alexis Peringer, ingénieur informatique.
+Nadia Voirol, ingénieur informatique.
 """
 
 BRIEF_GAPS = """# Brief d'approche Limen
@@ -76,7 +76,7 @@ def _settings(tmp_path, brief: str = BRIEF_FULL, *, mail: bool = True):
 
     return SimpleNamespace(
         root=tmp_path,
-        mail=SimpleNamespace(configured=mail, user="alexis@peringer.ch"),
+        mail=SimpleNamespace(configured=mail, user="me@arpenteur-demo.ch"),
         llm=SimpleNamespace(enrich_model="test-model", enrich_max_tokens=2000),
         enrol=EnrolConfig(
             ios_link="https://testflight.apple.com/join/abc123",

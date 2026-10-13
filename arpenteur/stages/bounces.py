@@ -60,8 +60,8 @@ def run(
         bounce.REFUSED: 0, "suppressed": 0,
     }
     if not settings.mail.configured:
-        log("No mailbox is configured. Set MAIL_IMAP_SERVER, MAIL_IMAP_USER "
-            "and MAIL_IMAP_PASSWORD in .env.")
+        log("No mailbox is configured. Set MAIL_IMAP_SERVER, MAIL_USERNAME "
+            "and MAIL_PASSWORD in .env.")
         return stats
 
     known = scout_store.addresses_held(conn)

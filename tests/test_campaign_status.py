@@ -118,7 +118,7 @@ def _inbound(
         " sent_at, subject, from_email, to_emails, body, body_kind, state,"
         " company_id, match_method, decided_at)"
         " VALUES (%s, 'INBOX', 1, 'in', now() + make_interval(mins => %s), %s,"
-        " %s, ARRAY['alexis@peringer.ch'], %s, 'text', 'accepted', %s,"
+        " %s, ARRAY['me@arpenteur-demo.ch'], %s, 'text', 'accepted', %s,"
         " 'address', now()) RETURNING id",
         (message_id or f"<{sender}-{subject}>", minutes, subject, sender,
          body, company_id),
@@ -559,7 +559,7 @@ def test_history_holds_both_directions_in_order(
         "INSERT INTO crm.email_message (message_id, folder, uid, direction,"
         " sent_at, subject, from_email, to_emails, state, company_id,"
         " match_method) VALUES ('<out-1>', 'Sent', 2, 'out',"
-        " now() - interval '1 day', 'Limen', 'alexis@peringer.ch',"
+        " now() - interval '1 day', 'Limen', 'me@arpenteur-demo.ch',"
         " ARRAY['info@alpha.test'], 'accepted', %s, 'address')",
         (company_id,),
     )
@@ -703,7 +703,7 @@ def test_the_history_page_names_both_directions(
         "INSERT INTO crm.email_message (message_id, folder, uid, direction,"
         " sent_at, subject, from_email, to_emails, state, company_id,"
         " match_method) VALUES ('<out-9>', 'Sent', 9, 'out',"
-        " now() - interval '2 days', 'Limen, protocole', 'alexis@peringer.ch',"
+        " now() - interval '2 days', 'Limen, protocole', 'me@arpenteur-demo.ch',"
         " ARRAY['info@alpha.test'], 'accepted', %s, 'address')",
         (company_id,),
     )

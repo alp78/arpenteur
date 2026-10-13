@@ -436,10 +436,10 @@ def invoices_panel(invoices: list[Row], client_id: int) -> str:
         + f'<form method="post" action="/client/{client_id}/invoices">'
         + ui.text_field("what", "What it bills", placeholder="expertise",
                         hint="Joined to the client code to make the reference "
-                             "the client quotes, such as FBG-EXPERTISE. No date "
+                             "the client quotes, such as ABC-EXPERTISE. No date "
                              "and no rank: those belong in the register.")
         + ui.checkbox("series", "One of several",
-                      hint="Numbers it from the first, FBG-SEANCE-01, for work "
+                      hint="Numbers it from the first, ABC-SEANCE-01, for work "
                            "that recurs. A client receiving several needs to see "
                            "which one they are paying.")
         + '<button type="submit">Start an invoice</button></form></section>'

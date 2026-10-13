@@ -235,7 +235,7 @@ class SmtpConfig:
     # signature references it as `cid:signature` and no reader's client fetches
     # anything from anybody's server. PNG, JPEG or GIF: a mail client renders
     # those and not SVG, which is what a webmail signature editor hands out.
-    signature_image: str = "assets/signature-logo.png"
+    signature_image: str = ""
     # How many messages one run may post. A review limit before a politeness
     # one: a batch nobody reads is a batch that sends the wrong thing 25 times.
     per_run: int = 25
@@ -824,9 +824,7 @@ def _smtp(raw: dict, mail: MailConfig) -> SmtpConfig:
         signature_file=str(
             raw.get("signature_file", "signature.html") or ""
         ).strip(),
-        signature_image=str(
-            raw.get("signature_image", "assets/signature-logo.png") or ""
-        ).strip(),
+        signature_image=str(raw.get("signature_image", "") or "").strip(),
         per_run=int(raw.get("per_run", 25)),
         daily_quota=max(0, int(raw.get("daily_quota", 100))),
         pause_seconds=min(120, max(0, int(raw.get("pause_seconds", 30)))),

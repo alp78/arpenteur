@@ -10,7 +10,7 @@ whole chain visible so a reply is not judged without the message it answers.
 
 Two things this page is careful to say out loud.
 
-**Why a company is being proposed.** "Matched on domain fbg.ch" is checkable in
+**Why a company is being proposed.** "Matched on domain example.ch" is checkable in
 a second; a bare client name asks the reader to trust a join they cannot see.
 When the proposal is wrong, knowing which rule produced it is what tells you
 whether to fix the message or the rule.

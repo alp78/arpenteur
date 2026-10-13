@@ -98,7 +98,7 @@ REPLY = {
         {"term": "DMARC", "category": "mail",
          "expansion": "Domain-based Message Authentication, Reporting and Conformance",
          "what_it_is": "Une politique publiée dans le DNS.",
-         "why_here": "_dmarc.fbg.ch répond NXDOMAIN.",
+         "why_here": "_dmarc.fondation-exemple.ch répond NXDOMAIN.",
          "must_know": "Sans DMARC, personne ne reçoit de rapport.",
          "question": "Qui reçoit les rapports aujourd'hui%s",
          "reference": "RFC 7489", "priority": "must"},
@@ -209,7 +209,7 @@ def test_a_term_records_why_it_is_in_this_clients_file(
     """A general glossary is a search away and worth nothing at the table."""
     prep.run(load_settings(root), conn, client_id=client_id, log=lambda _m: None)
     dmarc = {t["term"]: t for t in db.glossary_for(conn, client_id)}["DMARC"]
-    assert dmarc["why_here"] == "_dmarc.fbg.ch répond NXDOMAIN."
+    assert dmarc["why_here"] == "_dmarc.fondation-exemple.ch répond NXDOMAIN."
     assert dmarc["question"]
     assert dmarc["reference"] == "RFC 7489"
 
@@ -301,7 +301,7 @@ def test_the_page_groups_by_shelf_and_shows_the_agenda(
     body = web.get(f"/client/{client_id}/prep").text
     assert "Revise in this order" in body
     assert "RFC 7489" in body
-    assert "_dmarc.fbg.ch répond NXDOMAIN." in body
+    assert "_dmarc.fondation-exemple.ch répond NXDOMAIN." in body
     for name, _label in prep.CATEGORIES[:0] or [("mail", "")]:
         assert name in body
 

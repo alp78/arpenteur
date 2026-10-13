@@ -81,12 +81,12 @@ def settings(build_settings, tmp_path: Path):
     folder.mkdir(parents=True)
     (folder / "de.md").write_text(DE, encoding="utf-8")
     (folder / "fr.md").write_text(FR, encoding="utf-8")
-    (tmp_path / "signature.html").write_text("<div>Alexis Peringer</div>", encoding="utf-8")
+    (tmp_path / "signature.html").write_text("<div>Nadia Voirol</div>", encoding="utf-8")
     return build_settings(
         tmp_path,
-        mail=MailConfig(host="imap.test", user="me@peringer.ch", password="x"),
-        smtp=SmtpConfig(host="smtp.test", user="me@peringer.ch", password="x",
-                        sender="me@peringer.ch", sender_name="Me", per_run=25,
+        mail=MailConfig(host="imap.test", user="me@arpenteur-demo.ch", password="x"),
+        smtp=SmtpConfig(host="smtp.test", user="me@arpenteur-demo.ch", password="x",
+                        sender="me@arpenteur-demo.ch", sender_name="Me", per_run=25,
                         pause_seconds=0, signature_image=""),
     )
 
@@ -177,7 +177,7 @@ def test_rendering_refuses_without_a_signature(settings, conn, campaign) -> None
 
 def test_a_test_reaches_only_the_operator_once_per_variant(settings, conn, campaign) -> None:
     tests = ready(settings, conn, campaign, wave=2)
-    assert tests.posted and {str(m["To"]) for m in tests.posted} == {"me@peringer.ch"}
+    assert tests.posted and {str(m["To"]) for m in tests.posted} == {"me@arpenteur-demo.ch"}
     assert all(str(m["Subject"]).startswith("[TEST] ") for m in tests.posted)
     variants = {r["variant"] for r in conn.execute(
         "SELECT variant FROM crm.campaign_message WHERE draft_id IS NOT NULL")}

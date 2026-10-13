@@ -17,11 +17,28 @@ data/
 *.sqlite3
 *.db
 
-# uv
-uv.lock
-
 # The SQLite database this was ported away from. Kept locally as the source
 # for scripts/import_sqlite.py and as a fallback until Postgres has proved
 # itself in daily use; not carried in the repository.
 *.sqlite3-wal
 *.sqlite3-shm
+
+# The operator's own material: the scoring brief, the enrolment brief, the
+# message templates, the word lists, the signature and its picture, and the
+# scripts written for one campaign or one client. They stay on disk and out of
+# the repository; the repository ships a neutral example of each kind.
+campaign.md
+limen.md
+templates/*
+!templates/example/
+words/*
+!words/example.txt
+signature.html
+assets/signature-*
+scripts/limen_*.py
+scripts/fbg_*.py
+scripts/classify_*.py
+tests/test_classify_*.py
+
+# Local editor and agent settings.
+.claude/

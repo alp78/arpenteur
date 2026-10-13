@@ -34,13 +34,13 @@ from arpenteur.sources import mail
 pytestmark = pytest.mark.pg
 
 
-RAW = b"""Message-ID: <abc123@fbg.ch>
+RAW = b"""Message-ID: <abc123@fondation-exemple.ch>
 Date: Wed, 12 Aug 2026 11:35:00 +0200
-From: "Nils Gunzinger" <n.gunzinger@fbg.ch>
-To: alexis@peringer.ch
-Cc: service.informatique@fbg.ch
-Subject: RE: Contact peringer.ch
-References: <root@smtp.example.ch> <second@peringer.ch>
+From: "Nora Fellmann" <n.fellmann@fondation-exemple.ch>
+To: me@arpenteur-demo.ch
+Cc: service.informatique@fondation-exemple.ch
+Subject: RE: Contact arpenteur-demo.ch
+References: <root@smtp.example.ch> <second@arpenteur-demo.ch>
 """
 
 ENCODED = (
@@ -83,8 +83,8 @@ def _queue(conn: Connection, **fields) -> int:
         "sent_at": datetime(2026, 8, 12, 9, 0, tzinfo=timezone.utc),
         "subject": "Bonjour",
         "from_name": "Nils",
-        "from_email": "n.gunzinger@fbg.ch",
-        "to_emails": ["alexis@peringer.ch"],
+        "from_email": "n.fellmann@fondation-exemple.ch",
+        "to_emails": ["me@arpenteur-demo.ch"],
         "cc_emails": [],
     }
     row.update(fields)
@@ -92,7 +92,7 @@ def _queue(conn: Connection, **fields) -> int:
     return email_id
 
 
-OWN = frozenset({"peringer.ch"})
+OWN = frozenset({"arpenteur-demo.ch"})
 
 
 # --- reading what a message says ----------------------------------------------
@@ -100,9 +100,9 @@ OWN = frozenset({"peringer.ch"})
 
 def test_a_header_yields_its_participants_and_its_chain():
     header = mail.header_from("INBOX", 7, RAW)
-    assert header.message_id == "<abc123@fbg.ch>"
-    assert header.sender == mail.Address("Nils Gunzinger", "n.gunzinger@fbg.ch")
-    assert [a.email for a in header.cc] == ["service.informatique@fbg.ch"]
+    assert header.message_id == "<abc123@fondation-exemple.ch>"
+    assert header.sender == mail.Address("Nora Fellmann", "n.fellmann@fondation-exemple.ch")
+    assert [a.email for a in header.cc] == ["service.informatique@fondation-exemple.ch"]
     # The root of the chain, not the immediate parent: a thread is identified
     # by where it started, so every reply in it agrees on the same key.
     assert header.thread_key == "<root@smtp.example.ch>"
@@ -133,9 +133,9 @@ def test_direction_comes_from_the_folder_not_from_the_addresses():
     assert not incoming.outgoing and outgoing.outgoing
     # A person who copies themselves would otherwise have their own outgoing
     # message filed as something they received.
-    assert incoming.counterparties[0].email == "n.gunzinger@fbg.ch"
+    assert incoming.counterparties[0].email == "n.fellmann@fondation-exemple.ch"
     assert [a.email for a in outgoing.counterparties] == [
-        "alexis@peringer.ch", "service.informatique@fbg.ch"
+        "me@arpenteur-demo.ch", "service.informatique@fondation-exemple.ch"
     ]
 
 
@@ -156,7 +156,7 @@ def test_an_html_only_message_is_still_readable():
 
 def test_free_mail_is_recognised_and_a_company_domain_is_not():
     assert mail.Address("", "x@bluewin.ch").is_free_mail
-    assert not mail.Address("", "x@fbg.ch").is_free_mail
+    assert not mail.Address("", "x@fondation-exemple.ch").is_free_mail
 
 
 def test_the_folders_a_person_has_already_decided_against_are_skipped():
@@ -172,12 +172,12 @@ def test_an_address_published_by_the_company_matches_it(db_path):
     conn = db.open_db(db_path)
     company_id = _company(conn, "Fondation Bois-Gentil", "CHE103895771")
     db.save_contact(conn, company_id=company_id, kind="email",
-                    value="N.Gunzinger@fbg.ch", method="published")
+                    value="N.Fellmann@fondation-exemple.ch", method="published")
     found = clients.match_company(
-        conn, ["n.gunzinger@fbg.ch"], own_domains=OWN,
+        conn, ["n.fellmann@fondation-exemple.ch"], own_domains=OWN,
         free_domains=mail.FREE_MAIL,
     )
-    assert found == (company_id, "address", "n.gunzinger@fbg.ch")
+    assert found == (company_id, "address", "n.fellmann@fondation-exemple.ch")
     conn.close()
 
 
@@ -186,11 +186,11 @@ def test_the_operators_own_domain_matches_nothing(db_path):
     site's own address, so every enquiry arrives from the operator; without
     this the queue proposes the same wrong company for all of them."""
     conn = db.open_db(db_path)
-    company_id = _company(conn, "Peringer", "CHE000000001")
+    company_id = _company(conn, "Voirol", "CHE000000001")
     db.save_contact(conn, company_id=company_id, kind="email",
-                    value="alexis@peringer.ch", method="published")
+                    value="me@arpenteur-demo.ch", method="published")
     assert clients.match_company(
-        conn, ["alexis@peringer.ch"], own_domains=OWN, free_domains=mail.FREE_MAIL
+        conn, ["me@arpenteur-demo.ch"], own_domains=OWN, free_domains=mail.FREE_MAIL
     ) is None
     conn.close()
 
@@ -216,23 +216,23 @@ def test_a_corporate_domain_matches_a_colleague_nobody_has_met(db_path):
     conn = db.open_db(db_path)
     company_id = _company(conn, "Bois-Gentil", "CHE103895771")
     db.save_contact(conn, company_id=company_id, kind="email",
-                    value="n.gunzinger@fbg.ch", method="published")
+                    value="n.fellmann@fondation-exemple.ch", method="published")
     found = clients.match_company(
-        conn, ["compta@fbg.ch"], own_domains=OWN, free_domains=mail.FREE_MAIL
+        conn, ["compta@fondation-exemple.ch"], own_domains=OWN, free_domains=mail.FREE_MAIL
     )
-    assert found == (company_id, "domain", "fbg.ch")
+    assert found == (company_id, "domain", "fondation-exemple.ch")
     conn.close()
 
 
 def test_the_website_the_survey_read_is_a_match_of_last_resort(db_path):
     conn = db.open_db(db_path)
     company_id = _company(conn, "Bois-Gentil", "CHE103895771")
-    db.save_site(conn, company_id, {"url": "https://www.fbg.ch/accueil",
+    db.save_site(conn, company_id, {"url": "https://www.fondation-exemple.ch/accueil",
                                     "status": "ok"})
     found = clients.match_company(
-        conn, ["direction@fbg.ch"], own_domains=OWN, free_domains=mail.FREE_MAIL
+        conn, ["direction@fondation-exemple.ch"], own_domains=OWN, free_domains=mail.FREE_MAIL
     )
-    assert found == (company_id, "site", "fbg.ch")
+    assert found == (company_id, "site", "fondation-exemple.ch")
     conn.close()
 
 
@@ -279,7 +279,7 @@ def test_matched_messages_come_first_in_the_queue(db_path):
            sent_at=datetime(2026, 8, 12, tzinfo=timezone.utc))
     _queue(conn, message_id="<b@x.ch>", thread_key="<b@x.ch>",
            sent_at=datetime(2026, 8, 1, tzinfo=timezone.utc),
-           company_id=company_id, match_method="domain", match_value="fbg.ch")
+           company_id=company_id, match_method="domain", match_value="fondation-exemple.ch")
     # Older, but matched, so it leads: a queue sorted purely by date buries
     # the two messages that matter under a month of newsletters.
     assert [r["message_id"] for r in clients.email_queue(conn)] == [
@@ -334,11 +334,11 @@ def test_filing_teaches_the_address_and_the_domain(db_path):
         conn, email_id, client_id=client_id, own_domains=OWN,
         free_domains=mail.FREE_MAIL,
     )
-    assert "n.gunzinger@fbg.ch" in learned and "fbg.ch" in learned
+    assert "n.fellmann@fondation-exemple.ch" in learned and "fondation-exemple.ch" in learned
     held = {(k["kind"], k["value"]) for k in clients.links_for(conn, company_id)}
-    assert ("domain", "fbg.ch") in held
+    assert ("domain", "fondation-exemple.ch") in held
     # And the operator's own address is not learned as the client's.
-    assert ("address", "alexis@peringer.ch") not in held
+    assert ("address", "me@arpenteur-demo.ch") not in held
     conn.close()
 
 
@@ -359,11 +359,11 @@ def test_a_domain_claimed_by_two_companies_is_a_conflict_not_a_race(db_path):
     conn = db.open_db(db_path)
     first = _company(conn, "Bois-Gentil", "CHE103895771")
     second = _company(conn, "Bois-Gentil Immobilier", "CHE103895772")
-    assert clients.save_email_link(conn, first, kind="domain", value="fbg.ch") == "saved"
-    assert clients.save_email_link(conn, first, kind="domain", value="fbg.ch") == "known"
+    assert clients.save_email_link(conn, first, kind="domain", value="fondation-exemple.ch") == "saved"
+    assert clients.save_email_link(conn, first, kind="domain", value="fondation-exemple.ch") == "known"
     # Two entities sharing a mail domain is real. Picking a winner silently
     # would file one group company's correspondence against another.
-    assert clients.save_email_link(conn, second, kind="domain", value="fbg.ch") == "conflict"
+    assert clients.save_email_link(conn, second, kind="domain", value="fondation-exemple.ch") == "conflict"
     conn.close()
 
 
@@ -380,11 +380,11 @@ def test_filing_one_message_matches_the_rest_of_the_thread(db_path):
     chain = "<root@smtp.example.ch>"
     # The enquiry as the website's contact form sent it: from the operator's
     # own address, with the enquirer's name only in the text.
-    form = _queue(conn, message_id="<form@peringer.ch>", thread_key=chain,
-                  from_email="alexis@peringer.ch", direction="in")
-    reply = _queue(conn, message_id="<reply@fbg.ch>", thread_key=chain,
-                   from_email="n.gunzinger@fbg.ch")
-    assert clients.match_company(conn, ["alexis@peringer.ch"], own_domains=OWN) is None
+    form = _queue(conn, message_id="<form@arpenteur-demo.ch>", thread_key=chain,
+                  from_email="me@arpenteur-demo.ch", direction="in")
+    reply = _queue(conn, message_id="<reply@fondation-exemple.ch>", thread_key=chain,
+                   from_email="n.fellmann@fondation-exemple.ch")
+    assert clients.match_company(conn, ["me@arpenteur-demo.ch"], own_domains=OWN) is None
 
     clients.file_email(conn, reply, client_id=client_id, own_domains=OWN,
                        free_domains=mail.FREE_MAIL)
@@ -401,7 +401,7 @@ def test_rematching_leaves_a_decision_alone(db_path):
     conn = db.open_db(db_path)
     company_id = _company(conn, "Bois-Gentil", "CHE103895771")
     db.save_contact(conn, company_id=company_id, kind="email",
-                    value="n.gunzinger@fbg.ch", method="published")
+                    value="n.fellmann@fondation-exemple.ch", method="published")
     ignored = _queue(conn)
     clients.ignore_email(conn, ignored, by="test")
     assert clients.rematch_pending(conn, own_domains=OWN,
@@ -415,9 +415,9 @@ def test_rematching_does_not_overwrite_a_proposal_already_shown(db_path):
     first = _company(conn, "Bois-Gentil", "CHE103895771")
     second = _company(conn, "Autre", "CHE103895779")
     db.save_contact(conn, company_id=second, kind="email",
-                    value="n.gunzinger@fbg.ch", method="published")
+                    value="n.fellmann@fondation-exemple.ch", method="published")
     email_id = _queue(conn, company_id=first, match_method="link",
-                      match_value="fbg.ch")
+                      match_value="fondation-exemple.ch")
     assert clients.rematch_pending(conn, own_domains=OWN,
                                    free_domains=mail.FREE_MAIL) == 0
     assert clients.email(conn, email_id)["company_id"] == first
@@ -431,7 +431,7 @@ def _app(db_path, build_settings, tmp_path):
     settings = build_settings(
         tmp_path,
         territory=Territory(cantons=("VD",), legal_forms=("0106",), name="test"),
-        mail=MailConfig(host="mail.example.ch", user="alexis@peringer.ch",
+        mail=MailConfig(host="mail.example.ch", user="me@arpenteur-demo.ch",
                         password="x"),
     )
     return TestClient(create_app(settings))
@@ -441,7 +441,7 @@ def test_the_queue_page_says_why_a_company_is_proposed(db_path, build_settings, 
     conn = db.open_db(db_path)
     company_id = _company(conn, "Fondation Bois-Gentil", "CHE103895771")
     db.promote_to_client(conn, company_id)
-    _queue(conn, company_id=company_id, match_method="domain", match_value="fbg.ch")
+    _queue(conn, company_id=company_id, match_method="domain", match_value="fondation-exemple.ch")
     conn.commit()
     conn.close()
 
@@ -449,7 +449,7 @@ def test_the_queue_page_says_why_a_company_is_proposed(db_path, build_settings, 
     assert page.status_code == 200
     assert "Fondation Bois-Gentil" in page.text
     # A bare client name asks the reader to trust a join they cannot see.
-    assert "fbg.ch" in page.text and "published by the company" in page.text
+    assert "fondation-exemple.ch" in page.text and "published by the company" in page.text
 
 
 def test_the_page_says_that_an_unmatched_body_was_not_read(db_path, build_settings, tmp_path):

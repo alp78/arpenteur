@@ -135,9 +135,10 @@ def load_brief(settings: Settings) -> str:
     path = Path(getattr(settings, "brief_path", settings.root / "campaign.md"))
     if not path.is_file():
         raise RuntimeError(
-            f"No campaign brief at {path}. This stage scores companies against "
-            "it, so without one every score would be an invention. Copy the "
-            "template and write it for the campaign at hand."
+            f"No scoring brief at {path}. This stage scores companies against "
+            "it, so without one every score would be an invention. Copy "
+            "campaign.example.md to campaign.md and write it for the campaign "
+            "at hand, or write it under Settings."
         )
     text = path.read_text(encoding="utf-8").strip()
     if not text:

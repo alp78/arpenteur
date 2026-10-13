@@ -423,3 +423,57 @@ def test_no_label_in_the_console_names_nothing(client) -> None:
         assert len(unbound) - wrapping <= 0, (
             f"{url}: {len(unbound) - wrapping} label(s) naming no control"
         )
+
+
+# --- the environment names the code reads and the ones it cites ---------------
+
+_ENV_NAME = re.compile(
+    r"\b(?:MAIL|SMTP|ZEFIX|ANTHROPIC|DATABASE|INFOMANIAK|POSTGRES)_[A-Z_]+\b"
+)
+_READ = re.compile(r'(?:_env\(|os\.environ(?:\.get)?\(|os\.environ\[)\s*([^)\]]*)')
+_PACKAGE = Path(__file__).resolve().parents[1] / "arpenteur"
+
+
+def _names_read() -> set[str]:
+    """Every environment name a `_env(...)` or `os.environ` call reads."""
+    found: set[str] = set()
+    for file in _PACKAGE.rglob("*.py"):
+        for call in _READ.findall(file.read_text(encoding="utf-8")):
+            found.update(_ENV_NAME.findall(call))
+    return found
+
+
+def _names_cited() -> dict[str, list[str]]:
+    """Every environment name a string in any source file mentions, with where.
+
+    Strings only, docstrings included: `smtplib.SMTP_SSL` is code, not advice
+    to a user, and the regex alone cannot tell the two apart."""
+    import ast
+
+    cited: dict[str, list[str]] = {}
+    for file in _PACKAGE.rglob("*.py"):
+        tree = ast.parse(file.read_text(encoding="utf-8"))
+        for node in ast.walk(tree):
+            if isinstance(node, ast.Constant) and isinstance(node.value, str):
+                for name in _ENV_NAME.findall(node.value):
+                    cited.setdefault(name, []).append(f"{file.name}:{node.lineno}")
+    return cited
+
+
+def test_an_error_message_never_names_an_environment_variable_nothing_reads() -> None:
+    """A message that says "set MAIL_IMAP_USER" sends the user to edit a name
+    the code never looks at, which is how two of them stayed wrong for weeks."""
+    read = _names_read()
+    strays = {name: where for name, where in _names_cited().items() if name not in read}
+    assert not strays, f"named but never read: {strays}"
+
+
+def test_the_environment_template_lists_exactly_what_the_code_reads() -> None:
+    example = _PACKAGE.parent / ".env.example"
+    listed = set(re.findall(r"^([A-Z_]+)=", example.read_text(encoding="utf-8"), re.M))
+    read = _names_read()
+    # POSTGRES_PASSWORD is read by docker compose, not by Python.
+    assert read <= listed, f"read but not in .env.example: {sorted(read - listed)}"
+    assert listed - {"POSTGRES_PASSWORD"} <= read, (
+        f"in .env.example but read by nothing: {sorted(listed - read)}"
+    )

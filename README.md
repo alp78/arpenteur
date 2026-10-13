@@ -1,5 +1,7 @@
 # ARPENTEUR
 
+Copyright (c) 2026 Alexis Peringer. All rights reserved. See [LICENSE](LICENSE).
+
 The arpenteur is the surveyor who paces out a territory parcel by
 parcel. This one surveys a market from the Swiss commercial register: it
 builds a qualified map of a territory (who exists, what trade they are in,
@@ -300,20 +302,11 @@ this campaign offers, who it serves well, who it serves badly, what to look
 for, what warns off, and how it opens a conversation. It is read verbatim into
 the prompt.
 
-It ships filled in as an example and says so at the top. **Replace it.** A
-brief written for a different campaign produces confident scores built on
-nothing, which is worse than no scores. Write it in the language you will
-write to companies in; the approach advice comes back in the same one.
+The repository ships `campaign.example.md`, a worked example for a fictional business. Copy it to `campaign.md` and **replace every section**: a brief written for a different business produces confident scores built on nothing, which is worse than no scores. Write it in the language you will write to companies in; the approach advice comes back in the same one.
 
-It is edited in the console under Settings and written back to the file, so it
-stays a versioned artefact rather than a database column.
+`campaign.md` is yours: it stays out of git, and it is edited in the console under Settings and written back to the file.
 
-It is committed and versioned because the score is only as good as this file,
-and when a run produces surprising results the first question is what changed
-here, which a diff answers and a database field would not. Every score stores
-a digest of the brief it was taken against, so rewriting the brief invalidates
-the scores rather than leaving old and new sitting together looking equally
-current: the next `match` re-scores exactly what the rewrite made stale.
+Every score stores a digest of the brief it was taken against, so rewriting the brief invalidates the scores rather than leaving old and new sitting together looking equally current: the next `match` re-scores exactly what the rewrite made stale.
 
 ## Finding an address
 

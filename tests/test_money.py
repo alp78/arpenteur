@@ -37,7 +37,7 @@ QR_IBAN = "CH44 3199 9123 0008 8901 2"
 PLAIN_IBAN = "CH93 0076 2011 6238 5295 7"
 
 ISSUER = IssuerConfig(
-    name="Peringer", street="Chemin du Petit-Flon", building="49",
+    name="Voirol", street="Chemin du Petit-Flon", building="49",
     postcode="1018", town="Lausanne", iban=PLAIN_IBAN,
     vat_number="CHE-123.456.789 TVA", payment_terms="Payable within 30 days.",
 )
@@ -177,7 +177,7 @@ def test_a_reference_is_printed_in_the_blocks_a_person_can_read_back():
 
 
 def _creditor() -> money.Party:
-    return money.Party(name="Peringer", street="Chemin du Petit-Flon",
+    return money.Party(name="Voirol", street="Chemin du Petit-Flon",
                        building="49", postcode="1018", town="Lausanne")
 
 
@@ -644,7 +644,7 @@ def test_an_invoice_not_subject_to_vat_says_so_in_words(db_path, build_settings,
     conn.commit()
     conn.close()
 
-    unregistered = IssuerConfig(name="Peringer", iban=PLAIN_IBAN, town="Lausanne")
+    unregistered = IssuerConfig(name="Voirol", iban=PLAIN_IBAN, town="Lausanne")
     page = _app(build_settings, tmp_path, unregistered).get(
         f"/invoice/{invoice_id}/print"
     )
@@ -737,9 +737,9 @@ def test_a_draft_takes_a_reference_although_it_takes_no_rank(db_path):
     A draft that could not be named would have to be found by its database id,
     which is the one thing nobody says out loud."""
     conn = db.open_db(db_path)
-    invoice_id = sales.create_invoice(conn, _client(conn), reference="FBG-EXPERTISE")
+    invoice_id = sales.create_invoice(conn, _client(conn), reference="ABC-EXPERTISE")
     held = sales.invoice(conn, invoice_id)
-    assert held["reference"] == "FBG-EXPERTISE"
+    assert held["reference"] == "ABC-EXPERTISE"
     assert held["number"] is None
     conn.close()
 
@@ -760,9 +760,9 @@ def test_two_invoices_cannot_carry_the_same_reference(db_path):
     it could be matched to either."""
     conn = db.open_db(db_path)
     client_id = _client(conn)
-    sales.create_invoice(conn, client_id, reference="FBG-EXPERTISE")
+    sales.create_invoice(conn, client_id, reference="ABC-EXPERTISE")
     with pytest.raises(Exception):
-        sales.create_invoice(conn, client_id, reference="FBG-EXPERTISE")
+        sales.create_invoice(conn, client_id, reference="ABC-EXPERTISE")
         conn.execute("SELECT 1")
     conn.close()
 
@@ -772,9 +772,9 @@ def test_a_reference_is_built_from_the_client_code_and_the_object(db_path):
     to, and folded because the same string is read down a telephone."""
     conn = db.open_db(db_path)
     client_id = _client(conn)
-    conn.execute("UPDATE crm.client SET code = 'FBG' WHERE id = %s", (client_id,))
-    assert sales.next_invoice_reference(conn, client_id, "expertise") == "FBG-EXPERTISE"
-    assert sales.next_invoice_reference(conn, client_id, "étape 1") == "FBG-ETAPE-1"
+    conn.execute("UPDATE crm.client SET code = 'ABC' WHERE id = %s", (client_id,))
+    assert sales.next_invoice_reference(conn, client_id, "expertise") == "ABC-EXPERTISE"
+    assert sales.next_invoice_reference(conn, client_id, "étape 1") == "ABC-ETAPE-1"
     conn.close()
 
 
@@ -783,7 +783,7 @@ def test_a_reference_carries_neither_a_date_nor_a_rank(db_path):
     the first invoice of the exercise."""
     conn = db.open_db(db_path)
     client_id = _client(conn)
-    conn.execute("UPDATE crm.client SET code = 'FBG' WHERE id = %s", (client_id,))
+    conn.execute("UPDATE crm.client SET code = 'ABC' WHERE id = %s", (client_id,))
     reference = sales.next_invoice_reference(conn, client_id, "expertise")
     assert not any(c.isdigit() for c in reference)
     conn.close()
@@ -812,7 +812,7 @@ def test_a_bank_made_payment_part_records_the_account_and_no_reference(db_path):
     RF reference beside it would put a number in the register that is on no
     document, and a reconciliation would chase it."""
     conn = db.open_db(db_path)
-    invoice_id = sales.create_invoice(conn, _client(conn), reference="FBG-EXPERTISE")
+    invoice_id = sales.create_invoice(conn, _client(conn), reference="ABC-EXPERTISE")
     sales.add_invoice_line(conn, invoice_id, {"label": "Forfait", "unit_price": 3200})
     sales.recompute_invoice(conn, invoice_id, vat_rate=None)
     issued = sales.issue_invoice(conn, invoice_id, qr_iban=PLAIN_IBAN,
@@ -826,12 +826,12 @@ def test_a_credit_note_is_named_after_what_it_reverses(db_path):
     """Its own rank, because it is its own document, and a reference that says
     which invoice it undoes, because that is all the client can match it on."""
     conn = db.open_db(db_path)
-    invoice_id = sales.create_invoice(conn, _client(conn), reference="FBG-EXPERTISE")
+    invoice_id = sales.create_invoice(conn, _client(conn), reference="ABC-EXPERTISE")
     sales.add_invoice_line(conn, invoice_id, {"label": "Forfait", "unit_price": 3200})
     sales.recompute_invoice(conn, invoice_id, vat_rate=None)
     sales.issue_invoice(conn, invoice_id)
     note_id = sales.credit_invoice(conn, invoice_id, reason="Wrong scope")
-    assert sales.invoice(conn, note_id)["reference"] == "FBG-EXPERTISE-CREDIT"
+    assert sales.invoice(conn, note_id)["reference"] == "ABC-EXPERTISE-CREDIT"
     conn.close()
 
 
@@ -841,14 +841,14 @@ def test_the_register_runs_by_rank_and_not_by_date(db_path):
     conn = db.open_db(db_path)
     client_id = _client(conn)
     for n, when in enumerate(((2026, 9, 1), (2026, 7, 1), (2026, 8, 1)), start=1):
-        invoice_id = sales.create_invoice(conn, client_id, reference=f"FBG-W{n}")
+        invoice_id = sales.create_invoice(conn, client_id, reference=f"ABC-W{n}")
         sales.add_invoice_line(conn, invoice_id, {"label": "Day", "unit_price": 100})
         sales.recompute_invoice(conn, invoice_id, vat_rate=None)
         sales.issue_invoice(conn, invoice_id, issued_on=date(*when))
     ranks = [row["number"] for row in sales.register(conn)]
     assert ranks == sorted(ranks)
     assert [row["reference"] for row in sales.register(conn)] == \
-        ["FBG-W1", "FBG-W2", "FBG-W3"]
+        ["ABC-W1", "ABC-W2", "ABC-W3"]
     conn.close()
 
 
@@ -856,7 +856,7 @@ def test_a_draft_is_not_in_the_register(db_path):
     """It has no rank, so it is not in the series and cannot be missing from it."""
     conn = db.open_db(db_path)
     client_id = _client(conn)
-    sales.create_invoice(conn, client_id, reference="FBG-DRAFT")
+    sales.create_invoice(conn, client_id, reference="ABC-DRAFT")
     assert sales.register(conn) == []
     conn.close()
 
@@ -867,7 +867,7 @@ def test_the_register_names_a_rank_no_document_carries(db_path):
     conn = db.open_db(db_path)
     client_id = _client(conn)
     for n in (1, 2):
-        invoice_id = sales.create_invoice(conn, client_id, reference=f"FBG-W{n}")
+        invoice_id = sales.create_invoice(conn, client_id, reference=f"ABC-W{n}")
         sales.add_invoice_line(conn, invoice_id, {"label": "Day", "unit_price": 100})
         sales.recompute_invoice(conn, invoice_id, vat_rate=None)
         sales.issue_invoice(conn, invoice_id, issued_on=date(2026, 8, 1))
@@ -887,7 +887,7 @@ def test_a_whole_series_reports_no_gap(db_path):
     conn = db.open_db(db_path)
     client_id = _client(conn)
     for n in (1, 2, 3):
-        invoice_id = sales.create_invoice(conn, client_id, reference=f"FBG-W{n}")
+        invoice_id = sales.create_invoice(conn, client_id, reference=f"ABC-W{n}")
         sales.add_invoice_line(conn, invoice_id, {"label": "Day", "unit_price": 100})
         sales.recompute_invoice(conn, invoice_id, vat_rate=None)
         sales.issue_invoice(conn, invoice_id, issued_on=date(2026, 8, 1))
@@ -902,8 +902,8 @@ def test_the_register_page_shows_the_rank_beside_the_reference(
     whole, the reference is what a client telephoning would quote."""
     conn = db.open_db(db_path)
     client_id = _client(conn)
-    conn.execute("UPDATE crm.client SET code = 'FBG' WHERE id = %s", (client_id,))
-    invoice_id = sales.create_invoice(conn, client_id, reference="FBG-EXPERTISE")
+    conn.execute("UPDATE crm.client SET code = 'ABC' WHERE id = %s", (client_id,))
+    invoice_id = sales.create_invoice(conn, client_id, reference="ABC-EXPERTISE")
     sales.add_invoice_line(conn, invoice_id, {"label": "Forfait", "unit_price": 3200})
     sales.recompute_invoice(conn, invoice_id, vat_rate=None)
     rank = sales.issue_invoice(conn, invoice_id, issued_on=date(2026, 10, 5))["number"]
@@ -912,10 +912,10 @@ def test_the_register_page_shows_the_rank_beside_the_reference(
 
     client = _app(build_settings, tmp_path)
     body = client.get("/invoices/register").text
-    assert "FBG-EXPERTISE" in body and rank in body
+    assert "ABC-EXPERTISE" in body and rank in body
     csv = client.get("/invoices/register.csv")
     assert csv.status_code == 200
-    assert "FBG-EXPERTISE" in csv.text and rank in csv.text
+    assert "ABC-EXPERTISE" in csv.text and rank in csv.text
 
 
 def test_the_ledger_leads_on_the_reference_not_the_rank(
@@ -924,7 +924,7 @@ def test_the_ledger_leads_on_the_reference_not_the_rank(
     """The ledger is read while talking to a client, so it shows what they hold."""
     conn = db.open_db(db_path)
     client_id = _client(conn)
-    invoice_id = sales.create_invoice(conn, client_id, reference="FBG-EXPERTISE")
+    invoice_id = sales.create_invoice(conn, client_id, reference="ABC-EXPERTISE")
     sales.add_invoice_line(conn, invoice_id, {"label": "Forfait", "unit_price": 3200})
     sales.recompute_invoice(conn, invoice_id, vat_rate=None)
     sales.issue_invoice(conn, invoice_id)
@@ -932,7 +932,7 @@ def test_the_ledger_leads_on_the_reference_not_the_rank(
     conn.close()
 
     body = _app(build_settings, tmp_path).get("/invoices").text
-    assert "FBG-EXPERTISE" in body
+    assert "ABC-EXPERTISE" in body
 
 
 def test_an_invoice_started_from_the_console_can_be_issued(
@@ -943,7 +943,7 @@ def test_an_invoice_started_from_the_console_can_be_issued(
     moment. The form names it on the way in."""
     conn = db.open_db(db_path)
     client_id = _client(conn)
-    conn.execute("UPDATE crm.client SET code = 'FBG' WHERE id = %s", (client_id,))
+    conn.execute("UPDATE crm.client SET code = 'ABC' WHERE id = %s", (client_id,))
     conn.commit()
     conn.close()
 
@@ -954,7 +954,7 @@ def test_an_invoice_started_from_the_console_can_be_issued(
     invoice_id = int(reply.headers["location"].rsplit("/", 1)[1])
 
     conn = db.open_db(db_path)
-    assert sales.invoice(conn, invoice_id)["reference"] == "FBG-EXPERTISE"
+    assert sales.invoice(conn, invoice_id)["reference"] == "ABC-EXPERTISE"
     sales.add_invoice_line(conn, invoice_id, {"label": "Day", "unit_price": 80})
     sales.recompute_invoice(conn, invoice_id, vat_rate=None)
     assert sales.issue_invoice(conn, invoice_id)["status"] == "issued"
@@ -964,28 +964,28 @@ def test_an_invoice_started_from_the_console_can_be_issued(
 def test_a_draft_can_be_renamed_from_its_page(db_path, build_settings, tmp_path):
     conn = db.open_db(db_path)
     client_id = _client(conn)
-    invoice_id = sales.create_invoice(conn, client_id, reference="FBG-WRONG")
+    invoice_id = sales.create_invoice(conn, client_id, reference="ABC-WRONG")
     conn.commit()
     conn.close()
 
     client = _app(build_settings, tmp_path)
-    client.post(f"/invoice/{invoice_id}/reference", data={"reference": "FBG-RIGHT"},
+    client.post(f"/invoice/{invoice_id}/reference", data={"reference": "ABC-RIGHT"},
                 follow_redirects=False)
     conn = db.open_db(db_path)
-    assert sales.invoice(conn, invoice_id)["reference"] == "FBG-RIGHT"
+    assert sales.invoice(conn, invoice_id)["reference"] == "ABC-RIGHT"
     conn.close()
 
 
 def test_work_that_recurs_is_numbered_from_the_first_one(db_path):
     """A client receiving several sessions has to see which one they are paying.
-    FBG-SEANCE followed by FBG-SEANCE-2 reads as a correction of the first."""
+    ABC-SEANCE followed by ABC-SEANCE-2 reads as a correction of the first."""
     conn = db.open_db(db_path)
     client_id = _client(conn)
-    conn.execute("UPDATE crm.client SET code = 'FBG' WHERE id = %s", (client_id,))
+    conn.execute("UPDATE crm.client SET code = 'ABC' WHERE id = %s", (client_id,))
     premiere = sales.next_invoice_reference(conn, client_id, "séance", series=True)
-    assert premiere == "FBG-SEANCE-01"
+    assert premiere == "ABC-SEANCE-01"
     sales.create_invoice(conn, client_id, reference=premiere)
-    assert sales.next_invoice_reference(conn, client_id, "séance", series=True) == "FBG-SEANCE-02"
+    assert sales.next_invoice_reference(conn, client_id, "séance", series=True) == "ABC-SEANCE-02"
     conn.close()
 
 
@@ -994,8 +994,8 @@ def test_a_one_off_is_not_numbered(db_path):
     others."""
     conn = db.open_db(db_path)
     client_id = _client(conn)
-    conn.execute("UPDATE crm.client SET code = 'FBG' WHERE id = %s", (client_id,))
-    assert sales.next_invoice_reference(conn, client_id, "expertise") == "FBG-EXPERTISE"
+    conn.execute("UPDATE crm.client SET code = 'ABC' WHERE id = %s", (client_id,))
+    assert sales.next_invoice_reference(conn, client_id, "expertise") == "ABC-EXPERTISE"
     conn.close()
 
 
@@ -1004,17 +1004,17 @@ def test_a_numbered_series_survives_a_gap_in_its_own_count(db_path):
     make the third reuse its reference."""
     conn = db.open_db(db_path)
     client_id = _client(conn)
-    conn.execute("UPDATE crm.client SET code = 'FBG' WHERE id = %s", (client_id,))
-    for ref in ("FBG-SEANCE-01", "FBG-SEANCE-03"):
+    conn.execute("UPDATE crm.client SET code = 'ABC' WHERE id = %s", (client_id,))
+    for ref in ("ABC-SEANCE-01", "ABC-SEANCE-03"):
         sales.create_invoice(conn, client_id, reference=ref)
-    assert sales.next_invoice_reference(conn, client_id, "seance", series=True) == "FBG-SEANCE-04"
+    assert sales.next_invoice_reference(conn, client_id, "seance", series=True) == "ABC-SEANCE-04"
     conn.close()
 
 
 def test_the_console_can_start_a_numbered_series(db_path, build_settings, tmp_path):
     conn = db.open_db(db_path)
     client_id = _client(conn)
-    conn.execute("UPDATE crm.client SET code = 'FBG' WHERE id = %s", (client_id,))
+    conn.execute("UPDATE crm.client SET code = 'ABC' WHERE id = %s", (client_id,))
     conn.commit()
     conn.close()
 
@@ -1024,5 +1024,5 @@ def test_the_console_can_start_a_numbered_series(db_path, build_settings, tmp_pa
                         follow_redirects=False)
     invoice_id = int(reply.headers["location"].rsplit("/", 1)[1])
     conn = db.open_db(db_path)
-    assert sales.invoice(conn, invoice_id)["reference"] == "FBG-SEANCE-01"
+    assert sales.invoice(conn, invoice_id)["reference"] == "ABC-SEANCE-01"
     conn.close()

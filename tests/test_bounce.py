@@ -22,7 +22,7 @@ from arpenteur.stages import verify
 HELD = frozenset({"info@regie-x.ch", "location@regie-x.ch", "info@regie-y.ch"})
 
 DSN_HARD = """From: MAILER-DAEMON@mail.infomaniak.com
-To: alexis@peringer.ch
+To: me@arpenteur-demo.ch
 Subject: Undelivered Mail Returned to Sender
 Content-Type: multipart/report; report-type=delivery-status; boundary="B1"
 
@@ -49,7 +49,7 @@ Diagnostic-Code: smtp; 550 5.1.1 Recipient address rejected: User unknown
 """
 
 DSN_SOFT = """From: MAILER-DAEMON@mail.infomaniak.com
-To: alexis@peringer.ch
+To: me@arpenteur-demo.ch
 Subject: Delivery Status Notification (Delay)
 Content-Type: multipart/report; report-type=delivery-status; boundary="B2"
 
@@ -70,7 +70,7 @@ Diagnostic-Code: smtp; 452 4.2.2 Mailbox full
 """
 
 PLAIN = """From: Mail Delivery Subsystem <MAILER-DAEMON@hoster.ch>
-To: alexis@peringer.ch
+To: me@arpenteur-demo.ch
 Subject: Returned mail: see transcript for details
 Content-Type: text/plain; charset=utf-8
 
@@ -82,7 +82,7 @@ Content-Type: text/plain; charset=utf-8
 """
 
 ORDINARY = """From: Jean Dupont <jean@regie-x.ch>
-To: alexis@peringer.ch
+To: me@arpenteur-demo.ch
 Subject: Re: votre message
 Content-Type: text/plain
 
@@ -272,7 +272,7 @@ def _settings(tmp_path):
     return SimpleNamespace(
         mail=SimpleNamespace(
             configured=True, host="mail.test", port=993,
-            user="alexis@peringer.ch", password="x",
+            user="me@arpenteur-demo.ch", password="x",
         ),
     )
 
@@ -360,7 +360,7 @@ def test_an_unconfigured_mailbox_says_so_rather_than_failing(conn, tmp_path) -> 
 # undertaking that no routine performs is worse than no undertaking.
 
 STOP_PLAIN = """From: Jean Dupont <info@regie-x.ch>
-To: alexis@peringer.ch
+To: me@arpenteur-demo.ch
 Subject: Re: Limen
 Content-Type: text/plain; charset=utf-8
 
@@ -368,7 +368,7 @@ STOP
 """
 
 STOP_SUBJECT = """From: Marie <location@regie-x.ch>
-To: alexis@peringer.ch
+To: me@arpenteur-demo.ch
 Subject: Désinscription
 Content-Type: text/plain; charset=utf-8
 
@@ -376,7 +376,7 @@ Merci de me retirer.
 """
 
 STOP_GERMAN = """From: Hans <info@regie-y.ch>
-To: alexis@peringer.ch
+To: me@arpenteur-demo.ch
 Subject: Re: Limen
 Content-Type: text/plain; charset=utf-8
 
@@ -384,7 +384,7 @@ Bitte abmelden. Danke.
 """
 
 STOP_FROM_COLLEAGUE = """From: Secretariat <secretariat@autre.ch>
-To: alexis@peringer.ch
+To: me@arpenteur-demo.ch
 Subject: Re: Limen
 Content-Type: text/plain; charset=utf-8
 
@@ -392,7 +392,7 @@ Stop. Merci de retirer info@regie-x.ch de vos listes.
 """
 
 INTERESTED = """From: Jean Dupont <info@regie-x.ch>
-To: alexis@peringer.ch
+To: me@arpenteur-demo.ch
 Subject: Re: Limen
 Content-Type: text/plain; charset=utf-8
 

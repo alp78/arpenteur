@@ -412,7 +412,8 @@ def run(
         raise RuntimeError(
             "No mailbox is configured, so the opt-out sentence has no address "
             "to name. A cold message without a working opt-out route is what "
-            "LCD art. 3 al. 1 let. o is about; set MAIL_IMAP_USER first."
+            "LCD art. 3 al. 1 let. o is about; set MAIL_IMAP_SERVER, "
+            "MAIL_USERNAME and MAIL_PASSWORD in .env first."
         )
     opt_out_address = settings.mail.user
 

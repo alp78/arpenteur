@@ -82,10 +82,10 @@ def smtp_settings(build_settings, tmp_path: Path):
     """Settings with a configured send half and no real credentials."""
     return build_settings(
         tmp_path,
-        mail=MailConfig(host="imap.test", user="me@peringer.ch", password="x"),
+        mail=MailConfig(host="imap.test", user="me@arpenteur-demo.ch", password="x"),
         smtp=SmtpConfig(
-            host="smtp.test", port=587, user="me@peringer.ch", password="x",
-            sender="me@peringer.ch", sender_name="Me", per_run=3,
+            host="smtp.test", port=587, user="me@arpenteur-demo.ch", password="x",
+            sender="me@arpenteur-demo.ch", sender_name="Me", per_run=3,
             pause_seconds=0,
         ),
     )
@@ -139,14 +139,14 @@ def _draft(
 
 def test_a_message_carries_the_headers_a_receiver_expects() -> None:
     message = smtp.compose(
-        sender="me@peringer.ch", sender_name="Me", to="you@test.ch",
+        sender="me@arpenteur-demo.ch", sender_name="Me", to="you@test.ch",
         subject="Limen", body="Bonjour",
     )
     assert message["To"] == "you@test.ch"
-    assert "me@peringer.ch" in message["From"]
+    assert "me@arpenteur-demo.ch" in message["From"]
     assert message["Subject"] == "Limen"
     assert message["Date"]
-    assert message["Message-ID"].endswith("@peringer.ch>")
+    assert message["Message-ID"].endswith("@arpenteur-demo.ch>")
     assert message.get_content_type() == "text/plain"
 
 
@@ -449,8 +449,8 @@ def test_an_ordered_list_renders_as_one() -> None:
 def test_a_bare_url_becomes_a_link_and_cannot_reopen_a_tag() -> None:
     from arpenteur.sources import letter
 
-    html = letter.to_html("Voir https://peringer.ch/x?a=1&b=2 pour la suite.")
-    assert 'href="https://peringer.ch/x?a=1&amp;b=2"' in html
+    html = letter.to_html("Voir https://arpenteur-demo.ch/x?a=1&b=2 pour la suite.")
+    assert 'href="https://arpenteur-demo.ch/x?a=1&amp;b=2"' in html
     danger = letter.to_html('<script>alert(1)</script> et <b>gras</b>')
     assert "<script>" not in danger
     assert "&lt;b&gt;gras&lt;/b&gt;" in danger, "the body is escaped, not parsed"
@@ -469,10 +469,10 @@ def test_a_pasted_signature_loses_its_script_and_its_handlers() -> None:
     from arpenteur.sources import letter
 
     pasted = (
-        '<div onclick="steal()">Alexis <b>P</b>'
+        '<div onclick="steal()">Nadia <b>V</b>'
         '<script>x()</script>'
         '<a href="javascript:bad()">bad</a>'
-        '<a href="https://peringer.ch">site</a>'
+        '<a href="https://arpenteur-demo.ch">site</a>'
         '<img src="https://tracker.test/p.gif">'
         "</div>"
     )
@@ -480,16 +480,16 @@ def test_a_pasted_signature_loses_its_script_and_its_handlers() -> None:
     assert "onclick" not in cleaned
     assert "<script>" not in cleaned and "x()" not in cleaned
     assert "javascript:" not in cleaned
-    assert 'href="https://peringer.ch"' in cleaned
-    assert "<b>P</b>" in cleaned
+    assert 'href="https://arpenteur-demo.ch"' in cleaned
+    assert "<b>V</b>" in cleaned
 
 
 def test_a_signature_round_trips_through_the_file(tmp_path: Path) -> None:
     from arpenteur.sources import letter
 
     path = tmp_path / "signature.html"
-    letter.store_signature(path, '<div>Alexis <i>P</i><script>x()</script></div>')
-    assert letter.load_signature(path) == "<div>Alexis <i>P</i></div>"
+    letter.store_signature(path, '<div>Nadia <i>V</i><script>x()</script></div>')
+    assert letter.load_signature(path) == "<div>Nadia <i>V</i></div>"
     assert letter.load_signature(tmp_path / "absent.html") == ""
 
 
@@ -500,7 +500,7 @@ def test_the_signature_reaches_both_parts(
     from arpenteur.sources import letter
 
     letter.store_signature(
-        tmp_path / "signature.html", "<div>Alexis Peringer</div>"
+        tmp_path / "signature.html", "<div>Nadia Voirol</div>"
     )
     settings = replace(
         smtp_settings,
@@ -516,8 +516,8 @@ def test_the_signature_reaches_both_parts(
         part.get_content_type(): part.get_content()
         for part in message.walk() if not part.is_multipart()
     }
-    assert "Alexis Peringer" in parts["text/plain"]
-    assert "Alexis Peringer" in parts["text/html"]
+    assert "Nadia Voirol" in parts["text/plain"]
+    assert "Nadia Voirol" in parts["text/html"]
 
 
 def test_plain_sends_one_part_only(
@@ -652,18 +652,32 @@ def test_a_signature_may_point_at_the_picture_the_message_carries() -> None:
     assert 'src="cid:signature"' in cleaned
 
 
-def test_the_stored_signature_is_what_the_mail_client_wrote() -> None:
-    """The committed file, read as a recipient's client would read it."""
+MAIL_CLIENT_SIGNATURE = (
+    '<table style="border-collapse:collapse;font-family:Arial,sans-serif;'
+    'font-size:13px;line-height:1.5" cellpadding="0" cellspacing="0" border="0">'
+    '<tbody><tr><td style="padding-bottom:6px"><img src="cid:signature" alt="" '
+    'width="64" height="64" style="width:64px;height:64px"/><br/></td></tr>'
+    '<tr><td style="font-weight:600">Nadia Voirol<br/></td></tr>'
+    '<tr><td style="color:#555555">Comptable indépendante<br/></td></tr>'
+    '<tr><td><div><a style="color:#1a5276;text-decoration:none" '
+    'href="https://arpenteur-demo.ch">arpenteur-demo.ch</a><br/></div></td></tr>'
+    "</tbody></table>"
+)
+
+
+def test_a_signature_a_mail_client_wrote_is_sent_as_written(tmp_path: Path) -> None:
+    """The shape a mail client pastes: a table, inline typography, a CID
+    picture. Every byte of it is inside the allow-list, so what is sent is
+    what is in the file. The operator's own file is not in the repository, so
+    the fixture stands in for it."""
     from arpenteur.sources import letter
 
-    stored = Path(__file__).resolve().parents[1] / "signature.html"
-    fragment = stored.read_text(encoding="utf-8")
-    assert letter.clean_signature(fragment) == fragment.strip(), (
-        "signature.html holds something the sanitiser would change, so what is "
-        "sent is not what is in the file"
-    )
-    assert "cid:signature" in fragment
-    assert letter.to_text(fragment).splitlines()[0] == "Alexis Peringer"
+    fragment = MAIL_CLIENT_SIGNATURE
+    assert letter.clean_signature(fragment) == fragment
+    path = tmp_path / "signature.html"
+    letter.store_signature(path, fragment)
+    assert letter.load_signature(path) == fragment
+    assert letter.to_text(fragment).splitlines()[0] == "Nadia Voirol"
 
 
 # --- campaigns, the quota and the outbound log --------------------------------
@@ -733,7 +747,7 @@ def test_the_quota_counts_tests_and_letters_and_says_when_room_returns(
 ) -> None:
     settings = _replace(smtp_settings, smtp=_replace(smtp_settings.smtp, daily_quota=2,
                                                      per_run=10))
-    _campaigns.record_attempt(conn, kind="test", address="me@peringer.ch", subject="t",
+    _campaigns.record_attempt(conn, kind="test", address="me@arpenteur-demo.ch", subject="t",
                               message_id="<t@test>")
     conn.commit()
     lines: list[str] = []
@@ -814,7 +828,7 @@ def test_a_test_send_marks_nothing_sent_and_moves_no_card(
     smtp_settings, conn, company_id
 ) -> None:
     _programme(conn, "drymos")
-    one = send_stage.Letter(to="me@peringer.ch", subject="[TEST] s", body="b",
+    one = send_stage.Letter(to="me@arpenteur-demo.ch", subject="[TEST] s", body="b",
                             company_id=company_id)
     stats = send_stage.run(smtp_settings, conn, letters=[one], confirm=True, kind="test",
                            programme="DRYMOS", open_sender=FakeSender(), log=lambda _m: None)

@@ -1170,8 +1170,8 @@ def cmd_stats(args: argparse.Namespace) -> int:
 def _local_path(given: str) -> Path:
     """A path as typed, including a Windows one under WSL.
 
-    `C:\\Users\\aperi\\DEV\\note.md` is where the file is as far as its author is
-    concerned, and it is `/mnt/c/Users/aperi/DEV/note.md` as far as this
+    `C:\\Users\\you\\notes\\note.md` is where the file is as far as its author is
+    concerned, and it is `/mnt/c/Users/you/notes/note.md` as far as this
     process is concerned. Translating it here costs four lines and removes a
     step that would otherwise be got wrong at the end of every day.
     """

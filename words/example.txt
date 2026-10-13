@@ -1,0 +1,24 @@
+# Name patterns, an example, read by `arpenteur source --name-file`.
+#
+# The register cannot be searched by activity, so a trade is found by the words
+# its members put in their own name. One pattern per line; the register accepts
+# a leading wildcard, and `*fiduciaire*` finds a word inside a name where
+# `Fiduciaire*` finds only names that start with it.
+#
+# The register matches accents literally: `*remontées*` and `*remontees*` are
+# two different searches, and so are German umlauts. Put both spellings in.
+#
+# A comment after a pattern records what the search answered, so the next
+# person does not spend the requests again. The counts below are not measured;
+# replace them with yours after the first run.
+
+# --- bookkeeping and fiduciary services --------------------------------------
+*fiduciaire*               # the French form
+*fiduciaria*               # the Italian form
+*treuhand*                 # the German form
+*comptab*                  # comptable, comptabilité
+*buchhaltung*              # Buchhaltung, Buchhaltungs-
+*contabil*                 # contabile, contabilità
+
+# Searched and answered with nothing, so not worth a request:
+#   *bookkeeping*

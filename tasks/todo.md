@@ -1,87 +1,97 @@
-# A campaign manager: curated lists, scores and waves
+# Arpenteur as a product: six stages
 
-The approved plan is the reference for every detail; this file tracks progress.
-
-## Why
-
-From the raw addresses, curated lists that are tested; from a list, a campaign
-sent in waves ranked by a score of potential. Measured on the Drymos cohort,
-`sendlist` sends `info@saas-fee.ch` three letters, nothing ranks or waves, and
-21 German-named Valais firms would receive French.
+The approved plan of 13.10.2026 is the reference for every detail; this file tracks progress. The findings are in `audit-2026-10-13.md`, each with the stage that fixes it.
 
 ## Standing rules for this build
 
-- From step 6 until `0010` is final, no `arpenteur` command, no console start
-  and no `db.open_db` against the live database. Read-only checks go through
-  `docker exec … psql`. The migration is iterated against `arpenteur_test`.
-- One pytest run at a time.
-- Every patch applied by pattern asserts its match.
+- Develop on main; the operator commits from a bare command stack ending in `git push`.
+- Red test first for every behaviour a stage fixes; ruff clean; the whole suite green in one run; a live smoke of the console before each commit stack.
+- One pytest run at a time: the suite owns named databases.
+- A migration is immutable once applied to the live database; a new file for every change.
+- Never seed fabricated data into the live database; never print a password or the IBAN.
+- The two wave routes stay the only senders.
+- No stage starts before the previous one is committed.
 
-## The work
+## Stage 1. Stop the leaks, make the repository handable
 
-0. [x] `test_modules.py`: the foreign-key rule derived from module ownership.
-1. [x] `sources/language.py`.
-2. [x] `sources/mailcheck.py`: trade desks, administration, role, venue.
-3. [x] `sources/audience.py`: rule, judge, score, assign, funnel.
-4. [x] `sources/template.py`.
-5. [x] `sources/waves.py`: strategy registry, plan, gate, inbound.
-6. [x] Migration `0010_campaign.sql` and the store functions.
-7. [x] `stages/audience.py` and `verify.run(domains=)`.
-8. [x] `send.run`: programme, quota, pause, outbound log, refusals; `[smtp]` settings with `signature_image`.
-9. [x] `stages/campaign.py`.
-10. [x] Runner: lanes, `listed`, `precheck`, rollback, registrations.
-11. [x] CLI `audience` and `campaign`.
-12. [x] Console pages, navigation, honest header and copy, token fix and its test.
-13. [x] The no-send tests rewritten around `TRANSMITTING`.
-14. [x] Live: Drymos audience and plan; Limen test send to the operator only.
+- [x] The audit register and this tracker.
+- [x] `.gitignore` for the operator's material; the files untracked and left on disk; `uv.lock` tracked.
+- [x] Neutral examples: `campaign.example.md`, `templates/example/`, `words/example.txt`; the signature image default empty.
+- [x] LICENSE, the pyproject fields, the copyright line.
+- [x] `.env.example` from the names the code reads; the two wrong names in error messages fixed; a test that keeps them honest.
+- [x] The docstring path and the 63 fixtures with the operator's identity.
+- [x] Suite green, ruff clean, commit stack.
+
+## Stage 2. Correctness: money, runs, crashes
+
+- [ ] `money.parse_amount`; line deletes refused on issued invoices and sent quotes.
+- [ ] Issue validates the IBAN and the debtor address before drawing a number; credit notes once, issued at once; payments on issued invoices only, prefilled with what is owed.
+- [ ] Still owed and revenue net credit notes, in decimals; the printed document shows the reference.
+- [ ] Every money route reports; confirmation on issue and credit.
+- [ ] `run_scope` for the command-line handlers; one sentence for a stopped database and a bad setting; the three `.date()` crashes; `--limit` positive; stale command-line runs can be settled.
+- [ ] The console's error page and 404 shell; the parse fixes; the upload reply escaped; settings reload without a restart.
+- [ ] Suite green, ruff clean, live smoke, commit stack.
+
+## Stage 3. Navigation, Home, feedback, help plumbing
+
+- [ ] Five nav groups with captions; the brand links home.
+- [ ] Home as a dashboard; the company list at `/companies`.
+- [ ] One flash banner from the query string; `?error=` on every refusal.
+- [ ] Confirmations on the remaining destructive actions.
+- [ ] Crumbs fixed; Settings in the shell; the signature and route pages linked.
+- [ ] Runs: cancel, a live header, honest status, advise and prep through the runner, History paged.
+- [ ] Operations lists bounces, draft and verify.
+- [ ] The vocabulary applied; titles per page; labels, required marks, empty states with a next step.
+- [ ] `/help` renders `docs/`; every page carries its help link.
+- [ ] Suite green, ruff clean, live smoke, commit stack.
+
+## Stage 4. Settings inside the app, setup, model access
+
+- [ ] One overlay key per configuration table, merged in `load_settings`.
+- [ ] Settings sections: identity, sending and mailbox, register, model access, enrolment, scoring weights, catalogue, secrets as set or missing.
+- [ ] `arpenteur settings import-toml`, run once here; `arpenteur.toml` cleaned of every personal value.
+- [ ] The draft stage reads its brief and its invitation from settings and templates.
+- [ ] `health.py`, `arpenteur doctor`, the Home checklist.
+- [ ] Template editor and "start from the example".
+- [ ] Model access: the sign-in documented as it works, ids validated and current, the placeholder refused, the prompt over stdin.
+- [ ] Suite green, ruff clean, live smoke, commit stack.
+
+## Stage 5. Documentation and in-app help
+
+- [ ] `docs/`: start, install, setup, one guide per menu entry, operations, the command reference generated from the parsers, glossary, legal.
+- [ ] README rewritten; the design essays moved under `docs/design/`.
+- [ ] The wrong README claims corrected; the help strings filled; `arpenteur help`.
+- [ ] Every page's help link resolves; a test keeps it so.
+- [ ] Commit stack.
+
+## Stage 6. Internals and packaging
+
+- [ ] Per-module routers mounted when enabled; migrations of enabled modules only; `modules drop` consistent; panels through the slots.
+- [ ] Parsers per module; one lookup per entity; shared upload and note import; one date and one money formatter.
+- [ ] Dead code, the legacy migrations, the unused indexes, the dependency extras.
+- [ ] Time tracking on the project page, billed into a draft invoice.
+- [ ] The survey-half fixes S1 to S10 and S12, each with a test.
+- [ ] Packaging: Python version pinned, HTMX vendored, a Dockerfile and an app service, `ARPENTEUR_HOME`.
+- [ ] Suite green, ruff clean, live smoke, commit stack.
 
 ## Review
 
-### What exists now
+Filled in at the end of each stage: what exists now, what the live check showed, what was found and fixed on the way.
 
-A list is a curated audience: one mailbox per firm, chosen by rule, with one
-reason for every firm in scope. A campaign cuts a list into waves by a strategy
-the operator picks, and each wave walks render, test, approve, send, which the
-schema enforces. Between waves the gate waits for bounces to be read and
-pauses a campaign above its ceiling. Every post is logged before the server is
-asked, counted against a daily quota and spaced by a pause.
+### Stage 1, 14.10.2026
 
-Two routes send, both from a wave's page, both through the runner after a
-precheck. `TRANSMITTING` names them and six tests that used to assert "nothing
-sends" now assert "only these two".
+What exists now:
 
-### The live run, 13.10.2026
+- The repository tracks no file of the operator's: the scoring brief, the enrolment brief, the Limen templates, the Drymos word list, the signature and its picture, the seven campaign and client scripts and their test are ignored and stay on disk, where they keep working.
+- A neutral example of each kind ships in their place: `campaign.example.md`, `templates/example/` with three messages the parser accepts, `words/example.txt`.
+- `LICENSE` states the proprietary terms; `pyproject.toml` names the licence and the author; `uv.lock` is tracked.
+- `.env.example` lists the 26 names the code and the compose file read, grouped, with nothing else; `tests/test_settings.py` refuses a message that names a variable nothing reads and an example that drifts from the code.
+- The 63 fixtures that carried the operator's name and mailbox, and the ones that carried a person at a client, use a fictional sender and a fictional foundation.
 
-| | |
-|---|---|
-| migration | clients v10, six tables |
-| DRYMOS-1, firms in scope | 357 |
-| kept | 158 |
-| `info@saas-fee.ch` | kept once, two siblings covered by name |
-| Valais kept, German / French | 22 / 4 |
-| DRYMOS-A | 10 waves, canton-blocks, pilot of 10 |
-| render of DRYMOS-A | refused, naming `templates/drymos/de.md` and `fr.md` |
-| LIMEN-VERIF test | one message to the operator, signature, logo and opt-out read back from Sent |
-| messages sent to any firm | 0 |
-| tests | 1'300 passed |
+The live check: every one of the eighteen menu pages answers 200 with the operator's files untracked, `arpenteur stats` and `arpenteur campaign show DRYMOS-A` run, and the clients module is at version 11.
 
-LIMEN-VERIF was re-planned after its test, which discarded its 25 unsent drafts
-so they hold no mailbox, and then paused with its reason.
+Found and fixed on the way:
 
-### Found and fixed on the way
-
-- The foreign-key rule ranked `crm` beside `intel`; it is derived from module
-  ownership now, and still refuses `intel → crm`.
-- `[smtp] signature_image` was never read from the file.
-- `--muted` and `--panel` were used on three pages and defined nowhere; a test
-  now refuses any undefined token, and it was made to fail once on purpose.
-- The runner lost a failed stage's error text without a rollback.
-- `send.run` credited `[enrol] programme` whatever the message belonged to, and
-  so did the console's "mark sent".
-- `campaign pause` asked for a wave number it does not take. Found by running
-  it for real; no test had run it.
-
-### Waits for the operator
-
-The Drymos templates, once the app can be installed. The first real wave, which
-nobody should send for you.
+- `0010_campaign.sql` compared two clocks: `tested_at >= rendered_at` and `approved_at >= tested_at`, each stamp being its own transaction's `now()`. A backwards clock step of 0.67 s under WSL2 refused a wave its own test during the first suite run. `0011_wave_order.sql` keeps the order rules on nullness alone; two tests pin it.
+- One test read the operator's own `signature.html` from the repository root; it reads a fixture shaped like a mail client's paste instead.
+- The suite: 1,304 passed, ruff clean.

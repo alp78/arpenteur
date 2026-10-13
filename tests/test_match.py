@@ -121,7 +121,7 @@ def match_with(monkeypatch, provider: FakeProvider, settings, conn, **kwargs):
 def test_no_brief_is_an_error_not_an_empty_prompt(settings, conn, tmp_path) -> None:
     """Scoring against nothing would produce confident numbers built on air."""
     settings.brief_path = tmp_path / "absent.md"
-    with pytest.raises(RuntimeError, match="No campaign brief"):
+    with pytest.raises(RuntimeError, match="No scoring brief"):
         match.run(settings, conn, log=lambda _m: None)
 
 

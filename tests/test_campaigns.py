@@ -201,6 +201,32 @@ def test_the_schema_refuses_an_approval_before_a_test(conn, campaign_id) -> None
     conn.rollback()
 
 
+def test_the_schema_refuses_a_test_before_a_render(conn, campaign_id) -> None:
+    plan(conn, campaign_id)
+    first = K.waves(conn, campaign_id)[0]
+    with pytest.raises(psycopg.errors.CheckViolation):
+        K.set_tested(conn, first["id"])
+    conn.rollback()
+
+
+def test_a_clock_stepped_backwards_cannot_refuse_a_wave_its_test(conn, campaign_id) -> None:
+    """Each stamp is its own transaction's `now()`. A server clock corrected
+    backwards between the render and the test made 0010's `tested_at >=
+    rendered_at` refuse a wave on 13.10.2026; the order is what the schema
+    holds, not the clocks."""
+    plan(conn, campaign_id)
+    wave_id = K.waves(conn, campaign_id)[0]["id"]
+    K.set_rendered(conn, wave_id, "digest")
+    conn.execute("UPDATE crm.campaign_wave SET rendered_at = now() + interval '1 hour'"
+                 " WHERE id = %s", (wave_id,))
+    K.set_tested(conn, wave_id)
+    conn.execute("UPDATE crm.campaign_wave SET tested_at = now() + interval '2 hours'"
+                 " WHERE id = %s", (wave_id,))
+    K.approve(conn, wave_id, by="test")
+    row = K.wave(conn, campaign_id, 1)
+    assert row["approved_at"] is not None
+
+
 def test_a_render_clears_the_test_and_the_approval(conn, campaign_id) -> None:
     plan(conn, campaign_id)
     wave_id = K.waves(conn, campaign_id)[0]["id"]

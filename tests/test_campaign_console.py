@@ -41,12 +41,12 @@ def settings(build_settings, tmp_path: Path):
     folder = tmp_path / "templates" / "drymos"
     folder.mkdir(parents=True)
     (folder / "de.md").write_text(TEMPLATE, encoding="utf-8")
-    (tmp_path / "signature.html").write_text("<div>Alexis Peringer</div>", encoding="utf-8")
+    (tmp_path / "signature.html").write_text("<div>Nadia Voirol</div>", encoding="utf-8")
     return build_settings(
         tmp_path,
-        mail=MailConfig(host="imap.test", user="me@peringer.ch", password="x"),
-        smtp=SmtpConfig(host="smtp.test", user="me@peringer.ch", password="x",
-                        sender="me@peringer.ch", per_run=25, pause_seconds=0,
+        mail=MailConfig(host="imap.test", user="me@arpenteur-demo.ch", password="x"),
+        smtp=SmtpConfig(host="smtp.test", user="me@arpenteur-demo.ch", password="x",
+                        sender="me@arpenteur-demo.ch", per_run=25, pause_seconds=0,
                         signature_image=""),
     )
 
