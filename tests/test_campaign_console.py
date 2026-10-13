@@ -168,3 +168,9 @@ def test_a_campaigns_drafts_stay_off_the_review_queue(web, conn, ids, settings) 
     C.render_wave(settings, conn, campaign=ids["campaign"], wave=1, log=lambda _: None)
     body = web.get("/drafts").text
     assert "Zermatt Tourismus" not in body
+
+
+def test_a_plan_with_a_number_that_is_not_one_is_refused(web, ids) -> None:
+    reply = web.post(f"/campaign/{ids['campaign']}/plan", data={"wave_size": "abc"},
+                     follow_redirects=False)
+    assert reply.status_code == 303 and "error=" in reply.headers["location"]

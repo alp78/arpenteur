@@ -37,7 +37,7 @@ FIXTURES = Path(__file__).parent / "fixtures"
 BOIS_GENTIL = {
     "city": "Lausanne", "addon": "", "poBox": "", "careOf": "",
     "street": "Chemin du Petit-Flon", "houseNumber": "49",
-    "organisation": "Fondation Bois-Gentil", "swissZipCode": "1018",
+    "organisation": "Fondation Clair-Logis", "swissZipCode": "1018",
 }
 
 
@@ -212,7 +212,7 @@ def conn(settings) -> Connection:
     connection = db.open_db(settings.database_url)
     scout.upsert_company(
         connection,
-        {"uid": "CHE103895771", "name": "Fondation Bois-Gentil", "canton": "VD",
+        {"uid": "CHE100000011", "name": "Fondation Clair-Logis", "canton": "VD",
          "legal_seat": "Lausanne", "status": "ACTIVE", "method": "zefix",
          "hydrated": True, "address": BOIS_GENTIL},
     )
@@ -311,7 +311,7 @@ def test_a_radius_query_uses_metres_without_anyone_choosing_a_projection(conn) -
 def test_the_stage_writes_the_address_even_when_it_cannot_place_it(conn) -> None:
     """An address we hold and could not place is a state worth seeing. The
     alternative is a table that quietly contains only the successes."""
-    company = dict(geo.waiting(conn, uids=["CHE103895771"])[0])
+    company = dict(geo.waiting(conn, uids=["CHE100000011"])[0])
     geocode.place_one(Recorded("geoadmin-nothing.json"), conn, company)
     conn.commit()
     held = geo.establishments_for(conn, 1)
@@ -320,7 +320,7 @@ def test_the_stage_writes_the_address_even_when_it_cannot_place_it(conn) -> None
 
 
 def test_the_stage_places_what_it_can(conn) -> None:
-    company = dict(geo.waiting(conn, uids=["CHE103895771"])[0])
+    company = dict(geo.waiting(conn, uids=["CHE100000011"])[0])
     _id, found = geocode.place_one(Recorded("geoadmin-petit-flon.json"), conn, company)
     conn.commit()
     assert found is not None and found.precision == "address"
@@ -328,7 +328,7 @@ def test_the_stage_places_what_it_can(conn) -> None:
 
 
 def test_a_company_already_placed_is_not_offered_again(conn) -> None:
-    company = dict(geo.waiting(conn, uids=["CHE103895771"])[0])
+    company = dict(geo.waiting(conn, uids=["CHE100000011"])[0])
     geocode.place_one(Recorded("geoadmin-petit-flon.json"), conn, company)
     conn.commit()
     assert geo.waiting(conn) == []
@@ -372,7 +372,7 @@ def test_the_map_serves_its_markers_as_geojson(client, conn) -> None:
     body = client.get("/map/points.geojson").json()
     assert body["type"] == "FeatureCollection"
     assert body["features"][0]["geometry"]["coordinates"] == [6.624754, 46.542381]
-    assert body["features"][0]["properties"]["name"] == "Fondation Bois-Gentil"
+    assert body["features"][0]["properties"]["name"] == "Fondation Clair-Logis"
 
 
 def test_the_map_names_swisstopo(client, conn) -> None:

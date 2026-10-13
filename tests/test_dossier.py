@@ -67,7 +67,7 @@ def conn(root: Path, db_path: str) -> Connection:
         "INSERT INTO core.company (uid, name, canton, legal_form_uid, legal_form_label,"
         " legal_seat, status, purpose, source_url, method, fetched_at, first_seen,"
         " hydrated_at)"
-        " VALUES ('CHE103895771', 'Fondation Bois-Gentil', 'VD', '0110',"
+        " VALUES ('CHE100000011', 'Fondation Clair-Logis', 'VD', '0110',"
         " 'Fondation', 'Lausanne', 'ACTIVE', 'aide aux personnes agees',"
         " 'https://example.test', 'zefix', '2026-08-12', '2026-08-12', '2026-08-12')"
     )
@@ -573,7 +573,7 @@ def test_the_cli_prints_what_the_stage_would_read(
     )
     conn.commit()
     monkeypatch.setattr(cli, "load_settings", lambda: load_settings(root))
-    assert cli.main(["dossier", "BOIS-GENTIL", "--documents"]) == 0
+    assert cli.main(["dossier", "CLAIR-LOGIS", "--documents"]) == 0
     out = capsys.readouterr().out
     assert "No DMARC." in out
     assert "[source: public DNS]" in out
@@ -586,9 +586,9 @@ def test_a_client_is_found_by_code_uid_or_name(
     from arpenteur import cli
 
     monkeypatch.setattr(cli, "load_settings", lambda: load_settings(root))
-    for reference in ("BOIS-GENTIL", "CHE-103.895.771", "Bois-Gentil"):
+    for reference in ("CLAIR-LOGIS", "CHE-100.000.011", "Clair-Logis"):
         assert cli.main(["dossier", reference]) == 0
-        assert "Fondation Bois-Gentil" in capsys.readouterr().out
+        assert "Fondation Clair-Logis" in capsys.readouterr().out
 
 
 # --- removing what is not true ------------------------------------------------
@@ -712,3 +712,15 @@ def test_a_sections_own_css_reaches_the_browser_intact(web, client_id) -> None:
         assert "{{" not in body, path
         assert "}}" not in body, path
     assert ".dossier-strip {" in web.get(f"/client/{client_id}").text
+
+
+def test_an_uploaded_filename_is_escaped_in_the_reply(web, conn, client_id) -> None:
+    """The HTMX reply names the files it stored, and a file is named by whoever
+    sent it."""
+    reply = web.post(
+        f"/dossier/{client_id}/documents",
+        files={"file": ("<script>alert(1)</script>.txt", b"plain", "text/plain")},
+        headers={"HX-Request": "true"},
+    )
+    assert reply.status_code == 200
+    assert "<script>" not in reply.text and "&lt;script&gt;" in reply.text

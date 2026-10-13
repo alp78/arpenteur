@@ -23,12 +23,14 @@ transmits anything.
 from __future__ import annotations
 
 from datetime import date
+from decimal import Decimal
 from typing import Any
 
 from . import ui
 from ..config import IssuerConfig
 from ..kernel.db import Row
 from ..modules.sales import money
+from ..modules.sales.store import CREDITABLE_STATES, PAYABLE_STATES
 from .render import esc, page
 
 STYLES = """
@@ -105,6 +107,7 @@ table.doc-lines tfoot tr.total td { font-weight:700; border-top:.4mm solid #000;
 .qrbill h2 { font-size:11pt; font-weight:700; margin:0 0 3mm; }
 .qrbill .receipt h2 { font-size:11pt; }
 .qrbill .block { margin-bottom:2.5mm; }
+.qrbill .blank { height:14mm; border:1px dashed #000; margin-top:1mm; }
 .qrbill .block .caption { font-weight:700; font-size:6pt; line-height:1.4; }
 .qrbill .receipt .block .caption { font-size:6pt; }
 .qrbill .payment .col-left { width:51mm; }
@@ -218,10 +221,7 @@ def invoices_page(
     invoices: list[Row], *, status: str = "", q: str = "", chrome: Any = None,
 ) -> str:
     rows = [invoice_row(row) for row in invoices]
-    owed_total = sum(
-        float(r["owed"] or 0) for r in invoices
-        if r["status"] in ("issued", "part_paid", "overdue")
-    )
+    owed_total = _still_owed(invoices)
     body = [
         _ledger_tabs("/invoices"),
         "<h1>Invoices</h1>",
@@ -240,6 +240,20 @@ def invoices_page(
         f'<div id="ledger">{_invoice_table(rows)}</div>',
     ]
     return page("Invoices", "".join(body), chrome, css=STYLES)
+
+
+def _still_owed(rows: list[Row]) -> Decimal:
+    """What is unsettled: issued invoices that are not credit notes.
+
+    A credit note is never owed, and the invoice it reversed is `credited`,
+    so neither counts. Summed as money, never as floats: the figure is read
+    against a bank statement.
+    """
+    return sum(
+        (money.money(r["owed"] or 0) for r in rows
+         if r["status"] in PAYABLE_STATES and not r.get("credits_id")),
+        Decimal("0.00"),
+    )
 
 
 def invoice_row(row: Row) -> str:
@@ -309,9 +323,8 @@ def register_page(
     for rank in sorted(missing):
         drawn.append(_gap_row(rank))
 
-    billed = sum(float(r["gross_total"] or 0) for r in rows)
-    owed = sum(float(r["owed"] or 0) for r in rows
-               if r["status"] in ("issued", "part_paid", "overdue"))
+    billed = sum((money.money(r["gross_total"] or 0) for r in rows), Decimal("0.00"))
+    owed = _still_owed(rows)
     body = [
         _ledger_tabs("/invoices/register"),
         "<h1>Register</h1>",
@@ -449,8 +462,11 @@ def invoices_panel(invoices: list[Row], client_id: int) -> str:
 def _line_cells(line: Row, *, editable: bool, delete_to: str = "") -> str:
     detail = (f'<div class="basis">{esc(line["detail"])}</div>'
               if line["detail"] else "")
+    # A quote line records which card line priced it; an invoice line does not
+    # carry the column, and reading it with [] made every invoice page with a
+    # line a 500 until 14.10.2026.
     basis = (f'<div class="basis">from the card: {esc(line["basis"])}</div>'
-             if line["basis"] else "")
+             if line.get("basis") else "")
     remove = ""
     if editable and delete_to:
         remove = (f'<td><form method="post" action="{delete_to}/{line["id"]}/delete">'
@@ -535,7 +551,7 @@ def _totals_rows(row: Row, *, columns: int) -> str:
 
 def quote_page(
     quote: Row, versions: list[Row], shown: Row, lines: list[Row],
-    services: list[Row], *, chrome: Any = None,
+    services: list[Row], *, chrome: Any = None, note: str = "", error: str = "",
 ) -> str:
     frozen = shown["sent_at"] is not None
     tabs = "".join(
@@ -629,31 +645,57 @@ def quote_page(
         body.append("</div>")
 
     body.append(f'<p><a href="/quote/{quote["id"]}/print">Print this version</a></p>')
-    return page(quote["code"], "".join(body), chrome, css=STYLES)
+    return page(
+        quote["code"],
+        ui.banner(error, kind="bad") + ui.banner(note, kind="good") + "".join(body),
+        chrome, css=STYLES,
+    )
 
 
 def invoice_page(
     invoice: Row, lines: list[Row], services: list[Row], *,
-    issuer: IssuerConfig, chrome: Any = None,
+    issuer: IssuerConfig, chrome: Any = None, note: str = "", error: str = "",
+    credit_note: Row | None = None,
 ) -> str:
     draft = invoice["status"] == "draft"
+    is_note = invoice["credits_id"] is not None
+    title = invoice["reference"] or invoice["number"] or "Draft invoice"
     body = [
         f'<p class="crumbs"><a href="/clients">Clients</a> / '
         f'<a href="/client/{invoice["client_id"]}">{esc(invoice["client_code"])}</a>'
-        f" / {esc(invoice['number'] or 'draft invoice')}</p>",
+        f" / {esc(title)}</p>",
+        ui.banner(error, kind="bad"),
+        ui.banner(note, kind="good"),
         '<div class="money-head">',
-        f"<h1>{esc(invoice['number'] or 'Draft invoice')}</h1>",
+        f"<h1>{esc(title)}</h1>",
         state_tag(invoice["status"]),
         f'<span class="dim small">{esc(invoice["company_name"])}</span>',
         "</div>",
     ]
-    if not draft:
+    if invoice["number"]:
+        body.append(
+            f'<p class="dim small">Rank {esc(invoice["number"])} in the register. '
+            "The document carries the reference; the rank never appears on it.</p>"
+        )
+    if is_note:
+        body.append(
+            '<p class="frozen">A credit note. It reverses '
+            f'<a href="/invoice/{invoice["credits_id"]}">the invoice it was issued '
+            "against</a>, carries its own rank, and is never paid.</p>"
+        )
+    elif not draft:
         body.append(
             '<p class="frozen">Issued on ' + str(invoice["issued_on"])[:10]
             + ", due " + str(invoice["due_on"] or "")[:10]
             + ". An issued invoice is never edited: a correction is a credit "
             "note, because the client and their accounts hold the document as "
             "it was sent.</p>"
+        )
+    if credit_note is not None:
+        body.append(
+            f'<p class="frozen">Credited by <a href="/invoice/{credit_note["id"]}">'
+            f'{esc(credit_note["reference"])}</a> on '
+            f'{str(credit_note["issued_on"] or "")[:10]}.</p>'
         )
     body.append(lines_table(
         lines, invoice, editable=draft, delete_to="/invoice-line",
@@ -681,32 +723,46 @@ def invoice_page(
             '<button type="submit">Add</button></form>'
         )
         body.append('<div class="money-acts">')
-        if issuer.can_bill:
-            body.append(
-                f'<form method="post" action="/invoice/{invoice["id"]}/issue">'
-                '<button type="submit" class="primary">Issue</button></form>'
-            )
-        else:
+        if not issuer.can_bill:
             body.append(
                 '<p class="dim small">This invoice cannot be issued: '
                 "<code>[issuer]</code> in arpenteur.toml needs at least a name "
                 "and an IBAN. A bill with no way to pay it is worse than no "
                 "bill.</p>"
             )
+        elif not money.iban_is_valid(issuer.iban):
+            body.append(
+                f'<p class="dim small">This invoice cannot be issued: the IBAN '
+                f"{esc(issuer.iban)} does not pass its check digits. A bill with a "
+                "wrong IBAN prints correctly and is never paid.</p>"
+            )
+        else:
+            body.append(
+                f'<form method="post" action="/invoice/{invoice["id"]}/issue" '
+                'data-confirm="Issue this invoice? It takes the next rank in the '
+                'series and can no longer be edited.">'
+                '<button type="submit" class="primary">Issue</button></form>'
+            )
         body.append("</div>")
     else:
+        owed = money.money(invoice["gross_total"]) - money.money(invoice["paid_total"] or 0)
         body.append('<div class="money-acts">')
-        body.append(
-            f'<form method="post" action="/invoice/{invoice["id"]}/payment">'
-            '<input type="number" name="amount" step="0.05" '
-            f'value="{invoice["gross_total"]}"> '
-            "<button type=\"submit\">Record a payment</button></form>"
-        )
-        body.append(
-            f'<form method="post" action="/invoice/{invoice["id"]}/credit">'
-            '<input type="text" name="reason" placeholder="why" size="22"> '
-            '<button type="submit">Credit note</button></form>'
-        )
+        if invoice["status"] in PAYABLE_STATES and not is_note:
+            body.append(
+                f'<form method="post" action="/invoice/{invoice["id"]}/payment">'
+                '<label>Amount received <input type="number" name="amount" '
+                f'step="0.05" min="0.05" value="{owed}"></label> '
+                "<button type=\"submit\">Record a payment</button></form>"
+            )
+        if invoice["status"] in CREDITABLE_STATES and not is_note:
+            body.append(
+                f'<form method="post" action="/invoice/{invoice["id"]}/credit" '
+                'data-confirm="Issue a credit note reversing this invoice? It takes '
+                'its own rank, and this invoice is marked credited.">'
+                '<label>Reason <input type="text" name="reason" placeholder="why" '
+                'size="22"></label> '
+                '<button type="submit">Credit note</button></form>'
+            )
         body.append("</div>")
         if invoice["paid_total"]:
             body.append(
@@ -714,8 +770,7 @@ def invoice_page(
                 f'of {_num(invoice["gross_total"])}.</p>'
             )
     body.append(f'<p><a href="/invoice/{invoice["id"]}/print">Print</a></p>')
-    return page(invoice["number"] or "Draft invoice", "".join(body),
-                chrome, css=STYLES)
+    return page(title, "".join(body), chrome, css=STYLES)
 
 
 # --- on paper ---------------------------------------------------------------------
@@ -807,6 +862,10 @@ def invoice_print(
     invoice: Row, lines: list[Row], address: dict[str, Any] | None, *,
     issuer: IssuerConfig, qr: str = "", payload_error: str = "",
 ) -> str:
+    # The reference is the document's name: it is what the client quotes and
+    # what their accounts hold. The rank is the register's and never prints.
+    label = invoice["reference"] or "(draft)"
+    kind = "Credit note" if invoice["credits_id"] is not None else "Invoice"
     body = [
         '<div class="printbar">'
         f'<a href="/invoice/{invoice["id"]}">Back</a>'
@@ -815,7 +874,7 @@ def invoice_print(
         '<div class="sheet">',
         f'<div class="doc-head">{_issuer_block(issuer)}</div>',
         _addressee(invoice["company_name"], address),
-        f'<h1 class="doc">Invoice {esc(invoice["number"] or "(draft)")}</h1>',
+        f'<h1 class="doc">{kind} {esc(label)}</h1>',
         '<p class="doc-meta">'
         + (f'Issued {_day(invoice["issued_on"])}. ' if invoice["issued_on"] else "")
         + (f'Due {_day(invoice["due_on"])}. ' if invoice["due_on"] else "")
@@ -836,29 +895,36 @@ def invoice_print(
     elif qr:
         body.append(qr)
     body.append("</div>")
-    return _print_shell(f"Invoice {invoice['number'] or 'draft'}", "".join(body))
+    return _print_shell(f"{kind} {label}", "".join(body))
 
 
 def qr_bill(
     invoice: Row, address: dict[str, Any] | None, *, issuer: IssuerConfig,
-    svg: str,
+    svg: str, debtor: money.Party = money.EMPTY,
 ) -> str:
     """The payment part and the receipt, in the prescribed layout.
 
     The captions are fixed by the standard and are not the place for house
     style: a client's accounts department, and their bank's scanner, both
     expect these exact words in these exact positions.
+
+    The debtor printed is the debtor encoded: when the address is not known
+    well enough for the code, the block is the blank frame the standard
+    prescribes, which the payer completes by hand.
     """
     creditor = "<br>".join(esc(p) for p in (
         issuer.name, f"{issuer.street} {issuer.building}".strip(),
         f"{issuer.postcode} {issuer.town}".strip(),
     ) if p)
-    debtor_lines = [invoice["company_name"]]
-    for key in ("street", "houseNumber", "swissZipCode", "town"):
-        value = (address or {}).get(key)
-        if value:
-            debtor_lines.append(str(value))
-    debtor = "<br>".join(esc(p) for p in debtor_lines if p)
+    if debtor.empty:
+        payer_caption = "Payable by (name/address)"
+        payer = '<div class="blank"></div>'
+    else:
+        payer_caption = "Payable by"
+        payer = "<br>".join(esc(p) for p in (
+            debtor.name, f"{debtor.street} {debtor.building}".strip(),
+            f"{debtor.postcode} {debtor.town}".strip(),
+        ) if p)
     reference = esc(money.format_reference(invoice["qr_reference"] or ""))
     # The IBAN is printed in groups of four, which is how it is written
     # everywhere else and how somebody checks it against their bank's screen.
@@ -877,7 +943,7 @@ def qr_bill(
     <div class="block"><div class="caption">Account / Payable to</div>
       {esc(account)}<br>{creditor}</div>
     {ref_block}
-    <div class="block"><div class="caption">Payable by</div>{debtor}</div>
+    <div class="block"><div class="caption">{payer_caption}</div>{payer}</div>
     <div class="amount-row">
       <div><div class="caption">Currency</div>{currency}</div>
       <div><div class="caption">Amount</div>{amount}</div>
@@ -898,8 +964,8 @@ def qr_bill(
         {esc(account)}<br>{creditor}</div>
       {ref_block}
       <div class="block"><div class="caption">Additional information</div>
-        {esc(invoice["number"] or "")}</div>
-      <div class="block"><div class="caption">Payable by</div>{debtor}</div>
+        {esc(invoice["reference"] or "")}</div>
+      <div class="block"><div class="caption">{payer_caption}</div>{payer}</div>
     </div>
   </div>
 </div>"""

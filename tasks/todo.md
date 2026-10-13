@@ -24,13 +24,13 @@ The approved plan of 13.10.2026 is the reference for every detail; this file tra
 
 ## Stage 2. Correctness: money, runs, crashes
 
-- [ ] `money.parse_amount`; line deletes refused on issued invoices and sent quotes.
-- [ ] Issue validates the IBAN and the debtor address before drawing a number; credit notes once, issued at once; payments on issued invoices only, prefilled with what is owed.
-- [ ] Still owed and revenue net credit notes, in decimals; the printed document shows the reference.
-- [ ] Every money route reports; confirmation on issue and credit.
-- [ ] `run_scope` for the command-line handlers; one sentence for a stopped database and a bad setting; the three `.date()` crashes; `--limit` positive; stale command-line runs can be settled.
-- [ ] The console's error page and 404 shell; the parse fixes; the upload reply escaped; settings reload without a restart.
-- [ ] Suite green, ruff clean, live smoke, commit stack.
+- [x] `money.parse_amount`; line deletes refused on issued invoices and sent quotes.
+- [x] Issue validates the IBAN before drawing a number; the payment part reads the register's town and leaves out a debtor it cannot encode; credit notes once, issued at once; payments on issued invoices only, prefilled with what is owed.
+- [x] Still owed and revenue net credit notes, in decimals; the printed document shows the reference.
+- [x] Every money route reports; confirmation on issue and credit.
+- [x] `run_scope` for the command-line handlers; one sentence for a stopped database and a bad setting; the three `.date()` crashes; `--limit` positive; stale command-line runs can be settled.
+- [x] The console's error page and 404 shell; the parse fixes; the upload reply escaped; settings reload without a restart.
+- [x] Suite green, ruff clean, live smoke, commit stack.
 
 ## Stage 3. Navigation, Home, feedback, help plumbing
 
@@ -95,3 +95,39 @@ Found and fixed on the way:
 - `0010_campaign.sql` compared two clocks: `tested_at >= rendered_at` and `approved_at >= tested_at`, each stamp being its own transaction's `now()`. A backwards clock step of 0.67 s under WSL2 refused a wave its own test during the first suite run. `0011_wave_order.sql` keeps the order rules on nullness alone; two tests pin it.
 - One test read the operator's own `signature.html` from the repository root; it reads a fixture shaped like a mail client's paste instead.
 - The suite: 1,304 passed, ruff clean.
+
+### Stage 2, 14.10.2026
+
+What exists now, for money:
+
+- A line cannot leave an issued invoice or a sent quote; the store refuses and the page says so.
+- A credit note is issued with its own rank in the transaction that marks the invoice credited; an invoice is credited once, a credit note never, a draft is deleted instead.
+- A payment is recorded only on an issued invoice and only for a positive amount; the form is prefilled with what is owed; an amount typed the Swiss way is read, and nonsense is a refusal rather than a 500.
+- "Still owed" nets credit notes and is summed in decimals, on the ledger, on the register and in `analytics.revenue` (migration `0003_credit_notes.sql`).
+- The printed document is headed by the reference; the rank never prints. The payment part reads the register's `city` as the town and, when a debtor cannot be encoded, prints the blank frame the standard prescribes instead of a malformed block.
+- A refused issue draws no rank. Every money route reports its refusal on the page, and issuing or crediting asks before it acts.
+
+What exists now, for runs and the command line:
+
+- One `run_scope` carries every handler: rollback, `finish_run`, Ctrl-C recorded as interrupted, the connection closed.
+- A stopped database, a bad setting, a missing or malformed `arpenteur.toml` are one sentence each, and never a traceback.
+- `programme replies`, `ledger` and `history` print.
+- `--limit` refuses zero on all sixteen flags, and the five stages read the limit the same way the guard does.
+- A run nothing is running any more can be marked interrupted from its page.
+
+What exists now, for the console:
+
+- A fault renders inside the shell with its name; the 22 bare 404s render inside the shell.
+- The calendar, a budget, a plan size, an unknown contact and the brief save refuse instead of crashing; the upload reply is escaped.
+- A setting saved on the Settings page reaches the next run without a restart.
+
+The live check: the fixed pages answer on the real database, the invoice page with lines renders where it was a 500, the printed invoice is headed by its reference, `enrich --limit 0` is refused, `programme ledger DRYMOS` lists its 347 members, and analytics is at version 3.
+
+Found and fixed on the way:
+
+- X2: the invoice page read a column only quote lines carry, so it was a 500 for any invoice with a line.
+- X3: the real client was the worked example in 21 files; a fictional foundation stands in now.
+
+One deviation from the plan: M7 is handled where the payment part is made rather than at issue. The standard allows a payment part without a debtor, so an invoice to a client whose register address lacks a town is issued and printed with the blank frame rather than refused.
+
+The suite: 1,408 passed, 104 of them new, ruff clean.

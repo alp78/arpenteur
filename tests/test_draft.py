@@ -242,6 +242,17 @@ def test_the_batch_is_capped_and_says_why(conn, tmp_path, monkeypatch) -> None:
     assert any("art. 3 al. 1 let. o" in line for line in said)
 
 
+def test_a_limit_of_zero_drafts_nothing(conn, tmp_path, monkeypatch) -> None:
+    """Zero was falsy for the cap, so the cap that keeps the volume defensible
+    gave way exactly when it was set to nothing."""
+    provider = FakeProvider()
+    monkeypatch.setattr(draft, "get_provider", lambda _s: provider)
+    stats = draft.run(_settings(tmp_path), conn, desk_parts=DESKS, limit=0,
+                      log=lambda _m: None)
+    assert stats["selected"] == 3 and stats["drafted"] == 0
+    assert provider.prompts == []
+
+
 def test_an_acknowledged_batch_does_not_lecture(conn, tmp_path, monkeypatch) -> None:
     provider = FakeProvider()
     monkeypatch.setattr(draft, "get_provider", lambda _s: provider)

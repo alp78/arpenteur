@@ -102,6 +102,28 @@ def test_a_limited_run_gets_past_its_own_query(settings, db_path: Path) -> None:
     )
 
 
+class _Register:
+    """Stands in for the Zefix client and keeps every company it is asked for."""
+
+    def __init__(self) -> None:
+        self.asked: list[str] = []
+
+    def company(self, uid: str, max_age: int | None = None) -> None:
+        self.asked.append(uid)
+
+
+def test_a_limit_of_zero_hydrates_nothing(settings, conn) -> None:
+    """`conn` holds more companies than the guard lets through without a flag.
+    Zero skipped the guard (a limit was given) and the slice (zero is falsy),
+    which is the whole backlog at one request each."""
+    register = _Register()
+    done = source.hydrate_pending(
+        settings, conn, zefix=register, limit=0, log=lambda _m: None
+    )
+    assert done == 0
+    assert register.asked == []
+
+
 def test_a_small_backlog_needs_no_ceremony(settings, db_path: Path) -> None:
     """The guard is for the corpus, not for ordinary use.
 

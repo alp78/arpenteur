@@ -281,10 +281,18 @@ def confirm_button(
         f'<input type="hidden" name="{esc(k)}" value="{esc(v)}">'
         for k, v in (hidden or {}).items()
     )
-    hx = attrs(hx_post=action, hx_target=target, hx_swap=swap) if target else ""
-    method = "" if target else f' method="post" action="{esc(action)}"'
+    # `hx-confirm` is read by htmx on a request it makes itself. A plain form
+    # is posted by the browser, which never asks htmx, so the question went
+    # unasked on every form that used it; `data-confirm` is read by the
+    # console's own submit listener, and the form stays a form.
+    if target:
+        hx = attrs(hx_post=action, hx_target=target, hx_swap=swap, hx_confirm=message)
+        method = ""
+    else:
+        hx = attrs(data_confirm=message)
+        method = f' method="post" action="{esc(action)}"'
     return (
-        f'<form class="inline"{method}{hx}{attrs(hx_confirm=message)}>'
+        f'<form class="inline"{method}{hx}>'
         f"{fields}<button{classes('danger', css)}>{esc(label)}</button></form>"
     )
 

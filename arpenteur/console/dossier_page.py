@@ -417,7 +417,7 @@ def documents_panel(
     and one flat list of thirty rows sorted by arrival answers it only by
     reading every line.
     """
-    said = f'<div class="banner banner-note">{note}</div>' if note else ""
+    said = f'<div class="banner banner-note">{esc(note)}</div>' if note else ""
     return (
         f'<div id="papers">{said}'
         + documents_by_folder(rows, folders, client_id)

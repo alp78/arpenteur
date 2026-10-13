@@ -170,7 +170,7 @@ def test_the_folders_a_person_has_already_decided_against_are_skipped():
 
 def test_an_address_published_by_the_company_matches_it(db_path):
     conn = db.open_db(db_path)
-    company_id = _company(conn, "Fondation Bois-Gentil", "CHE103895771")
+    company_id = _company(conn, "Fondation Clair-Logis", "CHE100000011")
     db.save_contact(conn, company_id=company_id, kind="email",
                     value="N.Fellmann@fondation-exemple.ch", method="published")
     found = clients.match_company(
@@ -197,7 +197,7 @@ def test_the_operators_own_domain_matches_nothing(db_path):
 
 def test_a_free_mail_domain_never_matches_by_domain(db_path):
     conn = db.open_db(db_path)
-    company_id = _company(conn, "Bois-Gentil", "CHE103895771")
+    company_id = _company(conn, "Clair-Logis", "CHE100000011")
     db.save_contact(conn, company_id=company_id, kind="email",
                     value="gerant@bluewin.ch", method="published")
     # The exact address still matches: it is that person.
@@ -214,7 +214,7 @@ def test_a_free_mail_domain_never_matches_by_domain(db_path):
 
 def test_a_corporate_domain_matches_a_colleague_nobody_has_met(db_path):
     conn = db.open_db(db_path)
-    company_id = _company(conn, "Bois-Gentil", "CHE103895771")
+    company_id = _company(conn, "Clair-Logis", "CHE100000011")
     db.save_contact(conn, company_id=company_id, kind="email",
                     value="n.fellmann@fondation-exemple.ch", method="published")
     found = clients.match_company(
@@ -226,7 +226,7 @@ def test_a_corporate_domain_matches_a_colleague_nobody_has_met(db_path):
 
 def test_the_website_the_survey_read_is_a_match_of_last_resort(db_path):
     conn = db.open_db(db_path)
-    company_id = _company(conn, "Bois-Gentil", "CHE103895771")
+    company_id = _company(conn, "Clair-Logis", "CHE100000011")
     db.save_site(conn, company_id, {"url": "https://www.fondation-exemple.ch/accueil",
                                     "status": "ok"})
     found = clients.match_company(
@@ -238,7 +238,7 @@ def test_the_website_the_survey_read_is_a_match_of_last_resort(db_path):
 
 def test_nothing_known_means_no_match_rather_than_a_guess(db_path):
     conn = db.open_db(db_path)
-    _company(conn, "Bois-Gentil", "CHE103895771")
+    _company(conn, "Clair-Logis", "CHE100000011")
     assert clients.match_company(
         conn, ["inconnu@ailleurs.ch"], own_domains=OWN, free_domains=mail.FREE_MAIL
     ) is None
@@ -274,7 +274,7 @@ def test_a_re_import_does_not_resurrect_what_was_ignored(db_path):
 
 def test_matched_messages_come_first_in_the_queue(db_path):
     conn = db.open_db(db_path)
-    company_id = _company(conn, "Bois-Gentil", "CHE103895771")
+    company_id = _company(conn, "Clair-Logis", "CHE100000011")
     _queue(conn, message_id="<a@x.ch>", thread_key="<a@x.ch>",
            sent_at=datetime(2026, 8, 12, tzinfo=timezone.utc))
     _queue(conn, message_id="<b@x.ch>", thread_key="<b@x.ch>",
@@ -293,7 +293,7 @@ def test_matched_messages_come_first_in_the_queue(db_path):
 
 def test_filing_is_the_only_thing_that_writes_to_the_timeline(db_path):
     conn = db.open_db(db_path)
-    company_id = _company(conn, "Bois-Gentil", "CHE103895771")
+    company_id = _company(conn, "Clair-Logis", "CHE100000011")
     client_id = db.promote_to_client(conn, company_id)
     email_id = _queue(conn, body="Bonjour, voici le périmètre.",
                       body_kind="text/plain")
@@ -315,7 +315,7 @@ def test_filing_is_the_only_thing_that_writes_to_the_timeline(db_path):
 
 def test_a_message_filed_and_re_imported_is_not_two_entries(db_path):
     conn = db.open_db(db_path)
-    company_id = _company(conn, "Bois-Gentil", "CHE103895771")
+    company_id = _company(conn, "Clair-Logis", "CHE100000011")
     client_id = db.promote_to_client(conn, company_id)
     email_id = _queue(conn)
     clients.file_email(conn, email_id, client_id=client_id, own_domains=OWN)
@@ -327,7 +327,7 @@ def test_a_message_filed_and_re_imported_is_not_two_entries(db_path):
 
 def test_filing_teaches_the_address_and_the_domain(db_path):
     conn = db.open_db(db_path)
-    company_id = _company(conn, "Bois-Gentil", "CHE103895771")
+    company_id = _company(conn, "Clair-Logis", "CHE100000011")
     client_id = db.promote_to_client(conn, company_id)
     email_id = _queue(conn)
     _id, learned = clients.file_email(
@@ -344,7 +344,7 @@ def test_filing_teaches_the_address_and_the_domain(db_path):
 
 def test_filing_a_free_mail_message_learns_the_person_not_the_provider(db_path):
     conn = db.open_db(db_path)
-    company_id = _company(conn, "Bois-Gentil", "CHE103895771")
+    company_id = _company(conn, "Clair-Logis", "CHE100000011")
     client_id = db.promote_to_client(conn, company_id)
     email_id = _queue(conn, from_email="gerant@bluewin.ch")
     clients.file_email(conn, email_id, client_id=client_id, own_domains=OWN,
@@ -357,8 +357,8 @@ def test_filing_a_free_mail_message_learns_the_person_not_the_provider(db_path):
 
 def test_a_domain_claimed_by_two_companies_is_a_conflict_not_a_race(db_path):
     conn = db.open_db(db_path)
-    first = _company(conn, "Bois-Gentil", "CHE103895771")
-    second = _company(conn, "Bois-Gentil Immobilier", "CHE103895772")
+    first = _company(conn, "Clair-Logis", "CHE100000011")
+    second = _company(conn, "Clair-Logis Immobilier", "CHE100000012")
     assert clients.save_email_link(conn, first, kind="domain", value="fondation-exemple.ch") == "saved"
     assert clients.save_email_link(conn, first, kind="domain", value="fondation-exemple.ch") == "known"
     # Two entities sharing a mail domain is real. Picking a winner silently
@@ -375,7 +375,7 @@ def test_filing_one_message_matches_the_rest_of_the_thread(db_path):
     messages of a conversation sit unmatched for ever: they are already held,
     and an import never looks at what it already has."""
     conn = db.open_db(db_path)
-    company_id = _company(conn, "Bois-Gentil", "CHE103895771")
+    company_id = _company(conn, "Clair-Logis", "CHE100000011")
     client_id = db.promote_to_client(conn, company_id)
     chain = "<root@smtp.example.ch>"
     # The enquiry as the website's contact form sent it: from the operator's
@@ -399,7 +399,7 @@ def test_filing_one_message_matches_the_rest_of_the_thread(db_path):
 
 def test_rematching_leaves_a_decision_alone(db_path):
     conn = db.open_db(db_path)
-    company_id = _company(conn, "Bois-Gentil", "CHE103895771")
+    company_id = _company(conn, "Clair-Logis", "CHE100000011")
     db.save_contact(conn, company_id=company_id, kind="email",
                     value="n.fellmann@fondation-exemple.ch", method="published")
     ignored = _queue(conn)
@@ -412,7 +412,7 @@ def test_rematching_leaves_a_decision_alone(db_path):
 
 def test_rematching_does_not_overwrite_a_proposal_already_shown(db_path):
     conn = db.open_db(db_path)
-    first = _company(conn, "Bois-Gentil", "CHE103895771")
+    first = _company(conn, "Clair-Logis", "CHE100000011")
     second = _company(conn, "Autre", "CHE103895779")
     db.save_contact(conn, company_id=second, kind="email",
                     value="n.fellmann@fondation-exemple.ch", method="published")
@@ -439,7 +439,7 @@ def _app(db_path, build_settings, tmp_path):
 
 def test_the_queue_page_says_why_a_company_is_proposed(db_path, build_settings, tmp_path):
     conn = db.open_db(db_path)
-    company_id = _company(conn, "Fondation Bois-Gentil", "CHE103895771")
+    company_id = _company(conn, "Fondation Clair-Logis", "CHE100000011")
     db.promote_to_client(conn, company_id)
     _queue(conn, company_id=company_id, match_method="domain", match_value="fondation-exemple.ch")
     conn.commit()
@@ -447,7 +447,7 @@ def test_the_queue_page_says_why_a_company_is_proposed(db_path, build_settings, 
 
     page = _app(db_path, build_settings, tmp_path).get("/mail")
     assert page.status_code == 200
-    assert "Fondation Bois-Gentil" in page.text
+    assert "Fondation Clair-Logis" in page.text
     # A bare client name asks the reader to trust a join they cannot see.
     assert "fondation-exemple.ch" in page.text and "published by the company" in page.text
 
@@ -463,7 +463,7 @@ def test_the_page_says_that_an_unmatched_body_was_not_read(db_path, build_settin
 
 def test_filing_from_the_page_reaches_the_timeline(db_path, build_settings, tmp_path):
     conn = db.open_db(db_path)
-    company_id = _company(conn, "Bois-Gentil", "CHE103895771")
+    company_id = _company(conn, "Clair-Logis", "CHE100000011")
     client_id = db.promote_to_client(conn, company_id)
     email_id = _queue(conn, body="Bonjour", body_kind="text/plain")
     conn.commit()
@@ -482,7 +482,7 @@ def test_filing_from_the_page_reaches_the_timeline(db_path, build_settings, tmp_
 
 def test_ignoring_from_the_page_files_nothing(db_path, build_settings, tmp_path):
     conn = db.open_db(db_path)
-    company_id = _company(conn, "Bois-Gentil", "CHE103895771")
+    company_id = _company(conn, "Clair-Logis", "CHE100000011")
     client_id = db.promote_to_client(conn, company_id)
     email_id = _queue(conn)
     conn.commit()

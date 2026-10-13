@@ -45,7 +45,7 @@ def root(tmp_path: Path) -> Path:
 def conn(root: Path, db_path: str) -> Connection:
     connection = db.open_db(db_path)
     for uid, name in (
-        ("CHE103895771", "Fondation Bois-Gentil"),
+        ("CHE100000011", "Fondation Clair-Logis"),
         ("CHE100000001", "Autre Fondation"),
     ):
         connection.execute(
@@ -64,7 +64,7 @@ def conn(root: Path, db_path: str) -> Connection:
 @pytest.fixture
 def client_id(conn: Connection) -> int:
     company_id = conn.execute(
-        "SELECT id FROM core.company WHERE uid = 'CHE103895771'"
+        "SELECT id FROM core.company WHERE uid = 'CHE100000011'"
     ).fetchone()["id"]
     new_id = db.promote_to_client(conn, company_id)
     conn.commit()

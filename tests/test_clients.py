@@ -42,7 +42,7 @@ def conn(settings) -> Connection:
     connection = db.open_db(settings.database_url)
     db.upsert_company(
         connection,
-        {"uid": "CHE103895771", "name": "Fondation Bois-Gentil", "canton": "VD",
+        {"uid": "CHE100000011", "name": "Fondation Clair-Logis", "canton": "VD",
          "legal_seat": "Lausanne", "legal_form_label": "Fondation",
          "status": "ACTIVE", "purpose": "Venir en aide à toute personne défavorisée.",
          "hydrated": True, "method": "zefix"},
@@ -65,12 +65,12 @@ def test_a_client_gets_a_quotable_reference(conn) -> None:
     client_id = db.promote_to_client(conn, 1)
     assert conn.execute(
         "SELECT code FROM crm.client WHERE id = %s", (client_id,)
-    ).fetchone()[0] == "BOIS-GENTIL"
+    ).fetchone()[0] == "CLAIR-LOGIS"
 
 
 def test_codes_do_not_collide(conn) -> None:
     db.upsert_company(
-        conn, {"uid": "CHE2", "name": "Fondation Bois-Gentil", "method": "zefix"}
+        conn, {"uid": "CHE2", "name": "Fondation Clair-Logis", "method": "zefix"}
     )
     first = db.promote_to_client(conn, 1)
     second = db.promote_to_client(conn, 2)
@@ -79,7 +79,7 @@ def test_codes_do_not_collide(conn) -> None:
             "SELECT code FROM crm.client WHERE id IN (%s, %s)", (first, second)
         )
     }
-    assert codes == {"BOIS-GENTIL", "BOIS-GENTIL-2"}
+    assert codes == {"CLAIR-LOGIS", "CLAIR-LOGIS-2"}
 
 
 def test_a_project_is_numbered_within_its_client(conn) -> None:
@@ -92,7 +92,7 @@ def test_a_project_is_numbered_within_its_client(conn) -> None:
         conn.execute("SELECT code FROM crm.project WHERE id = %s", (pid,)).fetchone()[0]
         for pid in (first, second)
     ]
-    assert codes == ["BOIS-GENTIL-01", "BOIS-GENTIL-02"]
+    assert codes == ["CLAIR-LOGIS-01", "CLAIR-LOGIS-02"]
 
 
 # --- the handoff --------------------------------------------------------------
@@ -279,7 +279,7 @@ def test_two_notes_without_a_message_id_are_two_notes(conn) -> None:
 def test_a_company_becomes_a_client_from_its_page(client, conn) -> None:
     reply = client.post("/company/1/client", follow_redirects=False)
     assert reply.status_code == 303 and reply.headers["location"] == "/client/1"
-    assert "BOIS-GENTIL" in client.get("/client/1").text
+    assert "CLAIR-LOGIS" in client.get("/client/1").text
 
 
 def test_opening_a_project_is_itself_part_of_the_record(client, conn) -> None:
@@ -360,7 +360,7 @@ def test_the_calendar_leaves_the_running_record_alone(client, conn) -> None:
 
 def test_a_bad_uid_says_what_one_looks_like(client) -> None:
     reply = client.post("/clients/import", data={"uid": "12345"}, follow_redirects=True)
-    assert "CHE-103.895.771" in reply.text
+    assert "CHE-100.000.011" in reply.text
 
 
 def test_the_client_section_cannot_send_either(client, conn) -> None:
@@ -373,3 +373,12 @@ def test_the_client_section_cannot_send_either(client, conn) -> None:
     # The two wave routes are the only ones allowed to: see test_console.py.
     assert not [p for p in routes
                 if ("send" in p or "smtp" in p) and p not in TRANSMITTING]
+
+
+def test_a_budget_that_is_not_a_number_is_refused_not_a_crash(client) -> None:
+    from urllib.parse import unquote
+
+    reply = client.post("/client/1/projects", data={"name": "Audit", "budget": "abc"},
+                        follow_redirects=False)
+    assert reply.status_code == 303
+    assert "not an amount" in unquote(reply.headers["location"])

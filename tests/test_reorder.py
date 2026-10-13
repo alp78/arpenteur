@@ -50,7 +50,7 @@ def conn(settings) -> Connection:
     connection = db.open_db(settings.database_url)
     db.upsert_company(
         connection,
-        {"uid": "CHE1", "name": "Bois-Gentil SA", "canton": "GE",
+        {"uid": "CHE1", "name": "Clair-Logis SA", "canton": "GE",
          "legal_seat": "Genève", "status": "ACTIVE", "method": "zefix"},
     )
     db.promote_to_client(connection, 1)

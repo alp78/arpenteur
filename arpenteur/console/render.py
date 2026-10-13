@@ -516,6 +516,16 @@ def page(
     )
 
 
+def not_found(what: str = "page") -> str:
+    """The body of a 404, inside the shell rather than two bare words."""
+    return (
+        "<h1>Not found</h1>"
+        f"<p>There is no {esc(what)} at this address. It may have been deleted, "
+        "or the link is older than the record.</p>"
+        '<p><a href="/">Back to the start</a></p>'
+    )
+
+
 def as_list(value: Any) -> list[str]:
     """A jsonb column, and a half-written row as None.
 
@@ -1361,17 +1371,28 @@ def run_log(rows: list[Row], run_id: int, done: bool, after: int) -> str:
     )
 
 
-def run_page(run: Row, rows: list[Row], after: int) -> str:
+def run_page(run: Row, rows: list[Row], after: int, *, stale: bool = False) -> str:
     done = bool(run["finished_at"])
     state = "error" if run["error"] else ("done" if done else "running")
     detail = run["error"] or _compact(run["stats_json"])
+    settle = ""
+    if stale:
+        # Open, and nothing in this console is running it: a terminal that was
+        # closed, or a process that died. The person at the keyboard knows
+        # which, so the question is asked rather than decided.
+        settle = (
+            f"<form method='post' action='/runs/{run['id']}/settle' class='inline'>"
+            "<button type='submit'>Mark as interrupted</button> "
+            "<span class='dim small'>if nothing is still running it in a "
+            "terminal</span></form>"
+        )
     header = (
         f"<h1>{esc(run['stage'])} <span class='dim small'>run {run['id']}</span></h1>"
         f"<div class='card small'>"
         f"<div>started {esc(run['started_at'][:19])} by {esc(run['started_by'] or '?')}"
         f" &middot; <span class='state-{state}'>{esc(state)}</span></div>"
         f"<div class='dim'>{esc(_compact(run['args_json']))}</div>"
-        f"<div>{esc(detail)}</div></div>"
+        f"<div>{esc(detail)}</div>{settle}</div>"
     )
     return (
         header

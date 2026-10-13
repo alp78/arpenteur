@@ -53,6 +53,18 @@ CONSOLE_JS = r"""
     box.scrollIntoView({block: 'nearest'});
   }
 
+  // --- asking before a document is made ---------------------------------------
+  //
+  // A form carrying `data-confirm` names what it is about to do, and the
+  // question is asked before the browser posts it. Issuing an invoice draws
+  // the next number in the series and a credit note is a second document;
+  // neither can be taken back with a second click.
+  document.addEventListener('submit', function (e) {
+    var form = e.target.closest ? e.target.closest('form[data-confirm]') : null;
+    if (!form) return;
+    if (!window.confirm(form.getAttribute('data-confirm'))) e.preventDefault();
+  });
+
   document.body.addEventListener('htmx:responseError', function (e) {
     var status = e.detail.xhr.status;
     say('The server refused that: ' + status + ' ' + e.detail.xhr.statusText +

@@ -120,3 +120,9 @@ fail. If the answer is nothing, rewrite it.
 Two more guesses this build, both in tests: `draft.save(brief_digest=)` where
 the keyword is `digest`, and `intel.run_line.line` where the column is `text`.
 The first was guessed one line after printing the signature that said so.
+
+## A red test must fail for the reason it names
+
+**What happened.** Two of the fifteen tests written for the money fixes passed before any fix: one asserted that a town appeared on the printed invoice, and the town was there in the letterhead, not in the payment part the test was about. The other was a page test that passed because a different fault, an invoice page that crashed on every line, masked the behaviour it meant to pin.
+
+**The rule.** When a new test passes before the fix, read why before writing the fix: either the assertion looks at the wrong element, or something else is broken underneath. Narrow the assertion to the element the finding names, and a page test opens the page with the data the finding describes, not with the empty record the fixture gives for free.

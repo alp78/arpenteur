@@ -67,7 +67,7 @@ def conn(root: Path, db_path: str) -> Connection:
     connection.execute(
         "INSERT INTO core.company (uid, name, canton, legal_form_uid, legal_form_label,"
         " legal_seat, status, source_url, method, fetched_at, first_seen, hydrated_at)"
-        " VALUES ('CHE103895771', 'Fondation Bois-Gentil', 'VD', '0110',"
+        " VALUES ('CHE100000011', 'Fondation Clair-Logis', 'VD', '0110',"
         " 'Fondation', 'Lausanne', 'ACTIVE', 'https://example.test', 'zefix',"
         " '2026-08-12', '2026-08-12', '2026-08-12')"
     )

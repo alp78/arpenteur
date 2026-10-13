@@ -458,7 +458,9 @@ def run(
                 "was refused and the refusal is kept.")
             stats["selected"] = len(rows)
 
-    capped = rows[:limit] if limit else rows
+    # `is not None`, not truthiness: a limit of 0 is a cap of nothing, and read
+    # as "no cap" it drafted the whole list, one model call per row.
+    capped = rows[:limit] if limit is not None else rows
     if len(capped) < len(rows) and not confirmed:
         log(f"{len(rows):,} firms match and this run will draft "
             f"{len(capped)}.")

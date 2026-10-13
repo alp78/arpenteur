@@ -363,14 +363,14 @@ yes, and it is a different job: a client has projects, a project has a history,
 and the history has to survive an audit rather than merely jog a memory.
 
 ```bash
-uv run arpenteur import CHE-103.895.771 --client   # a client the survey never saw
+uv run arpenteur import CHE-100.000.011 --client   # a client the survey never saw
 uv run arpenteur console                           # then Clients, Calendar
 ```
 
 **Clients** is the portfolio: who, which code, how many projects running, when
 you last spoke and what is next. **A client card** carries the register entry,
 the officers, the research already done, the projects, and the record.
-**A project** has its own reference (`BOIS-GENTIL-01`), because it outlives the
+**A project** has its own reference (`CLAIR-LOGIS-01`), because it outlives the
 conversation that created it and has to be nameable in a contract, an invoice
 and a file. **Calendar** is the month: meetings, interviews, deadlines and the
 start and end of each project, and nothing else.
@@ -629,9 +629,9 @@ Your own writing about a client, in Markdown, written in whatever editor is
 already open.
 
 ```bash
-uv run arpenteur note BOIS-GENTIL add "C:\Users\you\notes\AUDIT-CONDITIONS.md" --pin
-uv run arpenteur note BOIS-GENTIL list
-uv run arpenteur note BOIS-GENTIL show 1        # the Markdown back out
+uv run arpenteur note CLAIR-LOGIS add "C:\Users\you\notes\AUDIT-CONDITIONS.md" --pin
+uv run arpenteur note CLAIR-LOGIS list
+uv run arpenteur note CLAIR-LOGIS show 1        # the Markdown back out
 ```
 
 A Windows path is accepted as typed. This runs under WSL as often as not, and
@@ -672,10 +672,10 @@ decides, what is exposed and what has already been tried, none of which is in
 any register.
 
 ```bash
-uv run arpenteur dossier BOIS-GENTIL              # everything held, as text
-uv run arpenteur dossier BOIS-GENTIL --documents  # plus every document in full
-uv run arpenteur advise  BOIS-GENTIL --dry-run    # what it would read, free
-uv run arpenteur advise  BOIS-GENTIL              # suggest an approach
+uv run arpenteur dossier CLAIR-LOGIS              # everything held, as text
+uv run arpenteur dossier CLAIR-LOGIS --documents  # plus every document in full
+uv run arpenteur advise  CLAIR-LOGIS --dry-run    # what it would read, free
+uv run arpenteur advise  CLAIR-LOGIS              # suggest an approach
 ```
 
 In the console it is one page per client, reached from the client card: what is
@@ -729,8 +729,8 @@ cold and some you half know, and the difference shows in a meeting where the
 client's own IT expert is in the room.
 
 ```bash
-uv run arpenteur prep BOIS-GENTIL          # extract the vocabulary
-uv run arpenteur prep BOIS-GENTIL --list   # read it back, no model call
+uv run arpenteur prep CLAIR-LOGIS          # extract the vocabulary
+uv run arpenteur prep CLAIR-LOGIS --list   # read it back, no model call
 ```
 
 Each term gets what it is, **why it is in this client's file**, what to be able

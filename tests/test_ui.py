@@ -203,9 +203,9 @@ def test_exactly_one_tab_is_marked_as_where_you_are() -> None:
 
 
 def test_the_last_crumb_is_the_page_itself_and_is_not_a_link() -> None:
-    html = ui.crumbs([("/clients", "Clients"), ("", "Bois-Gentil")])
+    html = ui.crumbs([("/clients", "Clients"), ("", "Clair-Logis")])
     assert '<a href="/clients">Clients</a>' in html
-    assert "<b>Bois-Gentil</b>" in html
+    assert "<b>Clair-Logis</b>" in html
 
 
 # --- the shell ----------------------------------------------------------------

@@ -53,7 +53,7 @@ APPOINTMENT_KINDS = ("meeting", "deadline")
 
 
 def make_code(name: str, taken: set[str], *, length: int = 14) -> str:
-    """A human reference from a company name: BOIS-GENTIL.
+    """A human reference from a company name: CLAIR-LOGIS.
 
     Quoted on invoices and in conversation, so it is folded to ASCII rather
     than left carrying accents that a mail client or a bank form will mangle.
@@ -210,7 +210,7 @@ def add_project(
 ) -> int:
     """A piece of work with its own reference.
 
-    BOIS-GENTIL-01, because a project outlives the conversation that started it
+    CLAIR-LOGIS-01, because a project outlives the conversation that started it
     and has to be nameable in a contract, an invoice and a file name.
     """
     row = conn.execute(

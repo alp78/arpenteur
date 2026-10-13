@@ -791,6 +791,12 @@ class Runner:
             self._settle()
             return self.current.get(lane)
 
+    def is_live(self, run_id: int) -> bool:
+        """Whether this console is running that run right now."""
+        with self.lock:
+            self._settle()
+            return run_id in self.current.values()
+
     def start(self, name: str, form: dict[str, Any], *, by: str = "console",
               internal: bool = False) -> int:
         stage = STAGES.get(name)
@@ -831,7 +837,10 @@ class Runner:
     def _work(self, stage: Stage, run_id: int, kwargs: dict[str, Any]) -> None:
         # Its own connection: sqlite3 objects belong to the thread that made
         # them, and the console must keep answering while this works.
-        conn = db.open_db(self.settings.database_url)
+        # Read once: the console rebinds its settings when they are saved, and
+        # one run sees one object from its first line to its last.
+        settings = self.settings
+        conn = db.open_db(settings.database_url)
 
         def log(message: str) -> None:
             # Committed line by line. A run that dies at company 4'000 should
@@ -844,7 +853,7 @@ class Runner:
             log(f"{stage.title}: {stage.what}")
             if kwargs:
                 log("  " + ", ".join(f"{k}={v}" for k, v in sorted(kwargs.items())))
-            result = stage.call(self.settings, conn, log=log, **kwargs)
+            result = stage.call(settings, conn, log=log, **kwargs)
             stats = (
                 result
                 if isinstance(result, dict)

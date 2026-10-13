@@ -54,9 +54,9 @@ CATALOGUE = (
 )
 
 
-def _client(conn: Connection, name: str = "Fondation Bois-Gentil") -> int:
+def _client(conn: Connection, name: str = "Fondation Clair-Logis") -> int:
     company_id = db.upsert_company(
-        conn, {"uid": "CHE103895771", "name": name, "canton": "VD"}
+        conn, {"uid": "CHE100000011", "name": name, "canton": "VD"}
     )
     return db.promote_to_client(conn, company_id)
 
@@ -412,7 +412,7 @@ def test_a_quote_code_is_readable_and_per_client(db_path):
     first = sales.quote(conn, sales.create_quote(conn, client_id))
     second = sales.quote(conn, sales.create_quote(conn, client_id))
     assert first["code"].endswith("-Q01") and second["code"].endswith("-Q02")
-    assert first["code"].startswith("BOIS-GENTIL")
+    assert first["code"].startswith("CLAIR-LOGIS")
     conn.close()
 
 
@@ -1026,3 +1026,285 @@ def test_the_console_can_start_a_numbered_series(db_path, build_settings, tmp_pa
     conn = db.open_db(db_path)
     assert sales.invoice(conn, invoice_id)["reference"] == "ABC-SEANCE-01"
     conn.close()
+
+
+# --- what the audit of 13.10.2026 found: documents and money that came out wrong ----
+#
+# Every test here failed before the change it pins. They share one rule: a
+# document that left the building, and the money it names, are read-only, and
+# every refusal is shown to the person who pressed the button.
+
+
+def _issued_plain(conn: Connection, client_id: int, amount: int = 1000) -> int:
+    """An issued invoice with one line and no VAT: the simplest document."""
+    invoice_id = _draft(conn, client_id)
+    sales.add_invoice_line(conn, invoice_id, {"label": "Work", "unit_price": amount})
+    sales.recompute_invoice(conn, invoice_id, vat_rate=None)
+    sales.issue_invoice(conn, invoice_id)
+    return invoice_id
+
+
+def _sent_quote(conn: Connection, client_id: int) -> tuple[int, int, int]:
+    quote_id = sales.create_quote(conn, client_id)
+    version_id = sales.add_version(conn, quote_id)
+    line_id = sales.add_line(conn, version_id, {"label": "Day", "unit_price": 1400})
+    sales.recompute(conn, version_id, vat_rate=None)
+    sales.mark_sent(conn, version_id, to="someone@example.ch")
+    return quote_id, version_id, line_id
+
+
+def _form_tag(page: str, action: str) -> str:
+    """The opening tag of the form that posts to `action`, attributes included."""
+    for start in (m.start() for m in __import__("re").finditer("<form", page)):
+        tag = page[start:page.index(">", start) + 1]
+        if f'action="{action}"' in tag:
+            return tag
+    raise AssertionError(f"no form posts to {action}")
+
+
+def _payable_by(page: str) -> str:
+    """The text of the first "Payable by" block of the payment part."""
+    start = page.index("Payable by")
+    start = page.index("</div>", start) + len("</div>")
+    return page[start:page.index("</div>", start)]
+
+
+def test_amounts_typed_the_swiss_way_are_read_and_nonsense_is_refused():
+    assert money.parse_amount("1'234.50") == Decimal("1234.50")
+    assert money.parse_amount("1 234,5") == Decimal("1234.50")
+    assert money.parse_amount(" 12 ") == Decimal("12.00")
+    for bad in ("abc", "", "1.2.3", "NaN", "Infinity"):
+        with pytest.raises(ValueError):
+            money.parse_amount(bad)
+
+
+def test_a_party_with_a_name_but_no_town_is_refused():
+    """The standard makes postcode and town mandatory once a party is named;
+    a bank refuses the bill, which the person printing it never sees."""
+    with pytest.raises(money.MoneyError):
+        money.Party(name="Atelier Exemple SA").lines()
+    assert money.Party(name="Atelier Exemple SA", postcode="1800", town="Vevey").lines()[5] == "Vevey"
+    assert money.EMPTY.lines() == [""] * 7
+
+
+def test_a_line_cannot_be_deleted_from_an_issued_invoice(db_path, build_settings, tmp_path):
+    conn = db.open_db(db_path)
+    invoice_id = _issued_plain(conn, _client(conn))
+    conn.commit()
+    line_id = sales.invoice_lines(conn, invoice_id)[0]["id"]
+    with pytest.raises(ValueError, match="credit note"):
+        sales.delete_invoice_line(conn, line_id)
+    conn.close()
+
+    reply = _app(build_settings, tmp_path).post(
+        f"/invoice-line/{line_id}/delete", follow_redirects=False)
+    assert reply.status_code == 303 and "error=" in reply.headers["location"]
+    conn = db.open_db(db_path)
+    assert len(sales.invoice_lines(conn, invoice_id)) == 1
+    assert sales.invoice(conn, invoice_id)["gross_total"] == Decimal("1000.00")
+    conn.close()
+
+
+def test_a_line_cannot_be_deleted_from_a_sent_quote(db_path, build_settings, tmp_path):
+    conn = db.open_db(db_path)
+    quote_id, version_id, line_id = _sent_quote(conn, _client(conn))
+    conn.commit()
+    with pytest.raises(ValueError, match="sent"):
+        sales.delete_line(conn, line_id)
+    conn.close()
+
+    reply = _app(build_settings, tmp_path).post(
+        f"/quote-line/{line_id}/delete", follow_redirects=False)
+    assert reply.status_code == 303 and "error=" in reply.headers["location"]
+    conn = db.open_db(db_path)
+    assert len(sales.lines_for(conn, version_id)) == 1
+    conn.close()
+
+
+def test_a_credit_note_is_issued_at_once_and_an_invoice_is_credited_once(db_path):
+    conn = db.open_db(db_path)
+    client_id = _client(conn)
+    invoice_id = _issued_plain(conn, client_id)
+    note_id = sales.credit_invoice(conn, invoice_id, reason="Wrong scope")
+    note = sales.invoice(conn, note_id)
+    assert note["status"] == "issued" and note["number"] and note["issued_on"]
+    assert note["gross_total"] == Decimal("-1000.00")
+    with pytest.raises(ValueError, match=note["number"]):
+        sales.credit_invoice(conn, invoice_id, reason="again")
+    with pytest.raises(ValueError, match="credit note"):
+        sales.credit_invoice(conn, note_id, reason="the note itself")
+    with pytest.raises(ValueError, match="draft"):
+        sales.credit_invoice(conn, _draft(conn, client_id))
+    conn.close()
+
+
+def test_a_payment_is_recorded_only_on_an_issued_invoice_for_a_positive_amount(db_path):
+    conn = db.open_db(db_path)
+    client_id = _client(conn)
+    with pytest.raises(ValueError, match="issued"):
+        sales.record_payment(conn, _draft(conn, client_id), amount=100)
+    invoice_id = _issued_plain(conn, client_id)
+    for bad in (0, -5, "abc"):
+        with pytest.raises(ValueError):
+            sales.record_payment(conn, invoice_id, amount=bad)
+    assert sales.record_payment(conn, invoice_id, amount="1'000.00") == "paid"
+    with pytest.raises(ValueError, match="paid"):
+        sales.record_payment(conn, invoice_id, amount=1)
+    conn.close()
+
+
+def test_an_amount_the_decimal_module_refuses_is_a_refusal_not_a_crash(
+    db_path, build_settings, tmp_path
+):
+    conn = db.open_db(db_path)
+    client_id = _client(conn)
+    issued_id = _issued_plain(conn, client_id)
+    draft_id = _draft(conn, client_id)
+    conn.commit()
+    conn.close()
+
+    client = _app(build_settings, tmp_path)
+    reply = client.post(f"/invoice/{issued_id}/payment", data={"amount": "abc"},
+                        follow_redirects=False)
+    assert reply.status_code == 303 and "error=" in reply.headers["location"]
+    page = client.get(reply.headers["location"])
+    assert page.status_code == 200 and "banner-bad" in page.text
+
+    reply = client.post(f"/invoice/{draft_id}/lines",
+                        data={"label": "Half a day", "quantity": "1,5", "unit_price": "100"},
+                        follow_redirects=False)
+    assert "error=" not in reply.headers["location"]
+    reply = client.post(f"/invoice/{draft_id}/lines",
+                        data={"label": "Nonsense", "quantity": "abc", "unit_price": "100"},
+                        follow_redirects=False)
+    assert reply.status_code == 303 and "error=" in reply.headers["location"]
+    conn = db.open_db(db_path)
+    lines = sales.invoice_lines(conn, draft_id)
+    assert [line["quantity"] for line in lines] == [Decimal("1.5")]
+    conn.close()
+
+
+def test_still_owed_nets_a_credit_note_against_its_invoice(db_path, build_settings, tmp_path):
+    """Crediting an unpaid invoice of 1'000 leaves nothing owed, not minus 1'000."""
+    conn = db.open_db(db_path)
+    invoice_id = _issued_plain(conn, _client(conn), amount=1000)
+    sales.credit_invoice(conn, invoice_id, reason="Cancelled order")
+    conn.commit()
+    row = conn.execute("SELECT outstanding, gross FROM analytics.revenue").fetchone()
+    assert row["outstanding"] == Decimal("0.00")
+    assert row["gross"] == Decimal("0.00")
+    conn.close()
+
+    client = _app(build_settings, tmp_path)
+    for path in ("/invoices", "/invoices/register"):
+        body = client.get(path).text
+        assert "<b>0.00</b><span>still owed</span>" in body, path
+
+
+def test_the_printed_invoice_shows_the_reference_and_never_the_rank(
+    db_path, build_settings, tmp_path
+):
+    conn = db.open_db(db_path)
+    client_id = _client(conn)
+    conn.execute("UPDATE crm.client SET code = 'ABC' WHERE id = %s", (client_id,))
+    invoice_id = sales.create_invoice(conn, client_id, reference="ABC-EXPERTISE")
+    sales.add_invoice_line(conn, invoice_id, {"label": "Forfait", "unit_price": 3200})
+    sales.recompute_invoice(conn, invoice_id, vat_rate=None)
+    rank = sales.issue_invoice(conn, invoice_id, qr_iban=PLAIN_IBAN)["number"]
+    conn.commit()
+    conn.close()
+
+    page = _app(build_settings, tmp_path).get(f"/invoice/{invoice_id}/print").text
+    assert "<title>Invoice ABC-EXPERTISE</title>" in page
+    assert "Invoice ABC-EXPERTISE</h1>" in page
+    assert rank not in page
+
+
+def test_the_payment_part_reads_the_register_town_and_omits_an_unknown_debtor(
+    db_path, build_settings, tmp_path
+):
+    conn = db.open_db(db_path)
+    company_id = db.upsert_company(conn, {
+        "uid": "CHE100000002", "name": "Atelier Exemple SA", "canton": "VD",
+        "address": {"street": "Rue du Lac", "houseNumber": "3",
+                    "swissZipCode": "1800", "city": "Vevey"},
+    })
+    with_town = _issued(conn, db.promote_to_client(conn, company_id))
+    nameless = db.upsert_company(conn, {"uid": "CHE100000003", "name": "Sans Adresse Sàrl",
+                                        "canton": "VD"})
+    without = _issued(conn, db.promote_to_client(conn, nameless))
+    conn.commit()
+    conn.close()
+
+    client = _app(build_settings, tmp_path)
+    page = client.get(f"/invoice/{with_town}/print").text
+    assert "No payment part" not in page
+    assert "1800 Vevey" in _payable_by(page)
+    page = client.get(f"/invoice/{without}/print").text
+    assert "No payment part" not in page and "Payment part" in page
+    assert "Sans Adresse" not in _payable_by(page), "a debtor the code left out is not printed"
+    assert "Payable by (name/address)" in page, "the blank frame the payer completes"
+
+
+def test_a_refused_issue_consumes_no_rank(db_path):
+    """The sequence is not transactional, so every refusal has to come before
+    the number is drawn, or the register shows a gap for a click that failed."""
+    conn = db.open_db(db_path)
+    client_id = _client(conn)
+    before = int(_issued_plain(conn, client_id) and
+                 sales.invoice(conn, _issued_plain(conn, client_id))["number"][-4:])
+    invoice_id = _draft(conn, client_id)
+    sales.add_invoice_line(conn, invoice_id, {"label": "Work", "unit_price": 100})
+    with pytest.raises(ValueError, match="IBAN"):
+        sales.issue_invoice(conn, invoice_id, qr_iban="CH93 0076 2011 6238 5295 8")
+    rank = sales.issue_invoice(conn, invoice_id, qr_iban=PLAIN_IBAN)["number"]
+    assert int(rank[-4:]) == before + 1, "the refused attempt left a hole"
+    conn.close()
+
+
+def test_the_invoice_page_says_why_an_issue_was_refused(db_path, build_settings, tmp_path):
+    conn = db.open_db(db_path)
+    invoice_id = _draft(conn, _client(conn))
+    conn.commit()
+    conn.close()
+
+    client = _app(build_settings, tmp_path)
+    reply = client.post(f"/invoice/{invoice_id}/issue", follow_redirects=False)
+    assert reply.status_code == 303 and "error=" in reply.headers["location"]
+    page = client.get(reply.headers["location"]).text
+    assert "no lines" in page and "banner-bad" in page
+
+
+def test_the_payment_form_is_prefilled_with_what_is_owed(db_path, build_settings, tmp_path):
+    conn = db.open_db(db_path)
+    invoice_id = _issued_plain(conn, _client(conn), amount=1000)
+    sales.record_payment(conn, invoice_id, amount=400)
+    conn.commit()
+    conn.close()
+
+    page = _app(build_settings, tmp_path).get(f"/invoice/{invoice_id}").text
+    assert 'name="amount"' in page and 'value="600.00"' in page
+
+
+def test_issuing_and_crediting_ask_for_confirmation_and_a_credited_invoice_offers_neither(
+    db_path, build_settings, tmp_path
+):
+    conn = db.open_db(db_path)
+    client_id = _client(conn)
+    draft_id = _draft(conn, client_id)
+    sales.add_invoice_line(conn, draft_id, {"label": "Work", "unit_price": 100})
+    issued_id = _issued_plain(conn, client_id)
+    credited_id = _issued_plain(conn, client_id)
+    note_id = sales.credit_invoice(conn, credited_id, reason="Cancelled")
+    conn.commit()
+    conn.close()
+
+    client = _app(build_settings, tmp_path)
+    assert "data-confirm=" in _form_tag(client.get(f"/invoice/{draft_id}").text,
+                                        f"/invoice/{draft_id}/issue")
+    assert "data-confirm=" in _form_tag(client.get(f"/invoice/{issued_id}").text,
+                                        f"/invoice/{issued_id}/credit")
+    for invoice_id in (credited_id, note_id):
+        page = client.get(f"/invoice/{invoice_id}").text
+        assert f"/invoice/{invoice_id}/credit" not in page
+        assert f"/invoice/{invoice_id}/payment" not in page

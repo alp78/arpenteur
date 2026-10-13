@@ -58,7 +58,7 @@ def conn(settings) -> Connection:
     connection = db.open_db(settings.database_url)
     db.upsert_company(
         connection,
-        {"uid": "CHE103895771", "name": "Fondation Bois-Gentil", "canton": "VD",
+        {"uid": "CHE100000011", "name": "Fondation Clair-Logis", "canton": "VD",
          "status": "ACTIVE", "method": "zefix", "hydrated": True},
     )
     connection.commit()

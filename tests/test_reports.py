@@ -268,12 +268,12 @@ def test_the_client_report_shows_how_full_each_file_is(db_path):
     """An empty dossier is the best single predictor of a meeting that goes
     badly, and it is invisible on a page that shows one client at a time."""
     conn = db.open_db(db_path)
-    company_id = _company(conn, "CHE1", "Fondation Bois-Gentil")
+    company_id = _company(conn, "CHE1", "Fondation Clair-Logis")
     client_id = db.promote_to_client(conn, company_id)
     db.save_dossier_section(conn, client_id, "systems", "Two servers, one on site.")
     db.record_event(conn, client_id, kind="call", occurred_at=db.now())
     row = analytics.read(conn, "client_coverage")[0]
-    assert row["code"] == "BOIS-GENTIL"
+    assert row["code"] == "CLAIR-LOGIS"
     assert row["dossier_sections"] == 1
     assert row["interactions"] == 1
     conn.close()
@@ -282,7 +282,7 @@ def test_the_client_report_shows_how_full_each_file_is(db_path):
 def test_the_pipeline_values_the_newest_version_of_each_quote(db_path):
     """An earlier version is not a second opportunity."""
     conn = db.open_db(db_path)
-    company_id = _company(conn, "CHE1", "Bois-Gentil")
+    company_id = _company(conn, "CHE1", "Clair-Logis")
     client_id = db.promote_to_client(conn, company_id)
     quote_id = sales.create_quote(conn, client_id)
 
@@ -306,7 +306,7 @@ def test_aged_debt_shows_what_is_not_yet_due_as_a_negative(db_path):
     """Folding those to zero would make a healthy ledger look like a chased
     one."""
     conn = db.open_db(db_path)
-    company_id = _company(conn, "CHE1", "Bois-Gentil")
+    company_id = _company(conn, "CHE1", "Clair-Logis")
     client_id = db.promote_to_client(conn, company_id)
     invoice_id = sales.create_invoice(
         conn, client_id,
@@ -325,7 +325,7 @@ def test_aged_debt_shows_what_is_not_yet_due_as_a_negative(db_path):
 
 def test_effort_separates_logged_billable_and_unbilled(db_path):
     conn = db.open_db(db_path)
-    company_id = _company(conn, "CHE1", "Bois-Gentil")
+    company_id = _company(conn, "CHE1", "Clair-Logis")
     client_id = db.promote_to_client(conn, company_id)
     sales.log_time(conn, client_id, {"occurred_on": date(2026, 8, 10),
                                      "minutes": 240})

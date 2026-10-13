@@ -36,6 +36,8 @@ from datetime import date, timedelta
 from typing import Any
 from urllib.parse import quote
 
+import logging
+
 from fastapi import FastAPI, File, Form, Request, UploadFile
 from fastapi import Response
 from fastapi.responses import (
@@ -141,14 +143,35 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         """The header, as seen from one section of the console."""
         return render.Chrome.of(registry, settings.territory.describe(), here)
 
-    def shell(body: str, here: str = "") -> HTMLResponse:
+    def shell(body: str, here: str = "", status: int = 200) -> HTMLResponse:
         # The score breakdown's own rules travel with the shell rather than
         # with the panel: a <style> block inside the body would have to survive
         # an f-string, and the doubled braces that takes reach the browser and
         # kill the whole stylesheet. See `render.page`.
         return HTMLResponse(
-            render.page("arpenteur", body, at(here), css=score_view.STYLES)
+            render.page("arpenteur", body, at(here), css=score_view.STYLES),
+            status_code=status,
         )
+
+    @app.exception_handler(Exception)
+    async def _crashed(request: Request, exc: Exception) -> HTMLResponse:
+        """A fault, inside the shell rather than FastAPI's bare two words.
+
+        The traceback goes to the log, where it can be read in full; the page
+        names the fault and says where to look, so a 500 is never mistaken
+        for a button that does nothing.
+        """
+        logging.getLogger("arpenteur.console").exception(
+            "%s %s failed", request.method, request.url.path
+        )
+        body = (
+            "<h1>Something went wrong</h1>"
+            f"<p class='banner banner-bad'>{ui.esc(type(exc).__name__)}: {ui.esc(str(exc))}</p>"
+            "<p>The request stopped here. The console's log holds the full "
+            "trace, and <a href='/runs'>History</a> shows what the stages did.</p>"
+        )
+        return HTMLResponse(render.page("Error", body, at(request.url.path)),
+                            status_code=500)
 
     # --- the company list -----------------------------------------------------
 
@@ -217,7 +240,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         try:
             row = scout_store.company(conn, company_id)
             if row is None:
-                return HTMLResponse("<h1>Not found</h1>", status_code=404)
+                return shell(render.not_found(), status=404)
             site = scout_store.site_for(conn, company_id)
             methods = ["zefix"]
             if site is not None:
@@ -376,6 +399,11 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         conn = connect()
         try:
             row = scout_store.toggle_suppressed(conn, contact_id)
+            if row is None:
+                return HTMLResponse(
+                    '<tr><td colspan="5" class="dim">This address no longer exists.'
+                    "</td></tr>", status_code=404,
+                )
             conn.commit()
             return HTMLResponse(render.contact_row(row))
         finally:
@@ -526,7 +554,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         try:
             row = scout_store.party(conn, party_id)
             if row is None:
-                return HTMLResponse("<h1>Not found</h1>", status_code=404)
+                return shell(render.not_found(), status=404)
             return HTMLResponse(
                 people_view_page.shell(
                     people_view_page.party_page(
@@ -548,7 +576,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             start = scout_store.company(conn, company_id)
             target = scout_store.company(conn, target_id)
             if start is None or target is None:
-                return HTMLResponse("<h1>Not found</h1>", status_code=404)
+                return shell(render.not_found(), status=404)
             routes = scout_store.path_between(conn, company_id, target_id)
             named = {
                 int(row["id"]): row["name"]
@@ -746,10 +774,33 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         try:
             run = db.run(conn, run_id)
             if run is None:
-                return HTMLResponse("<h1>Not found</h1>", status_code=404)
+                return shell(render.not_found(), status=404)
             rows = db.lines_after(conn, run_id, 0)
             after = rows[-1]["seq"] if rows else 0
-            return shell(render.run_page(run, rows, after), "/runs")
+            stale = not run["finished_at"] and not runner.is_live(run_id)
+            return shell(render.run_page(run, rows, after, stale=stale), "/runs")
+        finally:
+            conn.close()
+
+    @app.post("/runs/{run_id}/settle")
+    def settle_run(run_id: int) -> RedirectResponse:
+        """Mark a run that nothing is running any more as interrupted.
+
+        The console settles its own orphans at startup; a run started from a
+        terminal is left alone, because it may still be going in another
+        window. When it is not, this is how a person says so.
+        """
+        conn = connect()
+        try:
+            run = db.run(conn, run_id)
+            if run is None:
+                return shell(render.not_found("run"), status=404)
+            if not run["finished_at"] and not runner.is_live(run_id):
+                scout_store.finish_run(
+                    conn, run_id,
+                    error="interrupted: marked by hand, nothing was running it",
+                )
+            return RedirectResponse(f"/runs/{run_id}", status_code=303)
         finally:
             conn.close()
 
@@ -963,6 +1014,28 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             return None
         return money_lib.vat_rate(when or _date.today())
 
+    def _budget(text: str) -> float | None:
+        """A budget as typed, or a refusal naming it; never a 500."""
+        if not text.strip():
+            return None
+        try:
+            return float(money_lib.parse_decimal(text))
+        except ValueError:
+            raise ValueError(f"{text.strip()!r} is not an amount.") from None
+
+    def _back(url: str, *, note: str = "", error: str = "") -> RedirectResponse:
+        """Redirect to a page that will say what happened.
+
+        A refusal that redirects to the unchanged page is indistinguishable
+        from a button that does nothing; the page reads `error` or `note`
+        from the query string and shows it as a banner.
+        """
+        if error:
+            url += ("&" if "?" in url else "?") + "error=" + quote(error)
+        elif note:
+            url += ("&" if "?" in url else "?") + "note=" + quote(note)
+        return RedirectResponse(url, status_code=303)
+
     @app.post("/client/{client_id}/quotes")
     def start_quote(client_id: int) -> RedirectResponse:
         conn = connect()
@@ -1057,10 +1130,10 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         try:
             quote = sales_store.quote(conn, quote_id)
             if quote is None:
-                return HTMLResponse("<h1>Not found</h1>", status_code=404)
+                return shell(render.not_found(), status=404)
             versions = sales_store.versions_for(conn, quote_id)
             if not versions:
-                return HTMLResponse("<h1>No versions</h1>", status_code=404)
+                return shell(render.not_found("version of this quote"), status=404)
             wanted = request.query_params.get("v", "")
             shown = next(
                 (v for v in versions if str(v["version"]) == wanted), versions[0]
@@ -1071,6 +1144,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                 sales_store.lines_for(conn, int(shown["id"])),
                 sales_store.services(conn),
                 chrome=at("/quotes"),
+                note=request.query_params.get("note", ""),
+                error=request.query_params.get("error", ""),
             ))
         finally:
             conn.close()
@@ -1110,13 +1185,16 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                         "label": label.strip(), "quantity": quantity or 1,
                         "unit_price": unit_price or 0,
                     })
+                else:
+                    raise ValueError("A line needs a catalogue entry or a label.")
                 sales_store.recompute(conn, version_id, vat_rate=_vat_for(conn))
                 conn.commit()
-            except ValueError:
-                # A price the card does not cover, or a sent version. Both are
-                # refusals the store makes on purpose; the page redraws showing
-                # what is actually there.
+            except ValueError as refusal:
+                # A price the card does not cover, a sent version, an amount
+                # that is not one. Refusals the store makes on purpose, shown
+                # on the page rather than swallowed.
                 conn.rollback()
+                return _back(f"/quote/{held['quote_id']}", error=str(refusal))
             return RedirectResponse(f"/quote/{held['quote_id']}", status_code=303)
         finally:
             conn.close()
@@ -1125,17 +1203,21 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     def drop_quote_line(line_id: int) -> RedirectResponse:
         conn = connect()
         try:
-            row = conn.execute(
-                "SELECT v.id AS version_id, v.quote_id FROM commercial.quote_line l"
-                " JOIN commercial.quote_version v ON v.id = l.quote_version_id"
-                " WHERE l.id = %s", (line_id,)
-            ).fetchone()
-            if row is None:
-                return RedirectResponse("/clients", status_code=303)
-            sales_store.delete_line(conn, line_id)
-            sales_store.recompute(conn, int(row["version_id"]), vat_rate=_vat_for(conn))
+            try:
+                held = sales_store.delete_line(conn, line_id)
+            except ValueError as refusal:
+                conn.rollback()
+                owner = conn.execute(
+                    "SELECT v.quote_id FROM commercial.quote_line l"
+                    " JOIN commercial.quote_version v ON v.id = l.quote_version_id"
+                    " WHERE l.id = %s", (line_id,)
+                ).fetchone()
+                if owner is None:
+                    return RedirectResponse("/quotes", status_code=303)
+                return _back(f"/quote/{owner['quote_id']}", error=str(refusal))
+            sales_store.recompute(conn, int(held["version_id"]), vat_rate=_vat_for(conn))
             conn.commit()
-            return RedirectResponse(f"/quote/{row['quote_id']}", status_code=303)
+            return RedirectResponse(f"/quote/{held['quote_id']}", status_code=303)
         finally:
             conn.close()
 
@@ -1198,10 +1280,15 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             held = sales_store.version(conn, version_id)
             if held is None:
                 return RedirectResponse("/clients", status_code=303)
-            sales_store.recompute(conn, version_id, vat_rate=_vat_for(conn))
-            sales_store.mark_sent(conn, version_id, to=to)
-            conn.commit()
-            return RedirectResponse(f"/quote/{held['quote_id']}", status_code=303)
+            try:
+                sales_store.recompute(conn, version_id, vat_rate=_vat_for(conn))
+                sales_store.mark_sent(conn, version_id, to=to)
+                conn.commit()
+            except ValueError as refusal:
+                conn.rollback()
+                return _back(f"/quote/{held['quote_id']}", error=str(refusal))
+            return _back(f"/quote/{held['quote_id']}",
+                         note=f"Version {held['version']} is marked as sent and frozen.")
         finally:
             conn.close()
 
@@ -1213,6 +1300,9 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             sales_store.set_quote_status(conn, quote_id, status, reason=reason,
                                          by="console")
             conn.commit()
+        except ValueError as refusal:
+            conn.rollback()
+            return _back(f"/quote/{quote_id}", error=str(refusal))
         finally:
             conn.close()
         return RedirectResponse(f"/quote/{quote_id}", status_code=303)
@@ -1224,12 +1314,14 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             quote = sales_store.quote(conn, quote_id)
             versions = sales_store.versions_for(conn, quote_id)
             if quote is None or not versions:
-                return HTMLResponse("<h1>Not found</h1>", status_code=404)
+                return shell(render.not_found(), status=404)
             wanted = request.query_params.get("v", "")
             shown = next(
                 (v for v in versions if str(v["version"]) == wanted), versions[0]
             )
             client = clients_store.client(conn, int(quote["client_id"]))
+            if client is None:
+                return shell(render.not_found("client of this quote"), status=404)
             return HTMLResponse(money_view.quote_print(
                 quote, sales_store.version(conn, int(shown["id"])),
                 sales_store.lines_for(conn, int(shown["id"])),
@@ -1268,11 +1360,9 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             try:
                 sales_store.set_invoice_reference(conn, invoice_id, reference)
                 conn.commit()
-            except ValueError as refus:
-                return RedirectResponse(
-                    f"/invoice/{invoice_id}?note={quote(str(refus))}",
-                    status_code=303,
-                )
+            except ValueError as refusal:
+                conn.rollback()
+                return _back(f"/invoice/{invoice_id}", error=str(refusal))
         finally:
             conn.close()
         return RedirectResponse(f"/invoice/{invoice_id}", status_code=303)
@@ -1311,16 +1401,19 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             conn.close()
 
     @app.get("/invoice/{invoice_id}", response_class=HTMLResponse)
-    def one_invoice(invoice_id: int) -> HTMLResponse:
+    def one_invoice(invoice_id: int, request: Request) -> HTMLResponse:
         conn = connect()
         try:
             invoice = sales_store.invoice(conn, invoice_id)
             if invoice is None:
-                return HTMLResponse("<h1>Not found</h1>", status_code=404)
+                return shell(render.not_found(), status=404)
             return HTMLResponse(money_view.invoice_page(
                 invoice, sales_store.invoice_lines(conn, invoice_id),
                 sales_store.services(conn), issuer=settings.issuer,
                 chrome=at("/invoices"),
+                note=request.query_params.get("note", ""),
+                error=request.query_params.get("error", ""),
+                credit_note=sales_store.credit_note_for(conn, invoice_id),
             ))
         finally:
             conn.close()
@@ -1336,16 +1429,18 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             if service_id and not name:
                 found = sales_store.service(conn, int(service_id))
                 name = found["name"] if found else ""
-            if name:
-                sales_store.add_invoice_line(conn, invoice_id, {
-                    "service_id": int(service_id) if service_id else None,
-                    "label": name, "quantity": quantity or 1,
-                    "unit_price": unit_price or 0,
-                })
-                sales_store.recompute_invoice(conn, invoice_id, vat_rate=_vat_for(conn))
-                conn.commit()
-        except ValueError:
+            if not name:
+                raise ValueError("A line needs a catalogue entry or a label.")
+            sales_store.add_invoice_line(conn, invoice_id, {
+                "service_id": int(service_id) if service_id else None,
+                "label": name, "quantity": quantity or 1,
+                "unit_price": unit_price or 0,
+            })
+            sales_store.recompute_invoice(conn, invoice_id, vat_rate=_vat_for(conn))
+            conn.commit()
+        except ValueError as refusal:
             conn.rollback()
+            return _back(f"/invoice/{invoice_id}", error=str(refusal))
         finally:
             conn.close()
         return RedirectResponse(f"/invoice/{invoice_id}", status_code=303)
@@ -1354,17 +1449,20 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     def drop_bill_line(line_id: int) -> RedirectResponse:
         conn = connect()
         try:
-            row = conn.execute(
-                "SELECT invoice_id FROM commercial.invoice_line WHERE id = %s",
-                (line_id,)
-            ).fetchone()
-            if row is None:
-                return RedirectResponse("/clients", status_code=303)
-            conn.execute("DELETE FROM commercial.invoice_line WHERE id = %s", (line_id,))
-            sales_store.recompute_invoice(conn, int(row["invoice_id"]),
-                                          vat_rate=_vat_for(conn))
+            try:
+                invoice_id = sales_store.delete_invoice_line(conn, line_id)
+            except ValueError as refusal:
+                conn.rollback()
+                owner = conn.execute(
+                    "SELECT invoice_id FROM commercial.invoice_line WHERE id = %s",
+                    (line_id,)
+                ).fetchone()
+                if owner is None:
+                    return RedirectResponse("/invoices", status_code=303)
+                return _back(f"/invoice/{owner['invoice_id']}", error=str(refusal))
+            sales_store.recompute_invoice(conn, invoice_id, vat_rate=_vat_for(conn))
             conn.commit()
-            return RedirectResponse(f"/invoice/{row['invoice_id']}", status_code=303)
+            return RedirectResponse(f"/invoice/{invoice_id}", status_code=303)
         finally:
             conn.close()
 
@@ -1373,38 +1471,51 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         conn = connect()
         try:
             sales_store.recompute_invoice(conn, invoice_id, vat_rate=_vat_for(conn))
-            sales_store.issue_invoice(
+            issued = sales_store.issue_invoice(
                 conn, invoice_id, days=settings.issuer.payment_days,
                 qr_iban=settings.issuer.iban, by="console",
             )
             conn.commit()
-        except ValueError:
+        except ValueError as refusal:
             conn.rollback()
+            return _back(f"/invoice/{invoice_id}", error=str(refusal))
         finally:
             conn.close()
-        return RedirectResponse(f"/invoice/{invoice_id}", status_code=303)
+        return _back(f"/invoice/{invoice_id}",
+                     note=f"Issued: {issued['reference']} takes rank {issued['number']} "
+                          f"in the register, due {str(issued['due_on'])[:10]}.")
 
     @app.post("/invoice/{invoice_id}/payment")
-    def pay(invoice_id: int, amount: str = Form(...)) -> RedirectResponse:
+    def pay(invoice_id: int, amount: str = Form("")) -> RedirectResponse:
         conn = connect()
         try:
-            sales_store.record_payment(conn, invoice_id, amount=amount, by="console")
+            status = sales_store.record_payment(conn, invoice_id, amount=amount,
+                                                by="console")
             conn.commit()
+        except ValueError as refusal:
+            conn.rollback()
+            return _back(f"/invoice/{invoice_id}", error=str(refusal))
         finally:
             conn.close()
-        return RedirectResponse(f"/invoice/{invoice_id}", status_code=303)
+        return _back(f"/invoice/{invoice_id}",
+                     note=f"Payment recorded; the invoice is {status.replace('_', ' ')}.")
 
     @app.post("/invoice/{invoice_id}/credit")
     def credit(invoice_id: int, reason: str = Form("")) -> RedirectResponse:
         conn = connect()
         try:
-            note_id = sales_store.credit_invoice(conn, invoice_id, reason=reason,
-                                                 by="console")
+            note_id = sales_store.credit_invoice(
+                conn, invoice_id, reason=reason, by="console",
+                days=settings.issuer.payment_days,
+            )
             conn.commit()
-            return RedirectResponse(f"/invoice/{note_id}", status_code=303)
-        except ValueError:
+            issued = sales_store.invoice(conn, note_id)
+            return _back(f"/invoice/{note_id}",
+                         note=f"Credit note {issued['reference']} issued at rank "
+                              f"{issued['number']}; the invoice is marked credited.")
+        except ValueError as refusal:
             conn.rollback()
-            return RedirectResponse(f"/invoice/{invoice_id}", status_code=303)
+            return _back(f"/invoice/{invoice_id}", error=str(refusal))
         finally:
             conn.close()
 
@@ -1422,18 +1533,38 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         try:
             invoice = sales_store.invoice(conn, invoice_id)
             if invoice is None:
-                return HTMLResponse("<h1>Not found</h1>", status_code=404)
+                return shell(render.not_found(), status=404)
             client = clients_store.client(conn, int(invoice["client_id"]))
+            if client is None:
+                return shell(render.not_found("client of this invoice"), status=404)
             address = _address_of(conn, int(client["company_id"]))
             issuer = settings.issuer
             qr, problem = "", ""
-            if invoice["status"] == "draft":
+            if invoice["credits_id"] is not None:
+                problem = ("A credit note carries no payment part: nothing is "
+                           "owed on it.")
+            elif invoice["status"] == "draft":
                 problem = ("A draft has no number and no payment reference. "
                            "Issue it to produce a payment part.")
             elif not issuer.can_bill:
                 problem = ("[issuer] in arpenteur.toml needs a name and an "
                            "IBAN before a payment part can be produced.")
             else:
+                # The register writes `city`; a client typed by hand may say
+                # `town`. A debtor the standard would refuse (no postcode or
+                # town) is left off the payment part, which the standard
+                # allows, rather than encoded wrong, which it does not.
+                where = address or {}
+                town = str(where.get("town") or where.get("city") or "")
+                postcode = str(where.get("swissZipCode") or "")
+                debtor = money_lib.EMPTY
+                if town and postcode:
+                    debtor = money_lib.Party(
+                        name=invoice["company_name"],
+                        street=str(where.get("street") or ""),
+                        building=str(where.get("houseNumber") or ""),
+                        postcode=postcode, town=town,
+                    )
                 try:
                     payload = money_lib.qr_payload(
                         iban=invoice["qr_iban"] or issuer.iban,
@@ -1444,19 +1575,13 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                         ),
                         amount=invoice["gross_total"],
                         currency=invoice["currency"],
-                        debtor=money_lib.Party(
-                            name=invoice["company_name"],
-                            street=str((address or {}).get("street", "") or ""),
-                            building=str((address or {}).get("houseNumber", "") or ""),
-                            postcode=str((address or {}).get("swissZipCode", "") or ""),
-                            town=str((address or {}).get("town", "") or ""),
-                        ),
+                        debtor=debtor,
                         reference=invoice["qr_reference"] or "",
-                        message=f"Invoice {invoice['number']}",
+                        message=f"Invoice {invoice['reference']}",
                     )
                     qr = money_view.qr_bill(
                         invoice, address, issuer=issuer,
-                        svg=money_lib.qr_svg(payload),
+                        svg=money_lib.qr_svg(payload), debtor=debtor,
                     )
                 except money_lib.MoneyError as exc:
                     problem = str(exc)
@@ -1565,7 +1690,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         try:
             client, company = _client_rows(conn, client_id)
             if client is None:
-                return HTMLResponse("<h1>Not found</h1>", status_code=404)
+                return shell(render.not_found(), status=404)
             projects = clients_store.projects_for(conn, client_id)
             officers = scout_store.people_for(conn, client["company_id"])
             methods = ["zefix"] + (["shab"] if officers else [])
@@ -1639,10 +1764,14 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     ) -> RedirectResponse:
         conn = connect()
         try:
+            try:
+                amount = _budget(budget)
+            except ValueError as refusal:
+                return _back(f"/client/{client_id}", note=str(refusal))
             project_id = db.add_project(
                 conn, client_id, name.strip(),
                 billing=billing or None,
-                budget=float(budget) if budget.strip() else None,
+                budget=amount,
                 started_at=started_at or None, due_at=due_at or None,
                 summary=summary or None,
             )
@@ -1665,7 +1794,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         try:
             project = clients_store.project(conn, project_id)
             if project is None:
-                return HTMLResponse("<h1>Not found</h1>", status_code=404)
+                return shell(render.not_found(), status=404)
             client, company = _client_rows(conn, project["client_id"])
             return client_shell(
                 clients_view.project_page(
@@ -1689,9 +1818,13 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         conn = connect()
         try:
             before = clients_store.project(conn, project_id)
+            try:
+                amount = _budget(budget)
+            except ValueError as refusal:
+                return _back(f"/project/{project_id}", note=str(refusal))
             db.update_project(
                 conn, project_id, name=name or None, status=status or None,
-                billing=billing, budget=float(budget) if budget.strip() else None,
+                billing=billing, budget=amount,
                 due_at=due_at or None, summary=summary,
             )
             if before and status and status != before["status"]:
@@ -1791,7 +1924,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         with db.open_db(settings.database_url) as conn:
             row = scout_store.draft(conn, draft_id)
             if row is None:
-                return HTMLResponse("<h1>Not found</h1>", status_code=404)
+                return shell(render.not_found(), status=404)
             return draft_shell(draft_view.one_page(row, note=note))
 
     @app.post("/draft/{draft_id}/review")
@@ -1921,7 +2054,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         try:
             row = clients_store.programme(conn, programme_id)
             if row is None:
-                return HTMLResponse("<h1>Not found</h1>", status_code=404)
+                return shell(render.not_found(), status=404)
             members = clients_store.members_for(conn, programme_id)
             company_ids = [int(m["company_id"]) for m in members]
             today = date.fromisoformat(
@@ -2006,7 +2139,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         try:
             row = campaign_store.audience(conn, audience_id)
             if row is None:
-                return HTMLResponse("<h1>Not found</h1>", status_code=404)
+                return shell(render.not_found(), status=404)
             members = campaign_store.members(
                 conn, audience_id, verdict=None if reason else "kept", reason=reason or None)
             return campaign_shell(campaign_view.audience_page(
@@ -2139,7 +2272,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         try:
             row = campaign_store.campaign(conn, campaign_id)
             if row is None:
-                return HTMLResponse("<h1>Not found</h1>", status_code=404)
+                return shell(render.not_found(), status=404)
             wave_rows = campaign_store.waves(conn, campaign_id)
             return campaign_shell(campaign_view.campaign_page(
                 row, wave_rows, campaign_stage.results(settings, conn, campaign=campaign_id),
@@ -2161,7 +2294,12 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         for key, raw in (("pilot_size", pilot_size), ("wave_size", wave_size),
                          ("gap_days", gap_days)):
             if raw.strip():
-                changes[key] = int(raw)
+                try:
+                    changes[key] = int(raw)
+                except ValueError:
+                    return back(f"/campaign/{campaign_id}",
+                                error=f"{key.replace('_', ' ')} must be a whole number, "
+                                      f"not {raw.strip()!r}.")
         if start_on.strip():
             changes["start_on"] = start_on.strip()
         lines: list[str] = []
@@ -2209,7 +2347,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             row = campaign_store.campaign(conn, campaign_id)
             wave = campaign_store.wave(conn, campaign_id, number) if row else None
             if wave is None:
-                return HTMLResponse("<h1>Not found</h1>", status_code=404)
+                return shell(render.not_found(), status=404)
             messages = campaign_store.wave_messages(conn, int(wave["id"]))
             seen: dict[str, Any] = {}
             for m in messages:
@@ -2358,7 +2496,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         try:
             row = clients_store.programme(conn, programme_id)
             if row is None:
-                return HTMLResponse("<h1>Not found</h1>", status_code=404)
+                return shell(render.not_found(), status=404)
             flag = args.get("flag", "")
             rows = clients_store.campaign_ledger(
                 conn, programme_id, flag=flag, stage=args.get("stage", ""),
@@ -2386,7 +2524,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         try:
             row = clients_store.member(conn, member_id)
             if row is None:
-                return HTMLResponse("<h1>Not found</h1>", status_code=404)
+                return shell(render.not_found(), status=404)
             return ledger_shell(
                 ledger_view.history_page(
                     row,
@@ -2612,7 +2750,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         try:
             client, company = _client_rows(conn, client_id)
             if client is None:
-                return HTMLResponse("<h1>Not found</h1>", status_code=404)
+                return shell(render.not_found(), status=404)
             args = request.query_params
             return HTMLResponse(
                 notes_view.shell(
@@ -2716,7 +2854,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         try:
             row = clients_store.note(conn, note_id)
             if row is None:
-                return HTMLResponse("<h1>Not found</h1>", status_code=404)
+                return shell(render.not_found(), status=404)
             client, company = _client_rows(conn, row["client_id"])
             return HTMLResponse(
                 notes_view.shell(
@@ -2789,7 +2927,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         try:
             client, company = _client_rows(conn, client_id)
             if client is None:
-                return HTMLResponse("<h1>Not found</h1>", status_code=404)
+                return shell(render.not_found(), status=404)
             history = db.approaches_for(conn, client_id)
             return dossier_shell(
                 dossier_view.dossier_page(
@@ -2803,7 +2941,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                         "SELECT * FROM crm.project WHERE client_id = %s ORDER BY code",
                         (client_id,),
                     ).fetchall(),
-                    bool(_fresh().rate_card.strip()),
+                    bool(_reload().rate_card.strip()),
                     request.query_params.get("note", ""),
                     clients_store.folders_for(conn, client_id),
                 )
@@ -2848,7 +2986,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             )
             try:
                 stats = advise.run(
-                    _fresh(), conn, client_id=client_id, dry_run=bool(dry_run),
+                    _reload(), conn, client_id=client_id, dry_run=bool(dry_run),
                     log=lambda m: db.append_line(conn, run_id, m),
                 )
                 db.finish_run(conn, run_id, stats)
@@ -3041,8 +3179,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         try:
             client, company = _client_rows(conn, client_id)
             if client is None:
-                return HTMLResponse("<h1>Not found</h1>", status_code=404)
-            live = _fresh()
+                return shell(render.not_found(), status=404)
+            live = _reload()
             briefings = db.briefings_for(conn, client_id, limit=1)
             return HTMLResponse(
                 prep_view.shell(
@@ -3071,7 +3209,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             )
             try:
                 stats = prep.run(
-                    _fresh(), conn, client_id=client_id, dry_run=bool(dry_run),
+                    _reload(), conn, client_id=client_id, dry_run=bool(dry_run),
                     log=lambda m: db.append_line(conn, run_id, m),
                 )
                 db.finish_run(conn, run_id, stats)
@@ -3245,9 +3383,12 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             )
             try:
                 year, mon = (int(p) for p in (month or today.strftime("%Y-%m")).split("-"))
+                first = date(year, mon, 1)
             except ValueError:
+                # `2026-13` parses as two integers and fails only at the date;
+                # both faults mean the same thing, which is this month.
                 year, mon = today.year, today.month
-            first = date(year, mon, 1)
+                first = date(year, mon, 1)
             last = (first + timedelta(days=32)).replace(day=1)
             return client_shell(
                 clients_view.calendar_page(
@@ -3271,15 +3412,24 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     # make, and hid them: a survey containing no foundations because 0110 was
     # absent from a list is not a discoverable state.
 
-    def _fresh() -> Settings:
-        """Settings re-read after a change, so a redirect shows the new value."""
-        return load_settings(settings.root)
+    def _reload() -> Settings:
+        """Settings re-read after a change, and made the console's own.
+
+        Every route closes over the `settings` cell and the runner holds the
+        same object, so rebinding both here is what makes a territory narrowed
+        on this page the territory the next run sweeps, without a restart.
+        """
+        nonlocal settings
+        settings = load_settings(settings.root)
+        runner.settings = settings
+        app.state.settings = settings
+        return settings
 
     @app.get("/settings", response_class=HTMLResponse)
     def settings_view(request: Request) -> HTMLResponse:
         conn = connect()
         try:
-            live = _fresh()
+            live = _reload()
             counts = scout_store.counts_by_legal_form(conn)
             brief_path = live.root / "campaign.md"
             text = brief_path.read_text(encoding="utf-8") if brief_path.is_file() else ""
@@ -3329,6 +3479,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             db.save_setting(conn, "cantons", cantons)
             db.save_setting(conn, "legal_forms", forms)
             conn.commit()
+            _reload()
             return RedirectResponse("/settings", status_code=303)
         finally:
             conn.close()
@@ -3356,6 +3507,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                         "short": tag or "",
                     })
             db.save_catalogue(conn, sorted(forms, key=lambda f: f["uid"]))
+            _reload()
             return RedirectResponse("/settings", status_code=303)
         except Exception as exc:
             return RedirectResponse(
@@ -3386,6 +3538,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         try:
             db.save_setting(conn, "segments", segments)
             conn.commit()
+            _reload()
             return RedirectResponse("/settings", status_code=303)
         finally:
             conn.close()
@@ -3414,6 +3567,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         try:
             db.save_setting(conn, "sectors", sectors)
             conn.commit()
+            _reload()
             return RedirectResponse("/settings", status_code=303)
         finally:
             conn.close()
@@ -3424,6 +3578,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         try:
             db.save_setting(conn, "signal_brief", " ".join(signal_brief.split()))
             conn.commit()
+            _reload()
             return RedirectResponse("/settings", status_code=303)
         finally:
             conn.close()
@@ -3441,6 +3596,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         try:
             db.save_setting(conn, "rate_card", rate_card.strip())
             conn.commit()
+            _reload()
             return RedirectResponse("/settings", status_code=303)
         finally:
             conn.close()
@@ -3461,7 +3617,14 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                 ),
                 status_code=303,
             )
-        (settings.root / "campaign.md").write_text(campaign, encoding="utf-8")
+        try:
+            (settings.root / "campaign.md").write_text(campaign, encoding="utf-8")
+        except OSError as fault:
+            return RedirectResponse(
+                "/settings?note=" + quote(f"The brief could not be written: {fault}"),
+                status_code=303,
+            )
+        _reload()
         return RedirectResponse("/settings", status_code=303)
 
     @app.get("/find", response_class=HTMLResponse)

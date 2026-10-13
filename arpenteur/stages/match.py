@@ -271,7 +271,9 @@ def _select(
         )
         params.append(brief_hash)
     sql = f"SELECT c.* FROM core.company c WHERE {' AND '.join(where)} ORDER BY c.id"
-    if limit:
+    # `is not None`, not truthiness: the guard on the size of the run reads a
+    # limit of 0 as given, so the slice must too, or zero means "everything".
+    if limit is not None:
         sql += f" LIMIT {int(limit)}"
     return conn.execute(sql, params).fetchall()
 

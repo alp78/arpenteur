@@ -361,7 +361,9 @@ def hydrate_pending(
         f"SELECT uid, stale_since FROM core.company WHERE {' AND '.join(where)} "
         "ORDER BY stale_since IS NULL, last_mutation_date DESC, id"
     )
-    if limit:
+    # `is not None`, not truthiness: the guard on the size of the run reads a
+    # limit of 0 as given, so the slice must too, or zero means "everything".
+    if limit is not None:
         # `%s`, not the `?` this carried since the SQLite days. Postgres never
         # saw a placeholder there, so psycopg refused the call before a single
         # request went out and every `--limit` run failed. Which left `--bulk`
@@ -438,8 +440,8 @@ def import_company(
     cleaned = uid.strip().upper().replace("-", "").replace(".", "").replace(" ", "")
     if not cleaned.startswith("CHE") or not cleaned[3:].isdigit():
         raise RuntimeError(
-            f"{uid!r} is not a Swiss UID. They look like CHE-103.895.771 or "
-            "CHE103895771, and are on any company's page at zefix.ch."
+            f"{uid!r} is not a Swiss UID. They look like CHE-100.000.011 or "
+            "CHE100000011, and are on any company's page at zefix.ch."
         )
     with _client(settings) as http:
         zefix = ZefixClient(http, settings.zefix.base_url)

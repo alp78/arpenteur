@@ -7,11 +7,18 @@ stays short, and `arpenteur --help` prints the whole pipeline in one screen.
 from __future__ import annotations
 
 import argparse
+import contextlib
 import datetime as dt
 import re
 import sys
+import tomllib
+from collections.abc import Iterator
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
+
+import psycopg
+from psycopg.conninfo import conninfo_to_dict
 
 from . import attachments as att
 from . import db, dossier, markdown, workspace
@@ -21,6 +28,7 @@ from .modules.clients import store as clients_store
 from .modules.scout import store as scout_store
 from .sources import mailcheck
 from .config import load_settings
+from .kernel.db import Connection, dsn
 from .stages import (
     advise,
     draft,
@@ -60,6 +68,67 @@ def _database_url(settings: Any, fixture: bool) -> str:
     from .kernel.db import ensure_database, sibling
 
     return ensure_database(sibling(settings.database_url, "_fixture"))
+
+
+@dataclass
+class OpenRun:
+    """The run a command holds open: its row, and what the row will say at the end."""
+
+    id: int
+    stats: dict[str, Any] = field(default_factory=dict)
+
+
+def _settle_failed(conn: Connection, run_id: int, error: str) -> None:
+    try:
+        conn.rollback()
+        db.finish_run(conn, run_id, error=error)
+    except psycopg.Error:
+        # The connection went with the stage: the server stopped, or the
+        # session was cut. Nothing can be written, and the failure about to be
+        # raised again is the one worth reporting, not this one.
+        pass
+
+
+@contextlib.contextmanager
+def run_scope(
+    conn: Connection, stage: str, args: argparse.Namespace | dict[str, Any],
+    *, close: bool = True,
+) -> Iterator[OpenRun]:
+    """Open a run row, and finish it however the command ends.
+
+    The command sets `run.stats` to what the row should record and lets the
+    block end. A failure is written to the row and raised again, for the
+    command to report in its own words. `close` is for the commands that
+    opened the connection themselves: it is closed on every path out.
+
+    Three things this gets right that each handler once got wrong alone.
+
+    The rollback comes first. A statement that failed leaves the transaction
+    aborted, and the UPDATE that finishes the run then fails in turn, so the
+    row stayed "running" for ever with the reason lost.
+
+    Ctrl-C is a `KeyboardInterrupt`, which is not an `Exception`, so a handler
+    that caught `Exception` never saw it and left the row open.
+
+    An error with no message is recorded under its class name. An empty error
+    reads as none, and the run as done.
+    """
+    logged = args if isinstance(args, dict) else vars(args)
+    try:
+        run = OpenRun(db.start_run(conn, stage, logged))
+        try:
+            yield run
+        except KeyboardInterrupt:
+            _settle_failed(conn, run.id, "interrupted")
+            raise
+        except Exception as exc:
+            _settle_failed(conn, run.id, str(exc) or type(exc).__name__)
+            raise
+        else:
+            db.finish_run(conn, run.id, run.stats)
+    finally:
+        if close:
+            conn.close()
 
 
 def cmd_init_db(args: argparse.Namespace) -> int:
@@ -116,44 +185,43 @@ def cmd_source(args: argparse.Namespace) -> int:
     stage = f"source:{args.provider}" + (":fixture" if args.fixture else "")
     if words:
         stage += ":by-name"
-    run_id = db.start_run(conn, stage, vars(args))
-    # The fixture set is its own small territory, so announcing the configured
-    # one would name cantons the run is not going to touch.
-    print(
-        "territory: recorded fixture set (VD, Sàrl)"
-        if args.fixture
-        else f"territory: {settings.territory.describe()}"
-    )
-    if words:
-        unit = "word" if len(words) == 1 else "words"
-        print(f"searching {len(words)} {unit}, every legal form")
     try:
-        if words:
-            stats = source.run_by_name(
-                settings,
-                conn,
-                words=words,
-                hydrate=not args.no_hydrate,
-                limit=args.limit,
-                bulk=args.bulk,
-                fixture=args.fixture,
-                dry_run=args.dry_run,
+        with run_scope(conn, stage, args) as run:
+            # The fixture set is its own small territory, so announcing the configured
+            # one would name cantons the run is not going to touch.
+            print(
+                "territory: recorded fixture set (VD, Sàrl)"
+                if args.fixture
+                else f"territory: {settings.territory.describe()}"
             )
-        else:
-            stats = source.run_zefix(
-                settings,
-                conn,
-                resume=not args.no_resume,
-                hydrate=not args.no_hydrate,
-                limit=args.limit,
-                bulk=args.bulk,
-                fixture=args.fixture,
-            )
+            if words:
+                unit = "word" if len(words) == 1 else "words"
+                print(f"searching {len(words)} {unit}, every legal form")
+            if words:
+                stats = source.run_by_name(
+                    settings,
+                    conn,
+                    words=words,
+                    hydrate=not args.no_hydrate,
+                    limit=args.limit,
+                    bulk=args.bulk,
+                    fixture=args.fixture,
+                    dry_run=args.dry_run,
+                )
+            else:
+                stats = source.run_zefix(
+                    settings,
+                    conn,
+                    resume=not args.no_resume,
+                    hydrate=not args.no_hydrate,
+                    limit=args.limit,
+                    bulk=args.bulk,
+                    fixture=args.fixture,
+                )
+            run.stats = stats
     except Exception as exc:
-        db.finish_run(conn, run_id, error=str(exc))
         print(f"error: {exc}", file=sys.stderr)
         return 1
-    db.finish_run(conn, run_id, stats)
     if words:
         print(
             f"searched {stats['searched']} canton-word "f"{'pair' if stats['searched'] == 1 else 'pairs'}, "
@@ -167,7 +235,6 @@ def cmd_source(args: argparse.Namespace) -> int:
             f"searched {stats['searched']} prefixes, "
             f"{stats['seen']} company rows, {stats['hydrated']} hydrated"
         )
-    conn.close()
     return 0
 
 
@@ -183,51 +250,48 @@ def cmd_hydrate(args: argparse.Namespace) -> int:
               "boundary — that alternative will match nothing. Use \\m and "
               "\\M for the start and end of a word.", file=sys.stderr)
     conn = db.open_db(_database_url(settings, args.fixture))
-    run_id = db.start_run(conn, "hydrate" + (":fixture" if args.fixture else ""), vars(args))
     try:
-        count = source.hydrate_pending(
-            settings,
-            conn,
-            # The fixture database holds only what the fixture sweep put there,
-            # so narrowing it to the configured territory would filter a set
-            # that is already the whole of it.
-            cantons=None if args.fixture else settings.cantons,
-            legal_forms=None if args.fixture else settings.legal_forms,
-            name_like=args.name_like or None,
-            limit=args.limit,
-            bulk=args.bulk,
-            fixture=args.fixture,
-        )
+        with run_scope(conn, "hydrate" + (":fixture" if args.fixture else ""), args) as run:
+            count = source.hydrate_pending(
+                settings,
+                conn,
+                # The fixture database holds only what the fixture sweep put there,
+                # so narrowing it to the configured territory would filter a set
+                # that is already the whole of it.
+                cantons=None if args.fixture else settings.cantons,
+                legal_forms=None if args.fixture else settings.legal_forms,
+                name_like=args.name_like or None,
+                limit=args.limit,
+                bulk=args.bulk,
+                fixture=args.fixture,
+            )
+            run.stats = {"hydrated": count}
     except Exception as exc:
-        db.finish_run(conn, run_id, error=str(exc))
         print(f"error: {exc}", file=sys.stderr)
         return 1
-    db.finish_run(conn, run_id, {"hydrated": count})
     print(f"hydrated {count} companies")
-    conn.close()
     return 0
 
 
 def cmd_sync(args: argparse.Namespace) -> int:
     settings = _scoped(args)
     conn = db.open_db(settings.database_url)
-    run_id = db.start_run(conn, "sync", vars(args))
-    print(f"territory: {settings.territory.describe()}")
     try:
-        stats = sync.run(
-            settings,
-            conn,
-            since=args.since,
-            until=args.until,
-            resume=not args.no_resume,
-            admit_new=False if args.no_admit else None,
-            dry_run=args.dry_run,
-        )
+        with run_scope(conn, "sync", args) as run:
+            print(f"territory: {settings.territory.describe()}")
+            stats = sync.run(
+                settings,
+                conn,
+                since=args.since,
+                until=args.until,
+                resume=not args.no_resume,
+                admit_new=False if args.no_admit else None,
+                dry_run=args.dry_run,
+            )
+            run.stats = stats
     except Exception as exc:
-        db.finish_run(conn, run_id, error=str(exc))
         print(f"error: {exc}", file=sys.stderr)
         return 1
-    db.finish_run(conn, run_id, stats)
     print(
         f"{stats['days']} days, {stats['notices']} notices, "
         f"{stats['tracked']} ours: {stats['inserted']} new, "
@@ -236,7 +300,6 @@ def cmd_sync(args: argparse.Namespace) -> int:
     )
     if stats["stale"]:
         print(f"{stats['stale']} companies await re-hydration (run: arpenteur hydrate)")
-    conn.close()
     return 0
 
 
@@ -291,24 +354,19 @@ def cmd_verify(args: argparse.Namespace) -> int:
     """
     settings = load_settings()
     conn = db.open_db(settings.database_url)
-    run_id = db.start_run(conn, "verify", vars(args))
     try:
-        stats = verify.run(
-            conn,
-            refresh=args.refresh,
-            stale_after_days=args.stale_after,
-            limit=args.limit,
-            dry_run=args.dry_run,
-        )
+        with run_scope(conn, "verify", args) as run:
+            stats = verify.run(
+                conn,
+                refresh=args.refresh,
+                stale_after_days=args.stale_after,
+                limit=args.limit,
+                dry_run=args.dry_run,
+            )
+            run.stats = stats
     except Exception as exc:
-        # The rollback is what lets `finish_run` write: without it the failed
-        # statement leaves the transaction aborted, the error text is lost and
-        # the run row stays `running` for ever.
-        conn.rollback()
-        db.finish_run(conn, run_id, error=str(exc))
         print(f"error: {exc}", file=sys.stderr)
         return 1
-    db.finish_run(conn, run_id, stats)
     if args.dry_run:
         print("(dry run, nothing written)")
     return 0
@@ -395,23 +453,21 @@ def cmd_draft(args: argparse.Namespace) -> int:
     """
     settings = load_settings()
     conn = db.open_db(settings.database_url)
-    run_id = db.start_run(conn, "draft", vars(args))
     try:
-        stats = draft.run(
-            settings, conn,
-            desk_parts=_desk_parts(),
-            segments=_split(args.segment),
-            cantons=_split(args.canton),
-            limit=args.limit,
-            confirmed=args.yes,
-            dry_run=args.dry_run,
-        )
+        with run_scope(conn, "draft", args) as run:
+            stats = draft.run(
+                settings, conn,
+                desk_parts=_desk_parts(),
+                segments=_split(args.segment),
+                cantons=_split(args.canton),
+                limit=args.limit,
+                confirmed=args.yes,
+                dry_run=args.dry_run,
+            )
+            run.stats = stats
     except Exception as exc:
-        conn.rollback()
-        db.finish_run(conn, run_id, error=str(exc))
         print(f"error: {exc}", file=sys.stderr)
         return 1
-    db.finish_run(conn, run_id, stats)
     return 0
 
 
@@ -423,8 +479,8 @@ def cmd_bounces(args: argparse.Namespace) -> int:
     from here; the send goes through the operator's own provider.
     """
     settings = load_settings()
-    conn = db.open_db(settings.database_url)
-    run_id = db.start_run(conn, "bounces", vars(args))
+    # Read before the run is opened: a date that does not parse is refused, and
+    # a refusal leaves no run behind it to be finished.
     since = None
     if args.since:
         try:
@@ -433,17 +489,17 @@ def cmd_bounces(args: argparse.Namespace) -> int:
             print(f"error: --since wants a date like 2026-10-01, not {args.since!r}",
                   file=sys.stderr)
             return 1
+    conn = db.open_db(settings.database_url)
     try:
-        stats = bounce_stage.run(
-            settings, conn, folder=args.folder, limit=args.limit,
-            since=since, dry_run=args.dry_run,
-        )
+        with run_scope(conn, "bounces", args) as run:
+            stats = bounce_stage.run(
+                settings, conn, folder=args.folder, limit=args.limit,
+                since=since, dry_run=args.dry_run,
+            )
+            run.stats = stats
     except Exception as exc:
-        conn.rollback()
-        db.finish_run(conn, run_id, error=str(exc))
         print(f"error: {exc}", file=sys.stderr)
         return 1
-    db.finish_run(conn, run_id, stats)
     return 0
 
 
@@ -455,10 +511,6 @@ def cmd_send(args: argparse.Namespace) -> int:
     message per firm on a list of 2'450.
     """
     settings = load_settings()
-    conn = db.open_db(settings.database_url)
-    run_id = db.start_run(conn, "send", {
-        k: v for k, v in vars(args).items() if k != "func"
-    })
     letters: list[send_stage.Letter] = []
     if args.to:
         body = ""
@@ -475,18 +527,20 @@ def cmd_send(args: argparse.Namespace) -> int:
         letters.append(send_stage.Letter(
             to=args.to, subject=args.subject, body=body,
         ))
+    # Opened once the message is in hand: a body file that cannot be read, or
+    # a stdin that is interrupted, leaves no run behind it to be finished.
+    conn = db.open_db(settings.database_url)
     try:
-        stats = send_stage.run(
-            settings, conn, letters=letters or None,
-            draft_ids=[int(d) for d in args.draft],
-            confirm=args.yes, plain=args.plain, programme=args.programme,
-        )
+        with run_scope(conn, "send", args) as run:
+            stats = send_stage.run(
+                settings, conn, letters=letters or None,
+                draft_ids=[int(d) for d in args.draft],
+                confirm=args.yes, plain=args.plain, programme=args.programme,
+            )
+            run.stats = stats
     except Exception as exc:
-        conn.rollback()
-        db.finish_run(conn, run_id, error=str(exc))
         print(f"error: {exc}", file=sys.stderr)
         return 1
-    db.finish_run(conn, run_id, stats)
     return 0
 
 
@@ -501,19 +555,17 @@ def cmd_answers(args: argparse.Namespace) -> int:
     """
     settings = load_settings()
     conn = db.open_db(settings.database_url)
-    run_id = db.start_run(conn, "answers", vars(args))
     try:
-        stats = answers_stage.run(
-            settings, conn, programme=args.programme,
-            from_stage=args.from_stage, limit=args.limit,
-            dry_run=args.dry_run,
-        )
+        with run_scope(conn, "answers", args) as run:
+            stats = answers_stage.run(
+                settings, conn, programme=args.programme,
+                from_stage=args.from_stage, limit=args.limit,
+                dry_run=args.dry_run,
+            )
+            run.stats = stats
     except Exception as exc:
-        conn.rollback()
-        db.finish_run(conn, run_id, error=str(exc))
         print(f"error: {exc}", file=sys.stderr)
         return 1
-    db.finish_run(conn, run_id, stats)
     return 0
 
 
@@ -633,46 +685,43 @@ def cmd_regions(args: argparse.Namespace) -> int:
 def cmd_profile(args: argparse.Namespace) -> int:
     settings = load_settings()
     conn = db.open_db(_database_url(settings, args.fixture))
-    run_id = db.start_run(conn, "profile" + (":fixture" if args.fixture else ""), vars(args))
     try:
-        stats = profile.run(
-            settings,
-            conn,
-            limit=args.limit,
-            reclassify=args.reclassify,
-            dry_run=args.dry_run,
-        )
+        with run_scope(conn, "profile" + (":fixture" if args.fixture else ""), args) as run:
+            stats = profile.run(
+                settings,
+                conn,
+                limit=args.limit,
+                reclassify=args.reclassify,
+                dry_run=args.dry_run,
+            )
+            run.stats = stats
     except Exception as exc:
-        db.finish_run(conn, run_id, error=str(exc))
         print(f"error: {exc}", file=sys.stderr)
         return 1
-    db.finish_run(conn, run_id, stats)
     print(
         f"classified {stats['classified']} companies, "
         f"{stats['sectors']} sectors, {stats['labels']} segment labels"
         + (" (dry run, nothing written)" if args.dry_run else "")
     )
-    conn.close()
     return 0
 
 
 def cmd_people(args: argparse.Namespace) -> int:
     settings = load_settings()
     conn = db.open_db(settings.database_url)
-    run_id = db.start_run(conn, "people", vars(args))
     try:
-        stats = people.run(
-            settings,
-            conn,
-            limit=args.limit,
-            reparse=args.reparse,
-            dry_run=args.dry_run,
-        )
+        with run_scope(conn, "people", args) as run:
+            stats = people.run(
+                settings,
+                conn,
+                limit=args.limit,
+                reparse=args.reparse,
+                dry_run=args.dry_run,
+            )
+            run.stats = stats
     except Exception as exc:
-        db.finish_run(conn, run_id, error=str(exc))
         print(f"error: {exc}", file=sys.stderr)
         return 1
-    db.finish_run(conn, run_id, stats)
     print(
         f"{stats['people']} officers across {stats['with_people']} companies "
         f"(of {stats['considered']} with publications)"
@@ -680,46 +729,42 @@ def cmd_people(args: argparse.Namespace) -> int:
            if stats.get("pruned") else "")
         + (" (dry run, nothing written)" if args.dry_run else "")
     )
-    conn.close()
     return 0
 
 
 def cmd_resolve(args: argparse.Namespace) -> int:
     settings = load_settings()
     conn = db.open_db(settings.database_url)
-    run_id = db.start_run(conn, "resolve", vars(args))
     try:
-        stats = resolve.run(settings, conn, dry_run=args.dry_run)
+        with run_scope(conn, "resolve", args) as run:
+            stats = resolve.run(settings, conn, dry_run=args.dry_run)
+            run.stats = stats
     except Exception as exc:
-        db.finish_run(conn, run_id, error=str(exc))
         print(f"error: {exc}", file=sys.stderr)
         return 1
-    db.finish_run(conn, run_id, stats)
-    conn.close()
     return 0
 
 
 def cmd_enrich(args: argparse.Namespace) -> int:
     settings = load_settings()
     conn = db.open_db(settings.database_url)
-    run_id = db.start_run(conn, "enrich", vars(args))
     try:
-        stats = enrich.run(
-            settings,
-            conn,
-            uids=_split(args.uid),
-            canton=args.canton,
-            segment=args.segment,
-            sector=args.sector,
-            limit=args.limit,
-            refresh=args.refresh,
-            dry_run=args.dry_run,
-        )
+        with run_scope(conn, "enrich", args) as run:
+            stats = enrich.run(
+                settings,
+                conn,
+                uids=_split(args.uid),
+                canton=args.canton,
+                segment=args.segment,
+                sector=args.sector,
+                limit=args.limit,
+                refresh=args.refresh,
+                dry_run=args.dry_run,
+            )
+            run.stats = stats
     except Exception as exc:
-        db.finish_run(conn, run_id, error=str(exc))
         print(f"error: {exc}", file=sys.stderr)
         return 1
-    db.finish_run(conn, run_id, stats)
     print(
         f"found {stats['found']}, ambiguous {stats['ambiguous']}, "
         f"not found {stats['not_found']}, failed {stats['failed']}; "
@@ -728,61 +773,57 @@ def cmd_enrich(args: argparse.Namespace) -> int:
         f"{stats['turns']} turns, "
         f"{stats['input_tokens']}/{stats['output_tokens']} tokens in/out"
     )
-    conn.close()
     return 0
 
 
 def cmd_match(args: argparse.Namespace) -> int:
     settings = load_settings()
     conn = db.open_db(settings.database_url)
-    run_id = db.start_run(conn, "match", vars(args))
     try:
-        stats = match.run(
-            settings,
-            conn,
-            uids=_split(args.uid),
-            segment=args.segment,
-            sector=args.sector,
-            researched_only=not args.include_unresearched,
-            limit=args.limit,
-            rescore=args.rescore,
-            dry_run=args.dry_run,
-        )
+        with run_scope(conn, "match", args) as run:
+            stats = match.run(
+                settings,
+                conn,
+                uids=_split(args.uid),
+                segment=args.segment,
+                sector=args.sector,
+                researched_only=not args.include_unresearched,
+                limit=args.limit,
+                rescore=args.rescore,
+                dry_run=args.dry_run,
+            )
+            run.stats = stats
     except Exception as exc:
-        db.finish_run(conn, run_id, error=str(exc))
         print(f"error: {exc}", file=sys.stderr)
         return 1
-    db.finish_run(conn, run_id, stats)
     print(
         f"scored {stats['scored']} against brief {stats['brief']}: "
         f"{stats['high']} high, {stats['medium']} medium, {stats['low']} low, "
         f"{stats['excluded']} excluded, {stats['failed']} failed"
     )
-    conn.close()
     return 0
 
 
 def cmd_reach(args: argparse.Namespace) -> int:
     settings = load_settings()
     conn = db.open_db(settings.database_url)
-    run_id = db.start_run(conn, "reach", vars(args))
     try:
-        stats = reach.run(
-            settings,
-            conn,
-            uids=_split(args.uid),
-            segment=args.segment,
-            sector=args.sector,
-            band=args.band,
-            limit=args.limit,
-            refresh=args.refresh,
-            dry_run=args.dry_run,
-        )
+        with run_scope(conn, "reach", args) as run:
+            stats = reach.run(
+                settings,
+                conn,
+                uids=_split(args.uid),
+                segment=args.segment,
+                sector=args.sector,
+                band=args.band,
+                limit=args.limit,
+                refresh=args.refresh,
+                dry_run=args.dry_run,
+            )
+            run.stats = stats
     except Exception as exc:
-        db.finish_run(conn, run_id, error=str(exc))
         print(f"error: {exc}", file=sys.stderr)
         return 1
-    db.finish_run(conn, run_id, stats)
     print(
         f"read {stats['pages']} pages: {stats['with_address']} companies with a "
         f"published address ({stats['new']} new of {stats['addresses']} found), "
@@ -790,7 +831,6 @@ def cmd_reach(args: argparse.Namespace) -> int:
         f"{stats['unreadable']} unreadable; "
         f"{stats['for_pattern']} left for the pattern tier"
     )
-    conn.close()
     return 0
 
 
@@ -798,21 +838,20 @@ def cmd_mail(args: argparse.Namespace) -> int:
     """Read the mailbox into the review queue. Files nothing, sends nothing."""
     settings = load_settings()
     conn = db.open_db(settings.database_url)
-    run_id = db.start_run(conn, "mail", vars(args))
     try:
-        stats = mail.run(
-            settings,
-            conn,
-            folders=_split(args.folder) or None,
-            days=args.days,
-            limit=args.limit,
-            dry_run=args.dry_run,
-        )
+        with run_scope(conn, "mail", args) as run:
+            stats = mail.run(
+                settings,
+                conn,
+                folders=_split(args.folder) or None,
+                days=args.days,
+                limit=args.limit,
+                dry_run=args.dry_run,
+            )
+            run.stats = stats
     except Exception as exc:
-        db.finish_run(conn, run_id, error=str(exc))
         print(f"error: {exc}", file=sys.stderr)
         return 1
-    db.finish_run(conn, run_id, stats)
     # The count that matters is what a person now has to read, not what was
     # fetched: a run that queues two hundred messages has made work, not
     # progress.
@@ -820,7 +859,6 @@ def cmd_mail(args: argparse.Namespace) -> int:
         f"{stats['queued']} queued for review, {stats['matched']} with a "
         f"company proposed, {stats['known']} already held. Nothing filed."
     )
-    conn.close()
     return 0
 
 
@@ -983,49 +1021,46 @@ def cmd_boundaries(args: argparse.Namespace) -> int:
     """
     settings = load_settings()
     conn = db.open_db(settings.database_url)
-    run_id = db.start_run(conn, "boundaries", vars(args))
     try:
-        stats = boundaries.run(
-            settings, conn,
-            cantons=_split(args.canton) or None,
-            refresh=args.refresh,
-            dry_run=args.dry_run,
-        )
+        with run_scope(conn, "boundaries", args) as run:
+            stats = boundaries.run(
+                settings, conn,
+                cantons=_split(args.canton) or None,
+                refresh=args.refresh,
+                dry_run=args.dry_run,
+            )
+            run.stats = stats
     except Exception as exc:
-        db.finish_run(conn, run_id, error=str(exc))
         print(f"error: {exc}", file=sys.stderr)
         return 1
-    db.finish_run(conn, run_id, stats)
     print(
         f"{stats['stored']} boundary(ies) stored, {stats['held']} already held, "
         f"{stats['failed']} failed"
     )
-    conn.close()
     return 0
 
 
 def cmd_geocode(args: argparse.Namespace) -> int:
     settings = load_settings()
     conn = db.open_db(settings.database_url)
-    run_id = db.start_run(conn, "geocode", vars(args))
     try:
-        stats = geocode.run(
-            settings,
-            conn,
-            uids=_split(args.uid),
-            canton=args.canton or "",
-            segment=args.segment or "",
-            sector=args.sector or "",
-            band=args.band or "",
-            worked=args.worked,
-            limit=args.limit,
-            dry_run=args.dry_run,
-        )
+        with run_scope(conn, "geocode", args) as run:
+            stats = geocode.run(
+                settings,
+                conn,
+                uids=_split(args.uid),
+                canton=args.canton or "",
+                segment=args.segment or "",
+                sector=args.sector or "",
+                band=args.band or "",
+                worked=args.worked,
+                limit=args.limit,
+                dry_run=args.dry_run,
+            )
+            run.stats = stats
     except Exception as exc:
-        db.finish_run(conn, run_id, error=str(exc))
         print(f"error: {exc}", file=sys.stderr)
         return 1
-    db.finish_run(conn, run_id, stats)
     # Reported by precision rather than as one total. "412 placed" says nothing
     # about whether the map is worth looking at; "380 on a door, 32 on a town"
     # says exactly how much of it to believe.
@@ -1035,7 +1070,6 @@ def cmd_geocode(args: argparse.Namespace) -> int:
         f"{stats['postcode']} on a town only; {stats['unplaced']} unplaced, "
         f"{stats['no_domicile']} with no domicile on the register"
     )
-    conn.close()
     return 0
 
 
@@ -1047,22 +1081,20 @@ def cmd_import(args: argparse.Namespace) -> int:
     """
     settings = load_settings()
     conn = db.open_db(settings.database_url)
-    run_id = db.start_run(conn, "import", vars(args))
     try:
-        found = source.import_company(settings, conn, args.uid)
-        if args.client:
-            client_id = db.promote_to_client(conn, found["company_id"])
-            conn.commit()
-            code = conn.execute(
-                "SELECT code FROM crm.client WHERE id = %s", (client_id,)
-            ).fetchone()[0]
-            print(f"client {code} created")
+        with run_scope(conn, "import", args) as run:
+            found = source.import_company(settings, conn, args.uid)
+            if args.client:
+                client_id = db.promote_to_client(conn, found["company_id"])
+                conn.commit()
+                code = conn.execute(
+                    "SELECT code FROM crm.client WHERE id = %s", (client_id,)
+                ).fetchone()[0]
+                print(f"client {code} created")
+            run.stats = found
     except Exception as exc:
-        db.finish_run(conn, run_id, error=str(exc))
         print(f"error: {exc}", file=sys.stderr)
         return 1
-    db.finish_run(conn, run_id, found)
-    conn.close()
     return 0
 
 
@@ -1554,7 +1586,7 @@ def cmd_programme(args: argparse.Namespace) -> int:
             when = row["last_inbound"]
             print(f"  {row['company_name'][:34]:36} "
                   f"{(row['from_email'] or '')[:30]:32} "
-                  f"{when.date().isoformat() if when else '':10} "
+                  f"{(when or '')[:10]:10} "
                   f"{(row['subject'] or '')[:36]}")
         print()
         if not args.yes:
@@ -1619,7 +1651,7 @@ def cmd_programme(args: argparse.Namespace) -> int:
             print(f"  {row['stage']:<12} {row['company_name'][:34]:<34} "
                   f"{(row['canton'] or ''):<3} {row['sent']:>3} "
                   f"{row['inbound']:>3} "
-                  f"{(last.date().isoformat() if last else ''):<11} {enrolment}")
+                  f"{(last or '')[:10]:<11} {enrolment}")
         return close(0)
 
     if args.action == "history":
@@ -1643,7 +1675,7 @@ def cmd_programme(args: argparse.Namespace) -> int:
             who = (row["from_email"] or "") if row["direction"] == "in" else (
                 ", ".join(row["to_emails"] or [])
             )
-            print(f"  {(when.date().isoformat() if when else ''):<11} {arrow} "
+            print(f"  {(when or '')[:10]:<11} {arrow} "
                   f"{who[:34]:<34} {(row['state'] or ''):<9} "
                   f"{(row['subject'] or '')[:40]}")
         return close(0)
@@ -1887,22 +1919,20 @@ def cmd_advise(args: argparse.Namespace) -> int:
     except RuntimeError as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 1
-    run_id = db.start_run(conn, "advise", vars(args))
     try:
-        stats = advise.run(
-            settings, conn, client_id=client["id"], dry_run=args.dry_run
-        )
+        with run_scope(conn, "advise", args) as run:
+            stats = advise.run(
+                settings, conn, client_id=client["id"], dry_run=args.dry_run
+            )
+            run.stats = stats
     except Exception as exc:
-        db.finish_run(conn, run_id, error=str(exc))
         print(f"error: {exc}", file=sys.stderr)
         return 1
-    db.finish_run(conn, run_id, stats)
     print(
         f"{client['code']}: read {stats['sections']} sections and "
         f"{stats['documents']} documents"
         + ("" if stats.get("saved") else " (dry run, nothing saved)")
     )
-    conn.close()
     return 0
 
 
@@ -1934,15 +1964,13 @@ def cmd_prep(args: argparse.Namespace) -> int:
                     print(f"{label}: {row[key]}")
         conn.close()
         return 0
-    run_id = db.start_run(conn, "prep", vars(args))
     try:
-        stats = prep.run(settings, conn, client_id=client["id"], dry_run=args.dry_run)
+        with run_scope(conn, "prep", args) as run:
+            stats = prep.run(settings, conn, client_id=client["id"], dry_run=args.dry_run)
+            run.stats = stats
     except Exception as exc:
-        db.finish_run(conn, run_id, error=str(exc))
         print(f"error: {exc}", file=sys.stderr)
         return 1
-    db.finish_run(conn, run_id, stats)
-    conn.close()
     return 0
 
 
@@ -2272,11 +2300,11 @@ def cmd_campaign(args: argparse.Namespace) -> int:
                       f"{args.to or settings.smtp.test_to or settings.smtp.sender}. "
                       "Pass --yes to send it.")
                 return close(0)
-            run_id = db.start_run(conn, "campaign-test", {"campaign": row["code"],
-                                                          "wave": number})
-            stats = campaign_stage.test_wave(settings, conn, campaign=row["id"],
-                                             wave=number, to=args.to or "")
-            db.finish_run(conn, run_id, stats)
+            # The connection is `close`'s to shut: the command goes on using it.
+            with run_scope(conn, "campaign-test", {"campaign": row["code"], "wave": number},
+                           close=False) as run:
+                run.stats = campaign_stage.test_wave(
+                    settings, conn, campaign=row["id"], wave=number, to=args.to or "")
             return close(0)
 
         if args.action == "approve":
@@ -2293,16 +2321,11 @@ def cmd_campaign(args: argparse.Namespace) -> int:
                       f"To send it: arpenteur campaign send {row['code']} {number} "
                       f"--yes --confirm {expected}")
                 return close(0)
-            run_id = db.start_run(conn, "campaign-send", {"campaign": row["code"],
-                                                          "wave": number})
-            try:
-                stats = campaign_stage.send_wave(settings, conn, campaign=row["id"],
-                                                 wave=number, confirm=args.confirm or "")
-            except ValueError as exc:
-                conn.rollback()
-                db.finish_run(conn, run_id, error=str(exc))
-                raise
-            db.finish_run(conn, run_id, stats)
+            with run_scope(conn, "campaign-send", {"campaign": row["code"], "wave": number},
+                           close=False) as run:
+                run.stats = campaign_stage.send_wave(
+                    settings, conn, campaign=row["id"], wave=number,
+                    confirm=args.confirm or "")
             return close(0)
 
     except ValueError as exc:
@@ -2311,6 +2334,23 @@ def cmd_campaign(args: argparse.Namespace) -> int:
         return close(1)
     print(f"error: unknown action {args.action!r}", file=sys.stderr)
     return close(1)
+
+
+def positive_int(text: str) -> int:
+    """An argparse type for a count of one or more, which is what `--limit` is.
+
+    Zero is refused rather than read as "no limit". The stages that cap their
+    spend with it disagreed about what zero meant: the guard took it for a
+    limit given and the slice took it for none, so `--limit 0` ran everything
+    and skipped the check that stops a run from doing so.
+    """
+    try:
+        value = int(text)
+    except ValueError:
+        raise argparse.ArgumentTypeError(f"{text!r} is not a whole number") from None
+    if value < 1:
+        raise argparse.ArgumentTypeError(f"{value} is not a positive number (1 or more)")
+    return value
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -2350,7 +2390,7 @@ def build_parser() -> argparse.ArgumentParser:
     territory_flags(p)
     p.add_argument("--no-resume", action="store_true", help="re-sweep completed prefixes")
     p.add_argument("--no-hydrate", action="store_true", help="skip the detail pass")
-    p.add_argument("--limit", type=int, help="cap the detail pass")
+    p.add_argument("--limit", type=positive_int, help="cap the detail pass")
     p.add_argument(
         "--name",
         default="",
@@ -2382,7 +2422,7 @@ def build_parser() -> argparse.ArgumentParser:
 
     p = sub.add_parser("hydrate", help="fetch detail for companies missing it")
     territory_flags(p)
-    p.add_argument("--limit", type=int)
+    p.add_argument("--limit", type=positive_int)
     p.add_argument(
         "--name-like",
         default="",
@@ -2422,7 +2462,7 @@ def build_parser() -> argparse.ArgumentParser:
     p.set_defaults(func=cmd_sync)
 
     p = sub.add_parser("profile", help="sort companies into sectors and segments")
-    p.add_argument("--limit", type=int)
+    p.add_argument("--limit", type=positive_int)
     p.add_argument("--reclassify", action="store_true", help="include already classified")
     p.add_argument("--dry-run", action="store_true", help="print, write nothing")
     p.add_argument(
@@ -2433,7 +2473,7 @@ def build_parser() -> argparse.ArgumentParser:
     p.set_defaults(func=cmd_profile)
 
     p = sub.add_parser("people", help="officers from the register's SHAB notices")
-    p.add_argument("--limit", type=int)
+    p.add_argument("--limit", type=positive_int)
     p.add_argument(
         "--reparse",
         action="store_true",
@@ -2450,7 +2490,7 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--canton")
     p.add_argument("--segment", help="only companies carrying this segment")
     p.add_argument("--sector", help="only companies in this line of business")
-    p.add_argument("--limit", type=int, help="required for runs over 200 companies")
+    p.add_argument("--limit", type=positive_int, help="required for runs over 200 companies")
     p.add_argument("--refresh", action="store_true", help="re-research companies already done")
     p.add_argument("--dry-run", action="store_true", help="list the shortlist, spend nothing")
     p.set_defaults(func=cmd_enrich)
@@ -2466,7 +2506,7 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="score on the register alone, without waiting for enrich",
     )
-    p.add_argument("--limit", type=int)
+    p.add_argument("--limit", type=positive_int)
     p.add_argument(
         "--rescore", action="store_true", help="re-score companies already scored"
     )
@@ -2476,7 +2516,7 @@ def build_parser() -> argparse.ArgumentParser:
     p = sub.add_parser(
         "import", help="fetch one company by UID, inside the territory or not"
     )
-    p.add_argument("uid", help="e.g. CHE-103.895.771 or CHE103895771")
+    p.add_argument("uid", help="e.g. CHE-100.000.011 or CHE100000011")
     p.add_argument(
         "--client", action="store_true", help="also open a client record for it"
     )
@@ -2564,7 +2604,7 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--segment", help="only companies carrying this segment")
     p.add_argument("--sector", help="only companies in this line of business")
     p.add_argument("--band", help="only companies whose fit is in this band")
-    p.add_argument("--limit", type=int, help="required for runs over 200 companies")
+    p.add_argument("--limit", type=positive_int, help="required for runs over 200 companies")
     p.add_argument(
         "--refresh", action="store_true", help="re-read sites already looked at"
     )
@@ -2584,7 +2624,7 @@ def build_parser() -> argparse.ArgumentParser:
         "--worked", action="store_true",
         help="only companies with a pipeline state, which is the shortlist a map is read for",
     )
-    p.add_argument("--limit", type=int, help="required for runs over 500 companies")
+    p.add_argument("--limit", type=positive_int, help="required for runs over 500 companies")
     p.add_argument("--dry-run", action="store_true", help="list the addresses, ask nothing")
     p.set_defaults(func=cmd_geocode)
 
@@ -2599,7 +2639,7 @@ def build_parser() -> argparse.ArgumentParser:
         "--days", type=int, default=mail.DEFAULT_DAYS,
         help=f"how far back to look, in days (default {mail.DEFAULT_DAYS})",
     )
-    p.add_argument("--limit", type=int, help="stop after this many new messages")
+    p.add_argument("--limit", type=positive_int, help="stop after this many new messages")
     p.add_argument(
         "--dry-run", action="store_true", help="list what would be queued, write nothing"
     )
@@ -2634,7 +2674,7 @@ def build_parser() -> argparse.ArgumentParser:
              "materialised views up to date",
     )
     p.add_argument("name", nargs="?", help="which report, for show")
-    p.add_argument("--limit", type=int, default=200, help="rows to print")
+    p.add_argument("--limit", type=positive_int, default=200, help="rows to print")
     p.add_argument("--csv", action="store_true", help="write CSV to stdout")
     p.set_defaults(func=cmd_report)
 
@@ -2681,7 +2721,7 @@ def build_parser() -> argparse.ArgumentParser:
         "--stale-after", type=int, default=30, metavar="DAYS",
         help="how old a verdict may be before it is checked again (default 30)",
     )
-    p.add_argument("--limit", type=int, default=0, help="stop after N domains")
+    p.add_argument("--limit", type=positive_int, default=0, help="stop after N domains")
     p.add_argument("--dry-run", action="store_true", help="list, resolve nothing")
     p.set_defaults(func=cmd_verify)
 
@@ -2696,7 +2736,7 @@ def build_parser() -> argparse.ArgumentParser:
         help="which verdicts to accept (default deliverable; add maybe to widen)",
     )
     p.add_argument("--out", default="", help="write a CSV here instead of printing")
-    p.add_argument("--limit", type=int, default=0, help="how many to print")
+    p.add_argument("--limit", type=positive_int, default=0, help="how many to print")
     p.set_defaults(func=cmd_sendlist)
 
     p = sub.add_parser(
@@ -2709,7 +2749,7 @@ def build_parser() -> argparse.ArgumentParser:
         help="only messages the server dates on or after this day",
     )
     p.add_argument(
-        "--limit", type=int, default=500,
+        "--limit", type=positive_int, default=500,
         help="how many of the most recent messages to screen (default 500)",
     )
     p.add_argument(
@@ -2732,7 +2772,7 @@ def build_parser() -> argparse.ArgumentParser:
         help="the stage whose members are read (default contacted)",
     )
     p.add_argument(
-        "--limit", type=int, default=200,
+        "--limit", type=positive_int, default=200,
         help="how many messages to read (default 200)",
     )
     p.add_argument(
@@ -2858,7 +2898,7 @@ def build_parser() -> argparse.ArgumentParser:
              "the rest, 0101 included: a sole trader is a named person, and "
              "writing to one carries nLPD obligations a company does not",
     )
-    p.add_argument("--limit", type=int, default=25, help="how many, for bring-in")
+    p.add_argument("--limit", type=positive_int, default=25, help="how many, for bring-in")
     p.add_argument(
         "--from-stage", dest="from_stage", default="contacted",
         help="for replies: the stage to look at (default contacted)",
@@ -2968,7 +3008,7 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--segment", default="", help="comma separated")
     p.add_argument("--canton", default="", help="comma separated")
     p.add_argument(
-        "--limit", type=int, default=draft.SAFE_BATCH,
+        "--limit", type=positive_int, default=draft.SAFE_BATCH,
         help=f"how many to draft (default {draft.SAFE_BATCH}, the safe batch)",
     )
     p.add_argument(
@@ -2984,6 +3024,19 @@ def build_parser() -> argparse.ArgumentParser:
     return parser
 
 
+def _unreachable(exc: psycopg.OperationalError) -> str:
+    """The sentence for a database that cannot be reached: where, why, what to run."""
+    where = conninfo_to_dict(dsn())
+    host = where.get("host") or "localhost"
+    port = where.get("port") or 5432
+    # libpq words the cause after its last "failed: ", and the rest is advice
+    # on further lines that this sentence gives in its own words.
+    cause = str(exc).rsplit(" failed: ", 1)[-1].splitlines()
+    reason = " ".join(cause[0].split()) if cause else ""
+    why = f" ({reason})" if reason else ""
+    return f"cannot connect to PostgreSQL at {host}:{port}{why}. Start it with `docker compose up -d`."
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = build_parser()
     args = parser.parse_args(argv)
@@ -2994,6 +3047,33 @@ def main(argv: list[str] | None = None) -> int:
         # Configuration is resolved before a stage's own error handling, so a
         # misspelled region or auth mode would otherwise reach the user as a
         # traceback. It is a typo, not a crash, and should read like one.
+        print(f"error: {exc}", file=sys.stderr)
+        return 1
+    except psycopg.OperationalError as exc:
+        if exc.sqlstate:
+            # The server answered and refused: a deadlock, a lock timeout, a
+            # cancelled query. That is not a stopped container, and saying so
+            # would send the operator away from the cause.
+            raise
+        print(f"error: {_unreachable(exc)}", file=sys.stderr)
+        return 1
+    except FileNotFoundError as exc:
+        missing = str(exc.filename or "")
+        if Path(missing).name == "arpenteur.toml":
+            print(f"error: arpenteur.toml was expected at {missing} and is not there",
+                  file=sys.stderr)
+        else:
+            print(f"error: no such file: {missing or exc}", file=sys.stderr)
+        return 1
+    except tomllib.TOMLDecodeError as exc:
+        # A `ValueError`, caught on its own because its message does not say
+        # which file it was reading, and `load_settings` reads only this one.
+        print(f"error: arpenteur.toml is not valid TOML: {exc}", file=sys.stderr)
+        return 1
+    except ValueError as exc:
+        # `config` refuses a value it cannot use, a mistyped effort level, with
+        # a message that says what was wrong. Like the stores' refusals, it is
+        # addressed to the person typing, and a traceback buries it.
         print(f"error: {exc}", file=sys.stderr)
         return 1
     except KeyboardInterrupt:

@@ -140,6 +140,29 @@ def test_an_explicit_limit_permits_the_run(monkeypatch, settings, conn) -> None:
     assert stats["found"] == 1
 
 
+def test_a_limit_of_zero_researches_nothing(monkeypatch, settings, conn) -> None:
+    """The selection read zero as no limit while the guard above read it as a
+    limit given, so over the guard's size a zero skipped the check and billed
+    for every company."""
+    for index in range(205):
+        db.upsert_company(
+            conn,
+            {
+                "uid": f"CHE{index:09d}",
+                "name": f"Company {index}",
+                "canton": "VD",
+                "status": "ACTIVE",
+                "hydrated": True,
+                "method": "zefix",
+            },
+        )
+    conn.commit()
+    provider = FakeProvider()
+    stats = enrich_with(monkeypatch, provider, settings, conn, canton="VD", limit=0)
+    assert stats["considered"] == 0
+    assert provider.calls == [], "nothing may be spent on a limit of zero"
+
+
 def test_dry_run_spends_nothing(monkeypatch, settings, conn) -> None:
     provider = FakeProvider()
     stats = enrich_with(monkeypatch, provider, settings, conn, dry_run=True)

@@ -37,6 +37,11 @@ from ..scout.store import record_state_change
 from . import money
 
 QUOTE_STATES = ("draft", "sent", "accepted", "declined", "expired", "withdrawn")
+# The states a payment can be recorded against, and the ones a credit note can
+# reverse. A credit note is itself issued, so `credits_id` is what tells the
+# two apart, not the state.
+PAYABLE_STATES = ("issued", "part_paid", "overdue")
+CREDITABLE_STATES = ("issued", "part_paid", "paid", "overdue")
 INVOICE_STATES = ("draft", "issued", "paid", "part_paid", "overdue", "credited",
                   "cancelled")
 UNITS = ("fixed", "day", "month", "hour")
@@ -217,7 +222,7 @@ def _price_phrase(line: Row, currency: str) -> str:
 
 
 def next_quote_code(conn: Connection, client_id: int) -> str:
-    """BOIS-GENTIL-Q03. Quoted on the telephone, so it is readable."""
+    """CLAIR-LOGIS-Q03. Quoted on the telephone, so it is readable."""
     client = conn.execute(
         "SELECT code FROM crm.client WHERE id = %s", (client_id,)
     ).fetchone()
@@ -336,7 +341,7 @@ def add_line(conn: Connection, version_id: int, row: dict[str, Any]) -> int:
             "this version has been sent. Add a new version rather than "
             "changing what the client is holding."
         )
-    quantity = Decimal(str(row.get("quantity", 1)))
+    quantity = money.parse_decimal(row.get("quantity", 1))
     unit_price = money.money(row.get("unit_price", 0))
     position = row.get("position")
     if position is None:
@@ -444,8 +449,44 @@ def _reorder(
     return moved
 
 
-def delete_line(conn: Connection, line_id: int) -> None:
+def delete_line(conn: Connection, line_id: int) -> Row:
+    """Remove a line from a version that was not sent; say which quote it was on.
+
+    Refused for a sent version here and not only in the page, because the
+    totals of a sent version are frozen and a line deleted underneath them
+    leaves a document whose lines and total disagree.
+    """
+    held = conn.execute(
+        "SELECT v.id AS version_id, v.quote_id, v.sent_at FROM commercial.quote_line l"
+        " JOIN commercial.quote_version v ON v.id = l.quote_version_id"
+        " WHERE l.id = %s", (line_id,)
+    ).fetchone()
+    if held is None:
+        raise ValueError(f"no quote line {line_id}")
+    if held["sent_at"] is not None:
+        raise ValueError(
+            "This version was sent. What the client is holding has to go on "
+            "saying what it said; open a new version to revise it."
+        )
     conn.execute("DELETE FROM commercial.quote_line WHERE id = %s", (line_id,))
+    return held
+
+
+def delete_invoice_line(conn: Connection, line_id: int) -> int:
+    """Remove a line from a draft; say which invoice it was on."""
+    held = conn.execute(
+        "SELECT i.id, i.status FROM commercial.invoice_line l"
+        " JOIN commercial.invoice i ON i.id = l.invoice_id WHERE l.id = %s",
+        (line_id,),
+    ).fetchone()
+    if held is None:
+        raise ValueError(f"no invoice line {line_id}")
+    if held["status"] != "draft":
+        raise ValueError(
+            "An issued invoice is never edited. A correction is a credit note."
+        )
+    conn.execute("DELETE FROM commercial.invoice_line WHERE id = %s", (line_id,))
+    return int(held["id"])
 
 
 def recompute(
@@ -636,7 +677,7 @@ def register(conn: Connection, *, year: str = "") -> list[Row]:
     return conn.execute(
         "SELECT i.id, i.client_id, i.number, i.reference, i.status, i.issued_on, i.due_on,"
         "       i.paid_on, i.currency, i.net_total, i.vat_total, i.gross_total,"
-        "       i.paid_total, (i.gross_total - i.paid_total) AS owed,"
+        "       i.paid_total, (i.gross_total - i.paid_total) AS owed, i.credits_id,"
         "       c.code AS client_code, co.name AS company_name,"
         "       p.code AS project_code, p.name AS project_name"
         "  FROM commercial.invoice i"
@@ -795,7 +836,7 @@ def add_invoice_line(conn: Connection, invoice_id: int, row: dict[str, Any]) -> 
             "this invoice has been issued. A correction is a credit note, not "
             "an edit: the client and the accounts hold the document as sent."
         )
-    quantity = Decimal(str(row.get("quantity", 1)))
+    quantity = money.parse_decimal(row.get("quantity", 1))
     unit_price = money.money(row.get("unit_price", 0))
     last = conn.execute(
         "SELECT COALESCE(MAX(position), 0) AS p FROM commercial.invoice_line"
@@ -886,15 +927,18 @@ def issue_invoice(
             "nothing to quote, and the number is the register's, not theirs."
         )
 
+    # Every refusal comes before the number is drawn: a sequence value does
+    # not roll back, and a refused issue used to leave a hole in a series the
+    # register calls gapless.
+    if qr_iban and with_reference and not money.iban_is_valid(qr_iban):
+        raise ValueError(
+            f"{qr_iban} does not pass the IBAN check digits. An invoice "
+            "with a wrong IBAN prints correctly and is never paid."
+        )
     when = issued_on or date.today()
     number = next_invoice_number(conn, on=when)
     reference = ""
     if qr_iban and with_reference:
-        if not money.iban_is_valid(qr_iban):
-            raise ValueError(
-                f"{qr_iban} does not pass the IBAN check digits. An invoice "
-                "with a wrong IBAN prints correctly and is never paid."
-            )
         digits = number.replace("-", "")
         reference = (money.qr_reference(digits, customer=customer_ref)
                      if money.is_qr_iban(qr_iban)
@@ -935,7 +979,15 @@ def record_payment(
     ).fetchone()
     if held is None:
         raise ValueError(f"no invoice {invoice_id}")
-    paid = money.money(held["paid_total"] or 0) + money.money(amount)
+    if held["status"] not in PAYABLE_STATES:
+        raise ValueError(
+            f"A payment is recorded on an issued invoice; this one is "
+            f"{held['status'].replace('_', ' ')}."
+        )
+    received = money.parse_amount(amount)
+    if received <= 0:
+        raise ValueError("A payment is a positive amount.")
+    paid = money.money(held["paid_total"] or 0) + received
     status = "paid" if paid >= money.money(held["gross_total"]) else "part_paid"
     conn.execute(
         "UPDATE commercial.invoice SET paid_total = %s, status = %s,"
@@ -953,21 +1005,41 @@ def record_payment(
 
 def credit_invoice(
     conn: Connection, invoice_id: int, *, reason: str = "",
-    by: str | None = None,
+    by: str | None = None, days: int = 30,
 ) -> int:
-    """Reverse an issued invoice with a credit note.
+    """Reverse an issued invoice with a credit note, issued on the spot.
 
     An issued invoice is never edited and never deleted. The tax authority's
     view is that a document that left the building exists; what corrects it is
-    another document that says so and carries its own number.
+    another document that says so and carries its own number. So the note is
+    issued in the same transaction that marks the original credited: a note
+    left as a draft was a number nobody had, and a second click made a second
+    one.
     """
     held = conn.execute(
         "SELECT * FROM commercial.invoice WHERE id = %s", (invoice_id,)
     ).fetchone()
     if held is None:
         raise ValueError(f"no invoice {invoice_id}")
+    if held["credits_id"] is not None:
+        raise ValueError(
+            f"{held['reference']} is a credit note. A credit note is not "
+            "credited; a correction to it is a new invoice."
+        )
     if held["status"] == "draft":
-        raise ValueError("a draft is deleted, not credited")
+        raise ValueError("A draft is deleted, not credited.")
+    if held["status"] == "credited":
+        note = conn.execute(
+            "SELECT number, reference FROM commercial.invoice WHERE credits_id = %s"
+            " ORDER BY id LIMIT 1", (invoice_id,)
+        ).fetchone()
+        named = f"{note['reference']} ({note['number']})" if note else "a credit note"
+        raise ValueError(f"{held['reference']} was already credited by {named}.")
+    if held["status"] not in CREDITABLE_STATES:
+        raise ValueError(
+            f"Only an issued invoice is credited; this one is "
+            f"{held['status'].replace('_', ' ')}."
+        )
     note_id = create_invoice(
         conn, int(held["client_id"]), project_id=held["project_id"],
         quote_id=held["quote_id"], currency=held["currency"],
@@ -984,6 +1056,8 @@ def credit_invoice(
             "unit_price": line["unit_price"], "vat_rate": line["vat_rate"],
         })
     recompute_invoice(conn, note_id, vat_rate=held["vat_rate"])
+    # Its own rank, no payment part: nobody pays a credit note.
+    issue_invoice(conn, note_id, days=days, with_reference=False, by=by)
     conn.execute(
         "UPDATE commercial.invoice SET credits_id = %s WHERE id = %s",
         (invoice_id, note_id),
@@ -1010,6 +1084,14 @@ def invoice(conn: Connection, invoice_id: int) -> Row | None:
         "  JOIN core.company co ON co.id = c.company_id"
         " WHERE i.id = %s",
         (invoice_id,),
+    ).fetchone()
+
+
+def credit_note_for(conn: Connection, invoice_id: int) -> Row | None:
+    """The note that reversed this invoice, if one was issued."""
+    return conn.execute(
+        "SELECT id, number, reference, issued_on FROM commercial.invoice"
+        " WHERE credits_id = %s ORDER BY id LIMIT 1", (invoice_id,),
     ).fetchone()
 
 

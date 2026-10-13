@@ -477,3 +477,15 @@ def test_the_environment_template_lists_exactly_what_the_code_reads() -> None:
     assert listed - {"POSTGRES_PASSWORD"} <= read, (
         f"in .env.example but read by nothing: {sorted(listed - read)}"
     )
+
+
+def test_a_territory_saved_here_is_the_one_the_next_run_sweeps(client, root) -> None:
+    """The console loaded its settings once at startup and the runner kept that
+    object, so a territory narrowed here still swept the old one until a
+    restart. Saving rebinds both."""
+    app = client.app
+    assert set(app.state.runner.settings.cantons) != {"VD", "FR"}
+    client.post("/settings/territory",
+                data={"cantons": ["VD", "FR"], "legal_forms": ["0107"]})
+    assert set(app.state.runner.settings.cantons) == {"VD", "FR"}
+    assert set(app.state.settings.cantons) == {"VD", "FR"}

@@ -240,6 +240,15 @@ def test_one_failure_does_not_end_the_run(monkeypatch, settings, conn) -> None:
     assert stats["failed"] == 1 and stats["scored"] == 0
 
 
+def test_a_limit_of_zero_scores_nothing(monkeypatch, settings, conn) -> None:
+    """Zero was falsy for the selection and a limit given for the guard, so it
+    selected every company and skipped the check on how many that was."""
+    provider = FakeProvider()
+    stats = match_with(monkeypatch, provider, settings, conn, limit=0)
+    assert stats["considered"] == 0
+    assert provider.calls == [], "one model call per company, and none may be made"
+
+
 def test_dry_run_needs_no_credential(monkeypatch, settings, conn) -> None:
     def no_credential(_settings):
         raise RuntimeError("No Anthropic credential found.")

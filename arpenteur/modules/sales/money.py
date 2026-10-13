@@ -38,7 +38,7 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass
 from datetime import date
-from decimal import ROUND_HALF_UP, Decimal
+from decimal import ROUND_HALF_UP, Decimal, InvalidOperation
 from typing import Iterable
 
 # Swiss VAT, by the date the service was supplied rather than the date of the
@@ -108,6 +108,40 @@ def vat_rate(on: date, kind: str = "standard") -> Decimal:
     )
 
 
+def parse_decimal(value: object) -> Decimal:
+    """A figure as a person types it, or a MoneyError naming what was typed.
+
+    `1'234.50`, `1 234,5` and `12` are all amounts; `abc`, an empty box and
+    `NaN` are not. `decimal.InvalidOperation` is not a `ValueError`, so a form
+    that typed a comma used to come back as a 500 rather than as a refusal.
+    A comma alone is the decimal separator; beside a point it is grouping.
+    """
+    if isinstance(value, Decimal):
+        result = value
+    elif isinstance(value, bool):
+        raise MoneyError(f"{value!r} is not an amount")
+    elif isinstance(value, int):
+        result = Decimal(value)
+    elif isinstance(value, float):
+        # str() first: Decimal(0.1) is 0.1000000000000000055511151231257827.
+        result = Decimal(str(value))
+    else:
+        text = str(value if value is not None else "").strip()
+        for grouping in ("'", "’", " ", " "):
+            text = text.replace(grouping, "")
+        if "," in text and "." not in text:
+            text = text.replace(",", ".")
+        else:
+            text = text.replace(",", "")
+        try:
+            result = Decimal(text)
+        except InvalidOperation:
+            raise MoneyError(f"{value!r} is not an amount") from None
+    if not result.is_finite():
+        raise MoneyError(f"{value!r} is not an amount")
+    return result
+
+
 def money(value: object) -> Decimal:
     """A figure as a two-decimal Decimal, never a float.
 
@@ -115,14 +149,16 @@ def money(value: object) -> Decimal:
     centime often enough to be noticed by exactly the person who should not
     have to notice it.
     """
-    if isinstance(value, float):
-        # str() first: Decimal(0.1) is 0.1000000000000000055511151231257827.
-        value = str(value)
-    return Decimal(value).quantize(CENT, rounding=ROUND_HALF_UP)
+    return parse_decimal(value).quantize(CENT, rounding=ROUND_HALF_UP)
+
+
+def parse_amount(value: object) -> Decimal:
+    """What a money form typed, as cents."""
+    return money(value)
 
 
 def line_amount(quantity: object, unit_price: object) -> Decimal:
-    return money(Decimal(str(quantity)) * Decimal(str(unit_price)))
+    return money(parse_decimal(quantity) * parse_decimal(unit_price))
 
 
 @dataclass(frozen=True)
@@ -296,6 +332,15 @@ class Party:
         """
         if not self.name:
             return ["", "", "", "", "", "", ""]
+        if not (self.postcode.strip() and self.town.strip()):
+            # The standard makes both mandatory once a party is named. A bill
+            # that leaves them out prints perfectly and is refused at the
+            # bank, so the refusal is made here, where somebody can see it.
+            raise MoneyError(
+                f"{self.name} is named on the payment part without a postcode "
+                "and a town, which the standard requires. Leave the party out "
+                "or complete the address."
+            )
         return [
             "S", self.name[:70], self.street[:70], self.building[:16],
             self.postcode[:16], self.town[:35], self.country[:2].upper(),

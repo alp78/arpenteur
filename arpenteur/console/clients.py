@@ -194,7 +194,7 @@ def portfolio(rows: list[Row], total_projects: int, upcoming: int) -> str:
         "a region and a set of legal forms, and a client does not have to be "
         "inside either.</p>"
         "<label for='uid'>Swiss UID</label>"
-        "<input id='uid' name='uid' placeholder='CHE-103.895.771' required>"
+        "<input id='uid' name='uid' placeholder='CHE-100.000.011' required>"
         "<span class='hint'>On any company's page at zefix.ch, and on its "
         "letterhead. Dots and dashes optional.</span>"
         '<div><button class="primary">Fetch and add</button></div></form>'
@@ -377,7 +377,7 @@ def _client_brief(client: Row) -> str:
 def _new_project_form(client_id: int) -> str:
     return (
         '<details class="card"><summary><b>New project</b> '
-        '<span class="dim small">gets its own reference, like BOIS-GENTIL-01</span>'
+        '<span class="dim small">gets its own reference, like CLAIR-LOGIS-01</span>'
         "</summary>"
         f'<form class="stack" method="post" action="/client/{client_id}/projects" '
         'style="margin-top:.7rem">'

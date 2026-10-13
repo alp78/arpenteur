@@ -442,3 +442,46 @@ def test_every_style_token_a_page_uses_is_defined() -> None:
         if used - defined:
             missing[path.name] = sorted(used - defined)
     assert not missing, f"undefined style tokens: {missing}"
+
+
+# --- faults reach the person as a page, never as two bare words -----------------
+
+
+def test_a_fault_inside_a_route_renders_inside_the_shell(settings, conn) -> None:
+    app = create_app(settings)
+
+    @app.get("/boom")
+    def boom() -> str:
+        raise RuntimeError("the kettle is on fire")
+
+    page = TestClient(app, raise_server_exceptions=False).get("/boom")
+    assert page.status_code == 500
+    assert "the kettle is on fire" in page.text and "<nav" in page.text
+    assert "Traceback" not in page.text
+
+
+def test_a_missing_record_answers_inside_the_shell(client) -> None:
+    page = client.get("/company/987654321")
+    assert page.status_code == 404
+    assert "Not found" in page.text and "<nav" in page.text
+
+
+def test_a_month_that_does_not_exist_shows_the_current_one(client) -> None:
+    assert client.get("/calendar?month=2026-13").status_code == 200
+
+
+def test_suppressing_an_unknown_contact_is_refused_not_a_crash(client) -> None:
+    assert client.post("/contact/987654321/suppress").status_code == 404
+
+
+def test_a_run_nothing_is_running_can_be_marked_interrupted(client, conn) -> None:
+    """A terminal closed on a run leaves a row claiming to be running for ever;
+    the console settles only its own at startup, so a person settles this one."""
+    run_id = db.start_run(conn, "source", {"cantons": ["GE"]}, started_by="cli")
+    page = client.get(f"/runs/{run_id}").text
+    assert "Mark as interrupted" in page
+    reply = client.post(f"/runs/{run_id}/settle", follow_redirects=False)
+    assert reply.status_code == 303
+    settled = db.run(conn, run_id)
+    assert settled["finished_at"] and "interrupted" in settled["error"]
+    assert "Mark as interrupted" not in client.get(f"/runs/{run_id}").text

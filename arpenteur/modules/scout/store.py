@@ -248,13 +248,13 @@ def search_companies(
     hyphen and the letter you got wrong.
 
     A UID is matched as a prefix on the digits alone rather than as a
-    substring, for the same reason: `CHE-103.895.771`, `CHE103895771` and
-    `103895771` are the same identifier typed three ways, and comparing the
+    substring, for the same reason: `CHE-100.000.011`, `CHE100000011` and
+    `100000011` are the same identifier typed three ways, and comparing the
     normalised form is both correct and indexable.
 
     Results are ordered by similarity when there is a query. Without it the
     list came back alphabetically among unscored companies, so searching for
-    "Bois-Gentil" put "BOIS RIL SA" first.
+    "Clair-Logis" put "BOIS RIL SA" first.
     """
     where = ["TRUE"]
     params: list[Any] = []
@@ -890,7 +890,7 @@ def board(
         # scans 184'939 rows and an `unaccent(...) LIKE` branch there measured
         # just over a second because no index can serve it. The board searches
         # the few dozen companies actually being worked, so it can afford the
-        # match that finds "Bois" inside "Fondation Bois-Gentil" — which
+        # match that finds "Bois" inside "Fondation Clair-Logis" — which
         # similarity, over a long name, does not.
         where.append("unaccent(c.name) ILIKE unaccent(%s)")
         params.append(f"%{q}%")

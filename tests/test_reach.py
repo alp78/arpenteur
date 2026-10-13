@@ -341,6 +341,15 @@ def test_dry_run_fetches_nothing(monkeypatch, settings, conn) -> None:
     assert conn.execute("SELECT reached_at FROM intel.site").fetchone()[0] is None
 
 
+def test_a_limit_of_zero_reads_no_site(monkeypatch, settings, conn) -> None:
+    """Zero was falsy for the selection and a limit given for the guard, so it
+    selected every site and skipped the check on how many that was."""
+    client = FakeClient(PAGES)
+    stats = reach_with(monkeypatch, client, settings, conn, limit=0)
+    assert stats["considered"] == 0
+    assert client.asked == [], "no request may go to a stranger's server"
+
+
 # --- the cascade: what a negative is allowed to claim --------------------------
 #
 # `none` is the settled negative. It tells every later run to stop looking and

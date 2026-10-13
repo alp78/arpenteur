@@ -47,7 +47,7 @@ def settings(db_path: str) -> SimpleNamespace:
 def conn(settings) -> Connection:
     connection = db.open_db(settings.database_url)
     for uid, name, canton, score, band in (
-        ("CHE1", "Fondation Bois-Gentil", "VD", 88, "high"),
+        ("CHE1", "Fondation Clair-Logis", "VD", 88, "high"),
         ("CHE2", "EMS des Cèdres", "VD", 71, "high"),
         ("CHE3", "Clinique du Léman", "GE", 44, "medium"),
         ("CHE4", "Boulangerie Rime", "VD", 8, "low"),
@@ -76,7 +76,7 @@ def test_only_what_somebody_put_there_is_on_the_board(conn) -> None:
     assert store.board(conn) == []
     store.set_prospect(conn, 1, state="contacted")
     conn.commit()
-    assert [row["name"] for row in store.board(conn)] == ["Fondation Bois-Gentil"]
+    assert [row["name"] for row in store.board(conn)] == ["Fondation Clair-Logis"]
 
 
 def test_a_card_carries_what_it_needs_without_a_second_query(conn) -> None:
@@ -102,7 +102,7 @@ def test_the_board_filters_the_way_the_survey_does(conn) -> None:
     conn.commit()
     assert len(store.board(conn, canton="VD")) == 2
     assert [r["name"] for r in store.board(conn, canton="GE")] == ["Clinique du Léman"]
-    assert [r["name"] for r in store.board(conn, q="Bois")] == ["Fondation Bois-Gentil"]
+    assert [r["name"] for r in store.board(conn, q="Clair")] == ["Fondation Clair-Logis"]
 
 
 def test_taking_a_company_off_the_board_keeps_what_is_known(conn) -> None:
@@ -122,7 +122,7 @@ def test_bringing_a_shortlist_in_takes_the_best_of_a_band(conn) -> None:
     assert store.bring_in(conn, band="high", limit=10) == 2
     conn.commit()
     assert {r["name"] for r in store.board(conn)} == {
-        "Fondation Bois-Gentil", "EMS des Cèdres"
+        "Fondation Clair-Logis", "EMS des Cèdres"
     }
     assert {r["state"] for r in store.board(conn)} == {"new"}
 
@@ -184,7 +184,7 @@ def test_the_board_draws_a_column_for_every_state(client, conn) -> None:
     page = client.get("/board").text
     for state in store.PROSPECT_STATES:
         assert f'data-state="{state}"' in page
-    assert "Fondation Bois-Gentil" in page
+    assert "Fondation Clair-Logis" in page
 
 
 def test_dropping_a_card_saves_where_it_landed(client, conn) -> None:
@@ -237,7 +237,7 @@ def test_a_won_card_offers_the_handoff(client, conn) -> None:
 
     client.post("/company/1/client")
     page = client.get("/board").text
-    assert "make a client" not in page and "BOIS-GENTIL" in page
+    assert "make a client" not in page and "CLAIR-LOGIS" in page
 
 
 def test_the_board_cannot_send_either(client) -> None:

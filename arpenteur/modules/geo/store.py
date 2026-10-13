@@ -207,7 +207,7 @@ def waiting(
     params: list[Any] = []
     if uids:
         # Matched on the digits, the way the search box does: a UID is written
-        # `CHE-103.895.771` on a letterhead and `CHE103895771` in the register,
+        # `CHE-100.000.011` on a letterhead and `CHE100000011` in the register,
         # and somebody naming one company should not have to know which.
         where.append(
             "regexp_replace(c.uid, '[^0-9]', '', 'g') = ANY(%s)"
