@@ -82,3 +82,17 @@ holds for German umlauts.
 **The rule.** A name search carries both spellings of every accented word, and
 a word that answers with nothing is recorded as checked rather than quietly
 dropped, so the next person does not spend the requests again.
+
+## One pytest run at a time, because the suite owns named databases
+
+The suite creates `arpenteur_ws_src` and `arpenteur_ws_dst` for the workspace
+tests and drops them at the end. Two runs overlapping means the second finds
+them already there, or the first drops them under the second, and the result is
+hundreds of errors in files that have nothing to do with the change under test.
+This has now happened twice, both times because a second run was started while
+a background one was still going.
+
+**The rule.** Before starting a suite run, check that none is running. A second
+run is never faster than waiting for the first, and the clean-up afterwards
+costs more than the wait: the stray databases have to be dropped by hand, and
+the live `arpenteur` database sits one typo away in the same list.

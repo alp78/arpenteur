@@ -144,6 +144,23 @@ def signature_path(settings: Settings):
     return settings.root / (settings.smtp.signature_file or "signature.html")
 
 
+def signature_images(settings: Settings) -> dict[str, bytes]:
+    """The pictures the signature refers to, read from disk.
+
+    One entry, keyed `signature`, because `cid:signature` is what the stored
+    fragment names. A missing file is not an error: the signature still renders
+    with the logo's alt text, and a letter that refuses to go out over a
+    misplaced picture is worse than one that goes out plain.
+    """
+    name = (settings.smtp.signature_image or "").strip()
+    if not name:
+        return {}
+    try:
+        return {"signature": (settings.root / name).read_bytes()}
+    except OSError:
+        return {}
+
+
 def signature_html(settings: Settings) -> str:
     """The signature, cleaned, or an empty string when none is written."""
     if not settings.smtp.signature_file:
@@ -220,6 +237,7 @@ def run(
     programme = clients.programme_by_code(conn, code) if code else None
     signature = signature_html(settings)
     tail = letter.to_text(signature)
+    pictures = signature_images(settings) if "cid:" in signature else {}
 
     with factory() as sender:
         for one in allowed:
@@ -235,6 +253,7 @@ def run(
                     if plain
                     else letter.render(one.body, signature_html=signature)
                 ),
+                images={} if plain else pictures,
                 reply_to=config.reply_to,
             )
             try:

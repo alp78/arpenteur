@@ -11,6 +11,12 @@ absolute positioning. `letter.clean_signature` reduces it to a short tag
 allow-list, which is both a safety rule and a deliverability one: a cold
 message carrying a tracking pixel gives a filter a reason to drop it.
 
+**Inline style survives, declaration by declaration.** A signature pasted from
+a mail client is nothing else, so dropping the attribute outright left the
+right words in none of the right shapes. `letter.clean_style` keeps the
+typography and the box properties and refuses the positioning family, along
+with anything that fetches or runs.
+
 **The preview is the message's own styling.** The panel below the editor renders
 the fragment inside the same container `letter.wrap` builds, so the width, the
 font and the rule above the signature are what a recipient will see rather than
@@ -136,8 +142,20 @@ def signature_page(
     )
 
 
+def for_preview(fragment: str) -> str:
+    """The fragment with `cid:` swapped for the route that serves the picture.
+
+    A message attaches its logo and points at `cid:signature`, which resolves
+    inside the message and nowhere else. A browser shown that markup draws a
+    broken icon, so the preview, whose whole job is to show what a recipient
+    will see, would be lying in the one place it must not.
+    """
+    return fragment.replace('src="cid:signature"', 'src="/signature/image"')
+
+
 def _preview(fragment: str) -> str:
     """The signature as a recipient sees it, in the message's own container."""
+    fragment = for_preview(fragment)
     return (
         "<h2 style='margin-top:1.6rem'>as a recipient sees it</h2>"
         '<div class="sig-preview"><div class="inner">'

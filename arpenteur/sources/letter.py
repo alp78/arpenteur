@@ -44,7 +44,12 @@ RULE = "#d8dee4"
 PAGE = "#ffffff"
 SIZE = "15px"
 LEADING = "1.65"
-MEASURE = "620px"
+# The block is left-aligned rather than centred, and wider than the 620px it
+# started at. Centred, a narrow column in a wide reading pane sits with a band
+# of empty page down its left side, which is how a newsletter looks and not how
+# a letter does. 720px at this size is about eighty-five characters, which is
+# still inside the measure a line stays readable at.
+MEASURE = "720px"
 
 _URL = re.compile(r"(https?://[^\s<>\"]+)")
 _ORDERED = re.compile(r"^(\d+)[.)]\s+(.*)$")
@@ -125,7 +130,7 @@ def wrap(body_html: str, *, signature_html: str = "") -> str:
         '<meta name="viewport" content="width=device-width,initial-scale=1">'
         "</head>"
         f'<body style="margin:0;padding:0;background:{PAGE}">'
-        f'<div style="margin:0 auto;padding:24px 16px;max-width:{MEASURE};'
+        f'<div style="margin:0;padding:24px 20px;max-width:{MEASURE};'
         f'font-family:{FAMILY};font-size:{SIZE};line-height:{LEADING};'
         f'color:{INK}">'
         f"{body_html}{signature}"
@@ -167,8 +172,7 @@ ALLOWED_TAGS = frozenset({
     "a", "b", "strong", "i", "em", "u", "s", "br", "p", "div", "span",
     "ul", "ol", "li", "small", "img", "table", "tr", "td", "tbody",
 })
-# Attributes kept per tag. Everything else goes, including every `on*` handler
-# and every `style` that could reposition the fragment over the message.
+# Attributes kept per tag. Everything else goes, every `on*` handler included.
 ALLOWED_ATTRS = {
     "a": ("href", "title"),
     "img": ("src", "alt", "width", "height"),
@@ -176,12 +180,62 @@ ALLOWED_ATTRS = {
     "table": ("cellpadding", "cellspacing", "border", "width"),
 }
 
+# `style` is kept on every allowed tag, filtered declaration by declaration.
+#
+# It used to be dropped outright, and the reason given was that a pasted style
+# can reposition the fragment over the message. That reason holds for exactly
+# one family of properties and was being applied to all of them, which made the
+# editor's own purpose unreachable: a signature pasted from a mail client is
+# nothing but inline style, so what came out the other side was the right words
+# in none of the right shapes.
+#
+# So the positioning family is what gets refused, and the typography and box
+# properties a signature is made of are kept.
+STYLE_PROPERTIES = frozenset({
+    "color", "background", "background-color",
+    "font", "font-family", "font-size", "font-weight", "font-style",
+    "font-variant", "font-variant-caps", "font-variant-ligatures",
+    "line-height", "letter-spacing", "word-spacing", "text-align",
+    "text-transform", "text-decoration", "text-decoration-color",
+    "text-decoration-style", "text-decoration-thickness", "text-indent",
+    "white-space", "vertical-align", "direction", "orphans", "widows",
+    "margin", "margin-top", "margin-right", "margin-bottom", "margin-left",
+    "padding", "padding-top", "padding-right", "padding-bottom", "padding-left",
+    "border", "border-top", "border-right", "border-bottom", "border-left",
+    "border-color", "border-width", "border-style", "border-radius",
+    "border-collapse", "border-spacing",
+    "width", "height", "max-width", "min-width", "max-height", "min-height",
+    "display", "box-sizing", "outline", "opacity", "-webkit-text-stroke-width",
+})
+
+# A declaration carrying any of these is dropped whatever its property says.
+# `url(` is the one that matters: it fetches, which is how a style attribute
+# smuggles in the tracking pixel the tag allow-list was written to refuse.
+_STYLE_UNSAFE = re.compile(r"(?i)(url\s*\(|expression\s*\(|javascript:|@import|behaviou?r\s*:|-moz-binding)")
+
+
+def clean_style(value: str) -> str:
+    """One `style` attribute, reduced to the declarations a signature needs."""
+    kept = []
+    for declaration in (value or "").split(";"):
+        prop, sep, setting = declaration.partition(":")
+        if not sep:
+            continue
+        name, setting = prop.strip().lower(), setting.strip()
+        if name not in STYLE_PROPERTIES or not setting:
+            continue
+        if _STYLE_UNSAFE.search(setting):
+            continue
+        kept.append(f"{name}:{setting}")
+    return ";".join(kept)
+
+
 _TAG_OPEN = re.compile(r"<\s*(/?)\s*([a-zA-Z][a-zA-Z0-9]*)([^>]*?)(/?)\s*>")
 _ATTR = re.compile(r'([a-zA-Z-]+)\s*=\s*("[^"]*"|\'[^\']*\'|[^\s">]+)')
 _DANGEROUS_BLOCK = re.compile(
     r"(?is)<\s*(script|style|iframe|object|embed|noscript)\b.*?<\s*/\s*\1\s*>"
 )
-_URL_SAFE = re.compile(r"(?i)^\s*(https?:|mailto:|tel:|/|#|data:image/)")
+_URL_SAFE = re.compile(r"(?i)^\s*(https?:|mailto:|tel:|/|#|cid:|data:image/)")
 
 
 def clean_signature(fragment: str) -> str:
@@ -204,10 +258,14 @@ def clean_signature(fragment: str) -> str:
         kept = []
         for attr, value in _ATTR.findall(attrs or ""):
             key = attr.lower()
-            if key not in ALLOWED_ATTRS.get(tag, ()):
-                continue
             raw = value.strip("\"'")
-            if key in ("href", "src") and not _URL_SAFE.match(raw):
+            if key == "style":
+                raw = clean_style(_html.unescape(raw))
+                if not raw:
+                    continue
+            elif key not in ALLOWED_ATTRS.get(tag, ()):
+                continue
+            elif key in ("href", "src") and not _URL_SAFE.match(raw):
                 continue
             kept.append(f'{key}="{_html.escape(raw, quote=True)}"')
         body = (" " + " ".join(kept)) if kept else ""

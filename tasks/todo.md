@@ -51,10 +51,10 @@ the app.
 6. [x] `scripts/classify_tourism.py`: rules over the registered purpose, a
        proximity gate, written to `intel.segment` at `source='manual'`.
 7. [x] The `DRYMOS` programme, with the cohort brought in as members.
-8. [~] Addresses over the four bands: `reach`, then `verify`.
+8. [x] Addresses over the four bands: `reach`, then `verify`.
 9. [x] `.env`'s `ZEFIX_URL` either honoured as an override or dropped.
 10. [x] Tests: the name mode, the shared helpers, the tourism classifier.
-11. [~] The run: source, classify, programme, reach, verify.
+11. [x] The run: source, classify, programme, reach, verify.
 
 ## What waits for the app
 
@@ -112,7 +112,24 @@ writing to one carries obligations that writing to a company does not.
 | outdoor-guide | 14 |
 | nature-park | 7 |
 | members on DRYMOS | 347 |
+| firms the address hunt read | 357 |
+| firms with a deliverable address | 255 |
+| of those, at a desk address | 233 |
+| addresses stored, 549 of them published | 600 |
 | tests | 1'093 passed |
+
+### The address hunt
+
+Two shards over the four bands, 156 and 149 minutes, spending plan quota rather
+than API credit. `scripts/limen_hunt.py` already took `--band`, so this needed no
+new code.
+
+Of the 357 firms read, 270 gave up an address and 66 gave none; 21 are `partial`,
+meaning the cascade did not finish and they stay selectable. One consumer mailbox
+was suppressed on the way in, which is the cascade doing its job rather than a
+fault.
+
+`arpenteur verify` then resolved 253 domains: 239 deliverable, 13 maybe, 1 dead.
 
 ### What the classifier got wrong first, and why
 

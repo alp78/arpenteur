@@ -49,6 +49,7 @@ from ..config import Settings, load_settings
 from ..sources import geoadmin
 from ..sources import letter as letter_source
 from ..sources import mail as mail_source
+from ..sources import smtp as smtp_source
 from ..stages import (
     advise,
     answers as answers_stage,
@@ -1921,6 +1922,21 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             )
         finally:
             conn.close()
+
+    @app.get("/signature/image")
+    def signature_image() -> Response:
+        """The signature's own picture, for the preview only.
+
+        A message carries it as an attachment and the fragment points at
+        `cid:signature`, which a browser cannot resolve. Without this route the
+        editor shows a broken icon where the logo is and the operator has no way
+        to see what a recipient will.
+        """
+        pictures = send_stage.signature_images(settings)
+        blob = pictures.get("signature")
+        if not blob:
+            return Response(status_code=404)
+        return Response(blob, media_type=f"image/{smtp_source._image_subtype(blob)}")
 
     @app.get("/signature", response_class=HTMLResponse)
     def signature_editor(request: Request) -> HTMLResponse:

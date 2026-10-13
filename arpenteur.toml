@@ -531,3 +531,8 @@ per_run = 25
 # An HTML fragment appended to every message, below a thin rule. Edit it at
 # /signature in the console, or write the file by hand.
 signature_file = "signature.html"
+# The logo, carried inside the message and referenced as `cid:signature`. A
+# remote image would report every open back to whoever hosts it, which is
+# tracking whether or not anybody reads the log. PNG, JPEG or GIF only: a mail
+# client renders those and not the SVG a webmail signature editor exports.
+signature_image = "assets/signature-logo.png"

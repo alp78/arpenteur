@@ -517,3 +517,138 @@ def test_plain_sends_one_part_only(
         plain=True, open_sender=fake, log=lambda _m: None,
     )
     assert not fake.posted[0].is_multipart()
+
+
+# --- the signature's own picture ---------------------------------------------
+
+PNG = (
+    b"\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01"
+    b"\x08\x06\x00\x00\x00\x1f\x15\xc4\x89\x00\x00\x00\nIDATx\x9cc\x00\x01"
+    b"\x00\x00\x05\x00\x01\r\n-\xb4\x00\x00\x00\x00IEND\xaeB`\x82"
+)
+
+
+def test_a_signature_picture_rides_inside_the_html_part() -> None:
+    """`cid:` resolves within `multipart/related` and nowhere else.
+
+    Attached to the message instead, the picture hangs beside the whole letter,
+    the reference does not resolve, and the reader sees a paperclip and a
+    broken image where the logo should be.
+    """
+    message = smtp.compose(
+        sender="a@b.ch", to="c@d.ch", subject="s", body="text",
+        html="<p>text</p><img src='cid:signature'>", images={"signature": PNG},
+    )
+    kinds = [part.get_content_type() for part in message.walk()]
+    assert kinds == [
+        "multipart/alternative", "text/plain", "multipart/related",
+        "text/html", "image/png",
+    ]
+    picture = [p for p in message.walk() if p.get_content_type() == "image/png"][0]
+    assert picture["Content-ID"] == "<signature>"
+
+
+def test_a_picture_that_no_html_could_reference_is_not_attached() -> None:
+    message = smtp.compose(
+        sender="a@b.ch", to="c@d.ch", subject="s", body="text", images={"x": PNG},
+    )
+    assert "image/png" not in [p.get_content_type() for p in message.walk()]
+
+
+def test_an_svg_logo_is_refused_with_the_reason() -> None:
+    """What a webmail signature editor exports, and what no client renders."""
+    with pytest.raises(smtp.SendError, match="SVG"):
+        smtp.compose(
+            sender="a@b.ch", to="c@d.ch", subject="s", body="t",
+            html="<p>t</p>", images={"signature": b"<?xml version='1.0'?><svg/>"},
+        )
+
+
+def test_a_missing_picture_does_not_stop_the_letter(tmp_path, smtp_settings) -> None:
+    settings = replace(
+        smtp_settings,
+        smtp=replace(smtp_settings.smtp, signature_image="nowhere/absent.png"),
+    )
+    assert send_stage.signature_images(settings) == {}
+
+
+def test_no_picture_is_configured_means_no_picture(smtp_settings) -> None:
+    settings = replace(
+        smtp_settings, smtp=replace(smtp_settings.smtp, signature_image=""),
+    )
+    assert send_stage.signature_images(settings) == {}
+
+
+# --- what a kept `style` may and may not carry --------------------------------
+
+def test_a_pasted_style_keeps_its_typography() -> None:
+    """The reason the attribute is kept at all.
+
+    A signature copied out of a mail client is nothing but inline style, so
+    dropping the attribute left the right words in none of the right shapes.
+    """
+    from arpenteur.sources import letter
+
+    cleaned = letter.clean_signature(
+        '<td style="color:rgb(18, 100, 138);font-size:11px;'
+        'letter-spacing:0.08em;text-transform:uppercase">Role</td>'
+    )
+    assert "color:rgb(18, 100, 138)" in cleaned
+    assert "text-transform:uppercase" in cleaned
+    assert "letter-spacing:0.08em" in cleaned
+
+
+def test_a_pasted_style_cannot_fetch_anything() -> None:
+    """`url(` is the tracking pixel the tag allow-list was written to refuse,
+    arriving through the attribute instead of through `<img>`."""
+    from arpenteur.sources import letter
+
+    cleaned = letter.clean_signature(
+        '<div style="color:red;background:url(https://tracker.test/p.gif)">x</div>'
+    )
+    assert "color:red" in cleaned
+    assert "url(" not in cleaned and "tracker.test" not in cleaned
+
+
+def test_a_pasted_style_cannot_cover_the_message() -> None:
+    from arpenteur.sources import letter
+
+    cleaned = letter.clean_signature(
+        '<div style="position:absolute;top:0;left:0;z-index:99;color:red">x</div>'
+    )
+    assert "position" not in cleaned and "z-index" not in cleaned
+    assert "color:red" in cleaned
+
+
+def test_a_pasted_style_cannot_run_anything() -> None:
+    from arpenteur.sources import letter
+
+    for hostile in (
+        '<div style="width:1px;behavior:url(evil.htc)">x</div>',
+        '<div style="width:1px;-moz-binding:url(evil.xml)">x</div>',
+        '<div style="color:expression(alert(1))">x</div>',
+    ):
+        cleaned = letter.clean_signature(hostile)
+        assert "behavior" not in cleaned and "binding" not in cleaned
+        assert "expression" not in cleaned
+
+
+def test_a_signature_may_point_at_the_picture_the_message_carries() -> None:
+    from arpenteur.sources import letter
+
+    cleaned = letter.clean_signature('<img src="cid:signature" width="218">')
+    assert 'src="cid:signature"' in cleaned
+
+
+def test_the_stored_signature_is_what_the_mail_client_wrote() -> None:
+    """The committed file, read as a recipient's client would read it."""
+    from arpenteur.sources import letter
+
+    stored = Path(__file__).resolve().parents[1] / "signature.html"
+    fragment = stored.read_text(encoding="utf-8")
+    assert letter.clean_signature(fragment) == fragment.strip(), (
+        "signature.html holds something the sanitiser would change, so what is "
+        "sent is not what is in the file"
+    )
+    assert "cid:signature" in fragment
+    assert letter.to_text(fragment).splitlines()[0] == "Alexis Peringer"

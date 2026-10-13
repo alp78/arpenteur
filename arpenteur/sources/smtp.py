@@ -82,6 +82,7 @@ def compose(
     subject: str,
     body: str,
     html: str = "",
+    images: dict[str, bytes] | None = None,
     sender_name: str = "",
     reply_to: str = "",
     message_id: str = "",
@@ -93,9 +94,16 @@ def compose(
     alone is one of the few structural things a filter still counts against a
     cold message, so the text part is never omitted.
 
-    No image, tracked or otherwise. An embedded pixel is what turns a letter
-    into advertising in a filter's reading of it, and the campaign has nothing
-    to learn from an open rate it would have to defend.
+    `images` carries the signature's own logo and nothing else. It maps a
+    content-id to the bytes, and each one is attached inside the HTML part as
+    `multipart/related`, which is what lets the signature reference `cid:name`.
+
+    **Attached rather than fetched, and that is the whole of the rule.** A
+    remote image is a request to somebody's server carrying the reader's IP and
+    the moment they opened the letter, which is tracking whether or not anyone
+    reads the log; a tracking pixel is the same mechanism with the picture left
+    out. An attachment asks for nothing and reports nothing. So a URL here is
+    refused and the bytes travel with the message.
     """
     if "@" not in (sender or ""):
         raise SendError(f"The sender address {sender!r} is not an address.")
@@ -118,7 +126,37 @@ def compose(
     message.set_content(body, subtype="plain", charset="utf-8")
     if html.strip():
         message.add_alternative(html, subtype="html", charset="utf-8")
+        for name, blob in (images or {}).items():
+            if not blob:
+                continue
+            # The HTML alternative, which `add_related` turns into a
+            # `multipart/related` holding the markup and its pictures. Attaching
+            # to `message` instead would hang the image beside the whole letter,
+            # where `cid:` does not resolve and a reader sees a paperclip.
+            message.get_payload()[-1].add_related(
+                blob, maintype="image", subtype=_image_subtype(blob),
+                cid=f"<{name}>", filename=f"{name}.{_image_subtype(blob)}",
+            )
     return message
+
+
+# The first bytes of the file, because a signature image is whatever the
+# operator put on disk and an extension is a claim rather than a fact.
+_MAGIC = (
+    (b"\x89PNG\r\n\x1a\n", "png"),
+    (b"\xff\xd8\xff", "jpeg"),
+    (b"GIF8", "gif"),
+)
+
+
+def _image_subtype(blob: bytes) -> str:
+    for magic, subtype in _MAGIC:
+        if blob.startswith(magic):
+            return subtype
+    raise SendError(
+        "The signature image is not a PNG, JPEG or GIF. Mail clients render "
+        "those three and little else; SVG in particular is not displayed."
+    )
 
 
 @dataclass
