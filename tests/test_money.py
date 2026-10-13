@@ -719,7 +719,9 @@ def test_the_money_pages_still_cannot_send(db_path, build_settings, tmp_path):
     client = _app(build_settings, tmp_path)
     routes = {getattr(r, "path", "") for r in client.app.routes}
     assert "/quote-version/{version_id}/sent" in routes
-    assert not [p for p in routes if "send" in p or "smtp" in p]
+    from arpenteur.console.app import TRANSMITTING
+    assert not [p for p in routes
+                if ("send" in p or "smtp" in p) and p not in TRANSMITTING]
 
 
 # --- the register --------------------------------------------------------------------

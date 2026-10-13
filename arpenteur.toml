@@ -536,3 +536,12 @@ signature_file = "signature.html"
 # tracking whether or not anybody reads the log. PNG, JPEG or GIF only: a mail
 # client renders those and not the SVG a webmail signature editor exports.
 signature_image = "assets/signature-logo.png"
+# How many messages Arpenteur may hand the host in any 24 hours, counted from
+# its own log, tests and hand letters included. Infomaniak's published figures
+# disagree between 100 and 1'440 a day by plan: set this from your own plan, and
+# leave room for what you send by hand from another client.
+daily_quota = 100
+# Seconds between two messages of one run.
+pause_seconds = 30
+# Where a wave's test send goes. Empty means the sender's own address.
+test_to = ""

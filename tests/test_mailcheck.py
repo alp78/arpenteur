@@ -135,3 +135,66 @@ def test_the_kind_does_not_need_a_name() -> None:
     assert mailcheck.mailbox_kind("info@naef.ch") == mailcheck.DESK
     assert mailcheck.mailbox_kind("jean.dupont@naef.ch") == mailcheck.PERSON
     assert mailcheck.mailbox_kind("") == mailcheck.UNCLEAR
+
+
+# --- what a mailbox reaches, for a campaign -----------------------------------
+
+from arpenteur.sources import mailcheck as _mc  # noqa: E402
+
+
+def test_a_tourism_desk_is_a_desk() -> None:
+    for address in ("bahnen@belalp.ch", "seilbahn@hinterbergen.ch",
+                    "event@crans-montana.ch", "willkommen@klewenalp.ch",
+                    "marketing@goms.ch"):
+        assert _mc.mailbox_kind(address) == _mc.DESK, address
+
+
+def test_a_communes_mailbox_is_public_administration() -> None:
+    """The five measured on the tourism cohort, each filed under a firm."""
+    for address in ("gemeinde@buchholterberg.ch",
+                    "gemeindeverwaltung@walterswil-be.ch",
+                    "commune@val-de-charmey.ch", "gemeinde@eischoll.ch",
+                    "gemeinde@binn.ch"):
+        assert _mc.mailbox_role(address)[0] == _mc.ADMINISTRATION, address
+
+
+def test_a_separated_commune_mailbox_is_still_the_commune() -> None:
+    assert _mc.mailbox_role("administration.communale@x.ch")[0] == _mc.ADMINISTRATION
+
+
+def test_a_role_held_by_one_person_is_not_a_desk() -> None:
+    for address in ("praesident@skilift-degersheim.ch", "vr@skilifte-tschappina.ch",
+                    "huettenwart@sentiero-calanca.ch", "hüttenwart@x.ch",
+                    "präsident@x.ch"):
+        assert _mc.mailbox_role(address)[0] == _mc.ROLE, address
+
+
+def test_a_snack_bar_is_not_the_firm() -> None:
+    assert _mc.mailbox_role("beizli@skiliftheiden.ch")[0] == _mc.VENUE
+    assert _mc.mailbox_role("skibeizli@skiliftbaeretswil.ch")[0] == _mc.VENUE
+
+
+def test_a_bare_surname_stays_unclear() -> None:
+    role, why = _mc.mailbox_role("flury@schoenhalden.ch", "Seilbahn und Hotel Schönhalden AG")
+    assert role == _mc.UNCLEAR and why
+
+
+def test_mailbox_kind_still_has_three_answers() -> None:
+    """The send list and its summary are built on exactly these."""
+    seen = {_mc.mailbox_kind(a) for a in (
+        "info@x.ch", "silvia.vigo@x.ch", "aa@x.ch", "gemeinde@x.ch",
+        "praesident@x.ch", "beizli@x.ch")}
+    assert seen <= {_mc.DESK, _mc.PERSON, _mc.UNCLEAR}
+
+
+def test_no_mailbox_is_two_kinds_of_wrong_recipient() -> None:
+    sets = {
+        "administration": _mc.PUBLIC_ADMINISTRATION_PARTS,
+        "role": _mc.ROLE_PERSON_PARTS,
+        "venue": _mc.VENUE_PARTS,
+        "desk": _mc.DESK_FUNCTIONS | frozenset(_mc.ROLE_PARTS),
+    }
+    names = list(sets)
+    for i, a in enumerate(names):
+        for b in names[i + 1:]:
+            assert not (sets[a] & sets[b]), f"{a} and {b} share {sets[a] & sets[b]}"

@@ -239,6 +239,19 @@ class SmtpConfig:
     # How many messages one run may post. A review limit before a politeness
     # one: a batch nobody reads is a batch that sends the wrong thing 25 times.
     per_run: int = 25
+    # How many messages Arpenteur may hand the host in any 24 hours, counted
+    # from its own log of attempts, tests and hand letters included. Infomaniak
+    # counts over a sliding day and publishes figures that disagree between
+    # 100 and 1'440 by plan, so the operator sets this from their own plan.
+    # Mail sent by hand from another client counts against the same quota and
+    # is invisible here, which is why the default stays well under the limit.
+    daily_quota: int = 100
+    # Seconds between two messages of one run. A burst of identical letters is
+    # what an automatic block reads as abuse; kept under two minutes so the
+    # session stays inside the idle time a server allows.
+    pause_seconds: int = 30
+    # Where a wave's test is sent. Empty means the sender's own address.
+    test_to: str = ""
 
     @property
     def configured(self) -> bool:
@@ -811,7 +824,13 @@ def _smtp(raw: dict, mail: MailConfig) -> SmtpConfig:
         signature_file=str(
             raw.get("signature_file", "signature.html") or ""
         ).strip(),
+        signature_image=str(
+            raw.get("signature_image", "assets/signature-logo.png") or ""
+        ).strip(),
         per_run=int(raw.get("per_run", 25)),
+        daily_quota=max(0, int(raw.get("daily_quota", 100))),
+        pause_seconds=min(120, max(0, int(raw.get("pause_seconds", 30)))),
+        test_to=str(raw.get("test_to", "") or "").strip(),
     )
 
 

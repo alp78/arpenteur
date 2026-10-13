@@ -260,17 +260,53 @@ def test_one_module_failing_does_not_take_down_the_page() -> None:
 # --- the foreign key graph ----------------------------------------------------
 
 
+# The scout's own layering, which removability says nothing about because its
+# schemas are dropped together: the register's facts in `core` never point at
+# what was judged about them in `intel`, nor at the audit trail.
+SCOUT_LAYER = {"core": 0, "intel": 1, "audit": 1}
+
+
+def points_upstream(child: str, parent: str) -> bool:
+    """Whether a foreign key from `child` to `parent` keeps every module removable.
+
+    Derived from module ownership rather than from a ranking written by hand.
+    The hand ranking put `crm` and `intel` side by side, so the campaign tables
+    could not reference `intel.draft` although `clients` requires `scout`:
+    dropping `crm` orphans nothing in `intel`, which is the whole guarantee.
+    """
+    owner = {
+        schema: module.name
+        for module in modules.load(modules.AVAILABLE).modules
+        for schema in module.schemas
+    }
+    if owner[child] == owner[parent]:
+        return SCOUT_LAYER.get(child, 1) > SCOUT_LAYER.get(parent, 0)
+    return owner[parent] in _closure(owner[child])
+
+
+def test_the_reference_rule_follows_module_ownership() -> None:
+    assert points_upstream("crm", "core")
+    assert points_upstream("crm", "intel"), "clients requires scout"
+    assert points_upstream("commercial", "crm")
+    assert points_upstream("commercial", "core"), "through clients"
+    assert points_upstream("intel", "core")
+    assert not points_upstream("intel", "crm"), "scout may never reach clients"
+    assert not points_upstream("core", "crm")
+    assert not points_upstream("crm", "commercial")
+    assert not points_upstream("geo", "crm"), "geo does not require clients"
+    assert not points_upstream("core", "intel"), "facts never point at judgements"
+
+
 @pytest.mark.pg
 def test_every_cross_schema_reference_points_upstream(pg) -> None:
     """The property that makes a module removable, asked of the catalogue.
 
-    `commercial` may point at `crm`, `crm` at `core`, `geo` at `core`. Nothing
-    points the other way, so dropping a downstream schema cannot orphan an
-    upstream row. One import from a quote table into `core.company` would be
-    fine; one from `core` into `commercial` would end the guarantee, and this
-    is where that gets caught.
+    `commercial` may point at `crm`, `crm` at `core` and `intel`, `geo` at
+    `core`. Nothing points the other way, so dropping a downstream schema
+    cannot orphan an upstream row. One reference from a quote table into
+    `core.company` is fine; one from `core` into `commercial` would end the
+    guarantee, and this is where that gets caught.
     """
-    rank = {"core": 0, "intel": 1, "geo": 1, "crm": 1, "commercial": 2}
     rows = pg.execute("""
         SELECT DISTINCT nc.nspname AS child, np.nspname AS parent
           FROM pg_constraint c
@@ -283,7 +319,7 @@ def test_every_cross_schema_reference_points_upstream(pg) -> None:
     assert rows, "no cross-schema references found; is the database migrated?"
     for row in rows:
         child, parent = row["child"], row["parent"]
-        assert rank[child] > rank[parent], (
+        assert points_upstream(child, parent), (
             f"{child} references {parent}, which is downstream of it. That "
             f"makes {parent} unremovable and breaks the module boundary."
         )

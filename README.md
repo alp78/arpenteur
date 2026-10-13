@@ -534,10 +534,10 @@ new code, and the history outlives the programme if it is deleted.
 
 ### Tracking what was sent and what came back
 
-Nothing here sends mail. Every message leaves from the operator's own client,
-and `arpenteur mail` reads it back out of the Sent folder with the rest of the
-mailbox. What this half adds is the record that joins the two directions and
-says where each firm stands.
+A message leaves from the operator's own client, from `arpenteur send`, or from
+a campaign wave, and `arpenteur mail` reads every one back out of the Sent
+folder with the rest of the mailbox. What this half adds is the record that
+joins the two directions and says where each firm stands.
 
 ```bash
 uv run arpenteur programme ledger  LIMEN               # every firm, every status
@@ -577,6 +577,58 @@ holds addresses taken from public registers and public websites. A Google
 account volunteered in a reply is different in kind, so it sits on the
 programme member, where the send list cannot read it and deleting the programme
 deletes it.
+
+## Lists and campaigns
+
+A list keeps one mailbox per firm and says, for every firm it leaves out, why.
+A campaign sends one message plan over a list, in waves, each wave rendered,
+tested to the operator, approved and only then sent.
+
+```bash
+# a list from the survey's bands, each weighted between 0 and 1
+uv run arpenteur audience new DRYMOS-1 "Tourisme" --programme DRYMOS \
+    --segment tourism-office=1,nature-park=1,mountain-transport=0.7
+uv run arpenteur audience refresh DRYMOS-1        # DNS again, this list only
+uv run arpenteur audience build DRYMOS-1 --dry-run  # read the funnel first
+uv run arpenteur audience build DRYMOS-1
+uv run arpenteur audience show DRYMOS-1             # by canton, then score
+
+# a campaign over it, waves cut by a strategy you choose
+uv run arpenteur campaign strategies
+uv run arpenteur campaign new DRYMOS-A "Drymos, essai" --audience DRYMOS-1 \
+    --templates templates/drymos --programme DRYMOS --strategy canton-blocks
+uv run arpenteur campaign plan DRYMOS-A --dry-run
+uv run arpenteur campaign plan DRYMOS-A
+uv run arpenteur campaign render  DRYMOS-A 1
+uv run arpenteur campaign test    DRYMOS-A 1 --yes
+uv run arpenteur campaign approve DRYMOS-A 1 --read
+uv run arpenteur campaign send    DRYMOS-A 1 --yes --confirm DRYMOS-A/1
+```
+
+The same steps live in the console under Lists and Campaigns, where the send of
+a wave runs as a background job with its log.
+
+**What a list keeps.** By default, a desk mailbox read off the firm's own page,
+with a DNS verdict under 30 days old, never written to in 180 days. A commune's
+administration, a role one person holds, the firm's restaurant, a named person
+and a consumer mailbox are each set aside with their reason. A mailbox shared
+by sibling firms is written to once, for the best-scoring of them, and the
+others say who covers them.
+
+**The score** is arithmetic on stored facts, every part kept: the band's
+weight, the address's quality, the verdict's freshness, and how certain the
+language is. The language comes from the firm's registered name before its
+canton, because 21 of the 38 reachable firms in Valais write German.
+
+**Between waves, the gate.** The next wave waits until `arpenteur bounces` has
+read the mailbox long enough after the last one, and a campaign whose wave
+bounced above its ceiling pauses itself until somebody resumes it with a
+reason. The first wave is a small pilot for that reason.
+
+**Limits the host imposes.** `[smtp] daily_quota` caps what Arpenteur hands
+the server in any 24 hours, tests and hand letters included, and
+`pause_seconds` spaces the messages of a run. Set the quota from your own
+plan: Infomaniak's published figures disagree between 100 and 1'440 a day.
 
 ## Notes
 
@@ -766,12 +818,13 @@ A correction made here goes through the same helpers the stages use, so it is
 the same row a re-run has to respect. Labels set by hand are marked and the
 classifier will not overwrite them.
 
-**It cannot send anything.** Not a disabled button: there is no route, no mail
-configuration and no `sent_at` write anywhere in the codebase. The suggested
-opening is shown for a human to rewrite and send from their own mail client,
-under their own name. Swiss law (LCD art. 3 al. 1 let. o) draws the line at
-*mass* advertising email without prior consent, and the defence against ever
-crossing it is that the software has no mechanism, which a test asserts.
+**It sends from one place only.** Two routes transmit, the test and the send
+of a campaign wave, and a test asserts no third can appear. A wave goes only
+after it was rendered, sent to the operator as a test, approved by a person who
+read the tests, and confirmed by typing its code. Swiss law (UWG art. 3 al. 1
+let. o) makes mass advertising by email without consent unfair; the campaign
+controls keep every message reviewed, identified, refusable and slow, and the
+consent question stays the operator's.
 
 **It runs the stages, and shows the work.** Six views: **Companies**, the
 survey with a progress stamp per company and a filter for where each one has

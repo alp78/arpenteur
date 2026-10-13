@@ -83,6 +83,16 @@ DESK_FUNCTIONS = frozenset({
     "immobili",
     # Shared, and the abbreviations a domain keeps
     "immo", "office", "team", "support", "rent", "sales",
+    # Tourism and mountain transport. Measured on the tourism cohort, where the
+    # list above read `bahnen@belalp.ch` and `event@crans-montana.ch` as
+    # unclear: a lift company names its mailbox after the trade, a destination
+    # after the function its visitors write to.
+    "tourismus", "tourisme", "turismo", "bergbahnen", "bahnen", "seilbahn",
+    "sportbahnen", "skilift", "betrieb", "kasse", "ticket", "tickets",
+    "billetterie", "biglietteria", "reservation", "reservations",
+    "reservationen", "buchung", "booking", "prenotazioni", "marketing",
+    "event", "events", "erlebnis", "willkommen", "email", "gaesteinfo",
+    "ferien",
 })
 
 # Consumer mail providers. An address here belongs to a person, not to a
@@ -454,6 +464,70 @@ def mailbox_kind(address: str, name: str = "") -> str:
     if words and any(word in bare for word in words):
         return DESK
     return UNCLEAR
+
+
+# Three kinds of mailbox a firm's own site publishes that are still the wrong
+# recipient for a first approach, each measured on the tourism cohort and each
+# checked before the desk vocabulary, because some of them would pass it.
+#
+# A commune's administration. A lift company run by its village prints the
+# commune's address, and `gemeinde@buchholterberg.ch` arrived filed under
+# Skilift A.G. Heimenschwand. Writing to a commune about a lift company's app
+# is a letter to a public authority, which is a different act.
+PUBLIC_ADMINISTRATION_PARTS = frozenset({
+    "gemeinde", "gemeindeverwaltung", "gemeindekanzlei", "gemeindeschreiber",
+    "gemeindeschreiberei", "einwohnergemeinde", "burgergemeinde",
+    "stadtkanzlei", "stadtverwaltung", "commune", "administrationcommunale",
+    "greffe", "greffecommunal", "secretariatcommunal", "municipalite",
+    "comune", "municipio", "cancelleria", "cancelleriacomunale",
+})
+# A role one person holds. `praesident@` and `vr@`, the board, reach an
+# identified individual as surely as a first name does, and the nLPD reads
+# them that way.
+ROLE_PERSON_PARTS = frozenset({
+    "praesident", "praesidentin", "prasident", "prasidentin", "president",
+    "presidente", "vr", "verwaltungsrat", "huettenwart", "huettenwartin",
+    "huttenwart", "huttenwartin", "kassier", "kassierin", "aktuar",
+    "aktuarin", "gardien", "gardienne", "caissier", "tresorier", "direktor",
+    "directeur", "direttore",
+})
+# The firm's own restaurant or bar. A real mailbox of the firm, and the wrong
+# desk: `beizli@skiliftheiden.ch` reaches whoever serves the soup.
+VENUE_PARTS = frozenset({
+    "beizli", "skibeizli", "beiz", "restaurant", "bergrestaurant", "buvette",
+    "ristorante", "kiosk", "bar", "bistro", "cafe", "gastro", "hotel",
+})
+
+ADMINISTRATION = "administration"
+ROLE = "role"
+VENUE = "venue"
+
+
+def mailbox_role(address: str, name: str = "") -> tuple[str, str]:
+    """What this mailbox reaches, in six answers, and the reason in words.
+
+    `mailbox_kind` keeps its three answers because the send list and its tests
+    are built on them. A campaign needs three more, checked first: a commune,
+    a role held by one person, the firm's restaurant.
+
+    The local part is compared bare as well, so `administration.communale` and
+    `hüttenwart` meet the same entry as `administrationcommunale` and
+    `huettenwart`.
+    """
+    local = (address or "").strip().lower().partition("@")[0]
+    bare = re.sub(r"[._-]", "", deaccent(local))
+    if local in PUBLIC_ADMINISTRATION_PARTS or bare in PUBLIC_ADMINISTRATION_PARTS:
+        return ADMINISTRATION, "a commune's own mailbox, not the firm's"
+    if bare in ROLE_PERSON_PARTS:
+        return ROLE, "a role one identified person holds"
+    if bare in VENUE_PARTS:
+        return VENUE, "the firm's restaurant or bar, not its office"
+    kind = mailbox_kind(address, name)
+    return kind, {
+        DESK: "a desk the firm runs",
+        PERSON: "a named person",
+        UNCLEAR: "neither clearly a desk nor a person",
+    }[kind]
 
 
 def page_confirms(

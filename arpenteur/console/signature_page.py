@@ -48,7 +48,7 @@ PREVIEW = (
 STYLES = """
 .sig-wrap { max-width:46rem; }
 .sig-edit { min-height:9rem; padding:.9rem 1rem; border:1px solid var(--line);
-            border-radius:6px; background:var(--panel); font-size:.95rem;
+            border-radius:6px; background:var(--soft); font-size:.95rem;
             line-height:1.55; outline:none; }
 .sig-edit:focus { border-color:var(--accent); }
 .sig-bar { display:flex; gap:.4rem; margin:.6rem 0; flex-wrap:wrap; }

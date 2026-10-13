@@ -34,8 +34,8 @@ from .. import db
 from ..config import Settings
 from ..kernel.db import Connection
 from ..stages import (
-    boundaries, enrich, geocode, mail, match, people, profile, reach,
-    resolve, source, sync,
+    audience, boundaries, bounces, campaign, enrich, geocode, mail, match,
+    people, profile, reach, resolve, source, sync,
 )
 
 
@@ -114,6 +114,17 @@ class Stage:
     # its tables do not exist, and a button that can only fail is worse than an
     # absent one.
     module: str = "scout"
+    # Offered on the operations page and startable by its generic route. The
+    # campaign stages are not: they are started from a wave's own page, after
+    # the checks that page makes, and a form posted anywhere else is refused.
+    listed: bool = True
+    # Runs hold one lock per lane. A send must never wait an hour behind an
+    # enrich run, and two sends must never overlap.
+    lane: str = "pipeline"
+    # Called with the settings and the posted form before any thread starts,
+    # so a refusal reaches the person as a sentence on the page they came from
+    # rather than as a failed run in the history.
+    precheck: Callable[[Settings, dict[str, Any]], None] | None = None
 
 
 # --- the controls shared between stages ---------------------------------------
@@ -524,7 +535,70 @@ STAGES: dict[str, Stage] = {
         waiting_label="to review",
         module="clients",
     ),
+    "bounces": Stage(
+        name="bounces",
+        title="Read delivery failures",
+        what="Read the mailbox for delivery reports and STOP replies, and record "
+             "what each settles: a bounced mailbox, a refusal. A campaign's next "
+             "wave waits until this has run after the last one.",
+        call=bounces.run,
+        fields=(
+            Field("folder", "Folder", "text", default="INBOX",
+                  help="Where delivery reports arrive.", example="INBOX"),
+            DRY,
+        ),
+        needs="A mailbox in .env.",
+        produces="Bounced and refused verdicts on the addresses, which every "
+                 "list and every send then honours.",
+        cost="Free. Your own mail server, read-only.",
+        button="Read failures",
+        button_does="Fetches envelopes read-only and opens only the reports.",
+        module="clients",
+    ),
+    "audience-verify": Stage(
+        name="audience-verify",
+        title="Refresh a list's addresses",
+        what="Resolve again the domains one curated list relies on whose verdict "
+             "is missing or older than the list allows.",
+        call=audience.refresh,
+        fields=(Field("audience", "List", "text"), DRY),
+        cost="Free. One DNS lookup per domain.",
+        module="clients",
+        listed=False,
+        lane="send",
+    ),
+    "campaign-test": Stage(
+        name="campaign-test",
+        title="Test a wave",
+        what="Send the operator one message per variant of a wave, marked "
+             "[TEST], exactly as recipients will receive it.",
+        call=campaign.test_wave,
+        fields=(Field("campaign", "Campaign", "text"), Field("wave", "Wave", "int")),
+        cost="Counts against the daily quota.",
+        module="clients",
+        listed=False,
+        lane="send",
+        precheck=campaign.precheck_test,
+    ),
+    "campaign-send": Stage(
+        name="campaign-send",
+        title="Send a wave",
+        what="Post an approved wave's messages, paused between each, under every "
+             "guard the send stage applies.",
+        call=campaign.send_wave,
+        fields=(Field("campaign", "Campaign", "text"), Field("wave", "Wave", "int"),
+                Field("confirm", "Typed confirmation", "text")),
+        cost="Counts against the daily quota.",
+        module="clients",
+        listed=False,
+        lane="send",
+        precheck=campaign.precheck_send,
+    ),
 }
+
+# The stages that hand anything to an SMTP server. A test asserts nothing else
+# in the registry can.
+TRANSMITTING_STAGES = frozenset({"campaign-test", "campaign-send"})
 
 # The order the operations page shows them in, which is the order they run in.
 ORDER = ("source", "sync", "hydrate", "people", "resolve", "profile", "enrich",
@@ -695,32 +769,49 @@ def close_orphans(conn: Connection) -> int:
 
 @dataclass
 class Runner:
-    """One console's worth of running. Holds the lock and the current run."""
+    """One console's worth of running: one lock, one run per lane at a time."""
 
     settings: Settings
     lock: threading.Lock = field(default_factory=threading.Lock)
-    current: int | None = None
-    thread: threading.Thread | None = None
+    # The run each lane holds, and its thread. `pipeline` is every stage the
+    # operations page offers; `send` is a campaign's test and send, so a
+    # wave never waits behind an enrich run and two sends never overlap.
+    current: dict[str, int] = field(default_factory=dict)
+    threads: dict[str, threading.Thread] = field(default_factory=dict)
 
-    def running(self) -> int | None:
+    def _settle(self) -> None:
+        """Forget runs whose thread has ended. Called with the lock held."""
+        for lane, thread in list(self.threads.items()):
+            if not thread.is_alive():
+                self.threads.pop(lane, None)
+                self.current.pop(lane, None)
+
+    def running(self, lane: str = "pipeline") -> int | None:
         with self.lock:
-            if self.thread is not None and not self.thread.is_alive():
-                self.current, self.thread = None, None
-            return self.current
+            self._settle()
+            return self.current.get(lane)
 
-    def start(self, name: str, form: dict[str, Any], *, by: str = "console") -> int:
+    def start(self, name: str, form: dict[str, Any], *, by: str = "console",
+              internal: bool = False) -> int:
         stage = STAGES.get(name)
         if stage is None:
             raise ValueError(f"unknown stage {name!r}")
+        if not stage.listed and not internal:
+            raise ValueError(
+                f"{stage.title} is started from its own page, after the checks "
+                "that page makes, and not from here."
+            )
         kwargs = coerce(stage, form)
         check(stage, kwargs)
+        if stage.precheck is not None:
+            stage.precheck(self.settings, dict(form))
 
         with self.lock:
-            if self.thread is not None and not self.thread.is_alive():
-                self.current, self.thread = None, None
-            if self.current is not None:
+            self._settle()
+            busy = self.current.get(stage.lane)
+            if busy is not None:
                 raise RuntimeError(
-                    f"Run {self.current} is still going. One at a time: two runs of "
+                    f"Run {busy} is still going. One at a time: two runs of "
                     "the same stage would spend twice and interleave their writes."
                 )
             conn = db.open_db(self.settings.database_url)
@@ -728,12 +819,13 @@ class Runner:
                 run_id = db.start_run(conn, name, dict(form), started_by=by)
             finally:
                 conn.close()
-            self.current = run_id
-            self.thread = threading.Thread(
+            self.current[stage.lane] = run_id
+            thread = threading.Thread(
                 target=self._work, args=(stage, run_id, kwargs), daemon=True,
                 name=f"arpenteur-{name}-{run_id}",
             )
-            self.thread.start()
+            self.threads[stage.lane] = thread
+            thread.start()
             return run_id
 
     def _work(self, stage: Stage, run_id: int, kwargs: dict[str, Any]) -> None:
@@ -765,6 +857,13 @@ class Runner:
             log("done: " + ", ".join(f"{k}={v}" for k, v in stats.items()))
             db.finish_run(conn, run_id, stats)
         except Exception as exc:
+            # A failed statement leaves the transaction aborted, and every
+            # statement after it fails too, the log line included. Rolled back
+            # first, or the reason a send stopped would be lost with it.
+            try:
+                conn.rollback()
+            except psycopg.Error:
+                pass
             # The message goes to both places on purpose: the log is what the
             # watcher is reading, the run row is what the history shows.
             try:
@@ -776,4 +875,5 @@ class Runner:
         finally:
             conn.close()
             with self.lock:
-                self.current, self.thread = None, None
+                self.current.pop(stage.lane, None)
+                self.threads.pop(stage.lane, None)

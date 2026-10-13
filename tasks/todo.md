@@ -1,152 +1,87 @@
-# Drymos: a second campaign, and the cohort to carry it
+# A campaign manager: curated lists, scores and waves
 
-## What this is for
+The approved plan is the reference for every detail; this file tracks progress.
 
-Drymos is an offline atlas of Swiss nature: 14'692 listed lakes, summits, woods
-and protected areas, a map on bundled SWISSIMAGE tiles, sourced notes in five
-languages, GPS the one permission and no network at all.
+## Why
 
-The campaign offers it for testing to Swiss tourism offices and the
-organisations around them, and presents custom development alongside it. The
-recipient is a recommender rather than a user: its visitors ask about the places
-the atlas lists, and no message may claim the office itself works from it.
+From the raw addresses, curated lists that are tested; from a list, a campaign
+sent in waves ranked by a score of potential. Measured on the Drymos cohort,
+`sendlist` sends `info@saas-fee.ch` three letters, nothing ranks or waves, and
+21 German-named Valais firms would receive French.
 
-## What the register answered, 08.10.2026
+## Standing rules for this build
 
-Measured live through Arpenteur's own credentials before anything was built.
-
-| | |
-|---|---|
-| `*tourisme*` in Valais, leading wildcard | 19 |
-| `Tourisme*` in Valais, trailing only | 0 |
-| distinct companies over 26 words, four tiers | 798 |
-| a wider 32-word probe, five tiers | 1'310 |
-| of that wider probe, new to `core.company` | 371 |
-| associations among the 798 | 104 |
-| associations in `core.company` today | 0 |
-
-The register accepts a leading wildcard, so discovery is one search per word
-rather than a national prefix sweep. A search answer carries no canton, which
-the canton loop supplies.
-
-## The scope, narrowed 08.10.2026
-
-The apps reach no store yet. This build creates the project and collects the
-targets with their addresses, so the cohort stands ready the day a build is.
-Nothing composes or sends a message, and the brief and the templates wait for
-the app.
+- From step 6 until `0010` is final, no `arpenteur` command, no console start
+  and no `db.open_db` against the live database. Read-only checks go through
+  `docker exec … psql`. The migration is iterated against `arpenteur_test`.
+- One pytest run at a time.
+- Every patch applied by pattern asserts its match.
 
 ## The work
 
-1. [x] `arpenteur/sources/purpose.py`: `fold`, `head`, `near`, `BOILERPLATE`,
-       `NEAR`, lifted out of `scripts/classify_regies.py` so both classifiers
-       read one definition.
-2. [x] `scripts/classify_regies.py` imports them, with no change in behaviour.
-3. [x] `arpenteur source --name`: targeted ZEFIX name search, looping cantons,
-       every legal form, writing no `intel.sweep` row.
-4. [x] `FixtureZefixClient.search` answers one name pattern, so the mode is
-       testable with no network.
-5. [x] Four bands in `[segments]`: `tourism-office`, `nature-park`,
-       `mountain-transport`, `outdoor-guide`.
-6. [x] `scripts/classify_tourism.py`: rules over the registered purpose, a
-       proximity gate, written to `intel.segment` at `source='manual'`.
-7. [x] The `DRYMOS` programme, with the cohort brought in as members.
-8. [x] Addresses over the four bands: `reach`, then `verify`.
-9. [x] `.env`'s `ZEFIX_URL` either honoured as an override or dropped.
-10. [x] Tests: the name mode, the shared helpers, the tourism classifier.
-11. [x] The run: source, classify, programme, reach, verify.
-
-## What waits for the app
-
-`drymos.md`, the brief the draft stage reads. `templates/drymos/{fr,de,it,rm}.md`.
-The per-campaign brief plumbing, which is `BRIEF` out of `draft.py` and a
-`[campaign.<code>]` table. The Romansh commune test in `draft.language_of`.
-
-Each of those decides what a message says, and the message cannot be written
-before the app it describes can be installed.
-
-## What stays out
-
-A communal tourist office run as a department of its commune has no register
-entry, so no ZEFIX search reaches that tier. The 798 are the registered
-organisations.
-
-A Drymos page on peringer.ch, a Play closed test and a TestFlight group are all
-prerequisites for sending modalities, and none is a survey task. The first
-message therefore asks whether the office wants them.
-
-No message leaves the mailbox in this build.
+0. [x] `test_modules.py`: the foreign-key rule derived from module ownership.
+1. [x] `sources/language.py`.
+2. [x] `sources/mailcheck.py`: trade desks, administration, role, venue.
+3. [x] `sources/audience.py`: rule, judge, score, assign, funnel.
+4. [x] `sources/template.py`.
+5. [x] `sources/waves.py`: strategy registry, plan, gate, inbound.
+6. [x] Migration `0010_campaign.sql` and the store functions.
+7. [x] `stages/audience.py` and `verify.run(domains=)`.
+8. [x] `send.run`: programme, quota, pause, outbound log, refusals; `[smtp]` settings with `signature_image`.
+9. [x] `stages/campaign.py`.
+10. [x] Runner: lanes, `listed`, `precheck`, rollback, registrations.
+11. [x] CLI `audience` and `campaign`.
+12. [x] Console pages, navigation, honest header and copy, token fix and its test.
+13. [x] The no-send tests rewritten around `TRANSMITTING`.
+14. [x] Live: Drymos audience and plan; Limen test send to the operator only.
 
 ## Review
 
-### What was built
+### What exists now
 
-`arpenteur source --name` and `--name-file`, beside the prefix sweep in the same
-file. It loops cantons, asks for every legal form, attaches the canton the
-answer does not carry, and writes no `intel.sweep` row, because no prefix was
-completed and a sweep resuming on that row would skip the territory.
+A list is a curated audience: one mailbox per firm, chosen by rule, with one
+reason for every firm in scope. A campaign cuts a list into waves by a strategy
+the operator picks, and each wave walks render, test, approve, send, which the
+schema enforces. Between waves the gate waits for bounces to be read and
+pauses a campaign above its ceiling. Every post is logged before the server is
+asked, counted against a daily quota and spaced by a pause.
 
-`arpenteur/sources/purpose.py`, holding the three rules that read a registered
-purpose. They were written for `classify_regies` and are now shared; that script
-imports them and its output is unchanged, 7'380 / 5'228 / 4'794 / 4'002 before
-and after.
+Two routes send, both from a wave's page, both through the runner after a
+precheck. `TRANSMITTING` names them and six tests that used to assert "nothing
+sends" now assert "only these two".
 
-`scripts/classify_tourism.py`, four bands over the cohort, with the high-precision
-phrases taken from real register entries and the noise families named rather than
-corrected row by row.
-
-`--legal-form` on `programme bring-in`. `arpenteur.toml` raises the nLPD point
-itself: a sole proprietorship is registered in a natural person's name, so
-writing to one carries obligations that writing to a company does not.
-
-`ZEFIX_URL` is read. It sat in a working `.env` and nothing looked at it.
-
-### The numbers
+### The live run, 13.10.2026
 
 | | |
 |---|---|
-| canton-word pairs searched | 1'170 |
-| distinct companies found | 1'140 |
-| mountain-transport | 212 |
-| tourism-office | 124 |
-| outdoor-guide | 14 |
-| nature-park | 7 |
-| members on DRYMOS | 347 |
-| firms the address hunt read | 357 |
-| firms with a deliverable address | 255 |
-| of those, at a desk address | 233 |
-| addresses stored, 549 of them published | 600 |
-| tests | 1'093 passed |
+| migration | clients v10, six tables |
+| DRYMOS-1, firms in scope | 357 |
+| kept | 158 |
+| `info@saas-fee.ch` | kept once, two siblings covered by name |
+| Valais kept, German / French | 22 / 4 |
+| DRYMOS-A | 10 waves, canton-blocks, pilot of 10 |
+| render of DRYMOS-A | refused, naming `templates/drymos/de.md` and `fr.md` |
+| LIMEN-VERIF test | one message to the operator, signature, logo and opt-out read back from Sent |
+| messages sent to any firm | 0 |
+| tests | 1'300 passed |
 
-### The address hunt
+LIMEN-VERIF was re-planned after its test, which discarded its 25 unsent drafts
+so they hold no mailbox, and then paused with its reason.
 
-Two shards over the four bands, 156 and 149 minutes, spending plan quota rather
-than API credit. `scripts/limen_hunt.py` already took `--band`, so this needed no
-new code.
+### Found and fixed on the way
 
-Of the 357 firms read, 270 gave up an address and 66 gave none; 21 are `partial`,
-meaning the cascade did not finish and they stay selectable. One consumer mailbox
-was suppressed on the way in, which is the cascade doing its job rather than a
-fault.
+- The foreign-key rule ranked `crm` beside `intel`; it is derived from module
+  ownership now, and still refuses `intel → crm`.
+- `[smtp] signature_image` was never read from the file.
+- `--muted` and `--panel` were used on three pages and defined nowhere; a test
+  now refuses any undefined token, and it was made to fail once on purpose.
+- The runner lost a failed stage's error text without a rollback.
+- `send.run` credited `[enrol] programme` whatever the message belonged to, and
+  so did the console's "mark sent".
+- `campaign pause` asked for a wave number it does not take. Found by running
+  it for real; no test had run it.
 
-`arpenteur verify` then resolved 253 domains: 239 deliverable, 13 maybe, 1 dead.
+### Waits for the operator
 
-### What the classifier got wrong first, and why
-
-The first run graded every hydrated company and returned landscapers on
-`paysage`, travel agents on `forfaits touristiques` and a sports agency on
-`encadrement`. Two rounds went into the patterns before the scope turned out to
-be the fault. Reading the rejects afterwards found one real miss, Villars
-Loisirs et Tourisme, dropped because the rules held the noun `promotion` and the
-company wrote the verb `promouvoir`.
-
-### Two things left as they are
-
-`scripts/limen_hunt.py` runs the address cascade for any band list and takes
-`--band`, so the Drymos hunt needed no new code. Its name now describes one
-campaign and its behaviour describes none, which is worth a rename and three
-files of mechanical edits that this change does not need.
-
-Valais/Wallis Promotion and the four Ticino regional organisations are
-public-law bodies with no register entry, so no ZEFIX search reaches them. They
-are named here because a gap nobody wrote down is a gap somebody rediscovers.
+The Drymos templates, once the app can be installed. The first real wave, which
+nobody should send for you.

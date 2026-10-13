@@ -32,7 +32,7 @@ import json
 import re
 import unicodedata
 from collections import Counter
-from typing import Any
+from typing import Any, Sequence
 
 from ...kernel.db import Connection, Row, json_param, now
 
@@ -1723,6 +1723,7 @@ def address_state(conn: Connection, address: str) -> Row | None:
     return conn.execute(
         "SELECT bool_or(suppressed) AS suppressed,"
         "       bool_or(status = 'bounced') AS failed,"
+        "       bool_or(status = 'dead') AS dead,"
         "       min(status) AS status, count(*) AS held"
         "  FROM core.contact"
         " WHERE kind = 'email' AND lower(value) = %s",
@@ -1868,16 +1869,23 @@ def send_list(
 
 def drafts_awaiting(
     conn: Connection, *, limit: int = 100, language: str = "",
-    reviewed: bool | None = False,
+    reviewed: bool | None = False, exclude_model_prefix: str = "",
 ) -> list[Row]:
     """The review queue, oldest first.
 
     Oldest first because a draft goes stale: the brief it was written against
     can be rewritten under it, and `brief_digest` is what says so. Reviewing
     newest-first leaves the stale ones at the bottom for ever.
+
+    `exclude_model_prefix` keeps a campaign's template drafts out of this
+    queue. They are read and approved a wave at a time, on the wave's own page,
+    and twenty-five identical letters here would bury the ones a model wrote.
     """
     where = ["d.sent_at IS NULL", "d.refused_at IS NULL"]
     params: list[Any] = []
+    if exclude_model_prefix:
+        where.append("coalesce(d.model, '') NOT LIKE %s")
+        params.append(exclude_model_prefix.replace("%", r"\%") + "%")
     if reviewed is True:
         where.append("d.reviewed_at IS NOT NULL")
     elif reviewed is False:
@@ -1897,6 +1905,102 @@ def drafts_awaiting(
         """,
         tuple(params),
     ).fetchall()
+
+
+def propose(
+    conn: Connection, company_id: int, *, address: str, language: str,
+    subject: str, body: str, model: str, digest: str,
+    replace_id: int | None = None,
+) -> int | None:
+    """Write a campaign's draft, never over somebody else's. Returns its id.
+
+    `draft.save` upserts on the mailbox and clears `reviewed_at`, which is
+    right for the model drafting stage and wrong here: a campaign rendering
+    through it would overwrite another campaign's open draft to the same
+    mailbox and silently withdraw its approval. So a campaign updates only a
+    draft it already owns, `replace_id`, and otherwise inserts or steps aside.
+    `None` means another open draft holds the mailbox.
+    """
+    if replace_id is not None:
+        row = conn.execute(
+            """
+            UPDATE intel.draft
+               SET language = %s, subject = %s, body = %s, model = %s,
+                   brief_digest = %s, reviewed_at = NULL, created_at = now()
+             WHERE id = %s AND sent_at IS NULL AND refused_at IS NULL
+         RETURNING id
+            """,
+            (language, subject, body, model, digest, replace_id),
+        ).fetchone()
+        if row:
+            return int(row["id"])
+    row = conn.execute(
+        """
+        INSERT INTO intel.draft (company_id, address, language, subject, body,
+                                 model, brief_digest)
+        VALUES (%s, %s, %s, %s, %s, %s, %s)
+        ON CONFLICT (company_id, address)
+            WHERE sent_at IS NULL AND refused_at IS NULL AND address IS NOT NULL
+        DO NOTHING
+        RETURNING id
+        """,
+        (company_id, address.strip().lower(), language, subject, body, model, digest),
+    ).fetchone()
+    return int(row["id"]) if row else None
+
+
+def review_drafts(conn: Connection, draft_ids: Sequence[int]) -> int:
+    """Mark these drafts read and approved, unless sent or refused. Returns how many."""
+    if not draft_ids:
+        return 0
+    return conn.execute(
+        """
+        UPDATE intel.draft SET reviewed_at = now()
+         WHERE id = ANY(%s) AND sent_at IS NULL AND refused_at IS NULL
+        """,
+        (list(draft_ids),),
+    ).rowcount
+
+
+def unreview_drafts(conn: Connection, draft_ids: Sequence[int]) -> int:
+    if not draft_ids:
+        return 0
+    return conn.execute(
+        "UPDATE intel.draft SET reviewed_at = NULL WHERE id = ANY(%s) AND sent_at IS NULL",
+        (list(draft_ids),),
+    ).rowcount
+
+
+def delete_unsent_drafts(conn: Connection, draft_ids: Sequence[int]) -> int:
+    """Remove drafts that never left and were never refused.
+
+    A refused draft stays: its refusal is what keeps the mailbox off the next
+    list, and deleting it would forget that a person said no to it.
+    """
+    if not draft_ids:
+        return 0
+    return conn.execute(
+        """
+        DELETE FROM intel.draft
+         WHERE id = ANY(%s) AND sent_at IS NULL AND refused_at IS NULL
+        """,
+        (list(draft_ids),),
+    ).rowcount
+
+
+def last_run(conn: Connection, stage: str, *, finished: bool = True) -> Row | None:
+    """The latest run of a stage, by default the latest that finished cleanly."""
+    clause = "AND finished_at IS NOT NULL AND error IS NULL" if finished else ""
+    return conn.execute(
+        f"""
+        SELECT id, stage, started_at, finished_at, error, args_json
+          FROM intel.run
+         WHERE stage = %s {clause}
+         ORDER BY started_at DESC, id DESC
+         LIMIT 1
+        """,
+        (stage,),
+    ).fetchone()
 
 
 def draft(conn: Connection, draft_id: int) -> Row | None:

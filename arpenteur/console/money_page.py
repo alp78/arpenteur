@@ -605,7 +605,7 @@ def quote_page(
         body.append("</div>")
         body.append(
             '<p class="dim small">Marking it sent freezes this version. '
-            "Arpenteur does not send anything: you send it, and this records "
+            "Arpenteur does not send a quote: you send it, and this records "
             "that you did.</p>"
         )
     else:

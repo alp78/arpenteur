@@ -225,6 +225,23 @@ class Sender:
             except Exception:
                 pass
 
+    def alive(self) -> bool:
+        """Whether the session still answers. A NOOP costs the server nothing."""
+        if self._client is None:
+            return False
+        try:
+            code, _ = self._client.noop()
+        except (OSError, smtplib.SMTPException):
+            return False
+        return code == 250
+
+    def reopen(self) -> None:
+        """Close and open again. Called between messages only, never as a
+        retry of one already handed over: a message the server may have taken
+        is settled by a person, not sent twice."""
+        self.close()
+        self.__enter__()
+
     def post(self, message: EmailMessage) -> Posted:
         """Hand one message to the server, or say why it refused."""
         if self._client is None:

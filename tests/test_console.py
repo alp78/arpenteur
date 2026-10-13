@@ -2,10 +2,11 @@
 
 Three properties are worth more than the rest.
 
-There is no way to send anything. Not a disabled button, not a guarded route:
-no route at all. The defence against Swiss law on unsolicited advertising mail
-is that the software has no mechanism, and a test is how that stays true when
-somebody later adds a "helpful" endpoint.
+Exactly two routes can send, the test and the send of a campaign wave, and
+both are named in `app.TRANSMITTING`. Until the campaign manager there was no
+route at all; the promise moved from "nothing sends" to "these two send, and
+nothing else can", and a test is how that stays true when somebody later adds
+a "helpful" endpoint.
 
 A correction made here is the same row a re-run has to respect. The console
 writes through the same helpers the stages use, so there is one meaning of
@@ -93,11 +94,12 @@ def client(settings, conn) -> TestClient:
 # --- nothing sends ------------------------------------------------------------
 
 
-def test_no_route_transmits_anything(settings, conn) -> None:
-    """Not a disabled button. No mechanism at all.
+def test_exactly_two_routes_can_transmit(settings, conn) -> None:
+    """The wave's test and the wave's send, and nothing else.
 
-    LCD art. 3 al. 1 let. o draws the line at mass advertising email without
-    consent, and this tool stays on the research side by having no way across.
+    UWG art. 3 al. 1 let. o draws the line at mass advertising email without
+    consent. The campaign manager keeps every message reviewed, identified and
+    refusable, and this test keeps the ways across down to the two it names.
 
     The word "mail" used to be in the list below and is deliberately not any
     more: the console reads a mailbox now, and `/mail` is the queue where
@@ -106,10 +108,14 @@ def test_no_route_transmits_anything(settings, conn) -> None:
     deleted the first time it was inconvenient. What replaces it is stronger
     than a word in a path: the package as a whole holds no send mechanism.
     """
+    from arpenteur.console.app import TRANSMITTING
+
     app = create_app(settings)
-    paths = " ".join(getattr(r, "path", "") for r in app.routes).lower()
+    routes = {getattr(r, "path", "") for r in app.routes}
+    assert TRANSMITTING <= routes, "the two wave routes are missing"
+    others = " ".join(p for p in routes if p not in TRANSMITTING).lower()
     for word in ("send", "smtp", "transmit", "dispatch"):
-        assert word not in paths, f"a route mentioning {word!r} appeared"
+        assert word not in others, f"a route mentioning {word!r} appeared"
 
     # Sending lives in exactly one module, so that every rule about who may be
     # written to can be read in one place. The sweep below is what keeps that
@@ -416,3 +422,23 @@ def test_the_console_script_is_served_by_the_application_not_a_cdn(client) -> No
     assert "javascript" in reply.headers["content-type"]
     assert "immutable" in reply.headers["cache-control"]
     assert "data-sortable" in reply.text
+
+
+def test_every_style_token_a_page_uses_is_defined() -> None:
+    """A CSS variable nobody defines makes its rule do nothing, silently.
+
+    Three pages used `--muted` and `--panel`, which `render.py` never defined,
+    so their muted text and their panels had no colour at all and nothing said
+    so. The defined set is read from `render.py` itself.
+    """
+    import re
+
+    console = Path(__file__).resolve().parent.parent / "arpenteur" / "console"
+    defined = set(re.findall(r"(--[a-z][a-z0-9-]*)\s*:", (console / "render.py")
+                             .read_text(encoding="utf-8")))
+    missing = {}
+    for path in sorted(console.glob("*.py")):
+        used = set(re.findall(r"var\((--[a-z][a-z0-9-]*)", path.read_text(encoding="utf-8")))
+        if used - defined:
+            missing[path.name] = sorted(used - defined)
+    assert not missing, f"undefined style tokens: {missing}"

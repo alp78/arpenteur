@@ -369,4 +369,7 @@ def test_the_client_section_cannot_send_either(client, conn) -> None:
     routes = {getattr(r, "path", "") for r in client.app.routes}
     # See test_console.py: reading a mailbox is not transmitting, and the
     # guarantee is checked there against the package rather than the paths.
-    assert not [p for p in routes if "send" in p or "smtp" in p]
+    from arpenteur.console.app import TRANSMITTING
+    # The two wave routes are the only ones allowed to: see test_console.py.
+    assert not [p for p in routes
+                if ("send" in p or "smtp" in p) and p not in TRANSMITTING]

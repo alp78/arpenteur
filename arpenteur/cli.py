@@ -479,7 +479,7 @@ def cmd_send(args: argparse.Namespace) -> int:
         stats = send_stage.run(
             settings, conn, letters=letters or None,
             draft_ids=[int(d) for d in args.draft],
-            confirm=args.yes, plain=args.plain,
+            confirm=args.yes, plain=args.plain, programme=args.programme,
         )
     except Exception as exc:
         conn.rollback()
@@ -2006,6 +2006,313 @@ def cmd_modules(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_audience(args: argparse.Namespace) -> int:
+    """A curated list: the firms worth writing to, one chosen mailbox each.
+
+    Every action but `new` and `list` takes the list's code first. A list is
+    rebuilt freely until a campaign sends from it; after that it is frozen.
+    """
+    from .modules.clients import campaigns as campaign_store
+    from .sources import audience as rules
+    from .stages import audience as audience_stage
+
+    settings = load_settings()
+    conn = db.open_db(settings.database_url)
+
+    def close(code: int) -> int:
+        conn.close()
+        return code
+
+    try:
+        if args.action == "list":
+            rows = campaign_store.audiences(conn)
+            if not rows:
+                print('No lists. Start one: arpenteur audience new CODE "Name" '
+                      "--segment tourism-office=1")
+            for row in rows:
+                frozen = " frozen" if row["frozen_at"] else ""
+                print(f"{row['code']:<16} {row['kept']:>5} kept {row['dropped']:>5} dropped"
+                      f"  {row['campaigns']} campaign(s){frozen}  {row['name'][:40]}")
+            return close(0)
+
+        if args.action == "new":
+            if len(args.rest) < 2:
+                print('error: give a code and a name, e.g. DRYMOS-1 "Tourisme"',
+                      file=sys.stderr)
+                return close(1)
+            kinds = ["desk"] + [k for k in ("unclear",) if k in (args.allow or "")]
+            provenance = ["page"] + [k for k in ("hearsay", "inferred")
+                                     if k in (args.allow or "")]
+            verdicts = ["deliverable"] + (["maybe"] if "maybe" in (args.allow or "") else [])
+            rule = rules.Rule(
+                segments=audience_stage.parse_segments(args.segment or ""),
+                cantons=tuple(c.strip().upper() for c in (args.canton or "").split(",")
+                              if c.strip()),
+                programme=(args.programme or "").strip().upper(),
+                members_only=args.members_only,
+                exclude_legal_forms=() if "sole-traders" in (args.allow or "") else ("0101",),
+                verdicts=tuple(verdicts), provenance=tuple(provenance), kinds=tuple(kinds),
+                cooldown_days=args.cooldown, max_age_days=args.max_age,
+                use_size=args.size,
+            )
+            new_id = audience_stage.create(conn, code=args.rest[0],
+                                           name=" ".join(args.rest[1:]), rule=rule)
+            print(f"created: list {new_id}, {args.rest[0].upper()}. Next: "
+                  f"arpenteur audience refresh {args.rest[0].upper()}, then build.")
+            return close(0)
+
+        if not args.rest:
+            print("error: name the list, e.g. DRYMOS-1", file=sys.stderr)
+            return close(1)
+        code = args.rest[0]
+
+        if args.action == "build":
+            audience_stage.build(settings, conn, audience=code, dry_run=args.dry_run)
+            return close(0)
+
+        if args.action == "refresh":
+            audience_stage.refresh(settings, conn, audience=code, dry_run=args.dry_run)
+            return close(0)
+
+        listed = audience_stage.resolve(conn, code)
+        if args.action == "show":
+            verdict = None if args.dropped or args.reason else "kept"
+            rows = campaign_store.members(conn, int(listed["id"]), verdict=verdict,
+                                          canton=args.canton or None,
+                                          reason=args.reason or None)
+            print(f"{listed['code']}  {listed['name']}"
+                  + ("  [frozen]" if listed["frozen_at"] else ""))
+            for code_, n in audience_stage.funnel(conn, int(listed["id"])):
+                print(f"  {code_:16} {n:>5}")
+            here = None
+            for row in rows:
+                if row["canton"] != here:
+                    here = row["canton"]
+                    print(f"\n{here or '??'}")
+                score = f"{float(row['score']):5.1f}" if row["score"] is not None else "    -"
+                where = row["address"] or "-"
+                print(f"  {score}  {row['company_name'][:34]:34} {row['language'] or '?':2} "
+                      f"{where[:34]:34} {row['reason'][:60]}")
+            return close(0)
+
+        if args.action == "export":
+            rows = campaign_store.members(conn, int(listed["id"]))
+            out = Path(args.out or f"{listed['code'].lower()}.csv")
+            import csv
+            with out.open("w", encoding="utf-8", newline="") as handle:
+                writer = csv.writer(handle)
+                writer.writerow(["uid", "name", "canton", "verdict", "reason_code", "reason",
+                                 "address", "language", "language_basis", "segment",
+                                 "score", "covered_by"])
+                for row in rows:
+                    writer.writerow([row["uid"], row["company_name"], row["canton"],
+                                     row["verdict"], row["reason_code"], row["reason"],
+                                     row["address"], row["language"], row["language_basis"],
+                                     row["segment"], row["score"], row["covered_by_name"]])
+            print(f"{len(rows)} rows written to {out}")
+            return close(0)
+
+        if args.action in ("keep", "drop", "language", "address", "unpin"):
+            if len(args.rest) < 2:
+                print("error: give the list and the firm's UID", file=sys.stderr)
+                return close(1)
+            uid = args.rest[1].replace(".", "").replace("-", "").upper()
+            match = [r for r in campaign_store.members(conn, int(listed["id"]))
+                     if (r["uid"] or "").replace(".", "").replace("-", "").upper() == uid]
+            if not match:
+                print(f"error: {args.rest[1]} is not on {listed['code']}", file=sys.stderr)
+                return close(1)
+            row = match[0]
+            pin = dict(row["pinned"] or {})
+            if args.action == "unpin":
+                campaign_store.set_pin(conn, int(row["id"]), None)
+            else:
+                if not (args.why or "").strip() and args.action in ("keep", "drop"):
+                    print("error: say why, with --why", file=sys.stderr)
+                    return close(1)
+                if args.action in ("keep", "drop"):
+                    pin["verdict"] = "kept" if args.action == "keep" else "dropped"
+                elif args.action == "language":
+                    pin["language"] = (args.rest[2] if len(args.rest) > 2 else "").lower()
+                else:
+                    wanted = (args.rest[2] if len(args.rest) > 2 else "").lower()
+                    held = {a["value"]: a for a in campaign_store.member_addresses(conn, int(row["id"]))}
+                    if wanted not in held:
+                        print(f"error: the firm holds no {wanted}", file=sys.stderr)
+                        return close(1)
+                    pin["contact_id"] = int(held[wanted]["id"])
+                    pin.setdefault("verdict", "kept")
+                pin["why"] = (args.why or pin.get("why") or "").strip()
+                pin["by"], pin["at"] = "cli", db.now()
+                campaign_store.set_pin(conn, int(row["id"]), pin)
+            conn.commit()
+            print(f"{row['company_name']}: pin {'cleared' if args.action == 'unpin' else 'set'}."
+                  f" It applies at the next build: arpenteur audience build {listed['code']}")
+            return close(0)
+    except ValueError as exc:
+        conn.rollback()
+        print(f"error: {exc}", file=sys.stderr)
+        return close(1)
+    print(f"error: unknown action {args.action!r}", file=sys.stderr)
+    return close(1)
+
+
+def cmd_campaign(args: argparse.Namespace) -> int:
+    """A campaign: one message plan over one list, sent in waves.
+
+    Each wave walks render, test, approve, send, and nothing skips a step. The
+    send asks for the wave typed back, CODE/N, as the console does.
+    """
+    from .modules.clients import campaigns as campaign_store
+    from .sources import waves as wave_rules
+    from .stages import campaign as campaign_stage
+
+    settings = load_settings()
+    conn = db.open_db(settings.database_url)
+
+    def close(code: int) -> int:
+        conn.close()
+        return code
+
+    plan_params = {k: v for k, v in (
+        ("strategy", args.strategy), ("pilot_size", args.pilot),
+        ("wave_size", args.wave_size), ("gap_days", args.gap),
+        ("start_on", args.start), ("bounce_ceiling", args.bounce_ceiling),
+        ("settle_hours", args.settle), ("cooldown_days", args.cooldown),
+    ) if v is not None}
+
+    try:
+        if args.action == "strategies":
+            for s in wave_rules.STRATEGIES.values():
+                print(f"{s.name:<18} {s.label}\n{'':<18} {s.what}\n")
+            return close(0)
+
+        if args.action == "list":
+            rows = campaign_store.campaigns(conn)
+            if not rows:
+                print("No campaigns. Start one: arpenteur campaign new CODE \"Name\" "
+                      "--audience LIST --templates templates/x --strategy canton-blocks")
+            for row in rows:
+                state = wave_rules.campaign_state(row, campaign_store.waves(conn, int(row["id"])))
+                print(f"{row['code']:<14} {state:<9} {row['waves_sent']}/{row['waves']} "
+                      f"waves sent  list {row['audience_code']:<12} {row['name'][:40]}")
+            return close(0)
+
+        if args.action == "new":
+            if len(args.rest) < 2 or not args.audience or not args.templates:
+                print('error: give a code and a name, with --audience and --templates',
+                      file=sys.stderr)
+                return close(1)
+            new_id = campaign_stage.create(
+                settings, conn, code=args.rest[0], name=" ".join(args.rest[1:]),
+                audience=args.audience, templates=args.templates,
+                strategy=args.strategy or "canton-blocks",
+                programme=args.programme or "",
+                **{k: v for k, v in plan_params.items() if k != "strategy"},
+            )
+            print(f"created: campaign {new_id}, {args.rest[0].upper()}. Next: "
+                  f"arpenteur campaign plan {args.rest[0].upper()} --dry-run")
+            return close(0)
+
+        if not args.rest:
+            print("error: name the campaign, e.g. DRYMOS-A", file=sys.stderr)
+            return close(1)
+        row = campaign_stage.resolve(conn, args.rest[0])
+        number = int(args.rest[1]) if len(args.rest) > 1 else 0
+
+        if args.action == "plan":
+            campaign_stage.plan(settings, conn, campaign=row["id"], dry_run=args.dry_run,
+                                **plan_params)
+            return close(0)
+
+        if args.action in ("show", "results"):
+            waves = campaign_store.waves(conn, int(row["id"]))
+            outcome = campaign_stage.results(settings, conn, campaign=row["id"])
+            print(f"{row['code']}  {row['name']}  "
+                  f"[{wave_rules.campaign_state(row, waves)}]  list {row['audience_code']}, "
+                  f"strategy {row['strategy']}, templates {row['templates']}")
+            if row["paused_at"]:
+                print(f"  paused: {row['paused_reason']}")
+            for w in waves:
+                steps = "  ".join(f"{name}{'+' if w[col] else '-'}" for name, col in (
+                    ("render", "rendered_at"), ("test", "tested_at"),
+                    ("approve", "approved_at"), ("send", "sent_at")))
+                done = outcome.get(int(w["number"]))
+                tally = done["tally"] if done else None
+                line = (f"  wave {w['number']:>2}  {int(w['live']):>3} firms  "
+                        f"{w['planned_for'] or 'unscheduled':<10}  {steps}  {w['label']}")
+                if tally and tally.sent:
+                    line += (f"\n           sent {tally.sent}, bounced {tally.bounced}, "
+                             f"replied {tally.replied}, refused {tally.refused}, "
+                             f"enrolled {tally.enrolled}; {done['gate'].why}")
+                print(line)
+            return close(0)
+
+        if args.action in ("pause", "resume"):
+            if not (args.why or "").strip():
+                print("error: say why, with --why", file=sys.stderr)
+                return close(1)
+            (campaign_store.pause if args.action == "pause" else campaign_store.resume)(
+                conn, int(row["id"]), reason=args.why, by="cli")
+            conn.commit()
+            print(f"{row['code']} {args.action}d.")
+            return close(0)
+
+        if not number:
+            print("error: name the wave, e.g. DRYMOS-A 1", file=sys.stderr)
+            return close(1)
+
+        if args.action == "render":
+            campaign_stage.render_wave(settings, conn, campaign=row["id"], wave=number)
+            return close(0)
+
+        if args.action == "test":
+            if not args.yes:
+                print(f"Would send one test per variant of wave {number} to "
+                      f"{args.to or settings.smtp.test_to or settings.smtp.sender}. "
+                      "Pass --yes to send it.")
+                return close(0)
+            run_id = db.start_run(conn, "campaign-test", {"campaign": row["code"],
+                                                          "wave": number})
+            stats = campaign_stage.test_wave(settings, conn, campaign=row["id"],
+                                             wave=number, to=args.to or "")
+            db.finish_run(conn, run_id, stats)
+            return close(0)
+
+        if args.action == "approve":
+            stats = campaign_stage.approve(settings, conn, campaign=row["id"], wave=number,
+                                           by="cli", read=args.read)
+            print(f"wave {number} approved: {stats['approved']} message(s)")
+            return close(0)
+
+        if args.action == "send":
+            expected = f"{row['code']}/{number}"
+            if not args.yes:
+                w = campaign_store.wave(conn, int(row["id"]), number)
+                print(f"Wave {number} of {row['code']}: {w['live'] if w else 0} firm(s). "
+                      f"To send it: arpenteur campaign send {row['code']} {number} "
+                      f"--yes --confirm {expected}")
+                return close(0)
+            run_id = db.start_run(conn, "campaign-send", {"campaign": row["code"],
+                                                          "wave": number})
+            try:
+                stats = campaign_stage.send_wave(settings, conn, campaign=row["id"],
+                                                 wave=number, confirm=args.confirm or "")
+            except ValueError as exc:
+                conn.rollback()
+                db.finish_run(conn, run_id, error=str(exc))
+                raise
+            db.finish_run(conn, run_id, stats)
+            return close(0)
+
+    except ValueError as exc:
+        conn.rollback()
+        print(f"error: {exc}", file=sys.stderr)
+        return close(1)
+    print(f"error: unknown action {args.action!r}", file=sys.stderr)
+    return close(1)
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="arpenteur",
@@ -2457,6 +2764,11 @@ def build_parser() -> argparse.ArgumentParser:
         "--plain", action="store_true",
         help="send text only, without the formatted part",
     )
+    p.add_argument(
+        "--programme", default=None,
+        help="the programme whose card a sent draft moves; '' for none. "
+             "Without it, the one [enrol] names, and the log says which",
+    )
     p.set_defaults(func=cmd_send)
 
     p = sub.add_parser(
@@ -2581,6 +2893,67 @@ def build_parser() -> argparse.ArgumentParser:
         help="for answer: the tester declined the dated window",
     )
     p.set_defaults(func=cmd_programme)
+
+    p = sub.add_parser(
+        "audience",
+        help="a curated list: one chosen mailbox per firm, ranked, deduplicated",
+    )
+    p.add_argument("action", choices=["list", "new", "show", "refresh", "build", "keep",
+                                      "drop", "language", "address", "unpin", "export"])
+    p.add_argument("rest", nargs="*",
+                   help="the list's code first, then a firm's UID for a pin")
+    p.add_argument("--segment", default="",
+                   help="bands and their weights, e.g. tourism-office=1,mountain-transport=0.7")
+    p.add_argument("--canton", default="", help="comma separated")
+    p.add_argument("--programme", default="", help="the programme the list feeds")
+    p.add_argument("--members-only", action="store_true",
+                   help="only firms already on the programme")
+    p.add_argument("--allow", default="",
+                   help="widen the defaults: unclear, hearsay, inferred, maybe, sole-traders")
+    p.add_argument("--cooldown", type=int, default=180,
+                   help="days a mailbox, firm or domain rests after a message")
+    p.add_argument("--max-age", type=int, default=30,
+                   help="days a DNS verdict stays good enough")
+    p.add_argument("--size", action="store_true", help="let registered capital count")
+    p.add_argument("--dropped", action="store_true", help="for show: the dropped firms too")
+    p.add_argument("--reason", default="", help="for show: one drop reason only")
+    p.add_argument("--why", default="", help="for keep and drop: the reason, required")
+    p.add_argument("--out", default="", help="for export: the CSV to write")
+    p.add_argument("--dry-run", action="store_true",
+                   help="for build and refresh: report, write nothing")
+    p.set_defaults(func=cmd_audience)
+
+    p = sub.add_parser(
+        "campaign",
+        help="a message plan over one list, sent in waves after a test and an approval",
+    )
+    p.add_argument("action", choices=["list", "strategies", "new", "show", "plan", "render",
+                                      "test", "approve", "send", "pause", "resume",
+                                      "results"])
+    p.add_argument("rest", nargs="*", help="the campaign's code first, then a wave number")
+    p.add_argument("--audience", default="", help="for new: the list's code")
+    p.add_argument("--templates", default="", help="for new: e.g. templates/drymos")
+    p.add_argument("--programme", default="", help="for new: the programme it moves")
+    p.add_argument("--strategy", default=None,
+                   help="how waves are cut; `arpenteur campaign strategies` lists them")
+    p.add_argument("--pilot", type=int, default=None, help="firms in the first wave")
+    p.add_argument("--wave-size", type=int, default=None, help="firms per wave")
+    p.add_argument("--gap", type=int, default=None, help="days between waves")
+    p.add_argument("--start", default=None, help="the first wave's date, YYYY-MM-DD")
+    p.add_argument("--bounce-ceiling", type=float, default=None,
+                   help="pause above this share of bounces, e.g. 0.05")
+    p.add_argument("--settle", type=int, default=None,
+                   help="hours bounces get to arrive before the next wave")
+    p.add_argument("--cooldown", type=int, default=None,
+                   help="days a mailbox, firm or domain rests after a message")
+    p.add_argument("--to", default="", help="for test: where the test goes")
+    p.add_argument("--read", action="store_true",
+                   help="for approve: you received and read every test message")
+    p.add_argument("--confirm", default="", help="for send: the wave typed back, CODE/N")
+    p.add_argument("--why", default="", help="for pause and resume: the reason")
+    p.add_argument("--yes", action="store_true", help="for test and send: actually post")
+    p.add_argument("--dry-run", action="store_true", help="for plan: show the cut only")
+    p.set_defaults(func=cmd_campaign)
 
     p = sub.add_parser(
         "resolve",

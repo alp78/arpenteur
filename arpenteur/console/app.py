@@ -5,14 +5,22 @@ Server-rendered HTML with HTMX. Every route reads or writes through the same
 re-run has to respect, and there is no second implementation of what a manual
 label means.
 
-Two things it deliberately does not do.
+**It sends in one place, and only there.** Two routes transmit: the test and
+the send of a campaign wave, listed in `TRANSMITTING` below. Both start a
+registered stage through the runner, which posts through `stages/send.py` with
+every guard that stage applies. A wave is sent only after it was rendered,
+test-sent to the operator, approved by a person who says they read the tests,
+and confirmed by typing its code, and only when the previous wave's bounces
+have been read and stayed under the campaign's ceiling. It is capped by
+`per_run` and the daily quota, paused between messages, and refused for any
+address that asked to be left alone, bounced, no longer resolves, or was
+written to inside the cooldown.
 
-**It does not send.** No route here transmits anything to a company. Posting
-is `arpenteur send`, run deliberately from a terminal against a draft somebody
-approved, so a mis-click on a page can never reach a régie.
-Swiss law (LCD art. 3 al. 1 let. o) draws the line at *mass* advertising email
-without consent, and the defence against ever crossing it is that the software
-has no mechanism, not that nobody clicks the button.
+Swiss law (UWG art. 3 al. 1 let. o) makes mass advertising by email without
+consent unfair. These controls do not settle consent, which stays the
+operator's decision; they keep every message reviewed, identified, refusable
+and slow. Until 13.10.2026 this console had no route that sent at all, and
+the reason it now has two is that the operator asked for a campaign manager.
 
 **It runs stages, under the guards that made the command line safe.** One at a
 time, the paid stages refusing to start without a declared size, and a dry run
@@ -40,6 +48,7 @@ from .. import markdown as md
 from ..kernel import modules as module_registry
 from ..kernel.db import Connection
 from ..modules.clients import store as clients_store
+from ..modules.clients import campaigns as campaign_store
 from ..modules.geo import store as geo_store
 from ..modules.analytics import store as analytics_store
 from ..modules.sales import money as money_lib
@@ -53,6 +62,8 @@ from ..sources import smtp as smtp_source
 from ..stages import (
     advise,
     answers as answers_stage,
+    audience as audience_stage,
+    campaign as campaign_stage,
     send as send_stage,
     draft as draft_stage,
     geocode,
@@ -73,6 +84,7 @@ from . import notes_page as notes_view
 from . import people_page as people_view_page
 from . import draft_page as draft_view
 from . import ledger_page as ledger_view
+from . import campaign_page as campaign_view
 from . import signature_page as signature_view
 from . import programme_page as programme_view
 from . import dossier_page as dossier_view
@@ -80,6 +92,13 @@ from . import prep_page as prep_view
 from . import render
 from . import settings_page as settings_view_page
 from .runner import ORDER, STAGES, Runner, close_orphans, options_for, status_of
+
+# The only routes that can hand anything to an SMTP server. A test asserts that
+# no other route can, so adding a third means adding it here, in sight.
+TRANSMITTING = frozenset({
+    "/campaign/{campaign_id}/wave/{number}/test",
+    "/campaign/{campaign_id}/wave/{number}/send",
+})
 
 
 def create_app(settings: Settings | None = None) -> FastAPI:
@@ -1742,8 +1761,11 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         request: Request, language: str = "", note: str = "",
     ) -> HTMLResponse:
         with db.open_db(settings.database_url) as conn:
+            # A campaign's drafts are approved a wave at a time on the wave's
+            # own page; here they would bury the ones a model wrote.
             rows = scout_store.drafts_awaiting(
                 conn, limit=200, language=language.strip().lower() or "",
+                exclude_model_prefix="template:",
             )
             tally = scout_store.draft_tally(conn)
             # The digest of the brief on disk now, so a draft written against
@@ -1810,7 +1832,10 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         said = "Recorded as sent."
         with db.open_db(settings.database_url) as conn:
             row = scout_store.mark_draft_sent(conn, draft_id)
-            code = settings.enrol.programme
+            # A campaign's draft moves its own programme's card. Reading
+            # `[enrol]` for every draft would credit Limen with a Drymos letter.
+            code = (campaign_store.programme_for_draft(conn, draft_id)
+                    or settings.enrol.programme)
             if row is not None and code:
                 found = clients_store.programme_by_code(conn, code)
                 if found is None:
@@ -1922,6 +1947,355 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             )
         finally:
             conn.close()
+
+    # --- lists and campaigns -------------------------------------------------
+    #
+    # The only part of the console that can transmit. Two routes do, the test
+    # and the send of a wave, and both start a registered stage through the
+    # runner after its precheck: see TRANSMITTING below.
+
+    def campaign_shell(body: str, here: str = "/campaigns") -> HTMLResponse:
+        return HTMLResponse(campaign_view.shell(body, at(here)))
+
+    def back(path: str, *, note: str = "", error: str = "") -> RedirectResponse:
+        query = ("?note=" + quote(note)) if note else ("?error=" + quote(error) if error else "")
+        return RedirectResponse(path + query, status_code=303)
+
+    @app.get("/audiences", response_class=HTMLResponse)
+    def audiences_list(request: Request) -> HTMLResponse:
+        conn = connect()
+        try:
+            return campaign_shell(campaign_view.audiences_page(
+                campaign_store.audiences(conn), list(settings.segments),
+                clients_store.programmes(conn),
+                note=request.query_params.get("note", ""),
+                error=request.query_params.get("error", ""),
+            ), "/audiences")
+        finally:
+            conn.close()
+
+    @app.post("/audiences/new")
+    def audience_new(
+        code: str = Form(""), name: str = Form(""), segments: str = Form(""),
+        cantons: str = Form(""), programme: str = Form(""),
+        members_only: str = Form(""), allow_unclear: str = Form(""),
+        allow_hearsay: str = Form(""),
+    ) -> RedirectResponse:
+        from ..sources import audience as rules
+        conn = connect()
+        try:
+            rule = rules.Rule(
+                segments=audience_stage.parse_segments(segments),
+                cantons=tuple(c.strip().upper() for c in cantons.split(",") if c.strip()),
+                programme=programme.strip().upper(), members_only=bool(members_only),
+                kinds=("desk", "unclear") if allow_unclear else ("desk",),
+                provenance=("page", "hearsay") if allow_hearsay else ("page",),
+            )
+            new_id = audience_stage.create(conn, code=code, name=name, rule=rule)
+        except ValueError as exc:
+            conn.rollback()
+            return back("/audiences", error=str(exc))
+        finally:
+            conn.close()
+        return back(f"/audience/{new_id}", note="List created. Refresh its addresses, then build it.")
+
+    @app.get("/audience/{audience_id}", response_class=HTMLResponse)
+    def audience_view(audience_id: int, request: Request) -> HTMLResponse:
+        reason = request.query_params.get("reason", "")
+        conn = connect()
+        try:
+            row = campaign_store.audience(conn, audience_id)
+            if row is None:
+                return HTMLResponse("<h1>Not found</h1>", status_code=404)
+            members = campaign_store.members(
+                conn, audience_id, verdict=None if reason else "kept", reason=reason or None)
+            return campaign_shell(campaign_view.audience_page(
+                row, members, audience_stage.funnel(conn, audience_id), reason=reason,
+                note=request.query_params.get("note", ""),
+                error=request.query_params.get("error", ""),
+            ), "/audiences")
+        finally:
+            conn.close()
+
+    @app.post("/audience/{audience_id}/build")
+    def audience_build(audience_id: int) -> RedirectResponse:
+        lines: list[str] = []
+        conn = connect()
+        try:
+            stats = audience_stage.build(settings, conn, audience=audience_id,
+                                         log=lines.append)
+        except ValueError as exc:
+            conn.rollback()
+            return back(f"/audience/{audience_id}", error=str(exc))
+        finally:
+            conn.close()
+        return back(f"/audience/{audience_id}",
+                    note=f"Built: {stats['kept']} kept, {stats['dropped']} dropped.")
+
+    @app.post("/audience/{audience_id}/refresh")
+    def audience_refresh(audience_id: int) -> RedirectResponse:
+        try:
+            run_id = runner.start("audience-verify", {"audience": str(audience_id)},
+                                  internal=True)
+        except (ValueError, RuntimeError) as exc:
+            return back(f"/audience/{audience_id}", error=str(exc))
+        return RedirectResponse(f"/runs/{run_id}", status_code=303)
+
+    @app.get("/audience/{audience_id}/export.csv")
+    def audience_export(audience_id: int) -> Response:
+        import csv
+        import io
+        conn = connect()
+        try:
+            rows = campaign_store.members(conn, audience_id)
+        finally:
+            conn.close()
+        buffer = io.StringIO()
+        writer = csv.writer(buffer)
+        writer.writerow(["uid", "name", "canton", "verdict", "reason_code", "reason",
+                         "address", "language", "language_basis", "segment", "score",
+                         "covered_by"])
+        for r in rows:
+            writer.writerow([r["uid"], r["company_name"], r["canton"], r["verdict"],
+                             r["reason_code"], r["reason"], r["address"], r["language"],
+                             r["language_basis"], r["segment"], r["score"],
+                             r["covered_by_name"]])
+        return Response(buffer.getvalue(), media_type="text/csv",
+                        headers={"Content-Disposition":
+                                 f"attachment; filename=list-{audience_id}.csv"})
+
+    @app.post("/audience-row/{member_id}/pin")
+    def audience_pin(member_id: int, verdict: str = Form(""), why: str = Form(""),
+                     language: str = Form("")) -> RedirectResponse:
+        conn = connect()
+        try:
+            row = campaign_store.member(conn, member_id)
+            if row is None:
+                return back("/audiences", error="No such row.")
+            target = f"/audience/{row['audience_id']}"
+            if row["audience_frozen_at"]:
+                return back(target, error="The list is frozen: a campaign has sent from it.")
+            if not why.strip():
+                return back(target, error="Say why: a pin nobody can explain gets undone.")
+            pin = dict(row["pinned"] or {})
+            if verdict in ("kept", "dropped"):
+                pin["verdict"] = verdict
+            if language.strip():
+                pin["language"] = language.strip().lower()
+            pin.update(why=why.strip(), by="console", at=db.now())
+            campaign_store.set_pin(conn, member_id, pin)
+            conn.commit()
+        finally:
+            conn.close()
+        return back(target, note=f"{row['company_name']} pinned. It applies at the next build.")
+
+    @app.post("/audience-row/{member_id}/unpin")
+    def audience_unpin(member_id: int) -> RedirectResponse:
+        conn = connect()
+        try:
+            row = campaign_store.member(conn, member_id)
+            if row is None:
+                return back("/audiences", error="No such row.")
+            campaign_store.set_pin(conn, member_id, None)
+            conn.commit()
+        finally:
+            conn.close()
+        return back(f"/audience/{row['audience_id']}",
+                    note=f"{row['company_name']} unpinned. It applies at the next build.")
+
+    @app.get("/campaigns", response_class=HTMLResponse)
+    def campaigns_list(request: Request) -> HTMLResponse:
+        conn = connect()
+        try:
+            return campaign_shell(campaign_view.campaigns_page(
+                campaign_store.campaigns(conn), campaign_store.audiences(conn),
+                clients_store.programmes(conn),
+                note=request.query_params.get("note", ""),
+                error=request.query_params.get("error", ""),
+            ))
+        finally:
+            conn.close()
+
+    @app.post("/campaigns/new")
+    def campaign_new(code: str = Form(""), name: str = Form(""), audience: str = Form(""),
+                     templates: str = Form(""), programme: str = Form(""),
+                     strategy: str = Form("canton-blocks")) -> RedirectResponse:
+        conn = connect()
+        try:
+            new_id = campaign_stage.create(settings, conn, code=code, name=name,
+                                           audience=audience, templates=templates,
+                                           strategy=strategy, programme=programme)
+        except ValueError as exc:
+            conn.rollback()
+            return back("/campaigns", error=str(exc))
+        finally:
+            conn.close()
+        return back(f"/campaign/{new_id}", note="Campaign created. Plan its waves.")
+
+    @app.get("/campaign/{campaign_id}", response_class=HTMLResponse)
+    def campaign_view_page(campaign_id: int, request: Request) -> HTMLResponse:
+        from ..sources import waves as wave_rules
+        conn = connect()
+        try:
+            row = campaign_store.campaign(conn, campaign_id)
+            if row is None:
+                return HTMLResponse("<h1>Not found</h1>", status_code=404)
+            wave_rows = campaign_store.waves(conn, campaign_id)
+            return campaign_shell(campaign_view.campaign_page(
+                row, wave_rows, campaign_stage.results(settings, conn, campaign=campaign_id),
+                wave_rules.campaign_state(row, wave_rows),
+                note=request.query_params.get("note", ""),
+                error=request.query_params.get("error", ""),
+            ))
+        finally:
+            conn.close()
+
+    @app.post("/campaign/{campaign_id}/plan")
+    def campaign_plan(campaign_id: int, strategy: str = Form(""),
+                      pilot_size: str = Form(""), wave_size: str = Form(""),
+                      gap_days: str = Form(""), start_on: str = Form(""),
+                      dry_run: str = Form("")) -> RedirectResponse:
+        changes: dict[str, Any] = {}
+        if strategy:
+            changes["strategy"] = strategy
+        for key, raw in (("pilot_size", pilot_size), ("wave_size", wave_size),
+                         ("gap_days", gap_days)):
+            if raw.strip():
+                changes[key] = int(raw)
+        if start_on.strip():
+            changes["start_on"] = start_on.strip()
+        lines: list[str] = []
+        conn = connect()
+        try:
+            stats = campaign_stage.plan(settings, conn, campaign=campaign_id,
+                                        dry_run=bool(dry_run), log=lines.append, **changes)
+        except ValueError as exc:
+            conn.rollback()
+            return back(f"/campaign/{campaign_id}", error=str(exc))
+        finally:
+            conn.close()
+        said = (f"{stats['waves']} waves of {', '.join(map(str, stats['sizes']))} firms"
+                + (" (shown, not kept)" if dry_run else " planned."))
+        return back(f"/campaign/{campaign_id}", note=said)
+
+    @app.post("/campaign/{campaign_id}/pause")
+    def campaign_pause(campaign_id: int, why: str = Form("")) -> RedirectResponse:
+        conn = connect()
+        try:
+            campaign_store.pause(conn, campaign_id, reason=why.strip() or "paused by hand",
+                                 by="console")
+            conn.commit()
+        finally:
+            conn.close()
+        return back(f"/campaign/{campaign_id}", note="Paused.")
+
+    @app.post("/campaign/{campaign_id}/resume")
+    def campaign_resume(campaign_id: int, why: str = Form("")) -> RedirectResponse:
+        conn = connect()
+        try:
+            campaign_store.resume(conn, campaign_id, reason=why, by="console")
+            conn.commit()
+        except ValueError as exc:
+            conn.rollback()
+            return back(f"/campaign/{campaign_id}", error=str(exc))
+        finally:
+            conn.close()
+        return back(f"/campaign/{campaign_id}", note="Resumed.")
+
+    @app.get("/campaign/{campaign_id}/wave/{number}", response_class=HTMLResponse)
+    def wave_view(campaign_id: int, number: int, request: Request) -> HTMLResponse:
+        conn = connect()
+        try:
+            row = campaign_store.campaign(conn, campaign_id)
+            wave = campaign_store.wave(conn, campaign_id, number) if row else None
+            if wave is None:
+                return HTMLResponse("<h1>Not found</h1>", status_code=404)
+            messages = campaign_store.wave_messages(conn, int(wave["id"]))
+            seen: dict[str, Any] = {}
+            for m in messages:
+                if m["draft_id"] and not m["dropped_at"] and m["variant"] not in seen:
+                    seen[m["variant"]] = m
+            confirm = campaign_stage.confirmation(row, wave)
+            block = campaign_stage.why_not_send(settings, conn, row, wave, confirm, act=False)
+            room = settings.smtp.daily_quota - campaign_store.attempts_since(conn, hours=24)
+            return campaign_shell(campaign_view.wave_page(
+                row, wave, messages, list(seen.values()),
+                campaign_store.tests_of_wave(conn, int(wave["id"])),
+                signature=signature_view.for_preview(send_stage.signature_html(settings)),
+                quota_room=room, pause_seconds=settings.smtp.pause_seconds,
+                confirmation=confirm, block=block,
+                note=request.query_params.get("note", ""),
+                error=request.query_params.get("error", ""),
+            ))
+        finally:
+            conn.close()
+
+    @app.post("/campaign/{campaign_id}/wave/{number}/render")
+    def wave_render(campaign_id: int, number: int) -> RedirectResponse:
+        base = f"/campaign/{campaign_id}/wave/{number}"
+        conn = connect()
+        try:
+            stats = campaign_stage.render_wave(settings, conn, campaign=campaign_id,
+                                               wave=number, log=lambda _m: None)
+        except ValueError as exc:
+            conn.rollback()
+            return back(base, error=str(exc))
+        finally:
+            conn.close()
+        return back(base, note=f"{stats['rendered']} drafts rendered. Send the test next.")
+
+    @app.post("/campaign/{campaign_id}/wave/{number}/approve")
+    def wave_approve(campaign_id: int, number: int, read: str = Form("")) -> RedirectResponse:
+        base = f"/campaign/{campaign_id}/wave/{number}"
+        conn = connect()
+        try:
+            stats = campaign_stage.approve(settings, conn, campaign=campaign_id, wave=number,
+                                           by="console", read=bool(read))
+        except ValueError as exc:
+            conn.rollback()
+            return back(base, error=str(exc))
+        finally:
+            conn.close()
+        return back(base, note=f"Approved: {stats['approved']} message(s).")
+
+    @app.post("/campaign/{campaign_id}/wave/{number}/unapprove")
+    def wave_unapprove(campaign_id: int, number: int) -> RedirectResponse:
+        conn = connect()
+        try:
+            campaign_stage.unapprove(settings, conn, campaign=campaign_id, wave=number)
+        finally:
+            conn.close()
+        return back(f"/campaign/{campaign_id}/wave/{number}", note="Approval withdrawn.")
+
+    def transmit(stage: str, campaign_id: int, number: int, extra: dict) -> RedirectResponse:
+        """Start one of the two stages that hand anything to an SMTP server."""
+        base = f"/campaign/{campaign_id}/wave/{number}"
+        try:
+            run_id = runner.start(stage, {"campaign": str(campaign_id), "wave": str(number),
+                                          **extra}, internal=True)
+        except (ValueError, RuntimeError) as exc:
+            return back(base, error=str(exc))
+        return RedirectResponse(f"/runs/{run_id}", status_code=303)
+
+    @app.post("/campaign/{campaign_id}/wave/{number}/test")
+    def wave_test(campaign_id: int, number: int) -> RedirectResponse:
+        return transmit("campaign-test", campaign_id, number, {})
+
+    @app.post("/campaign/{campaign_id}/wave/{number}/send")
+    def wave_send(campaign_id: int, number: int, confirm: str = Form("")) -> RedirectResponse:
+        return transmit("campaign-send", campaign_id, number, {"confirm": confirm})
+
+    @app.post("/outbound/{outbound_id}/settle")
+    def outbound_settle(outbound_id: int, posted: str = Form(""),
+                        back_to: str = Form("/campaigns")) -> RedirectResponse:
+        conn = connect()
+        try:
+            campaign_store.settle(conn, outbound_id, posted=posted == "yes")
+            conn.commit()
+        finally:
+            conn.close()
+        return RedirectResponse(back_to if back_to.startswith("/") else "/campaigns",
+                                status_code=303)
 
     @app.get("/signature/image")
     def signature_image() -> Response:

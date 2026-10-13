@@ -37,10 +37,21 @@ pytestmark = pytest.mark.pg
 class FakeSender:
     """Records what it was asked to post, and refuses what it is told to."""
 
-    def __init__(self, refuse: set[str] | None = None) -> None:
+    def __init__(self, refuse: set[str] | None = None, *, drops_after: int = 0) -> None:
         self.posted: list[EmailMessage] = []
         self.refuse = refuse or set()
         self.opened = 0
+        # How many posts the session survives before it reads as closed, so a
+        # test can watch the run reopen it between messages. 0 means never.
+        self.drops_after = drops_after
+        self.reopened = 0
+
+    def alive(self) -> bool:
+        return not (self.drops_after and len(self.posted) >= self.drops_after
+                    and self.reopened == 0)
+
+    def reopen(self) -> None:
+        self.reopened += 1
 
     def __call__(self) -> "FakeSender":
         return self
@@ -75,6 +86,7 @@ def smtp_settings(build_settings, tmp_path: Path):
         smtp=SmtpConfig(
             host="smtp.test", port=587, user="me@peringer.ch", password="x",
             sender="me@peringer.ch", sender_name="Me", per_run=3,
+            pause_seconds=0,
         ),
     )
 
@@ -652,3 +664,178 @@ def test_the_stored_signature_is_what_the_mail_client_wrote() -> None:
     )
     assert "cid:signature" in fragment
     assert letter.to_text(fragment).splitlines()[0] == "Alexis Peringer"
+
+
+# --- campaigns, the quota and the outbound log --------------------------------
+
+from dataclasses import replace as _replace  # noqa: E402
+
+from arpenteur.config import EnrolConfig  # noqa: E402
+from arpenteur.modules.clients import campaigns as _campaigns  # noqa: E402
+
+
+def _letters(n: int) -> list[send_stage.Letter]:
+    return [send_stage.Letter(to=f"person{i}@other-domain-{i}.ch", subject="s", body="b")
+            for i in range(n)]
+
+
+def _programme(conn: Connection, code: str) -> int:
+    pid = clients_store.add_programme(conn, code, code)
+    conn.commit()
+    return pid
+
+
+def test_the_named_programme_is_credited_not_the_configured_one(
+    smtp_settings, conn, company_id
+) -> None:
+    _programme(conn, "limen")
+    drymos = _programme(conn, "drymos")
+    settings = _replace(smtp_settings, enrol=EnrolConfig(programme="LIMEN"))
+    send_stage.run(settings, conn, draft_ids=[_draft(conn, company_id)], confirm=True,
+                   programme="DRYMOS", open_sender=FakeSender(), log=lambda _m: None)
+    members = conn.execute("SELECT programme_id FROM crm.programme_member").fetchall()
+    assert [m["programme_id"] for m in members] == [drymos]
+
+
+def test_an_empty_programme_credits_nobody(smtp_settings, conn, company_id) -> None:
+    _programme(conn, "limen")
+    settings = _replace(smtp_settings, enrol=EnrolConfig(programme="LIMEN"))
+    send_stage.run(settings, conn, draft_ids=[_draft(conn, company_id)], confirm=True,
+                   programme="", open_sender=FakeSender(), log=lambda _m: None)
+    assert conn.execute("SELECT count(*) AS n FROM crm.programme_member").fetchone()["n"] == 0
+
+
+def test_a_campaign_draft_is_refused_outside_its_wave(smtp_settings, conn, company_id) -> None:
+    draft_id = _draft(conn, company_id)
+    audience = _campaigns.add_audience(conn, code="a", name="a", rule={"segments": {}})
+    member = conn.execute(
+        "INSERT INTO crm.audience_member (audience_id, company_id, address, verdict,"
+        " reason_code, reason) VALUES (%s, %s, 'info@regie-test.ch', 'kept', 'kept', 'x')"
+        " RETURNING id", (audience, company_id)).fetchone()["id"]
+    campaign = _campaigns.add_campaign(conn, code="c", name="c", audience_id=audience,
+                                       templates="templates/x", strategy="score-overall")
+    wave = conn.execute("INSERT INTO crm.campaign_wave (campaign_id, number) VALUES (%s, 1)"
+                        " RETURNING id", (campaign,)).fetchone()["id"]
+    conn.execute("INSERT INTO crm.campaign_message (campaign_id, wave_id, member_id, draft_id)"
+                 " VALUES (%s, %s, %s, %s)", (campaign, wave, member, draft_id))
+    conn.commit()
+    fake = FakeSender()
+    stats = send_stage.run(smtp_settings, conn, draft_ids=[draft_id], confirm=True,
+                           open_sender=fake, log=lambda _m: None)
+    assert stats["sent"] == 0 and fake.posted == []
+    stats = send_stage.run(smtp_settings, conn, draft_ids=[draft_id], confirm=True,
+                           wave_id=wave, open_sender=fake, log=lambda _m: None)
+    assert stats["sent"] == 1
+
+
+def test_the_quota_counts_tests_and_letters_and_says_when_room_returns(
+    smtp_settings, conn
+) -> None:
+    settings = _replace(smtp_settings, smtp=_replace(smtp_settings.smtp, daily_quota=2,
+                                                     per_run=10))
+    _campaigns.record_attempt(conn, kind="test", address="me@peringer.ch", subject="t",
+                              message_id="<t@test>")
+    conn.commit()
+    lines: list[str] = []
+    stats = send_stage.run(settings, conn, letters=_letters(3), confirm=True,
+                           open_sender=FakeSender(), log=lines.append)
+    assert stats["sent"] == 1
+    assert any("Room returns" in line for line in lines)
+
+
+def test_the_pause_falls_between_messages_only(smtp_settings, conn) -> None:
+    settings = _replace(smtp_settings, smtp=_replace(smtp_settings.smtp, pause_seconds=30))
+    naps: list[float] = []
+    send_stage.run(settings, conn, letters=_letters(3), confirm=True,
+                   open_sender=FakeSender(), log=lambda _m: None, sleep=naps.append)
+    assert naps == [30, 30]
+
+
+def test_limit_lowers_per_run_and_never_raises_it(smtp_settings, conn) -> None:
+    fake = FakeSender()
+    send_stage.run(smtp_settings, conn, letters=_letters(5), confirm=True, limit=2,
+                   open_sender=fake, log=lambda _m: None)
+    assert len(fake.posted) == 2
+    fake = FakeSender()
+    send_stage.run(smtp_settings, conn, letters=_letters(5), confirm=True, limit=50,
+                   open_sender=fake, log=lambda _m: None)
+    assert len(fake.posted) == 3, "per_run is 3 in these settings"
+
+
+def test_the_attempt_is_recorded_before_the_server_is_asked(
+    smtp_settings, conn, company_id
+) -> None:
+    seen: list[int] = []
+
+    class Witness(FakeSender):
+        def post(self, message):
+            seen.append(conn.execute(
+                "SELECT count(*) AS n FROM crm.outbound WHERE message_id = %s"
+                " AND posted_at IS NULL", (str(message["Message-ID"]),)).fetchone()["n"])
+            return super().post(message)
+
+    send_stage.run(smtp_settings, conn, draft_ids=[_draft(conn, company_id)], confirm=True,
+                   open_sender=Witness(), log=lambda _m: None)
+    assert seen == [1]
+    row = conn.execute("SELECT kind, posted_at FROM crm.outbound").fetchone()
+    assert row["kind"] == "message" and row["posted_at"] is not None
+
+
+def test_an_attempt_without_an_outcome_blocks_a_resend(smtp_settings, conn, company_id) -> None:
+    draft_id = _draft(conn, company_id)
+    _campaigns.record_attempt(conn, kind="message", address="info@regie-test.ch",
+                              subject="s", message_id="<lost@test>", draft_id=draft_id)
+    conn.commit()
+    lines: list[str] = []
+    stats = send_stage.run(smtp_settings, conn, draft_ids=[draft_id], confirm=True,
+                           open_sender=FakeSender(), log=lines.append)
+    assert stats["sent"] == 0
+    assert any("no recorded outcome" in line for line in lines)
+
+
+def test_a_dead_domain_is_refused_at_the_last_moment(smtp_settings, conn, company_id) -> None:
+    draft_id = _draft(conn, company_id)
+    conn.execute("UPDATE core.contact SET status = 'dead'")
+    conn.commit()
+    stats = send_stage.run(smtp_settings, conn, draft_ids=[draft_id], confirm=True,
+                           open_sender=FakeSender(), log=lambda _m: None)
+    assert stats["sent"] == 0
+
+
+def test_the_cooldown_is_rechecked_at_send_time(smtp_settings, conn, company_id) -> None:
+    _draft(conn, company_id, sent=True)
+    fresh = _draft(conn, company_id, address="contact@regie-test.ch")
+    stats = send_stage.run(smtp_settings, conn, draft_ids=[fresh], confirm=True,
+                           cooldown_days=180, open_sender=FakeSender(), log=lambda _m: None)
+    assert stats["sent"] == 0
+
+
+def test_a_test_send_marks_nothing_sent_and_moves_no_card(
+    smtp_settings, conn, company_id
+) -> None:
+    _programme(conn, "drymos")
+    one = send_stage.Letter(to="me@peringer.ch", subject="[TEST] s", body="b",
+                            company_id=company_id)
+    stats = send_stage.run(smtp_settings, conn, letters=[one], confirm=True, kind="test",
+                           programme="DRYMOS", open_sender=FakeSender(), log=lambda _m: None)
+    assert stats["sent"] == 1
+    assert conn.execute("SELECT count(*) AS n FROM crm.programme_member").fetchone()["n"] == 0
+    assert conn.execute("SELECT kind FROM crm.outbound").fetchone()["kind"] == "test"
+
+
+def test_a_lost_session_is_reopened_between_messages_only(smtp_settings, conn) -> None:
+    fake = FakeSender(drops_after=1)
+    send_stage.run(smtp_settings, conn, letters=_letters(3), confirm=True,
+                   open_sender=fake, log=lambda _m: None)
+    assert fake.reopened == 1 and len(fake.posted) == 3
+
+
+def test_the_signature_image_is_read_from_the_file(tmp_path: Path) -> None:
+    from arpenteur.config import load_settings
+
+    (tmp_path / "arpenteur.toml").write_text(
+        '[smtp]\nsignature_image = "elsewhere/logo.png"\ndaily_quota = 40\n',
+        encoding="utf-8")
+    smtp_config = load_settings(tmp_path).smtp
+    assert smtp_config.signature_image == "elsewhere/logo.png"
+    assert smtp_config.daily_quota == 40

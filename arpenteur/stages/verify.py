@@ -28,7 +28,7 @@ The verdict is written to every address at the domain.
 from __future__ import annotations
 
 from concurrent.futures import ThreadPoolExecutor
-from typing import Any, Callable
+from typing import Any, Callable, Sequence
 
 import dns.exception
 import dns.resolver
@@ -96,11 +96,18 @@ def run(
     dry_run: bool = False,
     log: Callable[[str], None] = print,
     resolve: Callable[..., tuple[str, str]] = resolve_domain,
+    domains: Sequence[str] | None = None,
 ) -> dict[str, Any]:
-    """Resolve every stale domain in the bank and record what came back."""
-    domains = scout_store.domains_to_check(
-        conn, stale_after_days=stale_after_days, refresh=refresh
-    )
+    """Resolve every stale domain in the bank and record what came back.
+
+    `domains` narrows the run to a named set, which is how one curated list is
+    refreshed before its waves are planned without re-resolving the whole bank.
+    """
+    if domains is None:
+        domains = scout_store.domains_to_check(
+            conn, stale_after_days=stale_after_days, refresh=refresh
+        )
+    domains = list(domains)
     if limit:
         domains = domains[:limit]
 

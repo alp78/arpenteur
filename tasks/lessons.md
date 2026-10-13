@@ -96,3 +96,27 @@ a background one was still going.
 run is never faster than waiting for the first, and the clean-up afterwards
 costs more than the wait: the stray databases have to be dropped by hand, and
 the live `arpenteur` database sits one typo away in the same list.
+
+## Every command runs once for real before it is called done
+
+`arpenteur campaign pause` refused with "name the wave": the check that a wave
+was named sat before the branch for pause, which takes none. Seven CLI tests
+passed, and none of them ran pause.
+
+**The rule.** Each new subcommand action gets one test through `cli.main`, and
+the live run exercises every action the operator will type, not only the ones
+the plan's verification lists.
+
+## An assertion that cannot fail asserts nothing
+
+A console test ended `assert A or B` where B was a status code that is always
+200. It passed whatever the export held. Caught on rereading, not by a run.
+
+**The rule.** Before keeping a test, say what change to the code would make it
+fail. If the answer is nothing, rewrite it.
+
+## The signature rule holds in test code too
+
+Two more guesses this build, both in tests: `draft.save(brief_digest=)` where
+the keyword is `digest`, and `intel.run_line.line` where the column is `text`.
+The first was guessed one line after printing the signature that said so.

@@ -406,12 +406,111 @@ def test_a_named_company_needs_no_size(client, conn) -> None:
     assert "/runs/" in reply.headers["location"], reply.headers["location"]
 
 
-def test_the_console_still_cannot_send(client, conn) -> None:
+def test_only_the_wave_routes_and_stages_can_send(client, conn) -> None:
     """The guarantee the runner must not have weakened. Starting stages is a
-    different thing from transmitting to a company, and no stage that sends
-    exists to be offered."""
+    different thing from transmitting to a company: only the two wave stages
+    transmit, and only from the two wave routes."""
+    from arpenteur.console.app import TRANSMITTING
+
     routes = {getattr(r, "path", "") for r in client.app.routes}
-    # The mail stage reads; no stage transmits. See test_console.py.
-    assert not [p for p in routes if "send" in p or "smtp" in p]
+    assert not [p for p in routes
+                if ("send" in p or "smtp" in p) and p not in TRANSMITTING]
+    listed = {name for name, stage in runner_module.STAGES.items() if stage.listed}
+    assert not listed & runner_module.TRANSMITTING_STAGES
     assert "draft" not in runner_module.STAGES
     assert conn.execute("SELECT COUNT(*) AS n FROM intel.draft WHERE sent_at IS NOT NULL").fetchone()[0] == 0
+
+
+# --- lanes, prechecks and the stages that transmit ----------------------------
+
+import threading as _threading  # noqa: E402
+
+
+def test_only_the_two_wave_stages_can_post() -> None:
+    """Every stage that can reach an SMTP server is named, unlisted and checked first."""
+    assert runner_module.TRANSMITTING_STAGES == {"campaign-test", "campaign-send"}
+    for name in runner_module.TRANSMITTING_STAGES:
+        stage = runner_module.STAGES[name]
+        assert not stage.listed and stage.lane == "send" and stage.precheck is not None
+
+
+def test_an_unlisted_stage_is_refused_by_the_generic_route(settings) -> None:
+    with pytest.raises(ValueError, match="its own page"):
+        Runner(settings).start("campaign-send", {"campaign": "X", "wave": "1",
+                                                 "confirm": "X/1"})
+
+
+def test_a_precheck_refusal_returns_before_any_thread(settings, conn) -> None:
+    def refuse(_settings, _form):
+        raise ValueError("not approved")
+
+    runner = Runner(settings)
+    runner_module.STAGES["_guarded"] = fake_stage(
+        "_guarded", lambda *_a, **_k: {}, precheck=refuse, listed=False, lane="send")
+    try:
+        before = conn.execute("SELECT count(*) AS n FROM intel.run").fetchone()["n"]
+        with pytest.raises(ValueError, match="not approved"):
+            runner.start("_guarded", {}, internal=True)
+        assert runner.running("send") is None
+        assert conn.execute("SELECT count(*) AS n FROM intel.run").fetchone()["n"] == before
+    finally:
+        runner_module.STAGES.pop("_guarded", None)
+
+
+def test_a_send_and_a_pipeline_run_hold_separate_locks(settings, conn) -> None:
+    release = _threading.Event()
+
+    def slow(_settings, _conn, *, log, **_kw):
+        release.wait(5)
+        return {}
+
+    runner = Runner(settings)
+    runner_module.STAGES["_pipe"] = fake_stage("_pipe", slow)
+    runner_module.STAGES["_mail"] = fake_stage("_mail", slow, lane="send", listed=False)
+    try:
+        runner.start("_pipe", {})
+        runner.start("_mail", {}, internal=True)
+        assert runner.running() is not None and runner.running("send") is not None
+    finally:
+        release.set()
+        assert wait_for(lambda: runner.running() is None and runner.running("send") is None)
+        runner_module.STAGES.pop("_pipe", None)
+        runner_module.STAGES.pop("_mail", None)
+
+
+def test_two_sends_cannot_overlap(settings, conn) -> None:
+    release = _threading.Event()
+
+    def slow(_settings, _conn, *, log, **_kw):
+        release.wait(5)
+        return {}
+
+    runner = Runner(settings)
+    runner_module.STAGES["_mail"] = fake_stage("_mail", slow, lane="send", listed=False)
+    try:
+        runner.start("_mail", {}, internal=True)
+        with pytest.raises(RuntimeError, match="still going"):
+            runner.start("_mail", {}, internal=True)
+    finally:
+        release.set()
+        assert wait_for(lambda: runner.running("send") is None)
+        runner_module.STAGES.pop("_mail", None)
+
+
+def test_a_failed_statement_is_rolled_back_before_logging(settings, conn) -> None:
+    """Without the rollback the log line fails too, and the reason is lost."""
+    def broken(_settings, stage_conn, *, log, **_kw):
+        stage_conn.execute("SELECT * FROM no_such_table")
+        return {}
+
+    runner = Runner(settings)
+    runner_module.STAGES["_broken"] = fake_stage("_broken", broken)
+    try:
+        run_id = runner.start("_broken", {})
+        assert wait_for(lambda: runner.running() is None)
+        lines = [r["line"] for r in conn.execute(
+            "SELECT text AS line FROM intel.run_line WHERE run_id = %s ORDER BY seq",
+            (run_id,))]
+        assert any(line.startswith("! ") and "no_such_table" in line for line in lines)
+    finally:
+        runner_module.STAGES.pop("_broken", None)

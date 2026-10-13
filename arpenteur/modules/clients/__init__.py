@@ -35,6 +35,8 @@ MODULE = Module(
     nav=(
         Nav("Clients", "/clients", group="work", order=10),
         Nav("Programmes", "/programmes", group="work", order=15),
+        Nav("Lists", "/audiences", group="work", order=16),
+        Nav("Campaigns", "/campaigns", group="work", order=17),
         Nav("Mail", "/mail", group="work", order=20),
         Nav("Calendar", "/calendar", group="work", order=30),
     ),

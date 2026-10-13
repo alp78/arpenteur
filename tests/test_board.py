@@ -245,4 +245,7 @@ def test_the_board_cannot_send_either(client) -> None:
     # "mail" is not in this list: the console reads a mailbox now, and /mail is
     # the review queue. test_console.py holds the guarantee itself, as a scan
     # of the whole package for a send mechanism.
-    assert not [p for p in routes if "send" in p or "smtp" in p]
+    from arpenteur.console.app import TRANSMITTING
+    # The two wave routes are the only ones allowed to: see test_console.py.
+    assert not [p for p in routes
+                if ("send" in p or "smtp" in p) and p not in TRANSMITTING]

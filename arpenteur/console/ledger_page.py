@@ -39,24 +39,24 @@ STYLES = """
 .led-tally { display:flex; gap:1.4rem; margin:.5rem 0 1rem; font-size:.85rem; }
 .led-tally b { font-size:1.25rem; display:block; }
 .led { width:100%; border-collapse:collapse; font-size:.85rem; }
-.led th { text-align:left; font-weight:600; color:var(--muted);
+.led th { text-align:left; font-weight:600; color:var(--dim);
           font-size:.74rem; text-transform:uppercase; letter-spacing:.04em;
           padding:.35rem .5rem; border-bottom:1px solid var(--line); }
 .led td { padding:.45rem .5rem; border-bottom:1px solid var(--line);
           vertical-align:top; }
-.led tr.silent td { color:var(--muted); }
+.led tr.silent td { color:var(--dim); }
 .led tr.dead td { background:var(--bad-bg); }
 .led .firm { font-weight:600; }
 .led .addr { font-family:ui-monospace, monospace; font-size:.78rem;
-             color:var(--muted); }
+             color:var(--dim); }
 .led .n { text-align:right; font-variant-numeric:tabular-nums; }
 .enrol-form { display:flex; gap:.3rem; align-items:center; flex-wrap:wrap; }
 .enrol-form select, .enrol-form input { font-size:.78rem; padding:.15rem .3rem; }
 .enrol-form input[name=account] { width:12rem; }
 .hist { width:100%; border-collapse:collapse; font-size:.85rem; }
 .hist td { padding:.4rem .5rem; border-bottom:1px solid var(--line); }
-.hist .out { color:var(--muted); }
-.why { font-size:.76rem; color:var(--muted); margin:.15rem 0 0; }
+.hist .out { color:var(--dim); }
+.why { font-size:.76rem; color:var(--dim); margin:.15rem 0 0; }
 """
 
 
@@ -275,7 +275,7 @@ def history_page(
     return (
         f'<a href="/programme/{member["programme_id"]}/ledger">&larr; status</a>'
         f'<h1>{esc(member["company_name"])}</h1>'
-        '<div class="meta" style="font-size:.8rem;color:var(--muted);'
+        '<div class="meta" style="font-size:.8rem;color:var(--dim);'
         'margin:.2rem 0 1rem">'
         f'<span>{esc(member["stage"])}</span> &middot; '
         f'<span>{esc(member["canton"] or "")}</span> &middot; '

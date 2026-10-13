@@ -15,9 +15,11 @@ text of one draft at a time rather than a grid of excerpts.
 banner and the approve button is not offered. Leaving the operator to notice a
 bracketed string inside a paragraph is how it reaches a recipient.
 
-**Approved is not sent.** No route here posts anything. `reviewed_at` says a
-person read it; `sent_at` is set afterwards, either by hand on this page or by
-`arpenteur send`, which refuses any draft this page would not approve.
+**Approved is not sent.** No route on these pages posts anything. `reviewed_at`
+says a person read it; `sent_at` is set afterwards, by hand on this page, by
+`arpenteur send`, or by a campaign wave, each of which refuses any draft this
+page would not approve. A campaign's own drafts are kept off this queue and
+approved a wave at a time on the wave's page.
 Collapsing the two would make the record claim something nobody confirmed.
 """
 
@@ -44,17 +46,17 @@ STYLES = """
 .draft-row.flawed { border-color:var(--bad); }
 .draft-row .who { font-weight:600; }
 .draft-row .addr { font-family:ui-monospace, monospace; font-size:.8rem;
-                   color:var(--muted); overflow:hidden;
+                   color:var(--dim); overflow:hidden;
                    text-overflow:ellipsis; white-space:nowrap; }
 .lang { text-transform:uppercase; font-size:.72rem; letter-spacing:.04em;
-        color:var(--muted); }
+        color:var(--dim); }
 .one-draft { max-width:46rem; }
 .one-draft .meta { display:flex; gap:1.1rem; flex-wrap:wrap;
-                   font-size:.8rem; color:var(--muted); margin:.2rem 0 1rem; }
+                   font-size:.8rem; color:var(--dim); margin:.2rem 0 1rem; }
 .one-draft .subject { font-weight:600; font-size:1.05rem; margin:.8rem 0 .3rem; }
 .one-draft pre.body { white-space:pre-wrap; font-family:inherit;
                       font-size:.92rem; line-height:1.55;
-                      background:var(--panel); padding:1rem 1.1rem;
+                      background:var(--soft); padding:1rem 1.1rem;
                       border-radius:6px; border:1px solid var(--line);
                       margin:0; }
 .one-draft .acts { display:flex; gap:.6rem; margin-top:1rem;

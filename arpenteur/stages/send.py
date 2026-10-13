@@ -33,18 +33,41 @@ sends the same wrong sentence twenty-five times.
 without this a sent message would exist nowhere the operator can see. The
 `mail` stage then imports it on its next run and attributes it to the firm,
 which is what fills the campaign ledger's outbound column.
+
+**Every attempt is logged before the server is asked.** `crm.outbound` gets its
+row and the row is committed first, then the message is posted, then the
+outcome is written. A crash in between leaves an attempt with no outcome, and
+the next send for that draft is refused until a person settles it, because a
+message the server may already have taken must not go twice.
+
+**A daily quota and a pause.** The host counts what leaves a mailbox over a
+sliding 24 hours and blocks an address whose traffic looks abusive, so a run
+stops at `[smtp] daily_quota` and says when room returns, and waits
+`pause_seconds` between messages.
+
+**A campaign's draft leaves only with its wave.** A draft a campaign rendered
+is refused when posted any other way, so `send --draft N` cannot skip the
+wave's test and approval.
+
+**The programme credited is the one named.** It used to be read from `[enrol]`
+whatever the message belonged to, which would have moved Drymos firms on the
+Limen board. The caller names it now; only a caller naming nothing falls back
+to the configured one, and the log says so.
 """
 
 from __future__ import annotations
 
+import time
 from dataclasses import dataclass, field
+from datetime import datetime, timedelta, timezone
 from typing import Any, Callable
 
 from ..config import Settings
 from ..kernel.db import Connection
+from ..modules.clients import campaigns as campaign_store
 from ..modules.clients import store as clients
 from ..modules.scout import store as scout_store
-from ..sources import letter, smtp
+from ..sources import letter, mailcheck, smtp
 
 # What the draft stage writes where a setting was missing. A message carrying
 # it is unsendable by construction.
@@ -83,9 +106,23 @@ class Letter:
     draft_id: int | None = None
     company_id: int | None = None
     firm: str = ""
+    variant: str = ""
 
 
-def _why_not(conn: Connection, one: Letter) -> str:
+def _days_since(stamp: str | None) -> int | None:
+    if not stamp:
+        return None
+    try:
+        when = datetime.fromisoformat(str(stamp).replace("Z", "+00:00"))
+    except ValueError:
+        return None
+    if when.tzinfo is None:
+        when = when.replace(tzinfo=timezone.utc)
+    return (datetime.now(timezone.utc) - when).days
+
+
+def _why_not(conn: Connection, one: Letter, *, wave_id: int | None = None,
+             cooldown_days: int = 0, kind: str = "message") -> str:
     """The reason this letter must not be posted, or an empty string.
 
     The parameter is not called `letter`: that is the module this file imports
@@ -99,6 +136,25 @@ def _why_not(conn: Connection, one: Letter) -> str:
             return "the address asked to be left alone"
         if held["failed"]:
             return "the address returned a permanent delivery failure"
+        if held["dead"]:
+            return "the address's domain no longer resolves"
+    if one.draft_id is not None:
+        belongs = campaign_store.wave_of_draft(conn, one.draft_id)
+        if belongs is not None and belongs["wave_id"] != wave_id:
+            return (f"belongs to wave {belongs['number']} of {belongs['campaign']}; "
+                    "it is sent from the campaign, after the wave's test")
+        if campaign_store.unsettled_for_draft(conn, one.draft_id) is not None:
+            return ("an earlier attempt has no recorded outcome; settle it before "
+                    "sending again, since the server may already have it")
+    if cooldown_days and kind == "message":
+        domain = one.to.partition("@")[2].lower()
+        last = campaign_store.last_written(
+            conn, address=one.to, company_id=one.company_id,
+            domain="" if domain in mailcheck.FREE_MAIL else domain,
+        )
+        days = _days_since(last)
+        if days is not None and days < cooldown_days:
+            return f"written to {days} days ago, inside the {cooldown_days}-day cooldown"
     return ""
 
 
@@ -178,8 +234,21 @@ def run(
     plain: bool = False,
     log: Callable[[str], None] = print,
     open_sender: Callable[..., Any] | None = None,
+    programme: str | None = None,
+    wave_id: int | None = None,
+    kind: str | None = None,
+    limit: int | None = None,
+    cooldown_days: int = 0,
+    sleep: Callable[[float], None] = time.sleep,
 ) -> dict[str, Any]:
-    """Post what is allowed to go, having said what is not."""
+    """Post what is allowed to go, having said what is not.
+
+    `programme` names the programme a sent message moves a card on: a code,
+    `""` for none, or None for the one `[enrol]` names. `kind` is what the
+    outbound log records, by default `message` for a draft and `letter` for a
+    message typed by hand; a wave's test passes `test`, which marks nothing
+    sent and moves no card. `limit` can lower `per_run` and never raises it.
+    """
     out = Outcome()
     config = settings.smtp
     if not config.configured:
@@ -198,9 +267,13 @@ def run(
         log("Nothing to post.")
         return out.as_stats()
 
+    def kind_of(one: Letter) -> str:
+        return kind or ("message" if one.draft_id is not None else "letter")
+
     allowed: list[Letter] = []
     for one in waiting:
-        reason = _why_not(conn, one)
+        reason = _why_not(conn, one, wave_id=wave_id, cooldown_days=cooldown_days,
+                          kind=kind_of(one))
         if reason:
             out.refused.append((one.firm or one.to, reason))
             continue
@@ -209,18 +282,31 @@ def run(
     for who, reason in out.refused:
         log(f"  refused  {who[:40]:<40} {reason}")
 
-    if len(allowed) > config.per_run:
-        log(f"  {len(allowed)} allowed, capped at {config.per_run} for this "
-            "run. Raise [smtp] per_run to change it.")
-        allowed = allowed[: config.per_run]
+    cap = config.per_run if limit is None else max(0, min(config.per_run, limit))
+    if len(allowed) > cap:
+        log(f"  {len(allowed)} allowed, capped at {cap} for this run. Raise "
+            "[smtp] per_run to change it.")
+        allowed = allowed[:cap]
+
+    room = config.daily_quota - campaign_store.attempts_since(conn, hours=24)
+    if allowed and room <= 0:
+        log(f"The daily quota of {config.daily_quota} is used up. "
+            + _room_returns(conn))
+        return out.as_stats()
+    if len(allowed) > room:
+        log(f"  {len(allowed)} allowed, {room} left in today's quota of "
+            f"{config.daily_quota}; the rest waits. " + _room_returns(conn))
+        allowed = allowed[:room]
 
     if not allowed:
         log("Nothing left to post once the rules applied.")
         return out.as_stats()
 
     if not confirm:
+        minutes = max(0, len(allowed) - 1) * config.pause_seconds / 60
         log(f"{len(allowed)} message(s) would be posted from "
-            f"{config.sender} through {config.host}:{config.port}:")
+            f"{config.sender} through {config.host}:{config.port}, "
+            f"{config.pause_seconds}s apart, about {minutes:.0f} min:")
         for one in allowed:
             log(f"  {one.to[:42]:<42} {one.subject[:46]}")
         log("")
@@ -233,14 +319,33 @@ def run(
             password=config.password, security=config.security,
         )
     )
-    code = (settings.enrol.programme or "").strip().upper()
-    programme = clients.programme_by_code(conn, code) if code else None
+    if programme is None:
+        code = (settings.enrol.programme or "").strip().upper()
+        if code:
+            log(f"  crediting {code}, the programme [enrol] names")
+    else:
+        code = programme.strip().upper()
+    credited = clients.programme_by_code(conn, code) if code else None
     signature = signature_html(settings)
     tail = letter.to_text(signature)
     pictures = signature_images(settings) if "cid:" in signature else {}
 
     with factory() as sender:
-        for one in allowed:
+        for index, one in enumerate(allowed):
+            if index:
+                sleep(config.pause_seconds)
+                if campaign_store.attempts_since(conn, hours=24) >= config.daily_quota:
+                    log("  the daily quota filled during the run; stopping. "
+                        + _room_returns(conn))
+                    break
+                if not sender.alive():
+                    try:
+                        sender.reopen()
+                        log("  the session had closed; opened a new one")
+                    except smtp.SendError as exc:
+                        log(f"  the session closed and would not reopen: {exc}")
+                        break
+            this_kind = kind_of(one)
             text = one.body if not tail else f"{one.body.rstrip()}\n\n{tail}\n"
             message = smtp.compose(
                 sender=config.sender,
@@ -256,12 +361,22 @@ def run(
                 images={} if plain else pictures,
                 reply_to=config.reply_to,
             )
+            attempt = campaign_store.record_attempt(
+                conn, kind=this_kind, address=one.to, subject=one.subject,
+                message_id=str(message["Message-ID"] or ""), draft_id=one.draft_id,
+                wave_id=wave_id, variant=one.variant or None,
+            )
+            conn.commit()
             try:
                 posted = sender.post(message)
             except smtp.SendError as exc:
+                campaign_store.record_failed(conn, attempt, str(exc))
+                conn.commit()
                 out.refused.append((one.firm or one.to, str(exc)))
                 log(f"  failed   {one.to[:40]:<40} {exc}")
                 continue
+            campaign_store.record_posted(conn, attempt)
+            conn.commit()
             out.posted.append(posted)
             log(f"  sent     {one.to[:40]:<40} {posted.message_id}")
 
@@ -276,16 +391,29 @@ def run(
                 log("           no copy filed; the Sent folder was not "
                     "writable, so your own client will not show this one")
 
-            if one.draft_id is not None:
-                scout_store.mark_draft_sent(conn, one.draft_id)
-            if programme is not None and one.company_id is not None:
-                clients.note_contacted(
-                    conn, int(programme["id"]), one.company_id,
-                    address=one.to, by="stage:send",
-                )
+            if this_kind == "message":
+                if one.draft_id is not None:
+                    scout_store.mark_draft_sent(conn, one.draft_id)
+                if credited is not None and one.company_id is not None:
+                    clients.note_contacted(
+                        conn, int(credited["id"]), one.company_id,
+                        address=one.to, by="stage:send",
+                    )
             conn.commit()
 
     log("")
     log(f"  {out.sent} sent, {out.filed} filed in Sent, "
         f"{len(out.refused)} refused")
     return out.as_stats()
+
+
+def _room_returns(conn: Connection) -> str:
+    """When the oldest attempt in the window leaves it, freeing one place."""
+    oldest = campaign_store.oldest_attempt_since(conn, hours=24)
+    if not oldest:
+        return ""
+    try:
+        when = datetime.fromisoformat(oldest.replace("Z", "+00:00")) + timedelta(hours=24)
+    except ValueError:
+        return ""
+    return f"Room returns from {when.astimezone():%d.%m.%Y %H:%M}."

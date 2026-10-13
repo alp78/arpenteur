@@ -248,7 +248,8 @@ def test_the_header_lists_what_this_deployment_actually_has() -> None:
     chrome = render.Chrome.of(modules.load(modules.DEFAULT))
     labels = [item.label for item in chrome.nav]
     assert labels == [
-        "Clients", "Programmes", "Mail", "Calendar", "Quotes", "Invoices",
+        "Clients", "Programmes", "Lists", "Campaigns", "Mail", "Calendar",
+        "Quotes", "Invoices",
         "Survey", "Board", "People", "Drafts", "Map", "Reports",
         "Operations", "History", "Settings",
     ]
