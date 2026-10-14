@@ -58,11 +58,11 @@ The approved plan of 13.10.2026 is the reference for every detail; this file tra
 
 ## Stage 5. Documentation and in-app help
 
-- [ ] `docs/`: start, install, setup, one guide per menu entry, operations, the command reference generated from the parsers, glossary, legal.
-- [ ] README rewritten; the design essays moved under `docs/design/`.
-- [ ] The wrong README claims corrected; the help strings filled; `arpenteur help`.
-- [ ] Every page's help link resolves; a test keeps it so.
-- [ ] Commit stack.
+- [x] `docs/`: start, install, setup, one guide per menu entry, operations, the command reference generated from the parsers, glossary, legal.
+- [x] README rewritten; the design essays moved under `docs/design/`.
+- [x] The wrong README claims corrected; the help strings filled; `arpenteur help`.
+- [x] Every page's help link resolves; a test keeps it so.
+- [x] Suite green, ruff clean, live smoke, commit stack.
 
 ## Stage 6. Internals and packaging
 
@@ -166,6 +166,26 @@ Found and fixed on the way:
 - A dry run of the bounce read counted as the read a campaign's next wave waits for; dry runs no longer open that gate.
 
 The suite: 1,654 passed, 246 of them new, ruff clean. The one red test in the full run asserted the old word "survey" on the client page and was updated to the new wording; the file passed on its own afterwards.
+
+### Stage 5, 14.10.2026
+
+What exists now:
+
+- The manual under `docs/`: installation, setup, running it, one guide per menu entry (seventeen), the command reference generated from the parsers, the glossary, the law, and twelve design pages moved out of the README with their measurements marked as the first deployment's. The index lists every page and the ten-minute path to a first ranked list.
+- One module, `arpenteur/manual.py`, finds the pages for the console's Help routes and for `arpenteur help [topic]` and `arpenteur help --list`, and generates the command reference that `scripts/cli_reference.py` writes.
+- The README is a front page: what it is, the parts, starting, the manual, modules, tests, licence. Every claim the audit named as wrong is gone: the draft stage is built, no slot fill is claimed, five commands are named as needing the register, the model access is the `claude` command, the example templates folder replaces the operator's, the pages are the five groups, the contact comes from Settings, the tests need the container.
+- Every command-line argument carries a help string, including the action word of `audience` and `campaign`, which now lists what each action takes.
+- `tests/test_help.py` keeps it so: every menu entry has a guide file, every page opens on a title, every link between pages and from the README resolves, the index reaches every page, no page carries an em dash or a personal mailbox, a page name cannot leave `docs/`, the help command prints a page as written and refuses an unknown one, every argument and command explains itself, and the written reference matches the parsers. `tests/test_shell.py` opens every guide the header links and renders every page of the manual with its title in the tab.
+
+Found and fixed on the way:
+
+- The page inventory showed three components not connected: a draft invoice's reference could not be changed from its page although the route existed; a draft invoice could not be deleted although the refusal said "a draft is deleted, not credited"; the register's year filter had no control. A rename form, a delete with its store function and confirmation (an issued invoice refuses), and a year select, with four tests.
+- Copy: the geocode card named a count from the first deployment; the size refusal printed the raw stage key and the whole cost sentence; Home counted warnings as things to set before the first run while the doctor counted only what is missing. All three aligned, and the three runner tests that pinned the old refusal updated.
+- Writing `tests/test_manual.py` for the new tests overwrote a tracked file of the same name; restored from git, the new tests moved to `tests/test_help.py`, lesson recorded.
+
+The live check: every page of the manual answers 200 in the console, a path that tries to leave `docs/` answers 404, the register offers its year, `arpenteur help --list` names the 36 pages, and the quick doctor on the live installation is green except the Drymos campaign's empty templates folder, which is the known pending item.
+
+The suite: 1,716 passed, 22 of them new, ruff clean.
 
 ### Stage 4, 14.10.2026
 

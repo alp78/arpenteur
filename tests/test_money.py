@@ -1308,3 +1308,75 @@ def test_issuing_and_crediting_ask_for_confirmation_and_a_credited_invoice_offer
         page = client.get(f"/invoice/{invoice_id}").text
         assert f"/invoice/{invoice_id}/credit" not in page
         assert f"/invoice/{invoice_id}/payment" not in page
+
+
+# --- a draft from its page: renamed, deleted; the register by year ----------------
+
+
+def test_a_draft_is_deleted_and_an_issued_invoice_is_not(db_path):
+    """A draft has no rank and was never sent. An issued one is in the register,
+    and a register that loses a document proves nothing."""
+    conn = db.open_db(db_path)
+    client_id = _client(conn)
+    draft_id = _draft(conn, client_id)
+    sales.add_invoice_line(conn, draft_id, {"label": "Day", "unit_price": 1400})
+    assert sales.delete_invoice(conn, draft_id, by="test") == client_id
+    assert sales.invoice(conn, draft_id) is None
+    assert sales.invoice_lines(conn, draft_id) == []
+    issued_id = _issued(conn, client_id)
+    with pytest.raises(ValueError, match="never deleted"):
+        sales.delete_invoice(conn, issued_id)
+    assert sales.invoice(conn, issued_id) is not None
+    conn.close()
+
+
+def test_a_draft_is_renamed_and_deleted_from_its_own_page(db_path, build_settings, tmp_path):
+    conn = db.open_db(db_path)
+    client_id = _client(conn)
+    invoice_id = _draft(conn, client_id, reference="CLAIR-LOGIS-DIAG")
+    conn.commit()
+    conn.close()
+
+    client = _app(build_settings, tmp_path)
+    page = client.get(f"/invoice/{invoice_id}").text
+    assert 'action="/invoice/%d/reference"' % invoice_id in page
+    assert 'value="CLAIR-LOGIS-DIAG"' in page
+    assert "Delete the draft" in page
+
+    client.post(f"/invoice/{invoice_id}/reference", data={"reference": "CLAIR-LOGIS-AUDIT"},
+                follow_redirects=False)
+    assert "CLAIR-LOGIS-AUDIT" in client.get(f"/invoice/{invoice_id}").text
+
+    gone = client.post(f"/invoice/{invoice_id}/delete", follow_redirects=False)
+    assert gone.status_code == 303
+    assert gone.headers["location"].startswith(f"/client/{client_id}?note=")
+    assert client.get(f"/invoice/{invoice_id}").status_code == 404
+
+
+def test_an_issued_invoice_offers_neither_a_rename_nor_a_delete(db_path, build_settings, tmp_path):
+    conn = db.open_db(db_path)
+    invoice_id = _issued(conn, _client(conn))
+    conn.commit()
+    conn.close()
+    client = _app(build_settings, tmp_path)
+    page = client.get(f"/invoice/{invoice_id}").text
+    assert "Delete the draft" not in page and "/reference" not in page
+    refused = client.post(f"/invoice/{invoice_id}/delete", follow_redirects=False)
+    assert "never%20deleted" in refused.headers["location"]
+
+
+def test_the_register_offers_its_years_and_keeps_the_chosen_one(db_path, build_settings, tmp_path):
+    conn = db.open_db(db_path)
+    _issued(conn, _client(conn))
+    conn.commit()
+    year = str(sales.register(conn)[0]["number"])[:4]
+    conn.close()
+    client = _app(build_settings, tmp_path)
+    page = client.get("/invoices/register").text
+    assert f'<option value="{year}">{year}</option>' in page
+    chosen = client.get("/invoices/register", params={"year": year}).text
+    assert f'<option value="{year}" selected>' in chosen
+    assert f'/invoices/register.csv?year={year}' in chosen
+    assert "1 documents" in chosen or 'value="1"' in chosen or ">1<" in chosen
+    nothing = client.get("/invoices/register", params={"year": "1999"}).text
+    assert "Nothing issued yet" in nothing

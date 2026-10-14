@@ -690,6 +690,15 @@ def register(conn: Connection, *, year: str = "") -> list[Row]:
     ).fetchall()
 
 
+def register_years(conn: Connection) -> list[str]:
+    """The years the series spans, newest first, for a filter to offer."""
+    rows = conn.execute(
+        "SELECT DISTINCT left(number, 4) AS year FROM commercial.invoice"
+        " WHERE number IS NOT NULL ORDER BY year DESC"
+    ).fetchall()
+    return [str(row["year"]) for row in rows]
+
+
 def register_gaps(rows: Sequence[Row]) -> list[str]:
     """The ranks the series skips, which is the only thing a register is for.
 
@@ -823,6 +832,38 @@ def set_invoice_reference(conn: Connection, invoice_id: int, reference: str) -> 
         "UPDATE commercial.invoice SET reference = %s WHERE id = %s",
         (reference.strip() or None, invoice_id),
     )
+
+
+def delete_invoice(
+    conn: Connection, invoice_id: int, *, reason: str = "", by: str = "console",
+) -> int:
+    """Remove a draft; say which client it was for.
+
+    A draft has no rank and was never sent, so nothing outside this table
+    names it. An issued invoice is in the register and is never deleted: a
+    correction is a credit note. Time billed into the draft is released by the
+    foreign key, so it can be billed again.
+    """
+    held = conn.execute(
+        "SELECT client_id, status, reference FROM commercial.invoice WHERE id = %s",
+        (invoice_id,),
+    ).fetchone()
+    if held is None:
+        raise ValueError(f"no invoice {invoice_id}")
+    if held["status"] != "draft":
+        raise ValueError(
+            "An issued invoice is never deleted: it is in the register. "
+            "A correction is a credit note."
+        )
+    conn.execute("DELETE FROM commercial.invoice_line WHERE invoice_id = %s", (invoice_id,))
+    conn.execute("DELETE FROM commercial.invoice WHERE id = %s", (invoice_id,))
+    record_state_change(
+        conn, entity="invoice", entity_id=invoice_id,
+        company_id=_company_of_client(conn, int(held["client_id"])),
+        from_state="draft", to_state="deleted", by=by,
+        reason=reason or (held["reference"] or None),
+    )
+    return int(held["client_id"])
 
 
 def add_invoice_line(conn: Connection, invoice_id: int, row: dict[str, Any]) -> int:

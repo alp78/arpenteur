@@ -907,6 +907,26 @@ def cmd_doctor(args: argparse.Namespace) -> int:
     return 1 if any(check.state == "missing" for check in found) else 0
 
 
+def cmd_help(args: argparse.Namespace) -> int:
+    """A page of the documentation, printed as it is written.
+
+    The same files the console serves under Help, so there is one manual.
+    """
+    from . import manual
+
+    if args.list:
+        for name, title in manual.pages():
+            print(f"{name:<22} {title}")
+        return 0
+    file = manual.path_of(args.topic)
+    if file is None:
+        print(f"error: no page called {args.topic!r}. `arpenteur help --list` names them.",
+              file=sys.stderr)
+        return 1
+    print(file.read_text(encoding="utf-8"), end="")
+    return 0
+
+
 def _masked(key: str, value: Any) -> str:
     """A setting's value for a terminal: an IBAN keeps its last four characters."""
     if key == "iban" and value:
@@ -2457,7 +2477,8 @@ def build_parser() -> argparse.ArgumentParser:
         )
 
     p = sub.add_parser("source", help="fill the company table from a register")
-    p.add_argument("provider", choices=["zefix"], nargs="?", default="zefix")
+    p.add_argument("provider", choices=["zefix"], nargs="?", default="zefix",
+                   help="the register to read; zefix is the only one")
     territory_flags(p)
     p.add_argument("--no-resume", action="store_true", help="re-sweep completed prefixes")
     p.add_argument("--no-hydrate", action="store_true", help="skip the detail pass")
@@ -2493,7 +2514,8 @@ def build_parser() -> argparse.ArgumentParser:
 
     p = sub.add_parser("hydrate", help="fetch detail for companies missing it")
     territory_flags(p)
-    p.add_argument("--limit", type=positive_int)
+    p.add_argument("--limit", type=positive_int,
+                   help="stop after this many companies; the rest wait for the next run")
     p.add_argument(
         "--name-like",
         default="",
@@ -2533,7 +2555,8 @@ def build_parser() -> argparse.ArgumentParser:
     p.set_defaults(func=cmd_sync)
 
     p = sub.add_parser("profile", help="sort companies into sectors and segments")
-    p.add_argument("--limit", type=positive_int)
+    p.add_argument("--limit", type=positive_int,
+                   help="stop after this many companies; the rest wait for the next run")
     p.add_argument("--reclassify", action="store_true", help="include already classified")
     p.add_argument("--dry-run", action="store_true", help="print, write nothing")
     p.add_argument(
@@ -2544,7 +2567,8 @@ def build_parser() -> argparse.ArgumentParser:
     p.set_defaults(func=cmd_profile)
 
     p = sub.add_parser("people", help="officers from the register's SHAB notices")
-    p.add_argument("--limit", type=positive_int)
+    p.add_argument("--limit", type=positive_int,
+                   help="stop after this many companies; the rest wait for the next run")
     p.add_argument(
         "--reparse",
         action="store_true",
@@ -2558,7 +2582,7 @@ def build_parser() -> argparse.ArgumentParser:
         help="find and read company websites (costs money per company)",
     )
     p.add_argument("--uid", help="comma separated UIDs, e.g. CHE123...,CHE456...")
-    p.add_argument("--canton")
+    p.add_argument("--canton", help="comma separated, e.g. VD,GE; narrows the shortlist")
     p.add_argument("--segment", help="only companies carrying this segment")
     p.add_argument("--sector", help="only companies in this line of business")
     p.add_argument("--limit", type=positive_int, help="required for runs over 200 companies")
@@ -2577,7 +2601,9 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="score on the register alone, without waiting for enrich",
     )
-    p.add_argument("--limit", type=positive_int)
+    p.add_argument("--limit", type=positive_int,
+                   help="score at most this many companies; a run that is not a dry run "
+                        "and names no UIDs needs this, because each company is one model call")
     p.add_argument(
         "--rescore", action="store_true", help="re-score companies already scored"
     )
@@ -2642,15 +2668,17 @@ def build_parser() -> argparse.ArgumentParser:
     drop = msub.add_parser(
         "drop", help="delete a module's schema and all of its data"
     )
-    drop.add_argument("name")
+    drop.add_argument("name", help="the module to drop, e.g. sales; its schema and every row in it go")
     drop.add_argument(
         "--yes", action="store_true", help="required: this cannot be undone"
     )
     p.set_defaults(func=cmd_modules)
 
     p = sub.add_parser("console", help="serve the browser console on localhost")
-    p.add_argument("--host", default="127.0.0.1")
-    p.add_argument("--port", type=int, default=8000)
+    p.add_argument("--host", default="127.0.0.1",
+                   help="the address to listen on; anything but 127.0.0.1 exposes a console "
+                        "with no sign-in, so put a proxy with one in front")
+    p.add_argument("--port", type=int, default=8000, help="the port to listen on")
     p.set_defaults(func=cmd_console)
 
     p = sub.add_parser("stats", help="what the survey holds")
@@ -2735,6 +2763,12 @@ def build_parser() -> argparse.ArgumentParser:
              "open a session with the mail server",
     )
     p.set_defaults(func=cmd_doctor)
+
+    p = sub.add_parser("help", help="read a page of the manual in the terminal")
+    p.add_argument("topic", nargs="?", default="index",
+                   help="the page, e.g. guide/companies or install; the index when left out")
+    p.add_argument("--list", action="store_true", help="name every page and stop")
+    p.set_defaults(func=cmd_help)
 
     p = sub.add_parser(
         "settings", help="the operator settings held in the database"
@@ -3034,7 +3068,14 @@ def build_parser() -> argparse.ArgumentParser:
         help="a curated list: one chosen mailbox per firm, ranked, deduplicated",
     )
     p.add_argument("action", choices=["list", "new", "show", "refresh", "build", "keep",
-                                      "drop", "language", "address", "unpin", "export"])
+                                      "drop", "language", "address", "unpin", "export"],
+                   help="list: every list. new CODE \"Name\" --segment ...: start one. "
+                        "refresh CODE: check its addresses with DNS again. build CODE: "
+                        "choose one mailbox per firm. show CODE: what it keeps and drops. "
+                        "keep, drop CODE UID --why ...: pin a firm either way. language, "
+                        "address CODE UID VALUE: pin a firm's language or mailbox. unpin "
+                        "CODE UID: let the rules decide again. export CODE --out FILE: "
+                        "write it as CSV")
     p.add_argument("rest", nargs="*",
                    help="the list's code first, then a firm's UID for a pin")
     p.add_argument("--segment", default="",
@@ -3064,10 +3105,18 @@ def build_parser() -> argparse.ArgumentParser:
     )
     p.add_argument("action", choices=["list", "strategies", "new", "show", "plan", "render",
                                       "test", "approve", "send", "pause", "resume",
-                                      "results"])
+                                      "results"],
+                   help="list: every campaign. strategies: the ways waves can be cut. "
+                        "new CODE \"Name\" --audience LIST --templates DIR: start one. "
+                        "plan CODE: cut the list into waves. render, test, approve, send "
+                        "CODE N: walk wave N through its four steps, none skipped. "
+                        "show, results CODE: where it stands. pause, resume CODE --why: "
+                        "hold the next wave or release it")
     p.add_argument("rest", nargs="*", help="the campaign's code first, then a wave number")
     p.add_argument("--audience", default="", help="for new: the list's code")
-    p.add_argument("--templates", default="", help="for new: e.g. templates/drymos")
+    p.add_argument("--templates", default="",
+                   help="for new: the folder holding one message per language, "
+                        "e.g. templates/example")
     p.add_argument("--programme", default="", help="for new: the programme it moves")
     p.add_argument("--strategy", default=None,
                    help="how waves are cut; `arpenteur campaign strategies` lists them")

@@ -24,6 +24,7 @@ from __future__ import annotations
 
 from datetime import date
 from decimal import Decimal
+from collections.abc import Sequence
 from typing import Any
 
 from . import ui
@@ -297,6 +298,22 @@ def _invoice_table(rows: list[str]) -> str:
     )
 
 
+def _year_filter(year: str, years: Sequence[str]) -> str:
+    """One select, so a year's series can be read and downloaded on its own."""
+    if not years:
+        return ""
+    options = '<option value="">Every year</option>' + "".join(
+        f'<option value="{esc(y)}"{" selected" if y == year else ""}>{esc(y)}</option>'
+        for y in years
+    )
+    return (
+        '<form class="filters" method="get" action="/invoices/register">'
+        '<div class="ctl"><label for="reg-year">Year</label>'
+        f'<select name="year" id="reg-year" data-autosubmit>{options}</select></div>'
+        '<button type="submit">Show</button></form>'
+    )
+
+
 def _ledger_tabs(current: str) -> str:
     """Two readings of the same rows: what is owed, and whether any is missing."""
     return ui.tabs(
@@ -305,7 +322,8 @@ def _ledger_tabs(current: str) -> str:
 
 
 def register_page(
-    rows: list[Row], gaps: list[str], *, year: str = "", chrome: Any = None,
+    rows: list[Row], gaps: list[str], *, year: str = "", years: Sequence[str] = (),
+    chrome: Any = None,
 ) -> str:
     """The series by rank, which is the one view that can show something missing.
 
@@ -338,6 +356,7 @@ def register_page(
         f'{ui.stat(_num(owed), "still owed", emphasis=bool(owed))}'
         f'{ui.stat(len(rows), "documents")}'
         f'{ui.stat(len(gaps), "gaps", emphasis=bool(gaps))}</div>',
+        _year_filter(year, years),
         ui.table(
             ["rank", "reference", "client", "work", "issued", "due", "paid",
              "total", "owed"],
@@ -729,6 +748,15 @@ def invoice_page(
         document="invoice",
     ))
     if draft:
+        body.append(
+            f'<form class="addline" method="post" action="/invoice/{invoice["id"]}/reference">'
+            '<div class="ctl"><label for="i-reference">Reference</label>'
+            '<input type="text" name="reference" id="i-reference" size="26" '
+            f'value="{esc(invoice["reference"] or "")}"></div>'
+            '<button type="submit">Rename</button>'
+            '<span class="dim small">What the client quotes. Fixed once issued.</span>'
+            "</form>"
+        )
         options = "".join(
             f'<option value="{s["id"]}">{esc(s["code"])} &middot; {esc(s["name"])}</option>'
             for s in services
@@ -769,6 +797,12 @@ def invoice_page(
                 'series and can no longer be edited.">'
                 '<button type="submit" class="primary">Issue</button></form>'
             )
+        body.append(
+            f'<form method="post" action="/invoice/{invoice["id"]}/delete" '
+            'data-confirm="Delete this draft? It has no rank and was never sent, '
+            'so nothing is recorded against the client.">'
+            '<button type="submit">Delete the draft</button></form>'
+        )
         body.append("</div>")
     else:
         owed = money.money(invoice["gross_total"]) - money.money(invoice["paid_total"] or 0)

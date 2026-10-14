@@ -82,3 +82,13 @@ def test_every_page_in_the_header_links_its_own_guide(client) -> None:
         guide = re.search(r'<a class="help" href="/help/([^"]+)"', body).group(1)
         expected = "index" if href in ("/", "/help") else "guide/"
         assert guide.startswith(expected), (href, guide)
+        assert client.get(f"/help/{guide}").status_code == 200, (href, guide)
+
+
+def test_every_page_of_the_manual_renders_in_the_console(client) -> None:
+    from arpenteur import manual
+
+    for name, title in manual.pages():
+        page = client.get(f"/help/{name}")
+        assert page.status_code == 200, name
+        assert f"<title>{title} | Arpenteur</title>" in page.text, name

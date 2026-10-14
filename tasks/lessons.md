@@ -138,3 +138,7 @@ The first was guessed one line after printing the signature that said so.
 **What happened.** Both background agents were terminated by the account's session limit before they could run their tests. Their edits were on disk and ruff-clean, their test files unrun, and neither had reported.
 
 **The rule.** When an agent ends without a report, read `git status` and the diff before anything else, run its test files yourself, and finish the work in the tree rather than relaunching the agent on a tree it no longer knows.
+
+## A new file is checked against the tree before it is written (14.10.2026)
+
+Writing `tests/test_manual.py` for the new manual overwrote a tracked test file of the same name about manual labels; the tool answered "updated" rather than "created" and the word went unread. Before writing a file under a new name, run `git ls-files <path>` or look at the Write result's first word; a file that exists is edited or the new one takes another name. The original was restored from git and the new tests moved to `tests/test_help.py`.

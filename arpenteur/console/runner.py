@@ -626,8 +626,7 @@ STAGES: dict[str, Stage] = {
                            "shortlist a map is actually read for, and it is a "
                            "few dozen requests rather than a few thousand."),
                 SIZES, DRY),
-        needs="Fetched detail. An address only arrives with hydration, and 3'690 "
-              "of the companies held carry one.",
+        needs="Fetched detail. An address only arrives with hydration.",
         produces="An establishment with a point, and the precision of the match: "
                  "a door, a street, or merely the right town.",
         cost="Free. One request per company to api3.geo.admin.ch, no model, no key.",
@@ -968,8 +967,8 @@ def check(stage: Stage, kwargs: dict[str, Any]) -> None:
     if stage.needs_limit and not kwargs.get("dry_run") and not kwargs.get("uids"):
         if not kwargs.get("limit"):
             raise ValueError(
-                f"{stage.name} costs {stage.cost}. Give it a limit, name the "
-                "companies, or run it dry first."
+                f"{stage.title} costs money. Give it a size, name the companies, "
+                "or run it dry first."
             )
 
 

@@ -89,14 +89,15 @@ def test_a_paid_stage_will_not_start_without_a_declared_size(client) -> None:
     from a page that looks like a filter."""
     reply = client.post("/run/enrich", data={}, follow_redirects=False)
     assert reply.status_code == 303
-    assert "limit" in reply.headers["location"]
+    assert "Research%20websites%20costs%20money" in reply.headers["location"]
+    assert "size" in reply.headers["location"]
     assert "Nothing has been run yet" in client.get("/runs").text
 
 
 def test_the_size_is_checked_on_the_server_not_in_the_markup(settings) -> None:
     """A required attribute and a disabled button are conveniences for the
     person, not constraints on the request."""
-    with pytest.raises(ValueError, match="limit"):
+    with pytest.raises(ValueError, match="Give it a size"):
         check(runner_module.STAGES["enrich"], {"dry_run": False})
 
 
@@ -996,7 +997,7 @@ def test_a_draft_run_hands_the_stage_what_the_form_chose(settings, conn, monkeyp
 
 def test_a_draft_run_without_a_size_is_refused_unless_it_is_dry() -> None:
     stage = runner_module.STAGES["draft"]
-    with pytest.raises(ValueError, match="limit"):
+    with pytest.raises(ValueError, match="Give it a size"):
         check(stage, {"dry_run": False})
     check(stage, {"dry_run": True})
 

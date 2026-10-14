@@ -1299,7 +1299,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             rows = sales_store.register(conn, year=year)
             return HTMLResponse(money_view.register_page(
                 rows, sales_store.register_gaps(rows), year=year,
-                chrome=at("/invoices"),
+                years=sales_store.register_years(conn), chrome=at("/invoices"),
             ))
         finally:
             conn.close()
@@ -1544,6 +1544,20 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         finally:
             conn.close()
         return RedirectResponse(f"/invoice/{invoice_id}", status_code=303)
+
+    @app.post("/invoice/{invoice_id}/delete")
+    def delete_invoice(invoice_id: int) -> RedirectResponse:
+        conn = connect()
+        try:
+            try:
+                client_id = sales_store.delete_invoice(conn, invoice_id, by="console")
+                conn.commit()
+            except ValueError as refusal:
+                conn.rollback()
+                return _back(f"/invoice/{invoice_id}", error=str(refusal))
+        finally:
+            conn.close()
+        return _back(f"/client/{client_id}", note="The draft invoice was deleted.")
 
     @app.post("/quote/{quote_id}/invoice")
     def invoice_from_quote(quote_id: int) -> RedirectResponse:

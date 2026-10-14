@@ -55,7 +55,7 @@ def _checklist(found: Sequence[Check]) -> str:
         + "</span></li>"
         for check in found
     )
-    missing = sum(1 for check in found if not check.ok)
+    missing = sum(1 for check in found if check.state == "missing")
     lede = (
         f"{missing} thing(s) to set before the first run."
         if missing else "Everything the first run needs is in place."
