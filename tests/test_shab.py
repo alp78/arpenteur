@@ -346,3 +346,35 @@ def test_a_domicile_ends_before_the_signature() -> None:
         "Gérant: Moussa Farid, de Genève, à Carouge GE avec signature individuelle."
     )
     assert found[0].domicile == "Carouge GE"
+
+
+# --- the parser's own traps ----------------------------------------------------
+
+
+def _one(message: str) -> list[shab.Officer]:
+    return shab.from_publications([{"message": message, "sogcDate": "2026-08-11"}])
+
+
+def test_a_departure_is_read_only_from_a_capitalised_name() -> None:
+    """Case-insensitive matching let "la société n'est plus" read as a person
+    called "la société" leaving."""
+    found = _one("Nouveau gérant: Dupont Jean, de Genève, avec signature individuelle; "
+                 "la société n'est plus soumise à révision.")
+    assert [o.full_name for o in found] == ["Dupont Jean"]
+    assert found[0].left_on is None
+
+
+def test_a_particle_stays_part_of_the_name() -> None:
+    (officer,) = _one("Nouveau gérant: de Rham Pierre, de Lausanne, avec signature individuelle.")
+    assert officer.full_name == "de Rham Pierre"
+
+
+def test_a_vice_president_is_not_a_president() -> None:
+    (officer,) = _one("Vice-présidente: Martin Anne, de Berne, avec signature collective à deux.")
+    assert officer.role == "vice-président"
+
+
+def test_the_feminine_labels_are_read() -> None:
+    found = _one("Directrice: Favre Claire, de Sion; liquidatrice: Rochat Eva, de Nyon.")
+    assert {o.full_name: o.role for o in found} == {"Favre Claire": "directeur",
+                                                     "Rochat Eva": "liquidateur"}

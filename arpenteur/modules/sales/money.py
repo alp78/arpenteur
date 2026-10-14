@@ -38,8 +38,10 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass
 from datetime import date
-from decimal import ROUND_HALF_UP, Decimal, InvalidOperation
+from decimal import ROUND_HALF_UP, Decimal
 from typing import Iterable
+
+from ...kernel import figures
 
 # Swiss VAT, by the date the service was supplied rather than the date of the
 # invoice. Each entry is (from, to or None, standard, reduced, lodging).
@@ -111,35 +113,13 @@ def vat_rate(on: date, kind: str = "standard") -> Decimal:
 def parse_decimal(value: object) -> Decimal:
     """A figure as a person types it, or a MoneyError naming what was typed.
 
-    `1'234.50`, `1 234,5` and `12` are all amounts; `abc`, an empty box and
-    `NaN` are not. `decimal.InvalidOperation` is not a `ValueError`, so a form
-    that typed a comma used to come back as a 500 rather than as a refusal.
-    A comma alone is the decimal separator; beside a point it is grouping.
+    The parsing lives in the kernel, because a budget on a project is typed
+    the same way as a quote line; this keeps the sales module's own error.
     """
-    if isinstance(value, Decimal):
-        result = value
-    elif isinstance(value, bool):
-        raise MoneyError(f"{value!r} is not an amount")
-    elif isinstance(value, int):
-        result = Decimal(value)
-    elif isinstance(value, float):
-        # str() first: Decimal(0.1) is 0.1000000000000000055511151231257827.
-        result = Decimal(str(value))
-    else:
-        text = str(value if value is not None else "").strip()
-        for grouping in ("'", "’", " ", " "):
-            text = text.replace(grouping, "")
-        if "," in text and "." not in text:
-            text = text.replace(",", ".")
-        else:
-            text = text.replace(",", "")
-        try:
-            result = Decimal(text)
-        except InvalidOperation:
-            raise MoneyError(f"{value!r} is not an amount") from None
-    if not result.is_finite():
-        raise MoneyError(f"{value!r} is not an amount")
-    return result
+    try:
+        return figures.parse_decimal(value)
+    except ValueError as exc:
+        raise MoneyError(str(exc)) from None
 
 
 def money(value: object) -> Decimal:

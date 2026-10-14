@@ -28,6 +28,7 @@ from arpenteur.config import load_settings
 from arpenteur.console import runner as runner_module
 from arpenteur.console.app import create_app
 from arpenteur.stages import advise
+from arpenteur.commands import common
 
 TOML = """
 [survey]
@@ -687,7 +688,7 @@ def test_the_cli_prints_what_the_stage_would_read(
         {"filename": "note.txt", "bytes": 5, "sha256": "e" * 64, "text": "Corps du document"},
     )
     conn.commit()
-    monkeypatch.setattr(cli, "load_settings", lambda: load_settings(root))
+    monkeypatch.setattr(common, "load_settings", lambda: load_settings(root))
     assert cli.main(["dossier", "CLAIR-LOGIS", "--documents"]) == 0
     out = capsys.readouterr().out
     assert "No DMARC." in out
@@ -700,7 +701,7 @@ def test_a_client_is_found_by_code_uid_or_name(
 ) -> None:
     from arpenteur import cli
 
-    monkeypatch.setattr(cli, "load_settings", lambda: load_settings(root))
+    monkeypatch.setattr(common, "load_settings", lambda: load_settings(root))
     for reference in ("CLAIR-LOGIS", "CHE-100.000.011", "Clair-Logis"):
         assert cli.main(["dossier", reference]) == 0
         assert "Fondation Clair-Logis" in capsys.readouterr().out

@@ -15,6 +15,7 @@ from arpenteur import cli, db, health, llm
 from arpenteur import config as arpenteur_config
 from arpenteur.config import load_settings
 from arpenteur.console import create_app
+from arpenteur.commands import common
 from fastapi.testclient import TestClient
 
 BARE = """
@@ -187,7 +188,7 @@ def test_the_doctor_prints_the_list_and_exits_one_when_something_is_missing(
 ) -> None:
     root = _root(tmp_path, BARE)
     monkeypatch.setenv("DATABASE_URL", db_path)
-    monkeypatch.setattr(cli, "load_settings", lambda: arpenteur_config.load_settings(root))
+    monkeypatch.setattr(common, "load_settings", lambda: arpenteur_config.load_settings(root))
     assert cli.main(["doctor", "--quick"]) == 1
     out = capsys.readouterr().out
     assert "!!  Territory: No canton is set" in out

@@ -20,7 +20,6 @@ why `geo.establishment` exists instead of two columns on `core.company`.
 
 from __future__ import annotations
 
-import json
 from typing import Any
 
 from ..kernel.db import Row
@@ -298,5 +297,83 @@ def _script(source_url: str, regions_url: str = "") -> str:
 """
 
 
-def as_json(data: dict[str, Any]) -> str:
-    return json.dumps(data, ensure_ascii=False, separators=(",", ":"))
+def sites_panel(company_id: int, sites: list[Row], back: str = "") -> str:
+    """Where this client actually operates, and the way to add a site.
+
+    The register holds one address per legal entity. A foundation running an
+    EMS, a day centre and three residences has one entry and several places,
+    and the difference matters the moment anyone asks where to drive to. So
+    the seat arrives from the register and everything else is typed by the
+    person who knows it; nothing here is inferred.
+    """
+    rows = []
+    for site in sites:
+        address = " ".join(
+            str(part) for part in (
+                site["street"], site["house_number"], site["postal_code"],
+                site["city"]
+            ) if part
+        )
+        if site["lat"] is None:
+            where = (
+                '<span class="dim">no point</span>'
+                if site["street"]
+                else '<span class="dim">no address</span>'
+            )
+        else:
+            exact = site["precision"] == "address"
+            where = (
+                f'<a href="/map">{site["lat"]:.5f}, {site["lon"]:.5f}</a>'
+                + (
+                    ""
+                    if exact
+                    else f' <span class="dim">on the {esc(site["precision"])}</span>'
+                )
+            )
+        rows.append(
+            f'<tr><td>{esc(site["name"] or "—")}'
+            + (' <span class="badge active">seat</span>' if site["is_seat"] else "")
+            + f'</td><td class="small">{esc(address)}</td>'
+            f'<td class="small">{where}</td>'
+            '<td><form method="post" class="inline" '
+            f'action="/establishment/{site["id"]}/delete"'
+            + ui.attrs(data_confirm=(
+                f"Remove the site {site['name'] or address or 'with no name'}? "
+                "Its place on the map goes with it."
+            ))
+            + f'><input type="hidden" name="back" value="{esc(back)}">'
+            '<button class="danger">remove</button></form></td></tr>'
+        )
+    table = ui.table(
+        ["site", "address", "where", ""], rows,
+        caption="Where this client actually is",
+        empty_text="No site recorded. The registered address arrives when "
+                   f"\"{ui.stage_title('geocode', 'Put them on the map')}\" "
+                   "has run on Operations; the other sites are typed here.",
+    )
+    return (
+        '<h2 id="sites">sites</h2>' + table
+        + '<details class="card"><summary><b>Add a site</b> '
+        '<span class="dim small">geocoded as it is saved</span></summary>'
+        f'<form class="stack" method="post" action="/company/{company_id}/sites" '
+        'style="margin-top:.7rem">'
+        f'<input type="hidden" name="back" value="{esc(back)}">'
+        f"<label for='sname'>Name{ui.REQUIRED_MARK}</label>"
+        "<input id='sname' name='name' required placeholder='EMS Petit-Flon'>"
+        "<div class='row2'>"
+        "<div><label for='sstreet'>Street</label>"
+        "<input id='sstreet' name='street' placeholder='Chemin du Petit-Flon'></div>"
+        "<div><label for='snum'>Number</label>"
+        "<input id='snum' name='house_number' placeholder='49'></div></div>"
+        "<div class='row2'>"
+        "<div><label for='spc'>Postcode</label>"
+        "<input id='spc' name='postal_code' placeholder='1018'></div>"
+        "<div><label for='scity'>Town</label>"
+        "<input id='scity' name='city' placeholder='Lausanne'></div></div>"
+        "<label for='skind'>What it is</label>"
+        "<input id='skind' name='kind' placeholder='EMS, day centre, office'>"
+        "<span class='hint'>Placed through the federal address search when you "
+        "save it. An address that does not resolve is kept without a point "
+        "rather than guessed at, and the page will say so.</span>"
+        '<div><button class="primary">Add the site</button></div></form></details>'
+    )

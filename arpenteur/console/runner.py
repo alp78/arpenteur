@@ -272,7 +272,7 @@ def _known_client(settings: Settings, form: dict[str, Any]) -> None:
     raw = str(form.get("client_id") or "").strip()
     if not raw:
         raise ValueError("Name the client.")
-    conn = db.open_db(settings.database_url)
+    conn = db.open_db(settings.database_url, getattr(settings, "modules", ()))
     try:
         if db.client(conn, int(raw)) is None:
             raise ValueError(f"No client has the number {raw}.")
@@ -1105,7 +1105,7 @@ class Runner:
                     f"Run {busy} is still going. One at a time: two runs of "
                     "the same stage would spend twice and interleave their writes."
                 )
-            conn = db.open_db(self.settings.database_url)
+            conn = db.open_db(self.settings.database_url, getattr(self.settings, "modules", ()))
             try:
                 run_id = db.start_run(conn, name, dict(form), started_by=by)
             finally:
@@ -1126,7 +1126,7 @@ class Runner:
         # Read once: the console rebinds its settings when they are saved, and
         # one run sees one object from its first line to its last.
         settings = self.settings
-        conn = db.open_db(settings.database_url)
+        conn = db.open_db(settings.database_url, getattr(settings, "modules", ()))
 
         def write(message: str) -> None:
             # Committed line by line. A run that dies at company 4'000 should

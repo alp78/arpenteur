@@ -29,6 +29,7 @@ from arpenteur.stages import draft
 from arpenteur.console import runner as runner_module
 from arpenteur.console.app import create_app
 from arpenteur.console.runner import Runner, Stage, coerce, check
+from arpenteur.console.routes import every_route
 
 SEGMENTS = {"sme-owner": "A small owner-run business."}
 SECTORS = {"hospitality": "Restaurants, cafés and hotels."}
@@ -409,7 +410,7 @@ def test_only_the_wave_routes_and_stages_can_send(client, conn) -> None:
     transmit, and only from the two wave routes."""
     from arpenteur.console.app import TRANSMITTING
 
-    routes = {getattr(r, "path", "") for r in client.app.routes}
+    routes = {getattr(r, "path", "") for r in every_route(client.app)}
     assert not [p for p in routes
                 if ("send" in p or "smtp" in p) and p not in TRANSMITTING]
     listed = {name for name, stage in runner_module.STAGES.items() if stage.listed}

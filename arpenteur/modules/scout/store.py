@@ -188,6 +188,41 @@ def company_by_uid(conn: Connection, uid: str) -> Row | None:
     ).fetchone()
 
 
+def uid_forms(text: str) -> tuple[str, str]:
+    """A UID as typed and as stored: CHE-123.456.789 and CHE123456789."""
+    wanted = (text or "").strip()
+    return wanted, wanted.replace("-", "").replace(".", "").replace(" ", "").upper()
+
+
+def find_company(conn: Connection, reference: str) -> Row:
+    """A company by its UID in either spelling, or by part of its name.
+
+    One lookup for the command line, the console and the scripts, which used
+    to carry three with three rules for an ambiguous name. A UID matches
+    exactly and alone; a name must match one company, and the refusal names
+    the candidates so the next attempt can be precise.
+    """
+    wanted, compact = uid_forms(reference)
+    if not wanted:
+        raise ValueError("Name a company: a UID, or part of its name.")
+    rows = conn.execute(
+        "SELECT id, uid, name, canton FROM core.company WHERE uid IN (%s, %s) LIMIT 1",
+        (wanted, compact),
+    ).fetchall()
+    if not rows:
+        rows = conn.execute(
+            "SELECT id, uid, name, canton FROM core.company"
+            " WHERE unaccent(name) ILIKE unaccent(%s) ORDER BY name LIMIT 4",
+            (f"%{wanted}%",),
+        ).fetchall()
+    if not rows:
+        raise ValueError(f"No company matches {reference!r}.")
+    if len(rows) > 1:
+        named = ", ".join(f"{r['name']} ({r['uid']})" for r in rows[:3])
+        raise ValueError(f"{reference!r} matches more than one company: {named}. Give the UID.")
+    return rows[0]
+
+
 def company(conn: Connection, company_id: int) -> Row | None:
     return conn.execute(
         "SELECT * FROM core.company WHERE id = %s", (company_id,)
@@ -391,11 +426,16 @@ def clear_stale(conn: Connection, company_id: int) -> None:
 # --- the change feed and the sweep --------------------------------------------
 
 
-def synced_days(conn: Connection) -> set[str]:
-    """The FOSC days already consumed. What makes a re-run free."""
+def synced_days(conn: Connection, *, complete_only: bool = True) -> set[str]:
+    """The FOSC days already consumed. What makes a re-run free.
+
+    A day recorded while it was still filling is not complete, and is left
+    out unless asked for: the next run reads it again.
+    """
+    where = " WHERE complete" if complete_only else ""
     return {
         row["sogc_date"]
-        for row in conn.execute("SELECT sogc_date FROM intel.sync_day")
+        for row in conn.execute(f"SELECT sogc_date FROM intel.sync_day{where}")
     }
 
 
@@ -404,14 +444,17 @@ def last_synced_day(conn: Connection) -> str | None:
     return row["d"] if row and row["d"] else None
 
 
-def record_sync_day(conn: Connection, date: str, counts: dict[str, int]) -> None:
+def record_sync_day(
+    conn: Connection, date: str, counts: dict[str, int], *, complete: bool = True,
+) -> None:
     """Mark a day consumed. Rewriting an existing day is deliberate: a range
     re-run must converge on the same numbers rather than accumulate them."""
     conn.execute(
         """
         INSERT INTO intel.sync_day (
-            sogc_date, notices, tracked, inserted, updated, deletions, fetched_at
-        ) VALUES (%s, %s, %s, %s, %s, %s, %s)
+            sogc_date, notices, tracked, inserted, updated, deletions, fetched_at,
+            complete
+        ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
         ON CONFLICT (sogc_date) DO UPDATE SET
             notices = excluded.notices, tracked = excluded.tracked,
             inserted = excluded.inserted, updated = excluded.updated,
@@ -420,7 +463,7 @@ def record_sync_day(conn: Connection, date: str, counts: dict[str, int]) -> None
         (
             date, counts.get("notices", 0), counts.get("tracked", 0),
             counts.get("inserted", 0), counts.get("updated", 0),
-            counts.get("deletions", 0), now(),
+            counts.get("deletions", 0), now(), complete,
         ),
     )
 
@@ -745,8 +788,11 @@ def set_prospect(
         ("next_action", next_action), ("next_at", next_at),
     ):
         if value is not None:
+            # None leaves the column alone; an empty string clears it, which
+            # is what a form sends for an owner or a next action somebody
+            # emptied. A state is never cleared.
             sets.append(f"{column} = %s")
-            params.append(value)
+            params.append(value if (value != "" or column == "state") else None)
     if not sets:
         return
     sets.append("updated_at = %s")
@@ -930,7 +976,7 @@ def prospect_owners(conn: Connection) -> list[str]:
 
 def bring_in(
     conn: Connection, *, band: str = "high", segment: str = "", sector: str = "",
-    canton: str = "", limit: int = 25,
+    canton: str = "", limit: int = 25, by: str = "board",
 ) -> int:
     """Put the best-scoring companies not yet on the board into `new`.
 
@@ -970,10 +1016,20 @@ def bring_in(
          ORDER BY f.score DESC NULLS LAST
          LIMIT %s
         ON CONFLICT (company_id) DO NOTHING
+        RETURNING company_id
         """,
         [stamp, stamp] + params + [limit],
     )
-    return cur.rowcount
+    brought = [int(row["company_id"]) for row in cur.fetchall()]
+    # Every arrival on the board is a state change like any other, so the
+    # board can say how long a card has sat in `new` and the history of a
+    # company shows when it was picked.
+    for company_id in brought:
+        record_state_change(
+            conn, entity="prospect", entity_id=company_id, company_id=company_id,
+            to_state="new", by=by,
+        )
+    return len(brought)
 
 
 def remove_from_board(conn: Connection, company_id: int) -> None:
@@ -1207,7 +1263,14 @@ def board_overlap(conn: Connection, company_id: int, *, limit: int = 40) -> list
                   -- link through two people who have each since left is real
                   -- history and a poor introduction, and the two must not
                   -- look the same in a list.
-                  bool_or(mine.valid_to IS NULL AND other.valid_to IS NULL) AS current
+                  bool_or(mine.valid_to IS NULL AND other.valid_to IS NULL) AS current,
+                  -- The same facts under the names the relationship score
+                  -- reads: a seat somebody left, a company being worked, who
+                  -- the person is and where else they sit.
+                  NOT bool_or(mine.valid_to IS NULL AND other.valid_to IS NULL) AS left_on,
+                  (pr.state IS NOT NULL) AS worked,
+                  min(p.full_name) AS full_name,
+                  c.name AS other_name
              FROM core.party_role mine
              JOIN core.party_role other
                ON other.party_id = mine.party_id AND other.company_id <> mine.company_id
@@ -2128,6 +2191,29 @@ def mark_reached(conn: Connection, company_id: int, pages: int) -> None:
 # --- the address hunt -----------------------------------------------------------
 
 
+def note_site(
+    conn: Connection, company_id: int, *, status: str, url: str | None,
+    method: str, source_url: str | None = None,
+) -> None:
+    """Record where a company's site is, and nothing else.
+
+    For a directory or a hunt that learned the address of the site without
+    reading it: the reading, when one exists, is the research stage's and is
+    kept. `save_site` replaces the whole row and is for the stage that read.
+    """
+    conn.execute(
+        """
+        INSERT INTO intel.site (company_id, status, url, method, source_url, fetched_at)
+        VALUES (%s, %s, %s, %s, %s, %s)
+        ON CONFLICT (company_id) DO UPDATE SET
+            status = excluded.status, url = excluded.url, method = excluded.method,
+            source_url = COALESCE(excluded.source_url, intel.site.source_url),
+            fetched_at = excluded.fetched_at
+        """,
+        (company_id, status, url, method, source_url, now()),
+    )
+
+
 def save_address_hunt(conn: Connection, company_id: int, hunt: Any) -> None:
     """Record how far the cascade got, including when it got nowhere.
 
@@ -2145,7 +2231,12 @@ def save_address_hunt(conn: Connection, company_id: int, hunt: Any) -> None:
         " domain = EXCLUDED.domain, addresses = EXCLUDED.addresses,"
         " method = EXCLUDED.method, pages = EXCLUDED.pages,"
         " searches = EXCLUDED.searches, tried = EXCLUDED.tried,"
-        " note = EXCLUDED.note, hunted_at = EXCLUDED.hunted_at",
+        " note = EXCLUDED.note, hunted_at = EXCLUDED.hunted_at"
+        # A hunt that found nothing does not erase one that found something:
+        # the later row would say the company is unreachable while its
+        # addresses sit in `contact` from the earlier one.
+        " WHERE cardinality(EXCLUDED.addresses) > 0"
+        "    OR COALESCE(cardinality(intel.address_hunt.addresses), 0) = 0",
         (company_id, hunt.outcome, hunt.tier, hunt.domain,
          list(hunt.addresses), hunt.method or None, hunt.pages, hunt.searches,
          json_param(hunt.tried or None), hunt.note or None, now()),
@@ -2156,15 +2247,6 @@ def address_hunt(conn: Connection, company_id: int) -> Row | None:
     return conn.execute(
         "SELECT * FROM intel.address_hunt WHERE company_id = %s", (company_id,)
     ).fetchone()
-
-
-def hunt_counts(conn: Connection) -> dict[str, int]:
-    return {
-        str(row["outcome"]): int(row["n"])
-        for row in conn.execute(
-            "SELECT outcome, COUNT(*) AS n FROM intel.address_hunt GROUP BY outcome"
-        )
-    }
 
 
 # --- runs ---------------------------------------------------------------------

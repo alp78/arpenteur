@@ -29,6 +29,7 @@ from arpenteur import db
 from arpenteur.kernel.db import Connection
 from arpenteur.config import Territory
 from arpenteur.console import create_app
+from arpenteur.console.routes import every_route
 
 SEGMENTS = {
     "sme-owner": "A small owner-run business.",
@@ -111,7 +112,7 @@ def test_exactly_two_routes_can_transmit(settings, conn) -> None:
     from arpenteur.console.app import TRANSMITTING
 
     app = create_app(settings)
-    routes = {getattr(r, "path", "") for r in app.routes}
+    routes = {getattr(r, "path", "") for r in every_route(app)}
     assert TRANSMITTING <= routes, "the two wave routes are missing"
     others = " ".join(p for p in routes if p not in TRANSMITTING).lower()
     for word in ("send", "smtp", "transmit", "dispatch"):

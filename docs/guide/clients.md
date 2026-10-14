@@ -24,6 +24,8 @@ The header restates the register entry and links to the company's record. The st
 
 A project has its own code, because it outlives the conversation that created it and has to be nameable in a contract and on an invoice. The fold "New project" takes a name, a billing mode, a budget, a start and a due date, and a description. A project's page shows its own entries of the record, and lets its status, billing, budget and dates be changed; a status change is logged as a decision. Deleting a project asks for a reason and detaches its entries rather than destroying them.
 
+With the sales module, the project's page also keeps the time spent on it: a date, a number of hours and a note per entry, each marked billable or not. "Bill the time" turns every billable hour not yet billed into one line of a new draft invoice at the hourly rate given, and marks the entries so no afternoon is billed twice. The Reports page sets hours logged against hours billed.
+
 **Sites**
 
 Every place the client operates, each placed on the map as it is saved. The registered address arrives when the geocode stage has run; the other sites are typed here. A site whose address does not resolve is kept without a point, and the card says so.

@@ -34,6 +34,14 @@ from ..http import PoliteClient
 ALPHABET = string.ascii_lowercase + string.digits
 
 
+class RegisterRefused(RuntimeError):
+    """The register answered with a status other than success.
+
+    A 401 used to read as an empty day or a company with no detail, which is
+    the worse outcome: a survey that quietly stops being current.
+    """
+
+
 class ResultListTooLarge(RuntimeError):
     """The registry refused a search for matching too much.
 
@@ -302,6 +310,10 @@ class ZefixClient:
         """
         url = f"{self.base}/api/v1/sogc/bydate/{date}"
         reply = self.client.get(url, max_age=max_age)
+        if reply.status != 200:
+            raise RegisterRefused(
+                f"the register answered {reply.status} for the gazette of {date}"
+            )
         rows = reply.body if isinstance(reply.body, list) else []
 
         mutations: list[Mutation] = []
@@ -342,12 +354,20 @@ class ZefixClient:
         """
         url = f"{self.base}/api/v1/company/uid/{uid}"
         reply = self.client.get(url, max_age=max_age)
+        if reply.status == 404:
+            return None
+        if reply.status != 200:
+            raise RegisterRefused(f"the register answered {reply.status} for {uid}")
         body = reply.body
         # The endpoint returns a list for a UID that maps to several entries
         # (a company and its branches); the head is the principal record.
         if isinstance(body, list):
             body = body[0] if body else None
         if not isinstance(body, dict):
+            return None
+        if not str(body.get("name") or "").strip():
+            # A record with no name is not a company record, and storing it
+            # would overwrite the name the sweep found with nothing.
             return None
 
         form = body.get("legalForm") if isinstance(body.get("legalForm"), dict) else {}

@@ -18,6 +18,8 @@ entries belonged. `record_event` and friends still point at it.
 
 from __future__ import annotations
 
+from collections.abc import Iterable
+
 from .kernel import db as _kernel
 from .kernel.db import Connection
 # Reached as `db.now` and `db.versions` through this module, which is why they
@@ -38,24 +40,26 @@ def connect(url: str | None = None) -> Connection:
 # idempotent, but checking costs a query per module per call and `open_db` is
 # called once per request and once per test; a set is cheaper than being
 # thorough about something that cannot have changed underneath us.
-_MIGRATED: set[str] = set()
+_MIGRATED: set[tuple[str, tuple[str, ...]]] = set()
 
 
-def open_db(url: str | None = None) -> Connection:
+def open_db(url: str | None = None, enabled: Iterable[str] | None = None) -> Connection:
     """A connection to a database that is migrated and ready.
 
     Migrations run here, as they did before, so no command has to remember to
-    apply them. Which modules are enabled decides which schemas exist; the
-    registry resolves that, and the kernel applies each module's files in
-    dependency order.
+    apply them. `enabled` is the module list from the configuration, and it
+    decides which schemas exist: the registry resolves it in dependency order
+    and the kernel applies each listed module's files, and no other module's.
+    Left empty, every module ships.
     """
     from .kernel import modules
 
+    wanted = tuple(str(n).strip() for n in (enabled or ()) if str(n).strip()) or modules.DEFAULT
     conn = _kernel.connect(url)
-    key = _kernel.dsn(url)
+    key = (_kernel.dsn(url), wanted)
     if key not in _MIGRATED:
         _kernel.ensure_extensions(conn)
-        _kernel.migrate(conn, modules.load(modules.DEFAULT).migration_dirs())
+        _kernel.migrate(conn, modules.load(wanted).migration_dirs())
         _MIGRATED.add(key)
     return conn
 
@@ -121,6 +125,7 @@ save_people = _scout.save_people
 prune_people = _scout.prune_people
 people_for = _scout.people_for
 save_site = _scout.save_site
+note_site = _scout.note_site
 site_for = _scout.site_for
 site_for_draft = _scout.site_for_draft
 save_contact = _scout.save_contact

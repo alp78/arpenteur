@@ -185,7 +185,7 @@ CREATE TABLE IF NOT EXISTS kernel.migration (
 );
 """
 
-EXTENSIONS = ("postgis", "pg_trgm", "unaccent", "btree_gin")
+EXTENSIONS = ("postgis", "pg_trgm", "unaccent")
 
 NUMBERED = re.compile(r"^(\d+)_([a-z0-9_]+)\.sql$")
 

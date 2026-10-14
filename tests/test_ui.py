@@ -355,15 +355,15 @@ def test_the_shell_has_landmarks_and_a_way_past_the_navigation() -> None:
     assert '<nav aria-label="Sections">' in out
 
 
-def test_htmx_is_pinned_and_checked_against_a_hash() -> None:
-    """A floating CDN tag is a third party able to change what runs on a page
-    holding a client's file."""
-    out = render.page("t", "")
-    assert "htmx.org@2.0.10" in out
-    assert "integrity=" in out
-    assert "unpkg.com" not in out
+def test_htmx_is_shipped_with_the_package_under_a_pinned_name() -> None:
+    """The page used to load htmx from a CDN behind an integrity hash. It now
+    loads it from the console itself; the bytes are checked against the same
+    hash where they are served, in `test_shell`."""
+    from arpenteur.console import render
 
-
+    page = render.page("x", "", render.Chrome())
+    assert f'<script src="/static/htmx-{render.HTMX_VERSION}.min.js"></script>' in page
+    assert "cdn.jsdelivr" not in page and "unpkg.com" not in page
 def test_the_script_url_carries_the_hash_of_the_script_it_serves() -> None:
     assert assets.CONSOLE_JS_HASH in assets.CONSOLE_JS_URL
     assert assets.CONSOLE_JS_URL in render.page("t", "")

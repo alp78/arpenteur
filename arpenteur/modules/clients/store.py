@@ -111,7 +111,10 @@ def promote_to_client(
 
 def update_client(conn: Connection, client_id: int, **fields: Any) -> None:
     allowed = {"code", "status", "since", "owner", "brief"}
-    sets = {k: v for k, v in fields.items() if k in allowed and v is not None}
+    # None leaves a field alone; an empty string clears it, which is what a
+    # form sends for a budget or a date somebody emptied.
+    sets = {k: (v if v != "" else None) for k, v in fields.items()
+            if k in allowed and v is not None}
     if not sets:
         return
     if "status" in sets:
@@ -162,6 +165,39 @@ def clients_by_company(conn: Connection, company_ids: list[int]) -> dict[int, Ro
             (list(company_ids),),
         )
     }
+
+
+def find_client(conn: Connection, reference: str) -> Row:
+    """A client by its code, its company's UID in either spelling, or its name.
+
+    The code and the UID match exactly, whatever the case; a name must match
+    one client. The one lookup behind the command line and the console.
+    """
+    wanted = (reference or "").strip()
+    compact = wanted.replace("-", "").replace(".", "").replace(" ", "").upper()
+    if not wanted:
+        raise ValueError("Name a client: its code, a UID, or part of its name.")
+    rows = conn.execute(
+        """SELECT c.*, co.name, co.uid FROM crm.client c
+             JOIN core.company co ON co.id = c.company_id
+            WHERE upper(c.code) = %s OR co.uid IN (%s, %s)
+            ORDER BY c.id LIMIT 1""",
+        (wanted.upper(), wanted, compact),
+    ).fetchall()
+    if not rows:
+        rows = conn.execute(
+            """SELECT c.*, co.name, co.uid FROM crm.client c
+                 JOIN core.company co ON co.id = c.company_id
+                WHERE unaccent(co.name) ILIKE unaccent(%s)
+                ORDER BY co.name LIMIT 4""",
+            (f"%{wanted}%",),
+        ).fetchall()
+    if not rows:
+        raise ValueError(f"No client matches {reference!r}.")
+    if len(rows) > 1:
+        named = ", ".join(f"{r['name']} ({r['code']})" for r in rows[:3])
+        raise ValueError(f"{reference!r} matches more than one client: {named}. Give the code.")
+    return rows[0]
 
 
 def search_clients(conn: Connection, q: str, *, limit: int = 10) -> list[Row]:
@@ -241,7 +277,10 @@ def add_project(
 def update_project(conn: Connection, project_id: int, **fields: Any) -> None:
     allowed = {"name", "status", "billing", "budget", "summary", "started_at",
                "due_at", "closed_at", "code"}
-    sets = {k: v for k, v in fields.items() if k in allowed and v is not None}
+    # None leaves a field alone; an empty string clears it, which is what a
+    # form sends for a budget or a date somebody emptied.
+    sets = {k: (v if v != "" else None) for k, v in fields.items()
+            if k in allowed and v is not None}
     if not sets:
         return
     if "status" in sets:
@@ -804,7 +843,8 @@ def add_attachment(
     ).fetchone()
     if known:
         conn.execute(
-            "UPDATE crm.attachment SET filename = %s, kind = %s, note = %s,"
+            "UPDATE crm.attachment SET filename = %s, kind = COALESCE(%s, kind),"
+            " note = COALESCE(%s, note),"
             " project_id = COALESCE(%s, project_id),"
             " folder_id = COALESCE(%s, folder_id) WHERE id = %s",
             (row["filename"], row.get("kind"), row.get("note"),
@@ -1124,31 +1164,6 @@ def programmes(conn: Connection, *, status: str = "") -> list[Row]:
         " GROUP BY p.id ORDER BY p.status, p.created_at DESC",
         ([status] if status else []),
     ).fetchall()
-
-
-def update_programme(conn: Connection, programme_id: int, **fields: Any) -> None:
-    allowed = {"name", "what", "status", "started_at", "released_at", "code"}
-    sets = {k: v for k, v in fields.items() if k in allowed and v is not None}
-    if not sets:
-        return
-    if "code" in sets:
-        sets["code"] = str(sets["code"]).strip().upper()
-    if "status" in sets:
-        before = conn.execute(
-            "SELECT status FROM crm.programme WHERE id = %s", (programme_id,)
-        ).fetchone()
-        if before is not None:
-            record_state_change(
-                conn, entity="programme", entity_id=programme_id,
-                from_state=before["status"], to_state=sets["status"],
-                by=fields.get("by"),
-            )
-    assignments = ", ".join(f"{k} = %({k})s" for k in sets)
-    conn.execute(
-        f"UPDATE crm.programme SET {assignments}, updated_at = %(now)s"
-        " WHERE id = %(id)s",
-        {**sets, "now": now(), "id": programme_id},
-    )
 
 
 def set_stages(
@@ -1646,18 +1661,6 @@ def ledger_tally(conn: Connection, programme_id: int) -> dict[str, int]:
     return tally
 
 
-def update_member(conn: Connection, member_id: int, **fields: Any) -> None:
-    allowed = {"contact", "note"}
-    sets = {k: v for k, v in fields.items() if k in allowed and v is not None}
-    if not sets:
-        return
-    columns = ", ".join(f"{k} = %s" for k in sets)
-    conn.execute(
-        f"UPDATE crm.programme_member SET {columns}, updated_at = %s WHERE id = %s",
-        (*[str(v).strip() or None for v in sets.values()], now(), member_id),
-    )
-
-
 def remove_member(conn: Connection, member_id: int) -> int | None:
     """Take a company off a programme.
 
@@ -1759,14 +1762,6 @@ def add_feedback(
          occurred_at or now(), (author or "").strip() or None, now()),
     ).fetchone()
     return int(created["id"])
-
-
-def feedback_for(conn: Connection, member_id: int, *, limit: int = 100) -> list[Row]:
-    return conn.execute(
-        "SELECT * FROM crm.programme_feedback WHERE member_id = %s"
-        " ORDER BY occurred_at DESC, id DESC LIMIT %s",
-        (member_id, limit),
-    ).fetchall()
 
 
 def feedback_on(conn: Connection, programme_id: int, *, limit: int = 200) -> list[Row]:
@@ -2033,16 +2028,6 @@ def email_counts(conn: Connection) -> dict[str, int]:
     return counts
 
 
-def emails_for_company(
-    conn: Connection, company_id: int, *, limit: int = 50
-) -> list[Row]:
-    return conn.execute(
-        "SELECT * FROM crm.email_message WHERE company_id = %s"
-        " ORDER BY sent_at DESC NULLS LAST LIMIT %s",
-        (company_id, limit),
-    ).fetchall()
-
-
 def match_company(
     conn: Connection, addresses: list[str], *, own_domains: frozenset[str] = frozenset(),
     free_domains: frozenset[str] = frozenset(),
@@ -2255,17 +2240,6 @@ def reopen_email(conn: Connection, email_id: int) -> None:
         " decided_by = NULL WHERE id = %s",
         (email_id,),
     )
-
-
-def thread_of(conn: Connection, thread_key: str) -> list[Row]:
-    """Every held message in one chain, oldest first."""
-    if not thread_key:
-        return []
-    return conn.execute(
-        "SELECT * FROM crm.email_message WHERE thread_key = %s"
-        " ORDER BY sent_at NULLS LAST, id",
-        (thread_key,),
-    ).fetchall()
 
 
 def rematch_pending(

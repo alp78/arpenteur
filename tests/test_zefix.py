@@ -4,6 +4,8 @@ from typing import Any
 
 from arpenteur.http import Response
 from arpenteur.sources.zefix import ZefixClient, _text
+import pytest
+from arpenteur.sources import zefix
 
 
 class FakeHttp:
@@ -80,3 +82,32 @@ def test_company_handles_list_response(fixture) -> None:
     http = FakeHttp({"company/uid": [fixture("zefix/company_full.json")]})
     client = ZefixClient(http, "https://example.test/ZefixPublicREST")
     assert client.company("CHE-100.000.001").uid == "CHE-100.000.001"
+
+
+# --- a refusal is an error, and a nameless record is no record ------------------
+
+
+class _Refusing(FakeHttp):
+    def get(self, url: str, **_: Any) -> Response:
+        self.calls.append(("GET", url, None))
+        return Response(401, {"message": "Unauthorized"}, url)
+
+
+def test_a_refused_gazette_day_is_an_error_not_an_empty_day() -> None:
+    """A 401 used to read as a day with no notices, which is a survey that
+    quietly stops being current."""
+    client = zefix.ZefixClient(_Refusing({}), "https://example.test/ZefixPublicREST")
+    with pytest.raises(zefix.RegisterRefused, match="401"):
+        client.sogc_by_date("2026-08-11")
+    with pytest.raises(zefix.RegisterRefused, match="401"):
+        client.company("CHE100000001")
+
+
+def test_a_detail_record_without_a_name_is_not_a_company() -> None:
+    """Storing it would overwrite the name the sweep found with nothing."""
+    client = zefix.ZefixClient(
+        FakeHttp({"company/uid/CHE1": {"uid": "CHE1", "name": "", "legalForm": {}}}),
+        "https://example.test/ZefixPublicREST",
+    )
+    assert client.company("CHE1") is None
+    assert client.company("CHE2") is None, "a 404 is not found, not an error"

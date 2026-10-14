@@ -380,11 +380,6 @@ def pill(text: str, *, manual: bool = False, title: str = "") -> str:
     )
 
 
-def pills(items: Iterable[str], manual: Iterable[str] = ()) -> str:
-    held = set(manual)
-    return "".join(pill(item, manual=item in held) for item in items)
-
-
 def chip(text: str, *, href: str = "", title: str = "") -> str:
     if href:
         return (

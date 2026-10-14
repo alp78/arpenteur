@@ -29,8 +29,6 @@ from __future__ import annotations
 
 import re
 import unicodedata
-from dataclasses import dataclass
-from typing import Callable
 
 import dns.exception
 import dns.resolver
@@ -139,26 +137,6 @@ NOT_A_CONTACT = frozenset({
 })
 
 
-@dataclass(frozen=True)
-class Verdict:
-    """What could be established about one address, and what could not.
-
-    `deliverable` means the domain accepts mail. `certain` means the address
-    was observed rather than constructed. Nothing here ever sets `certain` on
-    an inference: only the caller that read it off a page can say that.
-    """
-
-    address: str
-    ok: bool
-    deliverable: bool
-    certain: bool
-    reason: str
-
-    @property
-    def method(self) -> str:
-        return "published" if self.certain else "inferred"
-
-
 def shape_ok(address: str) -> bool:
     """A syntactically usable address that is not a filename or a placeholder."""
     address = (address or "").strip().lower()
@@ -217,27 +195,6 @@ def accepts_mail(
     return answer
 
 
-def verify(
-    address: str, *, certain: bool, cache: dict[str, bool] | None = None,
-    resolve: Callable[..., bool] = accepts_mail,
-) -> Verdict:
-    """Check one address as far as it can honestly be checked.
-
-    `certain` is the caller's assertion that this address was read off a page
-    rather than constructed. It is passed in rather than inferred because only
-    the caller knows, and it is the difference between a fact and a guess.
-    """
-    address = (address or "").strip().lower()
-    if not shape_ok(address):
-        return Verdict(address, False, False, False, "not an address")
-    if not resolve(domain_of(address), cache=cache):
-        return Verdict(address, False, False, certain, "domain takes no mail")
-    return Verdict(
-        address, True, True, certain,
-        "published on the site" if certain else "constructed, domain takes mail",
-    )
-
-
 # Words that are in a registered name and never in the domain somebody chose
 # for it. Legal forms first, then the filler a register keeps and a domain
 # drops.
@@ -255,6 +212,25 @@ NAME_NOISE = frozenset({
 })
 
 WORD = re.compile(r"[a-z0-9]+")
+
+
+# The German spelling of an umlaut, which is how a domain name carries it:
+# Zürich registers zuerich.ch. Folded the French way, ü is a bare u, and the
+# domain never echoes the name.
+GERMAN = str.maketrans({"ä": "ae", "ö": "oe", "ü": "ue", "ß": "ss",
+                        "Ä": "Ae", "Ö": "Oe", "Ü": "Ue"})
+
+
+def transliterate(text: str) -> str:
+    """The German spelling of the umlauts, then the accents folded away."""
+    return deaccent((text or "").translate(GERMAN))
+
+
+def _name_forms(name: str) -> set[str]:
+    """The words of a name under both foldings, so either spelling matches."""
+    return set(WORD.findall(deaccent(name or "").lower())) | set(
+        WORD.findall(transliterate(name or "").lower())
+    )
 
 
 def deaccent(text: str) -> str:
@@ -402,8 +378,8 @@ def distinctive_words(
     is what a confirmation should look for.
     """
     words = _drop_place([
-        w for w in WORD.findall(deaccent(name or "").lower())
-        if w not in NAME_NOISE and w not in TRADE_WORDS and len(w) > 2
+        w for w in WORD.findall(transliterate(name or "").lower())
+        if w not in NAME_NOISE and w not in TRADE_WORDS and len(w) >= 2
     ], seat, places)
     return sorted(dict.fromkeys(words), key=lambda w: (-len(w), w))
 
@@ -418,11 +394,11 @@ def domain_echoes_name(domain: str, name: str) -> int:
     Switzerland.
     """
     stem = deaccent(domain or "").lower().rpartition(".")[0] or domain or ""
-    words = {
-        w for w in WORD.findall(deaccent(name or "").lower())
-        if w not in NAME_NOISE and len(w) > 2
-    }
-    return sum(1 for w in words if w in stem)
+    words = {w for w in _name_forms(name) if w not in NAME_NOISE and len(w) >= 2}
+    # One fold per word: "zuerich" and "zurich" are the same word of the name,
+    # and a domain carrying either echoes it once.
+    echoed = {transliterate(w) for w in words if w in stem}
+    return len(echoed)
 
 
 DESK = "desk"

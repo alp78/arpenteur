@@ -31,6 +31,7 @@ from arpenteur.console import board as view
 from arpenteur.console.app import create_app
 from arpenteur.kernel.db import Connection
 from arpenteur.modules.scout import store
+from arpenteur.console.routes import every_route
 
 
 @pytest.fixture
@@ -241,7 +242,7 @@ def test_a_won_card_offers_the_handoff(client, conn) -> None:
 
 
 def test_the_board_cannot_send_either(client) -> None:
-    routes = {getattr(r, "path", "") for r in client.app.routes}
+    routes = {getattr(r, "path", "") for r in every_route(client.app)}
     # "mail" is not in this list: the console reads a mailbox now, and /mail is
     # the review queue. test_console.py holds the guarantee itself, as a scan
     # of the whole package for a send mechanism.
@@ -249,3 +250,22 @@ def test_the_board_cannot_send_either(client) -> None:
     # The two wave routes are the only ones allowed to: see test_console.py.
     assert not [p for p in routes
                 if ("send" in p or "smtp" in p) and p not in TRANSMITTING]
+
+
+def test_bringing_a_shortlist_in_is_audited_like_any_move(conn) -> None:
+    """A card that arrived with no state change recorded could not say how
+    long it had sat in `new`."""
+    brought = store.bring_in(conn, band="high", limit=2, by="test")
+    rows = conn.execute(
+        'SELECT entity_id, to_state, "by" FROM audit.state_change'
+        " WHERE entity = 'prospect' ORDER BY entity_id"
+    ).fetchall()
+    assert brought == 2 and len(rows) == 2
+    assert {r["to_state"] for r in rows} == {"new"} and {r["by"] for r in rows} == {"test"}
+
+
+def test_an_owner_and_a_next_action_can_be_cleared(conn) -> None:
+    store.set_prospect(conn, 1, state="contacted", owner="alex", next_action="call")
+    store.set_prospect(conn, 1, owner="", next_action="")
+    row = store.prospect_for(conn, 1)
+    assert row["state"] == "contacted" and row["owner"] is None and row["next_action"] is None

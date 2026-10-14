@@ -30,6 +30,7 @@ from arpenteur.console.app import create_app
 from arpenteur.kernel.db import Connection
 from arpenteur.modules.clients import store as clients_store
 from arpenteur.modules.scout import store as scout_store
+from arpenteur.console.routes import every_route
 
 pytestmark = pytest.mark.pg
 
@@ -424,7 +425,7 @@ def test_the_console_cannot_send_anything_from_a_programme(web) -> None:
     """The same guarantee the rest of the console gives, checked here because a
     rollout to fifty agencies is exactly where a send button would appear."""
     routes = [
-        r.path for r in web.app.routes
+        r.path for r in every_route(web.app)
         if "programme" in getattr(r, "path", "") or "member" in getattr(r, "path", "")
     ]
     assert routes

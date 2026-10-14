@@ -335,3 +335,159 @@ def test_a_contribution_may_decline_by_returning_nothing() -> None:
         )
     ])
     assert registry.fill("s") == ""
+
+
+# --- the console and the database follow the enabled list ----------------------
+#
+# A module is off when it is not in `[modules] enabled`: its routes are not
+# mounted, its header entries are gone, its panels are not drawn on other
+# modules' pages, and its schema is not created. Each of those used to be a
+# promise in prose; these make them tests.
+
+import re  # noqa: E402
+
+from arpenteur import db  # noqa: E402
+from arpenteur.config import Territory  # noqa: E402
+
+CONSOLE_ROUTES = ROOT / "console" / "routes"
+
+
+def _store_imports(path: Path) -> set[str]:
+    """The module packages a route file reaches into, by name."""
+    found = set()
+    for node in ast.walk(ast.parse(path.read_text(encoding="utf-8"))):
+        if isinstance(node, ast.ImportFrom) and node.module and "modules." in (node.module or ""):
+            found.add(node.module.split("modules.")[1].split(".")[0])
+        elif isinstance(node, ast.ImportFrom) and node.level and node.module \
+                and node.module.startswith("modules"):
+            found.add(node.module.split(".")[1])
+    return found
+
+
+@pytest.mark.parametrize("name", modules.AVAILABLE)
+def test_a_route_file_reaches_only_its_own_module_and_what_it_requires(name: str) -> None:
+    """The console's route file for a module may import that module's store
+    and the stores of the modules it requires; anything else is a panel for a
+    slot, rendered by the module that owns the data."""
+    path = CONSOLE_ROUTES / f"{name}.py"
+    if not path.is_file():
+        pytest.skip(f"{name} has no routes")
+    allowed = {name}
+    pending = list(modules.load(modules.AVAILABLE).by_name[name].requires)
+    while pending:
+        req = pending.pop()
+        if req not in allowed:
+            allowed.add(req)
+            pending.extend(modules.load(modules.AVAILABLE).by_name[req].requires)
+    reached = _store_imports(path)
+    assert reached <= allowed, f"{name} routes reach into {sorted(reached - allowed)}"
+
+
+def _console(build_settings, tmp_path: Path, enabled: tuple[str, ...]):
+    from fastapi.testclient import TestClient
+
+    from arpenteur.console import create_app
+
+    settings = build_settings(
+        tmp_path, modules=enabled,
+        territory=Territory(cantons=("VD",), legal_forms=("0107",), name="t"),
+    )
+    return TestClient(create_app(settings))
+
+
+def test_only_the_enabled_modules_mount_their_routes(db_path, build_settings, tmp_path) -> None:
+    from arpenteur.console.routes import every_route
+
+    client = _console(build_settings, tmp_path, ("scout", "geo", "clients"))
+    paths = {getattr(r, "path", "") for r in every_route(client.app)}
+    assert not [p for p in paths if p.startswith(("/quote", "/invoice", "/reports"))], paths
+    assert "/clients" in paths and "/map" in paths and "/companies" in paths
+    assert client.get("/quotes").status_code == 404
+    header = client.get("/").text.split("<header>")[1].split("</header>")[0]
+    assert "Quotes" not in header and "Reports" not in header
+
+
+def test_a_company_page_without_the_clients_module_offers_no_promotion(
+    db_path, build_settings, tmp_path,
+) -> None:
+    conn = db.open_db(db_path)
+    db.upsert_company(conn, {"uid": "CHE1", "name": "Atelier Sàrl", "canton": "VD",
+                             "method": "zefix"})
+    conn.commit()
+    conn.close()
+    alone = _console(build_settings, tmp_path, ("scout",))
+    page = alone.get("/company/1").text
+    assert "Make this a client" not in page and "Mail recognised by" not in page
+    together = _console(build_settings, tmp_path / "b", ("scout", "clients"))
+    page = together.get("/company/1").text
+    assert "Make this a client" in page
+
+
+def test_the_client_page_draws_the_panels_of_the_modules_that_are_on(
+    db_path, build_settings, tmp_path,
+) -> None:
+    conn = db.open_db(db_path)
+    company_id = db.upsert_company(conn, {"uid": "CHE1", "name": "Atelier Sàrl",
+                                          "canton": "VD", "method": "zefix"})
+    client_id = db.promote_to_client(conn, company_id)
+    conn.commit()
+    conn.close()
+    without = _console(build_settings, tmp_path, ("scout", "clients"))
+    page = without.get(f"/client/{client_id}").text
+    assert "Start a quote" not in page and "Add a site" not in page
+    with_all = _console(build_settings, tmp_path / "b", ("scout", "geo", "clients", "sales"))
+    page = with_all.get(f"/client/{client_id}").text
+    assert "Add a site" in page and "Start a quote" in page
+    assert page.index("Add a site") < page.index("Start a quote")
+
+
+def test_open_db_migrates_the_enabled_modules_only(pg_url: str) -> None:
+    from arpenteur.kernel import db as kernel
+
+    url = kernel.ensure_database(kernel.sibling(pg_url, "scout_only"))
+    conn = db.open_db(url, ("scout",))
+    try:
+        held = {row["module"] for row in conn.execute(
+            "SELECT DISTINCT module FROM kernel.migration"
+        ).fetchall()}
+        schemas = {row["schema_name"] for row in conn.execute(
+            "SELECT schema_name FROM information_schema.schemata"
+        ).fetchall()}
+    finally:
+        conn.close()
+    assert held == {"scout"}
+    assert "crm" not in schemas and "commercial" not in schemas
+
+
+def test_a_module_that_requires_a_missing_one_is_refused_at_open(pg_url: str) -> None:
+    from arpenteur.kernel import db as kernel
+
+    url = kernel.ensure_database(kernel.sibling(pg_url, "scout_only"))
+    with pytest.raises(RuntimeError, match="requires"):
+        db.open_db(url, ("scout", "sales"))
+
+
+def _toml(tmp_path: Path, enabled: str) -> Path:
+    (tmp_path / "arpenteur.toml").write_text(
+        f'[modules]\nenabled = [{enabled}]\n\n[survey]\ncantons = ["VD"]\n'
+        'legal_forms = ["0107"]\n\n[zefix]\ncontact = "tests"\n',
+        encoding="utf-8",
+    )
+    return tmp_path
+
+
+def test_drop_refuses_a_module_that_is_still_enabled(db_path, tmp_path, monkeypatch, capsys) -> None:
+    from arpenteur.cli import main
+
+    monkeypatch.setenv("ARPENTEUR_HOME", str(_toml(tmp_path, '"scout", "geo", "clients", "sales"')))
+    assert main(["modules", "drop", "sales", "--yes"]) == 1
+    err = capsys.readouterr().err
+    assert "still enabled" in err and "[modules] enabled" in err
+
+
+def test_drop_refuses_a_module_another_enabled_one_requires(db_path, tmp_path, monkeypatch, capsys) -> None:
+    from arpenteur.cli import main
+
+    monkeypatch.setenv("ARPENTEUR_HOME", str(_toml(tmp_path, '"scout", "geo", "sales"')))
+    assert main(["modules", "drop", "clients", "--yes"]) == 1
+    assert re.search(r"sales requires clients", capsys.readouterr().err)

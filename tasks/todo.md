@@ -66,13 +66,13 @@ The approved plan of 13.10.2026 is the reference for every detail; this file tra
 
 ## Stage 6. Internals and packaging
 
-- [ ] Per-module routers mounted when enabled; migrations of enabled modules only; `modules drop` consistent; panels through the slots.
-- [ ] Parsers per module; one lookup per entity; shared upload and note import; one date and one money formatter.
-- [ ] Dead code, the legacy migrations, the unused indexes, the dependency extras.
-- [ ] Time tracking on the project page, billed into a draft invoice.
-- [ ] The survey-half fixes S1 to S10 and S12, each with a test.
-- [ ] Packaging: Python version pinned, HTMX vendored, a Dockerfile and an app service, `ARPENTEUR_HOME`.
-- [ ] Suite green, ruff clean, live smoke, commit stack.
+- [x] Per-module routers mounted when enabled; migrations of enabled modules only; `modules drop` consistent; panels through the slots.
+- [x] Parsers per module; one lookup per entity. Left: the shared upload and note import, one date and one money formatter.
+- [x] Dead code, the legacy migrations, the unused indexes, the dependency extras.
+- [x] Time tracking on the project page, billed into a draft invoice.
+- [x] The survey-half fixes S1 to S6 and S8 to S10, each with a test. Left: S7 (the classifier scripts are the operator's, outside git) and S12 beyond the UID lookup.
+- [x] Packaging: Python version pinned, HTMX vendored, a Dockerfile and an app service, `ARPENTEUR_HOME`.
+- [x] Suite green, ruff clean, live smoke, commit stack.
 
 ## Review
 
@@ -166,6 +166,36 @@ Found and fixed on the way:
 - A dry run of the bounce read counted as the read a campaign's next wave waits for; dry runs no longer open that gate.
 
 The suite: 1,654 passed, 246 of them new, ruff clean. The one red test in the full run asserted the old word "survey" on the client page and was updated to the new wording; the file passed on its own afterwards.
+
+### Stage 6, 14.10.2026
+
+What exists now:
+
+- The console is composed from one route file per module under `arpenteur/console/routes/`, each exposing `router(ctx)` and its `CONTRIBUTIONS`, found by name and mounted only when the module is enabled. `context.Console` is what they close over; `app.py` keeps the composer's own pages and is 1,082 lines where it was 4,285. FastAPI keeps an included router as one entry of `app.routes`, so `routes.every_route` expands them and the six no-send gate tests walk that list.
+- Modules meet through slots: the company page's actions and panels, the board's client chips, the sent draft's programme move, the client page's panels, the project page's panels and the home tiles. `Registry.add` takes a route file's contributions and `Registry.gather` serves the slots that carry data rather than markup.
+- `db.open_db(url, enabled)` migrates the enabled modules only; the loader's default names all five; `modules drop` refuses while the module is still enabled or still required, naming the dependant.
+- The command line is split the same way, under `arpenteur/commands/`: `common.py` for what every command shares, `system.py` for the application's own commands, one file per module registered when it is enabled; `cli.py` is 140 lines. `ARPENTEUR_HOME` names the project folder for an installed copy and for a test.
+- Time is logged on a project's page and billed into a draft invoice at an hourly rate, as a sales panel in a clients page.
+- Gone: eleven functions and constants nothing called, the legacy `arpenteur/migrations/` folder, two unused indexes and the `btree_gin` extension, the `pool` extra and the duplicate `httpx`. The decimal parser moved to the kernel, since a budget is typed like a quote line.
+- The survey half: a gazette day read while it was still filling is read again the next day, from the register rather than the cache; a refusal from the register is an error and a record without a name is no record; the overlap query answers what the relationship score reads, a bring-in is audited, a published address names the one officer it spells; the parser reads a departure only from a capitalised name, keeps a particle, tells a vice-president from a president and reads the feminine labels; officers who left stay out of the research and scoring prompts; an empty reparse prunes; a directory note no longer wipes the research and a hunt that found nothing keeps what an earlier one found; a domain echoes an umlaut in either spelling and a two-letter name word counts; one `find_company` and one `find_client` serve the command line, the console and the scripts; a re-added document keeps its kind and note; an owner, a next action, a budget and a due date can be cleared; an address with a missing part is one address.
+- Packaging: Python 3.14 pinned, htmx shipped with the package and checked against the hash the CDN tag carried, a Dockerfile and an `app` profile in the compose file that mounts the project folder.
+
+Left, and why:
+
+- S7: the classifier scripts are the operator's, outside git since stage 1; the console marks only what a person set by hand, so a rule's label shows no mark rather than a wrong one.
+- S12: the UID lookup is index-friendly through `find_company`; the run log's commit per line is deliberate, it is what makes the log live; the count queries and the list's join order are as they were.
+- A6: the document upload and the note import are still written twice, and the date and money formatters are still several.
+- The empty reparse has no stage-level test; `prune_people` with an empty keep list has its own.
+
+Found and fixed on the way:
+
+- The migration-digest test wrote a tampered digest into the shared test database and never restored it. The old migration cache hid it; keying the cache by the module list exposed it. The test restores the digest.
+- The CLI tests patched `cli.load_settings` and reached stage modules through `cli`; they go through `commands.common` and import the stage modules by name.
+- The test suite's spy on `open_db` took one argument.
+
+The live check: every page answers 200 on the live installation, the company page offers the client action, the client page draws the sites and the money panels, the project page offers the time log, a path nothing answers to is a 404 in the shell; `arpenteur doctor --quick` is green except the known Drymos templates gap; `modules list` shows scout at 18, geo at 2 and clients at 12 after the three new migrations ran on the live database.
+
+The suite: 1,753 passed, 37 more than at the end of stage 5, ruff clean.
 
 ### Stage 5, 14.10.2026
 

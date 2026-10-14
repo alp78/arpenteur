@@ -122,6 +122,16 @@ uv run arpenteur console
 
 Open `http://127.0.0.1:8000` in a browser. The console has no sign-in because it listens on the machine itself only; [the setup page](setup.md) says what to fill in first. Stop it with Ctrl-C. A stage running inside the console at that moment stops with it, and is marked as interrupted at the next start.
 
+## The console in a container
+
+A machine with Docker and nothing else can run the console from the compose file too, under the `app` profile:
+
+```bash
+docker compose --profile app up -d --build
+```
+
+The project folder is mounted into the container, so the configuration, the brief, the templates and the data stay on the host. Model access inside the container is by API key, because the `claude` command and its sign-in are per machine. The console answers at the same address.
+
 ## Updating
 
 ```bash

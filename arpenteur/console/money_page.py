@@ -29,6 +29,7 @@ from typing import Any
 
 from . import ui
 from ..config import IssuerConfig
+from ..modules.sales import store as sales_store
 from ..kernel.db import Row
 from ..modules.sales import money
 from ..modules.sales.store import CREDITABLE_STATES, PAYABLE_STATES
@@ -155,8 +156,7 @@ def state_tag(state: str) -> str:
 QUOTE_STATES = ("draft", "sent", "accepted", "declined", "expired", "withdrawn")
 # The states that close a quote. Reaching one is asked about; accepted is not.
 CLOSING_STATES = frozenset({"declined", "withdrawn", "expired"})
-INVOICE_STATES = ("draft", "issued", "part_paid", "paid", "overdue",
-                  "credited", "cancelled")
+INVOICE_STATES = sales_store.INVOICE_STATES
 
 
 def quotes_page(
@@ -1039,3 +1039,72 @@ def _print_shell(title: str, body: str) -> str:
         f"<title>{esc(title)}</title><style>{PRINT}</style></head>"
         f"<body>{body}</body></html>"
     )
+
+
+# --- time on a project -----------------------------------------------------------
+
+
+def _hours(minutes: Any) -> str:
+    return f"{(Decimal(int(minutes or 0)) / Decimal(60)).quantize(Decimal('0.01'))}"
+
+
+def time_panel(project_id: int, entries: list[Row], *, today: str) -> str:
+    """The time spent on a project, the way to add some, and the way to bill it.
+
+    Minutes are stored and hours are shown, because a person thinks in
+    quarters of an hour and a sum in minutes is exact. An entry on an invoice
+    says which one, so what was billed is never a matter of memory.
+    """
+    logged = sum(int(e["minutes"]) for e in entries)
+    billable = sum(int(e["minutes"]) for e in entries if e["billable"])
+    unbilled = sum(
+        int(e["minutes"]) for e in entries if e["billable"] and e["invoice_line_id"] is None
+    )
+    rows = []
+    for entry in entries:
+        if not entry["billable"]:
+            state = '<span class="dim">not billable</span>'
+        elif entry["invoice_line_id"] is None:
+            state = "not yet"
+        else:
+            state = f'<a href="/invoice-line/{entry["invoice_line_id"]}">on an invoice</a>'
+        rows.append(
+            f"<tr><td>{esc(_day(entry['occurred_on']))}</td>"
+            f'<td class="num">{_hours(entry["minutes"])}</td>'
+            f"<td>{esc(entry['note'] or '')}</td><td>{state}</td></tr>"
+        )
+    table = ui.table(
+        ["date", "hours", "note", "billed"], rows, caption="Time on this project",
+        numeric=["hours"],
+        empty_text="No time logged yet. Each entry is a date, a number of hours "
+                   "and a note; the billable ones can be billed from here.",
+    )
+    summary = (
+        f'<p class="dim small">{_hours(logged)} h logged, {_hours(billable)} h billable, '
+        f"{_hours(unbilled)} h not yet billed.</p>"
+    )
+    log_form = (
+        f'<details class="card"><summary><b>Log time</b></summary>'
+        f'<form class="stack" method="post" action="/project/{project_id}/time" '
+        'style="margin-top:.7rem">'
+        f"<div class='row2'><div><label for='t-day'>Date{ui.REQUIRED_MARK}</label>"
+        f"<input id='t-day' name='occurred_on' type='date' value='{esc(today)}' required></div>"
+        f"<div><label for='t-hours'>Hours{ui.REQUIRED_MARK}</label>"
+        "<input id='t-hours' name='hours' type='number' step='0.25' min='0.25' "
+        "placeholder='1.5' required></div></div>"
+        "<label for='t-note'>Note</label>"
+        "<input id='t-note' name='note' placeholder='What the time went on'>"
+        "<label><input type='checkbox' name='billable' value='1' checked> Billable</label>"
+        '<div><button class="primary">Log it</button></div></form></details>'
+    )
+    bill_form = (
+        f'<form class="stack" method="post" action="/project/{project_id}/bill-time" '
+        f'data-confirm="Bill {_hours(unbilled)} hours into a new draft invoice? '
+        'The entries are marked as billed.">'
+        "<label for='t-rate'>Hourly rate, CHF</label>"
+        "<input id='t-rate' name='rate' type='number' step='5' min='5' "
+        "placeholder='180' required>"
+        '<div><button>Bill the time</button></div></form>'
+        if unbilled else ""
+    )
+    return f'<h2 id="time">time</h2>{summary}{table}{log_form}{bill_form}'

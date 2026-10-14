@@ -92,3 +92,19 @@ def test_every_page_of_the_manual_renders_in_the_console(client) -> None:
         page = client.get(f"/help/{name}")
         assert page.status_code == 200, name
         assert f"<title>{title} | Arpenteur</title>" in page.text, name
+
+
+def test_htmx_is_served_from_the_package_and_is_the_pinned_build(client) -> None:
+    """The bytes the CDN tag once checked with an integrity hash, now shipped."""
+    import base64
+    import hashlib
+
+    from arpenteur.console import render
+
+    page = client.get("/").text
+    assert f'<script src="/static/htmx-{render.HTMX_VERSION}.min.js"></script>' in page
+    assert "cdn.jsdelivr" not in page and "unpkg" not in page
+    reply = client.get(f"/static/htmx-{render.HTMX_VERSION}.min.js")
+    assert reply.status_code == 200
+    digest = base64.b64encode(hashlib.sha384(reply.content).digest()).decode()
+    assert digest == render.HTMX_SHA384

@@ -193,9 +193,8 @@ def match(path: Path, *, dry_run: bool, log=print) -> int:
             matched += 1
             continue
 
-        db.save_site(conn, int(company["id"]), {
-            "status": "found", "url": site, "method": "directory",
-        })
+        db.note_site(conn, int(company["id"]), status="found", url=site,
+            method="directory")
         conn.commit()
         matched += 1
         sited += 1

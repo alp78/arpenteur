@@ -1144,21 +1144,6 @@ def invoices_for(conn: Connection, client_id: int) -> list[Row]:
     ).fetchall()
 
 
-def outstanding(conn: Connection, *, on: date | None = None) -> list[Row]:
-    """Issued, not settled, oldest first. The list a Friday afternoon is for."""
-    when = on or date.today()
-    return conn.execute(
-        "SELECT i.*, c.code AS client_code, co.name AS company_name,"
-        "       (%s - i.due_on) AS days_late"
-        "  FROM commercial.invoice i"
-        "  JOIN crm.client c ON c.id = i.client_id"
-        "  JOIN core.company co ON co.id = c.company_id"
-        " WHERE i.status IN ('issued', 'part_paid', 'overdue')"
-        " ORDER BY i.due_on NULLS LAST, i.id",
-        (when,),
-    ).fetchall()
-
-
 # --- time ------------------------------------------------------------------------
 
 

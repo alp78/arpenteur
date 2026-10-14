@@ -448,3 +448,23 @@ def test_a_role_carries_its_dates_onto_the_edge(conn) -> None:
     conn.commit()
     role = store.roles_for_party(conn, store.parties(conn)[0]["id"])[0]
     assert role["valid_from"] == "2019-03-04" and role["valid_to"] == "2023-06-01"
+
+
+def test_board_overlap_answers_what_the_relationship_score_reads(conn) -> None:
+    """The score reads `left_on`, `worked`, `full_name` and `other_name`; the
+    query used to return none of them, so every overlap scored as a current
+    seat at a company nobody was working."""
+    officer(conn, 1, "Boccard Christian", origin="France")
+    officer(conn, 2, "Boccard Christian", origin="France")
+    conn.commit()
+    store.resolve_parties(conn)
+    store.set_prospect(conn, 1, state="contacted")
+    conn.commit()
+    (row,) = store.board_overlap(conn, 2)
+    assert row["other_name"] == "Alpha Sàrl"
+    assert row["full_name"] == "Boccard Christian"
+    assert row["worked"] is True and row["left_on"] is False
+    from arpenteur.modules.scout import scoring
+
+    score, _why, evidence = scoring.relationship_score([dict(row)])
+    assert score == 85 and "Boccard Christian also sits at Alpha Sàrl" in evidence[0]

@@ -142,3 +142,19 @@ The first was guessed one line after printing the signature that said so.
 ## A new file is checked against the tree before it is written (14.10.2026)
 
 Writing `tests/test_manual.py` for the new manual overwrote a tracked test file of the same name about manual labels; the tool answered "updated" rather than "created" and the word went unread. Before writing a file under a new name, run `git ls-files <path>` or look at the Write result's first word; a file that exists is edited or the new one takes another name. The original was restored from git and the new tests moved to `tests/test_help.py`.
+
+## A moved body keeps its imports at the old depth (14.10.2026)
+
+Moving route and command bodies into a deeper package by script carried their top-level imports with one more dot, but the imports written inside function bodies kept the old depth and failed at request time, not at import time. A move script deepens every `from .` line, indented or not, with a regex anchored on spaces and tabs: `^([ \t]+)from (\.+)`. The first attempt used `\s+`, which matches a newline and so deepened the top-level imports that follow a blank line as well.
+
+## A decorator is above the line `ast` reports (14.10.2026)
+
+Cutting a function by `node.lineno` drops its decorators: `@contextlib.contextmanager` and `@dataclass` were lost in the command-line split and surfaced as a generator that was not a context manager. The start of a definition is `node.decorator_list[0].lineno` when there are decorators.
+
+## A framework's list is not the flat list it was (14.10.2026)
+
+FastAPI 0.141 keeps an included router as one entry of `app.routes`, so a test that walks that list for the paths that can send would miss everything a module mounted and pass. The walk goes through one helper that expands them, and the gate tests use it.
+
+## A cache can hide a leak between tests (14.10.2026)
+
+A test wrote a tampered migration digest into the shared database and never restored it; nothing noticed for as long as `open_db` migrated each database once per process. Keying that cache by the module list made later tests migrate again and refuse. A test that changes shared state restores it in `finally`, and a cache that hides a fault is not evidence the fault is absent.

@@ -400,7 +400,8 @@ def run(
             (company["id"],),
         ).fetchall()
         officers = conn.execute(
-            "SELECT full_name, role FROM core.person WHERE company_id = %s ORDER BY role",
+            "SELECT full_name, role FROM core.person"
+            " WHERE company_id = %s AND left_date IS NULL ORDER BY role",
             (company["id"],),
         ).fetchall()
         site = db.site_for_draft(conn, company["id"])

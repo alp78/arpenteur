@@ -16,11 +16,17 @@ from typing import Any
 
 
 def project_root() -> Path:
-    """The repo root, found from this file rather than the cwd.
+    """Where the configuration, the environment file and the data live.
 
-    The CLI has to work the same whether it is run from the repo, from a
-    systemd unit with no working directory, or from a test.
+    `ARPENTEUR_HOME` names it when set, which is how an installed copy finds
+    its files outside the package and how a test points a command at a
+    folder of its own. Otherwise the repo root, found from this file rather
+    than the cwd, so the CLI works the same from the repo, from a service
+    unit with no working directory, or from a test.
     """
+    named = os.environ.get("ARPENTEUR_HOME", "").strip()
+    if named:
+        return Path(named).expanduser().resolve()
     return Path(__file__).resolve().parent.parent
 
 
@@ -720,7 +726,7 @@ def load_settings(root: Path | None = None) -> Settings:
     for anyone reading the repository. The overlay is this deployment's
     decisions, stored in the database because the most consequential choices
     in the tool should not be the ones you have to leave the application to
-    make. See migrations/0013_settings.sql.
+    make. See modules/scout/migrations/0003_runs.sql, which created intel.setting.
 
     Read directly rather than through db.open_db: this is called before the
     console exists and must not depend on it, and a database that is not there
@@ -793,7 +799,7 @@ def load_settings(root: Path | None = None) -> Settings:
         modules=tuple(
             str(name).strip()
             for name in (raw.get("modules") or {}).get(
-                "enabled", ("scout", "geo", "clients", "sales")
+                "enabled", ("scout", "geo", "clients", "sales", "analytics")
             )
             if str(name).strip()
         ),

@@ -38,6 +38,11 @@ marginally more addresses and would be a different kind of program.
 
 from __future__ import annotations
 
+import re
+import unicodedata
+
+from collections.abc import Sequence
+
 import urllib.robotparser
 from dataclasses import dataclass, field as dc_field
 from typing import Any, Callable
@@ -270,6 +275,39 @@ def _select(
     return conn.execute(sql, params).fetchall()
 
 
+
+def _folded(text: str) -> str:
+    return "".join(
+        c for c in unicodedata.normalize("NFKD", (text or "").lower())
+        if not unicodedata.combining(c)
+    )
+
+
+def officer_for(address: str, officers: Sequence[Any]) -> int | None:
+    """The one officer an address names, or None.
+
+    `j.dupont@`, `jean.dupont@` and `dupont@` name Dupont Jean; `info@` names
+    nobody. Every piece of the local part must be a word of the name or the
+    initial of one, and at least one piece must be a whole word of three
+    letters or more. Two officers who both fit are nobody: a guess between
+    them would attach a mailbox to the wrong person, which is the fault this
+    must never commit.
+    """
+    local = _folded(address.split("@", 1)[0])
+    parts = [p for p in re.split(r"[._\-+]", local) if p]
+    if not parts:
+        return None
+    found = []
+    for officer in officers:
+        tokens = {t for t in re.split(r"[\s\-]+", _folded(officer["full_name"])) if t}
+        initials = {t[0] for t in tokens}
+        whole = [p for p in parts if len(p) >= 3 and p in tokens]
+        explained = all(p in tokens or (len(p) == 1 and p in initials) for p in parts)
+        if whole and explained:
+            found.append(int(officer["id"]))
+    return found[0] if len(found) == 1 else None
+
+
 def run(
     settings: Settings,
     conn: Connection,
@@ -341,6 +379,7 @@ def run(
                 continue
 
             addresses = reading.addresses
+            officers = db.people_for(conn, company["id"])
             for address, page_url in addresses:
                 stats["addresses"] += 1
                 stats["new"] += db.save_contact(
@@ -348,6 +387,7 @@ def run(
                     company_id=company["id"],
                     kind="email",
                     value=address,
+                    person_id=officer_for(address, officers),
                     source_url=page_url,
                     method="published",
                 )
@@ -932,6 +972,7 @@ def hunt_all(
                 stats["personal"] = stats.get("personal", 0) + int(private)
                 stats["new"] += db.save_contact(
                     conn, company_id=company["id"], kind="email", value=address,
+                    person_id=officer_for(address, db.people_for(conn, company["id"])),
                     source_url=hunt.where.get(address) or (
                         f"https://{hunt.domain}" if hunt.domain else None
                     ),

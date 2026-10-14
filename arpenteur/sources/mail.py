@@ -150,12 +150,6 @@ class Body:
     kind: str = "text/plain"
     truncated: bool = False
 
-    @property
-    def snippet(self) -> str:
-        flat = " ".join(self.text.split())
-        return flat[:280] + ("…" if len(flat) > 280 else "")
-
-
 def _decode(raw: str | None) -> str:
     """A header as text, whatever it was encoded in.
 

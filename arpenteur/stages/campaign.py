@@ -270,7 +270,7 @@ def _variants(conn: Connection, wave: Row) -> list[Row]:
 def precheck_test(settings: Settings, form: dict[str, Any]) -> None:
     """Run synchronously by the console before the job starts."""
     from .. import db
-    with db.open_db(settings.database_url) as conn:
+    with db.open_db(settings.database_url, getattr(settings, "modules", ())) as conn:
         row = resolve(conn, form["campaign"])
         _unchanged(settings, conn, row, _wave(conn, row, int(form["wave"])))
 
@@ -439,7 +439,7 @@ def why_not_send(settings: Settings, conn: Connection, row: Row, w: Row,
 def precheck_send(settings: Settings, form: dict[str, Any]) -> None:
     """Run synchronously by the console before the job starts."""
     from .. import db
-    with db.open_db(settings.database_url) as conn:
+    with db.open_db(settings.database_url, getattr(settings, "modules", ())) as conn:
         row = resolve(conn, form["campaign"])
         reason = why_not_send(settings, conn, row, _wave(conn, row, int(form["wave"])),
                                str(form.get("confirm") or ""))

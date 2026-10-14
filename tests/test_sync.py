@@ -345,3 +345,43 @@ def test_an_enormous_backfill_has_to_be_asked_for(monkeypatch, settings, conn) -
     """One request per day is cheap; --since 2010 is six thousand of them."""
     with pytest.raises(RuntimeError, match="days to sync"):
         sync_with(monkeypatch, FakeZefix({}), settings, conn, since="2010-01-01")
+
+
+def test_a_day_read_while_it_was_filling_is_read_again_the_next_day(
+    monkeypatch, settings, conn
+) -> None:
+    """The cantonal registers file through the working day. A run at noon
+    records the day, and the evening's notices arrive after it; the next
+    run must read that day again, and from the register, not from the copy
+    the noon run cached."""
+    fake = FakeZefix({})
+    sync_with(monkeypatch, fake, settings, conn, since="2026-08-10", until="2026-08-11",
+              today=Date(2026, 8, 11))
+    fake.calls.clear()
+    sync_with(monkeypatch, fake, settings, conn, today=Date(2026, 8, 12))
+    policy = dict(fake.calls)
+    assert "2026-08-10" not in policy, "a day read after it ended is done"
+    assert policy["2026-08-11"] == 0, "the day read while filling is read again, uncached"
+    assert policy["2026-08-12"] == 0, "today is read uncached as before"
+
+
+def test_resuming_on_the_same_day_reads_today_again(monkeypatch, settings, conn) -> None:
+    """Resuming used to start the day after the last one consumed, which was
+    tomorrow when that day was today, and reported "already up to date"."""
+    fake = FakeZefix({})
+    sync_with(monkeypatch, fake, settings, conn, since="2026-08-11")
+    fake.calls.clear()
+    stats = sync_with(monkeypatch, fake, settings, conn)
+    assert [day for day, _ in fake.calls] == ["2026-08-11"]
+    assert stats["days"] == 1
+
+
+def test_a_day_re_read_on_purpose_is_fetched_rather_than_served_from_disk(
+    monkeypatch, settings, conn
+) -> None:
+    fake = FakeZefix({})
+    sync_with(monkeypatch, fake, settings, conn, since="2026-08-05", until="2026-08-06")
+    fake.calls.clear()
+    sync_with(monkeypatch, fake, settings, conn, since="2026-08-05", until="2026-08-06",
+              resume=False)
+    assert dict(fake.calls) == {"2026-08-05": 0, "2026-08-06": 0}

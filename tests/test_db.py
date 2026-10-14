@@ -41,6 +41,9 @@ def test_an_edited_migration_is_caught_rather_than_skipped(db_path: str) -> None
     from arpenteur.kernel import db as kernel
 
     conn = db.connect(db_path)
+    original = conn.execute(
+        "SELECT digest FROM kernel.migration WHERE module = 'scout' AND version = 1"
+    ).fetchone()["digest"]
     conn.execute(
         "UPDATE kernel.migration SET digest = 'tampered'"
         " WHERE module = 'scout' AND version = 1"
@@ -48,9 +51,19 @@ def test_an_edited_migration_is_caught_rather_than_skipped(db_path: str) -> None
     conn.commit()
     from arpenteur.kernel import modules
 
-    with pytest.raises(RuntimeError, match="has changed since it was applied"):
-        kernel.migrate(conn, modules.load(("scout",)).migration_dirs())
-    conn.close()
+    try:
+        with pytest.raises(RuntimeError, match="has changed since it was applied"):
+            kernel.migrate(conn, modules.load(("scout",)).migration_dirs())
+    finally:
+        # The database is shared with the tests that follow, and a digest left
+        # tampered would refuse every later migration of it.
+        conn.rollback()
+        conn.execute(
+            "UPDATE kernel.migration SET digest = %s"
+            " WHERE module = 'scout' AND version = 1", (original,)
+        )
+        conn.commit()
+        conn.close()
 
 
 def test_upsert_preserves_first_seen_and_purpose(db_path: Path) -> None:
@@ -105,4 +118,25 @@ def test_save_segments_replaces_on_reclassify(db_path: Path) -> None:
     assert len(rows) == 1
     assert rows[0]["confidence"] == 0.9
     assert rows[0]["model"] == "m2"
+    conn.close()
+
+
+# --- one company lookup --------------------------------------------------------------
+
+
+def test_a_company_is_found_by_either_spelling_of_its_uid_or_by_its_name(db_path) -> None:
+    conn = db.open_db(db_path)
+    db.upsert_company(conn, {"uid": "CHE123456789", "name": "Atelier Sàrl", "canton": "VD"})
+    db.upsert_company(conn, {"uid": "CHE987654321", "name": "Atelier du Nord SA", "canton": "VD"})
+    from arpenteur.modules.scout import store
+
+    assert store.find_company(conn, "CHE-123.456.789")["name"] == "Atelier Sàrl"
+    assert store.find_company(conn, "che123456789")["name"] == "Atelier Sàrl"
+    assert store.find_company(conn, "du nord")["uid"] == "CHE987654321"
+    import pytest
+
+    with pytest.raises(ValueError, match="more than one"):
+        store.find_company(conn, "atelier")
+    with pytest.raises(ValueError, match="No company"):
+        store.find_company(conn, "nobody")
     conn.close()

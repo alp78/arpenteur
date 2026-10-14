@@ -75,8 +75,9 @@ LEGAL_ENTITY = re.compile(
 ROLE_LABEL = re.compile(
     r"((?:nouvelles?\s+|nouveaux\s+|autres?\s+)?"
     r"(?:associ[ée]e?s?-g[ée]rant(?:e)?s?|g[ée]rant(?:e)?s?|associ[ée]e?s?"
-    r"|administrat(?:eur|rice)s?|liquidateur(?:trice)?s?|pr[ée]sident(?:e)?s?"
-    r"|directeur(?:s|rice)?s?|secr[ée]taires?|r[ée]viseurs?"
+    r"|administrat(?:eur|rice)s?|liquidat(?:eur|rice)s?"
+    r"|vice-pr[ée]sident(?:e)?s?|pr[ée]sident(?:e)?s?"
+    r"|direct(?:eur|rice)s?|secr[ée]taires?|r[ée]viseurs?"
     r"|personnes?\s+inscrites?(?:\s+modifi[ée]es?)?)"
     r")\s*:\s*",
     re.IGNORECASE,
@@ -87,7 +88,7 @@ ROLE_LABEL = re.compile(
 # Anchored on capitalisation because that is what separates a person from
 # "par lettre, téléfax ou email".
 NAME = re.compile(
-    r"(?:l['’]associ[ée]\s+|les\s+associ[ée]s\s+|l['’]|d[eu]\s+)?"
+    r"(?:l['’]associ[ée]\s+|les\s+associ[ée]s\s+|l['’])?"
     r"((?:[A-ZÀ-Ý][\wÀ-ÿ'’-]+|d[ei]|van|von|de|da|dos|del|le|la)"
     r"(?:\s+(?:[A-ZÀ-Ý][\wÀ-ÿ'’-]+|d[ei]|van|von|de|da|dos|del|le|la)){1,4})"
 )
@@ -136,9 +137,8 @@ STOPWORDS = {
 # role vocabulary on both sides is identical.
 DEPARTURE = re.compile(
     r"([A-ZÀ-Ý][\wÀ-ÿ'’-]+(?:\s+[A-ZÀ-Ý][\wÀ-ÿ'’-]+){1,4})"
-    r"\s+(?:n['’]est\s+plus|ne\s+sont\s+plus|"
+    r"\s+(?i:n['’]est\s+plus|ne\s+sont\s+plus|"
     r"a\s+d[ée]missionn[ée]|ont\s+d[ée]missionn[ée])",
-    re.IGNORECASE,
 )
 
 
@@ -247,7 +247,8 @@ def normalise_role(label: str) -> str:
         ("associ", "associé"),
         ("gerant", "gérant"),
         ("administrat", "administrateur"),
-        ("liquidateur", "liquidateur"),
+        ("liquidat", "liquidateur"),
+        ("vice-president", "vice-président"),
         ("president", "président"),
         ("directeur", "directeur"),
         ("directrice", "directeur"),

@@ -218,13 +218,11 @@ def client_page(
     dossier_total: int = 0,
     documents: int = 0,
     has_approach: bool = False,
-    sites: list[Row] | None = None,
     notes: str = "",
     moves: list[Row] | None = None,
-    # Rendered by the sales module's own page module and passed in as
-    # markup, so the clients console does not import the module that
-    # may not be installed.
-    money: str = "",
+    # What other modules put on this page, rendered by them and passed in as
+    # markup, so this page needs nothing that may not be installed.
+    panels: str = "",
 ) -> str:
     head = (
         ui.crumbs([("/clients", "Clients"), ("", client["code"])])
@@ -280,14 +278,13 @@ def client_page(
         + "<h2>projects</h2>"
         + project_table
         + _new_project_form(client["id"])
-        + _sites(client["id"], sites or [])
         + "<h2>record</h2>"
         + _timeline(events)
         + "</div><aside>"
         + _log_form(client["id"], projects)
         + _client_brief(client)
         + _moves(moves or [])
-        + money
+        + panels
         + who
         + '<p class="dim small" style="white-space:pre-line;margin-top:1rem">'
         + esc(attribution_notice)
@@ -406,86 +403,6 @@ def _new_project_form(client_id: int) -> str:
         "<textarea id='psummary' name='summary' placeholder='One paragraph: the "
         "problem, the deliverable, the boundary.'></textarea>"
         '<div><button class="primary">Create project</button></div></form></details>'
-    )
-
-
-def _sites(client_id: int, sites: list[Row]) -> str:
-    """Where this client actually operates, and the way to add a site.
-
-    The register holds one address per legal entity. A foundation running an
-    EMS, a day centre and three residences has one entry and several places,
-    and the difference matters the moment anyone asks where to drive to. So
-    the seat arrives from the register and everything else is typed by the
-    person who knows it; nothing here is inferred.
-    """
-    rows = []
-    for site in sites:
-        address = " ".join(
-            str(part) for part in (
-                site["street"], site["house_number"], site["postal_code"],
-                site["city"]
-            ) if part
-        )
-        if site["lat"] is None:
-            where = (
-                '<span class="dim">no point</span>'
-                if site["street"]
-                else '<span class="dim">no address</span>'
-            )
-        else:
-            exact = site["precision"] == "address"
-            where = (
-                f'<a href="/map">{site["lat"]:.5f}, {site["lon"]:.5f}</a>'
-                + (
-                    ""
-                    if exact
-                    else f' <span class="dim">on the {esc(site["precision"])}</span>'
-                )
-            )
-        rows.append(
-            f'<tr><td>{esc(site["name"] or "—")}'
-            + (' <span class="badge active">seat</span>' if site["is_seat"] else "")
-            + f'</td><td class="small">{esc(address)}</td>'
-            f'<td class="small">{where}</td>'
-            '<td><form method="post" class="inline" '
-            f'action="/establishment/{site["id"]}/delete"'
-            + ui.attrs(data_confirm=(
-                f"Remove the site {site['name'] or address or 'with no name'}? "
-                "Its place on the map goes with it."
-            ))
-            + '><button class="danger">remove</button></form></td></tr>'
-        )
-    table = ui.table(
-        ["site", "address", "where", ""], rows,
-        caption="Where this client actually is",
-        empty_text="No site recorded. The registered address arrives when "
-                   f"\"{ui.stage_title('geocode', 'Put them on the map')}\" "
-                   "has run on Operations; the other sites are typed here.",
-    )
-    return (
-        '<h2 id="sites">sites</h2>' + table
-        + '<details class="card"><summary><b>Add a site</b> '
-        '<span class="dim small">geocoded as it is saved</span></summary>'
-        f'<form class="stack" method="post" action="/client/{client_id}/sites" '
-        'style="margin-top:.7rem">'
-        f"<label for='sname'>Name{ui.REQUIRED_MARK}</label>"
-        "<input id='sname' name='name' required placeholder='EMS Petit-Flon'>"
-        "<div class='row2'>"
-        "<div><label for='sstreet'>Street</label>"
-        "<input id='sstreet' name='street' placeholder='Chemin du Petit-Flon'></div>"
-        "<div><label for='snum'>Number</label>"
-        "<input id='snum' name='house_number' placeholder='49'></div></div>"
-        "<div class='row2'>"
-        "<div><label for='spc'>Postcode</label>"
-        "<input id='spc' name='postal_code' placeholder='1018'></div>"
-        "<div><label for='scity'>Town</label>"
-        "<input id='scity' name='city' placeholder='Lausanne'></div></div>"
-        "<label for='skind'>What it is</label>"
-        "<input id='skind' name='kind' placeholder='EMS, day centre, office'>"
-        "<span class='hint'>Placed through the federal address search when you "
-        "save it. An address that does not resolve is kept without a point "
-        "rather than guessed at, and the page will say so.</span>"
-        '<div><button class="primary">Add the site</button></div></form></details>'
     )
 
 
@@ -668,6 +585,9 @@ def project_page(
     client: Row,
     company: Row,
     events: list[Row],
+    # What other modules put on this page, rendered by them: the sales
+    # module's time log, when it is installed.
+    panels: str = "",
 ) -> str:
     money = (
         f'{ui.num(round(project["budget"]))} {esc(project["currency"] or "CHF")}'
@@ -698,6 +618,7 @@ def project_page(
         + _timeline(events)
         + "</div><aside>"
         + _project_form(project)
+        + panels
         + "</aside></div>"
     )
 
@@ -879,4 +800,29 @@ def calendar_page(
                        "here.",
             )
         )
+    )
+
+
+def company_action(company_id: int, client: Row | None) -> str:
+    """Promote to client, or the link to the client this already is.
+
+    A reference rather than a copy. The surveyed tools call the alternative
+    the handoff gap: a system that stops at "closed won" makes the first day
+    of an engagement a copy-paste job, when the register entry, the officers,
+    the research and the notes are exactly what is worth having.
+    """
+    if client is not None:
+        return (
+            "<div class='act'>"
+            f"<a class='btn primary' href='/client/{client['id']}'>Open client "
+            f"{esc(client['code'])}</a>"
+            "<span class='hint'>This company is a client. Projects, "
+            "correspondence and the diary are on its client page.</span></div>"
+        )
+    return (
+        f"<form method='post' action='/company/{company_id}/client' class='act'>"
+        "<button class='primary'>Make this a client</button>"
+        "<span class='hint'>Opens a client record for it, keeping everything "
+        "already known: the register entry, the officers, the research and "
+        "the notes.</span></form>"
     )

@@ -85,15 +85,19 @@ def doctor_page(found: Sequence[Check]) -> str:
     )
 
 
-def _tiles(tiles: Sequence[tuple[str, int, str]]) -> str:
-    if not tiles:
-        return ""
-    cells = "".join(
+def tile(one: str, many: str, value: int, href: str) -> str:
+    """One count, linking to the page that holds it. The label follows the
+    number, and a module contributes its tiles through the `home.tiles` slot."""
+    label = one if value == 1 else many
+    return (
         f'<a class="tile" href="{esc(href)}"><b>{ui.num(value)}</b>'
         f"<span>{esc(label)}</span></a>"
-        for label, value, href in tiles
     )
-    return f'<div class="tiles">{cells}</div>'
+
+
+def _tiles(tiles: Sequence[tuple[str, int, str]], more: str = "") -> str:
+    cells = "".join(tile(label, label, value, href) for label, value, href in tiles) + more
+    return f'<div class="tiles">{cells}</div>' if cells else ""
 
 
 def _runs(rows: Sequence[Row]) -> str:
@@ -120,7 +124,7 @@ def _runs(rows: Sequence[Row]) -> str:
 
 def home_page(
     *, checks: Sequence[Check], tiles: Sequence[tuple[str, int, str]],
-    runs: Sequence[Row], territory: str = "",
+    runs: Sequence[Row], territory: str = "", more: str = "",
 ) -> str:
     where = f" in {esc(territory)}" if territory else ""
     return (
@@ -128,7 +132,7 @@ def home_page(
         f"<p class='lede'>Where things stand{where}. Each number is a link to "
         "the page that holds it; the groups in the header follow the work from "
         "finding a company to billing a client.</p>"
-        + _tiles(tiles)
+        + _tiles(tiles, more)
         + _checklist(checks)
         + _runs(runs)
     )

@@ -24,16 +24,13 @@ from .assets import CONSOLE_JS_URL
 from . import ui
 from .ui import esc
 
-# htmx, pinned and checked. The console used `unpkg.com/htmx.org@2.0.4` with no
-# integrity attribute, which is a third party able to change what executes on a
-# page holding a client's file. The version is current stable; htmx 4 is in beta
-# for summer 2026, so 2.x pinned is the right place to stand rather than a
-# floating tag that will move under us.
-HTMX = (
-    '<script src="https://cdn.jsdelivr.net/npm/htmx.org@2.0.10/dist/htmx.min.js" '
-    'integrity="sha384-H5SrcfygHmAuTDZphMHqBJLc3FhssKjG7w/CeCpFReSfwBWDTKpkzPP8c+cLsK+V" '
-    'crossorigin="anonymous"></script>'
-)
+# htmx, shipped with the package and served by the console itself. It used to
+# come from a CDN with an integrity hash; a copy under `static/` is the same
+# bytes (the hash is checked by a test) without a third party in the page, and
+# the console works on a machine with no route to the internet.
+HTMX_VERSION = "2.0.10"
+HTMX_SHA384 = "H5SrcfygHmAuTDZphMHqBJLc3FhssKjG7w/CeCpFReSfwBWDTKpkzPP8c+cLsK+V"
+HTMX = f'<script src="/static/htmx-{HTMX_VERSION}.min.js"></script>'
 
 # The stylesheet, in four cascade layers declared in priority order.
 #
@@ -841,34 +838,9 @@ def _act(uid: str, stage: str, label: str, note: str, busy: int | None) -> str:
     )
 
 
-def _client_action(company: Row, client: Row | None) -> str:
-    """Promote to client, or the link to the client this already is.
-
-    A reference rather than a copy. The surveyed tools call the alternative
-    the handoff gap: a system that stops at "closed won" makes the first day
-    of an engagement a copy-paste job, when the register entry, the officers,
-    the research and the notes are exactly what is worth having.
-    """
-    if client is not None:
-        return (
-            "<div class='act'>"
-            f"<a class='btn primary' href='/client/{client['id']}'>Open client "
-            f"{esc(client['code'])}</a>"
-            "<span class='hint'>This company is a client. Projects, "
-            "correspondence and the diary are on its client page.</span></div>"
-        )
-    return (
-        f"<form method='post' action='/company/{company['id']}/client' class='act'>"
-        "<button class='primary'>Make this a client</button>"
-        "<span class='hint'>Opens a client record for it, keeping everything "
-        "already known: the register entry, the officers, the research and "
-        "the notes.</span></form>"
-    )
-
-
 def _actions(
     company: Row, site: Row | None, fit: Row | None,
-    busy: int | None, client: Row | None = None,
+    busy: int | None, extra: str = "",
 ) -> str:
     """What can be done to this one company, right here.
 
@@ -878,7 +850,7 @@ def _actions(
     """
     uid = company["uid"]
     acts = [
-        _client_action(company, client),
+        extra,
         _act(uid, "enrich",
              "Research again" if site else "Research this website",
              "Searches the web for this company and reads what it finds. "
@@ -918,10 +890,13 @@ def company_page(
     states: list[str],
     attribution: str,
     busy: int | None = None,
-    client: Row | None = None,
+    # What other modules put on this page: the clients module's promote
+    # action among the actions, and its panels below. Rendered elsewhere and
+    # passed as markup, so this page needs nothing that may not be installed.
+    actions: str = "",
     parties: list[Row] | None = None,
     overlap: str = "",
-    mail_links: str = "",
+    panels: str = "",
     score_parts: str = "",
     sector: Row | None = None,
     sector_vocabulary: list[str] | None = None,
@@ -933,7 +908,7 @@ def company_page(
         f'{esc(company["legal_form_label"])} &middot; '
         f'{esc(company["legal_seat"])} ({esc(company["canton"])}) &middot; '
         f'{esc(company["status"])}</p>',
-        _actions(company, site, fit, busy, client),
+        _actions(company, site, fit, busy, actions),
     ]
 
     if company["status"] and company["status"] != "ACTIVE":
@@ -1015,8 +990,8 @@ def company_page(
     out.append(_contacts_card(contacts))
     # What filing a message taught the matcher. An inference nobody can see is
     # one nobody can correct, so it sits beside the contacts it behaves like.
-    if mail_links:
-        out.append(mail_links)
+    if panels:
+        out.append(panels)
     out.append(_notes_card(company["id"], notes))
 
     if publications:

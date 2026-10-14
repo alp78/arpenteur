@@ -69,7 +69,7 @@ Arpenteur is composed of five modules, each owning one PostgreSQL schema and its
 - sales: the catalogue, rate cards, quotes, invoices, time entries
 - analytics: views over everything else, written to by nothing
 
-Dependencies point one way, from sales to clients to scout, and a test reads the import graph and the database's constraint catalogue to keep it so. `arpenteur modules list` says what is installed and how far each schema has got.
+Dependencies point one way, from sales to clients to scout, and a test reads the import graph and the database's constraint catalogue to keep it so. Modules meet on a page through named slots: the client page asks for its panels, and the geo module answers with the sites, the sales module with the quotes and invoices, without the page importing either. A module that is off in the configuration mounts no routes, draws no panels and has no schema. `arpenteur modules list` says what is installed and how far each schema has got.
 
 ## Tests
 

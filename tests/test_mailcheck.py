@@ -198,3 +198,17 @@ def test_no_mailbox_is_two_kinds_of_wrong_recipient() -> None:
     for i, a in enumerate(names):
         for b in names[i + 1:]:
             assert not (sets[a] & sets[b]), f"{a} and {b} share {sets[a] & sets[b]}"
+
+
+# --- the folding of German names and short words ----------------------------------
+
+
+def test_a_domain_echoes_an_umlaut_in_either_spelling() -> None:
+    assert mailcheck.domain_echoes_name("zuerichsee-immo.ch", "Zürichsee Immo AG") == 2
+    assert mailcheck.domain_echoes_name("zurichsee-immo.ch", "Zürichsee Immo AG") == 2
+    assert mailcheck.domain_echoes_name("mueller-treuhand.ch", "Müller Treuhand GmbH") == 2
+
+
+def test_a_two_letter_name_word_still_counts() -> None:
+    assert mailcheck.domain_echoes_name("km-immobilien.ch", "KM Immobilien AG") == 2
+    assert "km" in mailcheck.distinctive_words("KM Immobilien AG")

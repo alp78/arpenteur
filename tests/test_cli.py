@@ -10,15 +10,17 @@ import pytest
 from arpenteur import cli, db
 from arpenteur import config as arpenteur_config
 from arpenteur.modules.clients import store as clients_store
+from arpenteur.commands import common
+from arpenteur.commands import scout as scout_commands
 from arpenteur.stages import campaign as campaign_stage
 
 
 def test_fixture_source_uses_its_own_database(tmp_path, monkeypatch, build_settings) -> None:
     config = build_settings(tmp_path)
-    monkeypatch.setattr(cli, "load_settings", lambda: config)
+    monkeypatch.setattr(common, "load_settings", lambda: config)
     args = cli.build_parser().parse_args(["source", "zefix", "--fixture"])
 
-    assert cli.cmd_source(args) == 0
+    assert scout_commands.cmd_source(args) == 0
     # A separate database on the same server, not the live one.
     assert "_fixture" in cli._database_url(config, True)
     assert cli._database_url(config, False) == config.database_url
@@ -195,12 +197,20 @@ def _failing_stage(how: str):
     return stage
 
 
+def _stage(name: str):
+    """The stage module a command runs, by the name the table above uses."""
+    import importlib
+
+    name = {"bounce_stage": "bounces"}.get(name, name.removesuffix("_stage"))
+    return importlib.import_module(f"arpenteur.stages.{name}")
+
+
 def _spy_on_connections(monkeypatch) -> list[psycopg.Connection]:
     opened: list[psycopg.Connection] = []
     real = db.open_db
 
-    def spy(url: str | None = None) -> psycopg.Connection:
-        conn = real(url)
+    def spy(url: str | None = None, enabled=None) -> psycopg.Connection:
+        conn = real(url, enabled)
         opened.append(conn)
         return conn
 
@@ -212,7 +222,7 @@ def _spy_on_connections(monkeypatch) -> list[psycopg.Connection]:
 def test_a_command_whose_stage_fails_leaves_its_run_finished(
     argv, module, function, survey, monkeypatch, capsys
 ) -> None:
-    monkeypatch.setattr(getattr(cli, module), function, _failing_stage("error"))
+    monkeypatch.setattr(_stage(module), function, _failing_stage("error"))
     opened = _spy_on_connections(monkeypatch)
 
     assert cli.main(argv) == 1
@@ -228,7 +238,7 @@ def test_a_command_whose_stage_fails_leaves_its_run_finished(
 def test_ctrl_c_leaves_the_run_of_every_command_finished(
     argv, module, function, survey, monkeypatch, capsys
 ) -> None:
-    monkeypatch.setattr(getattr(cli, module), function, _failing_stage("interrupt"))
+    monkeypatch.setattr(_stage(module), function, _failing_stage("interrupt"))
     opened = _spy_on_connections(monkeypatch)
 
     assert cli.main(argv) == 130
@@ -328,7 +338,7 @@ def test_a_database_that_answered_with_an_error_is_not_called_stopped(
     def deadlock():
         raise psycopg.errors.DeadlockDetected("deadlock detected")
 
-    monkeypatch.setattr(cli, "load_settings", deadlock)
+    monkeypatch.setattr(common, "load_settings", deadlock)
 
     with pytest.raises(psycopg.errors.DeadlockDetected):
         cli.main(["stats"])
@@ -340,7 +350,7 @@ def _settings_file(tmp_path, monkeypatch, text: str | None) -> None:
         (tmp_path / "arpenteur.toml").write_text(text, encoding="utf-8")
     # The settings overlay is read from the database, and none is needed here.
     monkeypatch.setenv("DATABASE_URL", NOTHING_LISTENS)
-    monkeypatch.setattr(cli, "load_settings", lambda: arpenteur_config.load_settings(tmp_path))
+    monkeypatch.setattr(common, "load_settings", lambda: arpenteur_config.load_settings(tmp_path))
 
 
 def test_a_mistyped_effort_is_one_sentence(tmp_path, monkeypatch, capsys) -> None:
@@ -488,11 +498,11 @@ def test_a_limit_of_zero_is_refused_before_anything_runs(
         pytest.fail(f"{command} ran with --limit 0")
 
     for module, function in {
-        "source": [(cli.source, "run_zefix"), (cli.source, "run_by_name")],
-        "enrich": [(cli.enrich, "run")],
-        "match": [(cli.match, "run")],
-        "reach": [(cli.reach, "run")],
-        "draft": [(cli.draft, "run")],
+        "source": [(_stage("source"), "run_zefix"), (_stage("source"), "run_by_name")],
+        "enrich": [(_stage("enrich"), "run")],
+        "match": [(_stage("match"), "run")],
+        "reach": [(_stage("reach"), "run")],
+        "draft": [(_stage("draft"), "run")],
     }[command]:
         monkeypatch.setattr(module, function, must_not_run)
 
@@ -553,7 +563,7 @@ high = 800
 def _own_database(tmp_path, monkeypatch, db_path: str) -> None:
     (tmp_path / "arpenteur.toml").write_text(ISSUER_TOML, encoding="utf-8")
     monkeypatch.setenv("DATABASE_URL", db_path)
-    monkeypatch.setattr(cli, "load_settings", lambda: arpenteur_config.load_settings(tmp_path))
+    monkeypatch.setattr(common, "load_settings", lambda: arpenteur_config.load_settings(tmp_path))
 
 
 def test_import_toml_moves_each_section_once(tmp_path, monkeypatch, capsys, db_path) -> None:

@@ -194,9 +194,8 @@ def match(path: Path, *, dry_run: bool, log=print) -> int:
 
         if site:
             sited += 1
-            db.save_site(conn, int(company["id"]), {
-                "status": "found", "url": site, "method": "directory",
-            })
+            db.note_site(conn, int(company["id"]), status="found", url=site,
+                method="directory")
         for address in ranked:
             kept += db.save_contact(
                 conn, company_id=int(company["id"]), kind="email", value=address,

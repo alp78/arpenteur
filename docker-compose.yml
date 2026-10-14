@@ -33,5 +33,28 @@ services:
       timeout: 3s
       retries: 20
 
+  # The console, built from this folder. Optional: `uv run arpenteur console`
+  # on the host does the same with the host's own sign-in to the model. Bound
+  # to loopback like the database, for the same reason.
+  app:
+    build: .
+    container_name: arpenteur-app
+    profiles: ["app"]
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: postgresql://arpenteur:${POSTGRES_PASSWORD:-arpenteur}@db:5432/arpenteur
+      ARPENTEUR_HOME: /app
+    ports:
+      - "127.0.0.1:8000:8000"
+    volumes:
+      - .:/app
+      - app-venv:/opt/venv
+
 volumes:
   arpenteur-pgdata:
+  app-venv:

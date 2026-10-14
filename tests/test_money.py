@@ -28,6 +28,7 @@ from arpenteur.config import IssuerConfig, ServiceEntry, Territory
 from arpenteur.console.app import create_app
 from arpenteur.kernel.db import Connection
 from arpenteur.modules.sales import money, store as sales
+from arpenteur.console.routes import every_route
 
 pytestmark = pytest.mark.pg
 
@@ -717,7 +718,7 @@ def test_the_money_pages_still_cannot_send(db_path, build_settings, tmp_path):
     """"Mark as sent" records that a person sent it. It is not a send button,
     and the freeze it applies is the whole reason it exists."""
     client = _app(build_settings, tmp_path)
-    routes = {getattr(r, "path", "") for r in client.app.routes}
+    routes = {getattr(r, "path", "") for r in every_route(client.app)}
     assert "/quote-version/{version_id}/sent" in routes
     from arpenteur.console.app import TRANSMITTING
     assert not [p for p in routes
@@ -1380,3 +1381,66 @@ def test_the_register_offers_its_years_and_keeps_the_chosen_one(db_path, build_s
     assert "1 documents" in chosen or 'value="1"' in chosen or ">1<" in chosen
     nothing = client.get("/invoices/register", params={"year": "1999"}).text
     assert "Nothing issued yet" in nothing
+
+
+# --- time on a project, billed from its page -------------------------------------
+
+
+def _project(conn, client_id: int) -> int:
+    from arpenteur.modules.clients import store as clients
+
+    return clients.add_project(conn, client_id, "Audit", code="CLAIR-LOGIS-01")
+
+
+def test_time_is_logged_on_the_project_page_and_billed_into_a_draft(db_path, build_settings, tmp_path):
+    conn = db.open_db(db_path)
+    client_id = _client(conn)
+    project_id = _project(conn, client_id)
+    conn.commit()
+    conn.close()
+
+    client = _app(build_settings, tmp_path)
+    page = client.get(f"/project/{project_id}").text
+    assert "No time logged yet" in page and 'action="/project/%d/time"' % project_id in page
+
+    client.post(f"/project/{project_id}/time",
+                data={"occurred_on": "2026-10-13", "hours": "1.5", "note": "Kick-off",
+                      "billable": "1"}, follow_redirects=False)
+    client.post(f"/project/{project_id}/time",
+                data={"occurred_on": "2026-10-14", "hours": "0.5", "note": "Travel"},
+                follow_redirects=False)
+    page = client.get(f"/project/{project_id}").text
+    assert "2.00 h logged, 1.50 h billable, 1.50 h not yet billed" in page
+    assert "Kick-off" in page and "not billable" in page
+
+    billed = client.post(f"/project/{project_id}/bill-time", data={"rate": "180"},
+                         follow_redirects=False)
+    assert billed.status_code == 303 and "/invoice/" in billed.headers["location"]
+    conn = db.open_db(db_path)
+    invoice = sales.invoices_for(conn, client_id)[0]
+    lines = sales.invoice_lines(conn, int(invoice["id"]))
+    assert invoice["status"] == "draft" and invoice["reference"].endswith("TIME")
+    assert [(line["quantity"], line["unit_price"]) for line in lines] == [
+        (Decimal("1.50"), Decimal("180.00"))
+    ]
+    assert invoice["net_total"] == Decimal("270.00")
+    conn.close()
+
+    page = client.get(f"/project/{project_id}").text
+    assert "0.00 h not yet billed" in page and "on an invoice" in page
+    again = client.post(f"/project/{project_id}/bill-time", data={"rate": "180"},
+                        follow_redirects=False)
+    assert "No%20billable%20time" in again.headers["location"]
+
+
+def test_time_with_no_hours_or_a_bad_date_is_refused_in_red(db_path, build_settings, tmp_path):
+    conn = db.open_db(db_path)
+    project_id = _project(conn, _client(conn))
+    conn.commit()
+    conn.close()
+    client = _app(build_settings, tmp_path)
+    for data in ({"occurred_on": "2026-10-13", "hours": "0"},
+                 {"occurred_on": "not a date", "hours": "1"},
+                 {"occurred_on": "2026-10-13", "hours": "abc"}):
+        reply = client.post(f"/project/{project_id}/time", data=data, follow_redirects=False)
+        assert "error=Nothing%20logged" in reply.headers["location"], data

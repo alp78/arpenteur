@@ -156,6 +156,17 @@ class Registry:
     def has(self, name: str) -> bool:
         return name in self.by_name
 
+    def add(self, item: Contribution, *, module: str = "") -> None:
+        """One more contribution, from a route file mounted after the load.
+
+        The console's route files are where a module's panels are rendered,
+        and they are found after the registry is built; this is how they
+        reach a slot without the module package importing the console.
+        """
+        slot = self._slots.setdefault(item.slot, [])
+        slot.append(Contribution(item.slot, item.render, item.order, module or item.module))
+        slot.sort(key=lambda c: (c.order, c.module))
+
     def fill(self, slot: str, *args: Any, **kwargs: Any) -> str:
         """Render every contribution to a slot, in order.
 
@@ -178,6 +189,19 @@ class Registry:
             if html:
                 out.append(html)
         return "".join(out)
+
+    def gather(self, slot: str, *args: Any, **kwargs: Any) -> list[Any]:
+        """Every contribution's answer, in order, for a slot that carries data.
+
+        `fill` joins markup and shields the page from a broken panel. This is
+        the other kind of slot: a mapping of client chips for the board, or
+        the sentence that says which programme card a sent draft moved. A
+        fault here is the caller's to see, because silently missing data is
+        worse than a missing panel.
+        """
+        return [
+            item.render(*args, **kwargs) for item in self._slots.get(slot, ())
+        ]
 
     def navigation(self) -> list[Nav]:
         items = [nav for module in self.modules for nav in module.nav]

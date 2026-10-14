@@ -398,9 +398,10 @@ def test_a_client_site_is_typed_and_placed(client, conn, monkeypatch) -> None:
     )
     client.post("/company/1/client")
     client.post(
-        "/client/1/sites",
+        "/company/1/sites",
         data={"name": "EMS Petit-Flon", "street": "Chemin du Petit-Flon",
-              "house_number": "49", "postal_code": "1018", "city": "Lausanne"},
+              "house_number": "49", "postal_code": "1018", "city": "Lausanne",
+              "back": "/client/1"},
     )
     sites = geo.establishments_for(conn, 1)
     assert [s["name"] for s in sites] == ["EMS Petit-Flon"]
@@ -416,3 +417,16 @@ def test_removing_a_site_leaves_the_client(client, conn) -> None:
     assert reply.status_code == 303
     assert geo.establishments_for(conn, 1) == []
     assert client.get("/client/1").status_code == 200
+
+
+def test_an_address_with_a_missing_part_is_still_one_address(conn) -> None:
+    """Two NULL house numbers read as different under the old rule, so a
+    geocode run grew the table by one row per company every time."""
+    parts = {"street": "Route de Berne", "house_number": None, "postal_code": "1010",
+             "city": "Lausanne", "query": "Route de Berne, 1010 Lausanne", "method": "test"}
+    first = geo.save_address(conn, dict(parts))
+    second = geo.save_address(conn, dict(parts))
+    assert first == second
+    assert conn.execute(
+        "SELECT COUNT(*) AS n FROM geo.address WHERE street = 'Route de Berne'"
+    ).fetchone()["n"] == 1

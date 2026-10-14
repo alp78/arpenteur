@@ -88,11 +88,10 @@ def main() -> int:
             continue
         record = json.loads(line)
         uid = str(record.get("uid") or "").strip()
-        company = conn.execute(
-            "SELECT id, name FROM core.company WHERE uid = %s"
-            " OR REPLACE(uid, '-', '') = REPLACE(%s, '-', '')",
-            (uid, uid),
-        ).fetchone()
+        try:
+            company = scout_store.find_company(conn, uid)
+        except ValueError:
+            company = None
         if company is None:
             print(f"  line {line_no}: no company with uid {uid!r}", file=sys.stderr)
             missing += 1

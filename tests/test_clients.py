@@ -25,6 +25,7 @@ from arpenteur import db
 from arpenteur.kernel.db import Connection
 from arpenteur.config import Territory
 from arpenteur.console.app import create_app
+from arpenteur.console.routes import every_route
 
 
 @pytest.fixture
@@ -366,7 +367,7 @@ def test_a_bad_uid_says_what_one_looks_like(client) -> None:
 def test_the_client_section_cannot_send_either(client, conn) -> None:
     """The guarantee the whole console rests on, restated for the half of it
     that now holds correspondence."""
-    routes = {getattr(r, "path", "") for r in client.app.routes}
+    routes = {getattr(r, "path", "") for r in every_route(client.app)}
     # See test_console.py: reading a mailbox is not transmitting, and the
     # guarantee is checked there against the package rather than the paths.
     from arpenteur.console.app import TRANSMITTING
@@ -382,3 +383,34 @@ def test_a_budget_that_is_not_a_number_is_refused_not_a_crash(client) -> None:
                         follow_redirects=False)
     assert reply.status_code == 303
     assert "not an amount" in unquote(reply.headers["location"])
+
+
+# --- one client lookup, and fields that can be cleared --------------------------
+
+
+def test_a_client_is_found_by_code_in_any_case_or_by_uid_or_name(conn) -> None:
+    from arpenteur.modules.clients import store as clients
+
+    client_id = db.promote_to_client(conn, 1)
+    code = clients.client(conn, client_id)["code"]
+    assert clients.find_client(conn, code.lower())["id"] == client_id
+    assert clients.find_client(conn, "CHE-100.000.011")["id"] == client_id
+    assert clients.find_client(conn, "clair-logis")["id"] == client_id
+    import pytest
+
+    with pytest.raises(ValueError, match="No client"):
+        clients.find_client(conn, "nobody")
+
+
+def test_a_project_budget_and_due_date_can_be_cleared_from_the_page(client, conn) -> None:
+    client_id = db.promote_to_client(conn, 1)
+    project_id = db.add_project(conn, client_id, "Audit", code="X-01", budget=5000.0)
+    db.update_project(conn, project_id, due_at="2026-12-31")
+    conn.commit()
+    client.post(f"/project/{project_id}", data={
+        "name": "Audit", "status": "active", "billing": "", "budget": "", "due_at": "",
+        "summary": "",
+    }, follow_redirects=False)
+    row = db.project(conn, project_id)
+    assert row["budget"] is None and row["due_at"] is None
+    assert row["name"] == "Audit"

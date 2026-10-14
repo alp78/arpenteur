@@ -67,10 +67,17 @@ def _start_date(conn: Connection, since: str | None, today: Date) -> Date:
     if since:
         return Date.fromisoformat(since)
     last = db.last_synced_day(conn)
-    if last:
-        # Resume from the day after the last one consumed.
-        return Date.fromisoformat(last) + timedelta(days=1)
-    return today - timedelta(days=DEFAULT_LOOKBACK_DAYS)
+    start = (
+        Date.fromisoformat(last) + timedelta(days=1) if last
+        else today - timedelta(days=DEFAULT_LOOKBACK_DAYS)
+    )
+    # A day recorded while it was still filling is read again, so the resume
+    # point is never past it, and never past today: a run this evening
+    # re-reads the day this morning's run recorded.
+    partial = db.synced_days(conn, complete_only=False) - db.synced_days(conn)
+    for day in partial:
+        start = min(start, Date.fromisoformat(day))
+    return min(start, today)
 
 
 def run(
@@ -107,6 +114,9 @@ def run(
                 "updated": 0, "unchanged": 0, "deletions": 0, "stale": 0}
 
     wanted = _days(start, end)
+    # Days recorded before, complete or not: a copy of them is on disk, and
+    # a day read again is read from the register rather than from that copy.
+    recorded = db.synced_days(conn, complete_only=False)
     if resume:
         done = db.synced_days(conn)
         # Today is never treated as done: it is still filling, and a run this
@@ -141,11 +151,12 @@ def run(
             counts = _sync_day(
                 conn, zefix, day,
                 is_today=(day == today.isoformat()),
+                refetch=day in recorded,
                 territory=territory,
                 admit=admit,
                 stats=stats,
             )
-            db.record_sync_day(conn, day, counts)
+            db.record_sync_day(conn, day, counts, complete=day < today.isoformat())
             conn.commit()
             stats["days"] += 1
             if counts["tracked"] or counts["inserted"]:
@@ -168,11 +179,14 @@ def _sync_day(
     day: str,
     *,
     is_today: bool,
+    refetch: bool = False,
     territory: Territory,
     admit: bool,
     stats: dict[str, Any],
 ) -> dict[str, int]:
-    mutations = zefix.sogc_by_date(day, max_age=TODAY_MAX_AGE if is_today else None)
+    mutations = zefix.sogc_by_date(
+        day, max_age=TODAY_MAX_AGE if (is_today or refetch) else None
+    )
     counts = {"notices": len(mutations), "tracked": 0, "inserted": 0,
               "updated": 0, "deletions": 0}
     stats["notices"] += len(mutations)

@@ -22,9 +22,6 @@ from ...kernel.db import Connection, Row, now
 # What a marker is allowed to claim. Kept here rather than only in the source
 # module because the console reads it to decide how a marker is drawn, and a
 # point placed on a town centre must not look like one placed on a door.
-PRECISIONS = ("address", "street", "postcode")
-
-
 # --- addresses ----------------------------------------------------------------
 
 
@@ -57,12 +54,6 @@ def save_address(conn: Connection, fields: dict[str, Any]) -> int:
         },
     ).fetchone()
     return int(row["id"])
-
-
-def address(conn: Connection, address_id: int) -> Row | None:
-    return conn.execute(
-        "SELECT * FROM geo.address WHERE id = %s", (address_id,)
-    ).fetchone()
 
 
 # --- establishments -----------------------------------------------------------

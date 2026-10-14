@@ -593,3 +593,54 @@ def test_the_worker_notices_a_module_edited_under_it(tmp_path, monkeypatch) -> N
     reason = watch()
     assert reason is not None and "arpenteur_pretend" in reason
     assert "old code" in reason
+
+
+# --- an address that names an officer ------------------------------------------
+
+
+def _officers():
+    return [{"id": 1, "full_name": "Dupont Jean"}, {"id": 2, "full_name": "Müller-Roth Anna"},
+            {"id": 3, "full_name": "Dupont Marie"}]
+
+
+def test_an_address_names_the_one_officer_it_spells() -> None:
+    assert reach.officer_for("j.dupont@firm.ch", _officers()[:2]) == 1
+    assert reach.officer_for("jean.dupont@firm.ch", _officers()[:2]) == 1
+    assert reach.officer_for("dupont@firm.ch", _officers()[:2]) == 1
+    assert reach.officer_for("anna.mueller-roth@firm.ch", _officers()) is None, \
+        "an umlaut spelt out is not the folded name; nothing is guessed"
+    assert reach.officer_for("a.muller@firm.ch", _officers()) == 2
+
+
+def test_an_address_that_could_be_two_officers_names_nobody() -> None:
+    assert reach.officer_for("dupont@firm.ch", _officers()) is None
+    assert reach.officer_for("info@firm.ch", _officers()) is None
+    assert reach.officer_for("m.dupont@firm.ch", _officers()) == 3
+
+
+# --- what a directory and a hunt may overwrite -----------------------------------
+
+
+def test_noting_a_site_keeps_the_research_already_read(conn) -> None:
+    db.save_site(conn, 1, {
+        "status": "found", "url": "https://old.example", "confidence": 0.9,
+        "summary": "A regie in Sion.", "method": "web-search",
+        "source_url": "https://old.example", "fetched_at": db.now(),
+    })
+    db.note_site(conn, 1, status="found", url="https://new.example", method="directory")
+    row = db.site_for(conn, 1)
+    assert row["url"] == "https://new.example" and row["method"] == "directory"
+    assert row["summary"] == "A regie in Sion.", "the reading survives the directory's note"
+
+
+def test_a_hunt_that_found_nothing_keeps_what_an_earlier_one_found(conn) -> None:
+    from arpenteur.modules.scout import store
+
+    store.save_address_hunt(conn, 1, reach.Hunt(outcome="search", tier=2, domain="x.ch",
+                                                addresses=["info@x.ch"], method="published"))
+    store.save_address_hunt(conn, 1, reach.Hunt(outcome="partial", domain="x.ch"))
+    held = store.address_hunt(conn, 1)
+    assert list(held["addresses"]) == ["info@x.ch"] and held["outcome"] == "search"
+    store.save_address_hunt(conn, 1, reach.Hunt(outcome="search", tier=1, domain="x.ch",
+                                                addresses=["desk@x.ch"], method="published"))
+    assert list(store.address_hunt(conn, 1)["addresses"]) == ["desk@x.ch"]

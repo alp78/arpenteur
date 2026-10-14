@@ -362,3 +362,10 @@ CONSOLE_JS = r"""
 # nobody is running.
 CONSOLE_JS_HASH = hashlib.sha256(CONSOLE_JS.encode()).hexdigest()[:12]
 CONSOLE_JS_URL = f"/static/console.{CONSOLE_JS_HASH}.js"
+
+
+def static(name: str) -> bytes:
+    """A file shipped under `static/`, read once per request; they are small."""
+    from pathlib import Path
+
+    return (Path(__file__).parent / "static" / name).read_bytes()

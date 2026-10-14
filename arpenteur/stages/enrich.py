@@ -310,7 +310,8 @@ def run(
 
     for index, company in enumerate(companies, 1):
         officers = conn.execute(
-            "SELECT full_name, role FROM core.person WHERE company_id = %s ORDER BY role",
+            "SELECT full_name, role FROM core.person"
+            " WHERE company_id = %s AND left_date IS NULL ORDER BY role",
             (company["id"],),
         ).fetchall()
 

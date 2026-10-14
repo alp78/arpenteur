@@ -76,7 +76,11 @@ def run(
         )
         if not officers:
             # Most notices are address or capital changes naming nobody. Not
-            # an error, and not worth logging one line per company.
+            # an error, and not worth logging one line per company. On a
+            # reparse it is still the whole answer: what an earlier parser
+            # read into these notices by mistake goes with it.
+            if reparse and not dry_run:
+                stats["pruned"] += db.prune_people(conn, company["id"], [])
             continue
 
         newest = publications[0]["sogc_date"]

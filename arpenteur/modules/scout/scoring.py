@@ -86,9 +86,6 @@ COMPONENTS: tuple[Component, ...] = (
 )
 
 BY_KEY = {component.key: component for component in COMPONENTS}
-JUDGED = tuple(c.key for c in COMPONENTS if c.origin == "model")
-COMPUTED = tuple(c.key for c in COMPONENTS if c.origin == "computed")
-
 # A starting point, and named so nobody mistakes it for a finding. Fit and need
 # lead because a campaign that gets those wrong is wasting every call; reach
 # and relationship are modest because they change what you do rather than
