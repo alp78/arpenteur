@@ -246,9 +246,11 @@ def campaigns_page(rows: Sequence[Row], audiences: Sequence[Row],
         + ui.text_field("name", "Name", placeholder="Drymos, essai", required=True)
         + list_field
         + ui.text_field("templates", "Message templates", placeholder="templates/drymos",
-                        required=True,
                         hint="The folder holding the message in each language: fr, "
-                             "de and it.")
+                             "de and it. Leave it empty to start from the example.")
+        + ui.checkbox("start_from_example", "Start from the example",
+                      hint="Copies the example messages into a new folder named after "
+                           "the campaign, to be rewritten on the campaign's page.")
         + ui.select_field("programme", "Programme",
                           [(p["code"], p["code"]) for p in programmes], blank="none")
         + _strategy_field("canton-blocks")
@@ -293,8 +295,63 @@ def _steps(wave: Row) -> str:
         for name, col in STEPS) + "</div>"
 
 
+def _messages_panel(cid: int, folder: str, files: Sequence[dict[str, Any]]) -> str:
+    """The folder's messages, one row per file, and the way to write a missing one."""
+    rows = []
+    for item in files:
+        if item["state"] == "absent":
+            cell = "<span class='dim'>not written</span>"
+            link = f"<a href='/campaign/{cid}/template/{esc(item['name'])}'>Write it</a>"
+        elif item["state"] == "ok":
+            cell = esc(item["subject"])
+            link = f"<a href='/campaign/{cid}/template/{esc(item['name'])}'>Edit</a>"
+        else:
+            cell = f"<span class='state-error'>{esc(item['problem'])}</span>"
+            link = f"<a href='/campaign/{cid}/template/{esc(item['name'])}'>Fix it</a>"
+        rows.append(
+            f"<tr><td><code>{esc(item['name'])}</code></td>"
+            f"<td>{esc(item['variant'])}</td><td>{cell}</td><td>{link}</td></tr>"
+        )
+    return ui.panel(
+        "Messages",
+        ui.table(["file", "language", "subject", ""], rows,
+                 caption=f"The messages in {folder}, one per language"),
+        always=True,
+        note="A wave is rendered from these. The subject and the text are "
+             "edited here; the opt-out and the signature are added when it is sent.",
+    )
+
+
+def template_editor_page(campaign: Row, name: str, text: str, *, exists: bool) -> str:
+    """One message file, as a form; refused with the reason when it cannot be sent."""
+    cid = campaign["id"]
+    language = name.split(".")[0]
+    label = {"fr": "Objet :", "de": "Betreff:", "it": "Oggetto:"}.get(language, "Subject:")
+    if not text.strip():
+        text = (
+            f"Notes for the person editing this file go above the first rule.\n\n"
+            f"---\n\n{label} \n\n\n\n---\n"
+        )
+    return (
+        f"{ui.crumbs([('/campaigns', 'Campaigns'), (f'/campaign/{cid}', campaign['code']), ('', name)])}"
+        f"<h1>{esc(name)} of {esc(campaign['code'])}</h1>"
+        "<p class='lede'>The message is the text between the two lines of "
+        f"<code>---</code>. Its first line is <code>{esc(label)}</code> followed by "
+        "the subject. No placeholders: every recipient of this language receives "
+        "the same words. The file is refused, naming the reason, when it cannot "
+        "be sent as it stands.</p>"
+        f"<form method='post' action='/campaign/{cid}/template/{esc(name)}'>"
+        + ui.sr_label("The message file", "template-text")
+        + f"<textarea name='text' id='template-text' class='big-text' rows='22' "
+        f"style='width:100%;font:13px/1.5 ui-monospace,Menlo,monospace'>{esc(text)}</textarea>"
+        "<div class='ctl ctl-wide' style='margin-top:.6rem'>"
+        + ui.button("Save the message" if exists else "Write the message", primary=True)
+        + f" <a href='/campaign/{cid}'>Back to the campaign</a></div></form>"
+    )
+
+
 def campaign_page(campaign: Row, wave_rows: Sequence[Row], results: dict[int, Any],
-                  state: str) -> str:
+                  state: str, *, files: Sequence[dict[str, Any]] = ()) -> str:
     cid = campaign["id"]
     plan_form = (
         f"<form method='post' action='/campaign/{cid}/plan' class='grid'>"
@@ -345,6 +402,7 @@ def campaign_page(campaign: Row, wave_rows: Sequence[Row], results: dict[int, An
         f"programme {esc(campaign['programme_code'] or 'none')}. State: {esc(state)}. "
         'Every message carries your <a href="/signature">signature</a>.</p>'
         + banner
+        + (_messages_panel(cid, campaign["templates"], files) if files else "")
         + ui.panel("Waves", "<div class='cm-grid'>" + "".join(cards) + "</div>"
                    if cards else ui.empty("No plan yet. Plan the waves below."), always=True)
         + ui.panel("Plan", plan_form, always=True,

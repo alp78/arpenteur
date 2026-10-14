@@ -62,7 +62,26 @@ def _checklist(found: Sequence[Check]) -> str:
     )
     return (
         f'<section class="panel"><h2>Setup</h2><p class="lede">{esc(lede)}</p>'
-        f'<ul class="checks">{items}</ul></section>'
+        f'<ul class="checks">{items}</ul>'
+        '<p class="small"><a href="/doctor">Run the full check</a>, which signs '
+        "in to the mailbox and opens a session with the mail server, sending "
+        "nothing.</p></section>"
+    )
+
+
+def doctor_page(found: Sequence[Check]) -> str:
+    """The full check, as a page of its own: it reaches out and takes seconds."""
+    missing = sum(1 for check in found if check.state == "missing")
+    lede = (
+        f"{missing} thing(s) to set before the first run."
+        if missing else "Everything the first run needs is in place."
+    )
+    return (
+        "<h1>Doctor</h1>"
+        f"<p class='lede'>{esc(lede)} The mailbox was signed in to and a session "
+        "was opened with the mail server; nothing was sent.</p>"
+        + _checklist(found).replace("<h2>Setup</h2>", "<h2>Every check</h2>")
+        + '<p class="small"><a href="/">Back to Home</a></p>'
     )
 
 

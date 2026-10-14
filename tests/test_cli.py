@@ -501,3 +501,98 @@ def test_a_limit_of_zero_is_refused_before_anything_runs(
 
     assert caught.value.code == 2
     assert "0 is not a positive number" in capsys.readouterr().err
+
+
+# --- the settings held in the database ----------------------------------------
+
+
+def test_a_model_id_outside_the_family_is_refused_at_load(tmp_path, monkeypatch, capsys) -> None:
+    _settings_file(tmp_path, monkeypatch, '[llm]\nmatch_model = "gpt-9"\n')
+
+    assert cli.main(["stats"]) == 1
+
+    err = _said_once(capsys)
+    assert "llm.match_model 'gpt-9' is not a Claude model id" in err
+
+
+def test_the_unwired_provider_is_refused_at_load(tmp_path, monkeypatch, capsys) -> None:
+    _settings_file(tmp_path, monkeypatch, '[llm]\nprovider = "infomaniak"\n')
+
+    assert cli.main(["stats"]) == 1
+
+    assert "Unknown llm.provider 'infomaniak'" in _said_once(capsys)
+
+
+ISSUER_TOML = """
+[survey]
+cantons = ["GE"]
+legal_forms = ["0107"]
+
+[zefix]
+contact = "arpenteur (contact: me@example.ch)"
+
+[issuer]
+name = "Nadia Example"
+town = "Vevey"
+iban = "CH93 0076 2011 6238 5295 7"
+payment_days = 30
+
+[enrol]
+programme = "pilot"
+segments = ["sme-owner"]
+
+[[rates.service]]
+code = "day"
+name = "Day"
+unit = "day"
+low = 800
+high = 800
+"""
+
+
+def _own_database(tmp_path, monkeypatch, db_path: str) -> None:
+    (tmp_path / "arpenteur.toml").write_text(ISSUER_TOML, encoding="utf-8")
+    monkeypatch.setenv("DATABASE_URL", db_path)
+    monkeypatch.setattr(cli, "load_settings", lambda: arpenteur_config.load_settings(tmp_path))
+
+
+def test_import_toml_moves_each_section_once(tmp_path, monkeypatch, capsys, db_path) -> None:
+    """The file's tables reach the database; a second run changes nothing, and
+    the page's own change survives it."""
+    from arpenteur import db
+
+    _own_database(tmp_path, monkeypatch, db_path)
+    assert cli.main(["settings", "import-toml"]) == 0
+    out = capsys.readouterr().out
+    assert "issuer: imported 4 key(s)" in out and "zefix: imported 1 key(s)" in out
+    assert "enrol: imported 2 key(s)" in out and "rates: imported 1 key(s)" in out
+    assert "smtp: not in the file" in out
+    loaded = arpenteur_config.load_settings(tmp_path)
+    assert loaded.issuer.name == "Nadia Example" and loaded.enrol.programme == "PILOT"
+
+    conn = db.open_db(db_path)
+    db.save_setting(conn, "issuer", {"name": "Changed on the page"})
+    conn.commit()
+    before = {r["key"]: r["updated_at"] for r in db.setting_history(conn)}
+    conn.close()
+    assert cli.main(["settings", "import-toml"]) == 0
+    assert "issuer: kept" in capsys.readouterr().out
+    conn = db.open_db(db_path)
+    after = {r["key"]: r["updated_at"] for r in db.setting_history(conn)}
+    conn.close()
+    assert after == before
+    assert arpenteur_config.load_settings(tmp_path).issuer.name == "Changed on the page"
+
+    assert cli.main(["settings", "import-toml", "--force"]) == 0
+    assert arpenteur_config.load_settings(tmp_path).issuer.name == "Nadia Example"
+
+
+def test_settings_show_never_prints_the_whole_iban(tmp_path, monkeypatch, capsys, db_path) -> None:
+    _own_database(tmp_path, monkeypatch, db_path)
+    assert cli.main(["settings", "import-toml"]) == 0
+    capsys.readouterr()
+    assert cli.main(["settings", "show"]) == 0
+    out = capsys.readouterr().out
+    assert "[issuer]" in out and "name = Nadia Example" in out
+    assert "CH93" not in out and "5295" not in out.replace("2957", "")
+    assert out.count("2957") == 1

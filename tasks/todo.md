@@ -47,14 +47,14 @@ The approved plan of 13.10.2026 is the reference for every detail; this file tra
 
 ## Stage 4. Settings inside the app, setup, model access
 
-- [ ] One overlay key per configuration table, merged in `load_settings`.
-- [ ] Settings sections: identity, sending and mailbox, register, model access, enrolment, scoring weights, catalogue, secrets as set or missing.
-- [ ] `arpenteur settings import-toml`, run once here; `arpenteur.toml` cleaned of every personal value.
-- [ ] The draft stage reads its brief and its invitation from settings and templates.
-- [ ] `health.py`, `arpenteur doctor`, the Home checklist.
-- [ ] Template editor and "start from the example".
-- [ ] Model access: the sign-in documented as it works, ids validated and current, the placeholder refused, the prompt over stdin.
-- [ ] Suite green, ruff clean, live smoke, commit stack.
+- [x] One overlay key per configuration table, merged in `load_settings`.
+- [x] Settings sections: identity, sending and mailbox, register, model access, enrolment, scoring weights, catalogue, secrets as set or missing.
+- [x] `arpenteur settings import-toml`, run once here; `arpenteur.toml` cleaned of every personal value.
+- [x] The draft stage reads its brief and its invitation from settings and templates.
+- [x] `health.py`, `arpenteur doctor`, the Home checklist.
+- [x] Template editor and "start from the example".
+- [x] Model access: the sign-in documented as it works, ids validated and current, the placeholder refused, the prompt over stdin.
+- [x] Suite green, ruff clean, live smoke, commit stack.
 
 ## Stage 5. Documentation and in-app help
 
@@ -166,3 +166,35 @@ Found and fixed on the way:
 - A dry run of the bounce read counted as the read a campaign's next wave waits for; dry runs no longer open that gate.
 
 The suite: 1,654 passed, 246 of them new, ruff clean. The one red test in the full run asserted the old word "survey" on the client page and was updated to the new wording; the file passed on its own afterwards.
+
+### Stage 4, 14.10.2026
+
+What exists now, in the configuration:
+
+- Eight configuration tables live in the database as one overlay key each and are merged shallowly over the file's table of the same name, so a section saved on the page keeps the file's keys it did not mention. Secrets keep their environment precedence and are never stored.
+- `arpenteur settings import-toml` moves those tables out of the file once, keeping what the database already holds unless forced; `settings show` prints them with the IBAN masked. The command ran here, the values read back, and the file now carries no identity: an empty issuer, no sender name, a neutral register contact, no programme, no catalogue rows, no prose card. A test pins the file as impersonal.
+- A wrong model id, an unknown provider and a mistyped payment mode are refused at load with one sentence; a model named nowhere takes the current family's id for its role; the subscription is the default in the dataclass, the loader and the README alike.
+
+What exists now, on the Settings page:
+
+- Sixteen sections with an index at the top: identity, catalogue as rows, rate card, sending, mailbox, enrolment, register, model access and the secrets listed as set or not, beside the ones that were there. A field the environment decides renders disabled and keeps what the database held. A bad IBAN, a limit out of its bounds, a duplicate code, a lower price above the higher one and a brief that is not on disk are each refused with the reason.
+- Weights saved open a new version only when they differ from the set in force; catalogue rows saved open a rate card only when the lines changed. Every save reaches the next run without a restart.
+
+What exists now, for drafting and setup:
+
+- The draft stage names no operator file: the message brief is a setting, and the invitation is read from the programme's templates folder, one file per language, parsed as a block without a subject and filled from settings. Every invitation a run needs is read before the first model call. The operator's three texts moved to their folder on disk, untracked.
+- `health.py` holds every check a first run needs; the quick ones feed Home, the live ones sign in to the mailbox and open a session with the mail server, sending nothing, from `arpenteur doctor` or the Doctor page.
+- A campaign's page lists its message files with their subject or their fault, each with an editor that refuses a file it cannot send and keeps the text typed; a new campaign can start from the example folder, copied under its own name.
+- Model access runs the prompt over stdin, trusts only a Claude Code sign-in and the installed command on a Mac, and no longer selects the unwired provider.
+
+The live check: every section renders on the real settings, the printed invoice still carries the issuer and its payment part from the database, the campaign page lists three messages, and the Doctor signed in to the mailbox and opened a session with the mail server. It also found two true gaps: the message brief was named nowhere after the move, so the operator's existing file was named in the database; the Drymos campaign's folder holds no message yet.
+
+Found and fixed on the way:
+
+- The prose rate card lived only in the file and the import carries rows, so it was saved into the overlay from a copy of the file before the clean.
+- The invitation check fired on a deployment with no programme; it waits for one.
+- The French invitation text, moved verbatim from the code, carried four turns the house rules refuse; it was rewritten on the way out.
+- The route that saves the sending section was first named after the protocol, and five tests pin that no path but the two wave routes says "send" or "smtp"; it is `/settings/delivery`.
+- Every test fixture naming a model id outside the family was renamed into it, since an id is now checked at load.
+
+The suite: 1,694 passed, 40 of them new, ruff clean.

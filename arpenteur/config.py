@@ -142,6 +142,11 @@ class EnrolConfig:
     # An initial invitation can ask for a reply before presenting the store
     # instructions. Other campaigns keep the existing enrolment block.
     include_in_draft: bool = True
+    # The message brief the draft stage writes from, as a path under the
+    # project root. A setting rather than a constant in the stage: the file
+    # used to be named in code, so every deployment drafted from one
+    # operator's brief or none.
+    brief: str = ""
 
     @property
     def ready(self) -> bool:
@@ -568,15 +573,117 @@ def _auth_mode(value: object) -> str:
 
     A typo here would otherwise read as "neither mode is available" and
     surface as a credential error hours into a run, pointing at the wrong
-    thing entirely.
+    thing entirely. A `ValueError` like `_effort`, so the command line and
+    the console give it the one sentence they give every refused value.
     """
     mode = str(value).strip().lower()
     if mode not in AUTH_MODES:
-        raise RuntimeError(
-            f"Unknown llm.auth_mode {value!r} in arpenteur.toml. "
+        raise ValueError(
+            f"Unknown llm.auth_mode {value!r}. "
             f"Expected one of: {', '.join(AUTH_MODES)}."
         )
     return mode
+
+
+# The one provider that is wired. The sovereign path, open models served from
+# Switzerland, was a placeholder class that `get_provider` still selected and
+# that refused at the first call, hours into a run; it is refused here instead.
+PROVIDERS = ("anthropic",)
+
+MODEL_PREFIX = "claude-"
+
+# What a deployment runs on when its file names no model: the current family,
+# the small one for sorting, the middle one for research and writing, the
+# large one for the advice a person will act on.
+DEFAULT_MODELS = {
+    "classify_model": "claude-haiku-5-5",
+    "draft_model": "claude-sonnet-5-5",
+    "enrich_model": "claude-sonnet-5-5",
+    "match_model": "claude-sonnet-5-5",
+    "advise_model": "claude-opus-5-5",
+    "prep_model": "claude-sonnet-5-5",
+}
+
+
+def _provider(value: object) -> str:
+    name = str(value or "anthropic").strip().lower()
+    if name not in PROVIDERS:
+        raise ValueError(
+            f"Unknown llm.provider {name!r}. Only {', '.join(PROVIDERS)} is wired; "
+            "the Infomaniak provider is not."
+        )
+    return name
+
+
+def _model_id(key: str, value: object) -> str:
+    """A model id the family can run, or the shipped default when empty.
+
+    Checked here because a wrong id is not a crash: `claude -p` falls back to
+    its own default and the run finishes on a model nobody chose.
+    """
+    model = str(value or "").strip()
+    if not model:
+        return DEFAULT_MODELS.get(key, "")
+    if not model.startswith(MODEL_PREFIX):
+        raise ValueError(
+            f"llm.{key} {model!r} is not a Claude model id: one starts with "
+            f"{MODEL_PREFIX!r}, such as {DEFAULT_MODELS.get(key, 'claude-sonnet-5-5')!r}."
+        )
+    return model
+
+
+# Every environment name the code reads, grouped as `.env.example` groups
+# them. The Settings page lists each as set or not set and never its value;
+# `arpenteur doctor` reads the same list. POSTGRES_PASSWORD is read by docker
+# compose alone and is not here.
+ENV_NAMES: tuple[tuple[str, tuple[str, ...]], ...] = (
+    ("The database", ("DATABASE_URL",)),
+    ("The register", ("ZEFIX_USER", "ZEFIX_PASSWORD", "ZEFIX_URL")),
+    ("Model access", ("ANTHROPIC_API_KEY",)),
+    ("The mailbox", ("MAIL_IMAP_SERVER", "MAIL_IMAP_PORT", "MAIL_USERNAME",
+                     "MAIL_PASSWORD")),
+    ("Sending", ("SMTP_SERVER", "SMTP_PORT", "SMTP_USERNAME", "SMTP_PASSWORD",
+                 "SMTP_SECURITY", "SMTP_SENDER", "SMTP_REPLY_TO")),
+    ("Infomaniak aliases", ("INFOMANIAK_USERNAME", "INFOMANIAK_PASSWORD",
+                            "INFOMANIAK_IMAP_SERVER", "INFOMANIAK_IMAP_PORT",
+                            "INFOMANIAK_SMTP_SERVER", "INFOMANIAK_SMTP_PORT")),
+)
+
+
+def env_state() -> dict[str, bool]:
+    """Which of the names above carry a value right now. Never the value."""
+    return {
+        name: bool((os.environ.get(name) or "").strip())
+        for _group, names in ENV_NAMES for name in names
+    }
+
+
+# The configuration tables an operator can change from the console. Each is
+# kept in the overlay under its own name as a dict, and merged shallowly over
+# the file's table of the same name, so a section saved on the Settings page
+# keeps the file's keys it did not mention. Secrets are never among them: they
+# keep their `.env` precedence through `_env()` and are never stored.
+OVERLAY_SECTIONS = ("issuer", "smtp", "mail", "zefix", "enrol", "llm", "scoring", "rates")
+
+# The keys each section carries in the overlay: what the Settings page edits
+# and what `arpenteur settings import-toml` moves out of the file. Token
+# limits, timeouts and secrets are not among them.
+SECTION_KEYS: dict[str, tuple[str, ...]] = {
+    "issuer": ("name", "street", "building", "postcode", "town", "country", "iban",
+               "vat_number", "payment_terms", "payment_days"),
+    "smtp": ("sender", "sender_name", "reply_to", "security", "sent_folder",
+             "signature_file", "signature_image", "per_run", "daily_quota",
+             "pause_seconds", "test_to"),
+    "mail": ("own_domains",),
+    "zefix": ("contact",),
+    "enrol": ("programme", "segments", "brief", "include_in_draft", "ios_link",
+              "android_window_start", "android_window_end", "android_testers",
+              "android_days"),
+    "llm": ("auth_mode", "classify_model", "draft_model", "enrich_model", "match_model",
+            "advise_model", "prep_model", "advise_effort", "prep_effort"),
+    "scoring": ("name", "note", "weights"),
+    "rates": ("service", "card_note"),
+}
 
 
 def _overlay(url: str) -> dict[str, Any]:
@@ -630,6 +737,12 @@ def load_settings(root: Path | None = None) -> Settings:
         os.environ.get("DATABASE_URL")
         or "postgresql://arpenteur:arpenteur@127.0.0.1:5433/arpenteur"
     )
+    # Whole tables first, then the single keys that predate them: `rate_card`
+    # lands inside the merged `rates` table, so the order matters.
+    for section in OVERLAY_SECTIONS:
+        held = overlay.get(section)
+        if isinstance(held, dict):
+            raw[section] = {**(raw.get(section) or {}), **held}
     for key in ("cantons", "legal_forms", "statuses", "admit_new"):
         if key in overlay:
             survey[key] = overlay[key]
@@ -697,23 +810,26 @@ def load_settings(root: Path | None = None) -> Settings:
             password=os.environ.get("ZEFIX_PASSWORD") or None,
         ),
         llm=LlmConfig(
-            provider=llm_raw.get("provider", "anthropic"),
-            classify_model=llm_raw.get("classify_model", ""),
-            draft_model=llm_raw.get("draft_model", ""),
+            provider=_provider(llm_raw.get("provider", "anthropic")),
+            classify_model=_model_id("classify_model", llm_raw.get("classify_model")),
+            draft_model=_model_id("draft_model", llm_raw.get("draft_model")),
             batch_size=int(llm_raw.get("batch_size", 20)),
-            enrich_model=llm_raw.get("enrich_model", ""),
+            enrich_model=_model_id("enrich_model", llm_raw.get("enrich_model")),
             enrich_max_searches=int(llm_raw.get("enrich_max_searches", 4)),
             subscription_timeout=int(llm_raw.get("subscription_timeout", 600)),
             enrich_max_tokens=int(llm_raw.get("enrich_max_tokens", 8000)),
-            match_model=llm_raw.get("match_model", ""),
+            match_model=_model_id("match_model", llm_raw.get("match_model")),
             match_max_tokens=int(llm_raw.get("match_max_tokens", 4000)),
-            advise_model=llm_raw.get("advise_model", ""),
+            advise_model=_model_id("advise_model", llm_raw.get("advise_model")),
             advise_effort=_effort(llm_raw.get("advise_effort", "")),
             advise_max_tokens=int(llm_raw.get("advise_max_tokens", 32000)),
-            prep_model=llm_raw.get("prep_model", ""),
+            prep_model=_model_id("prep_model", llm_raw.get("prep_model")),
             prep_effort=_effort(llm_raw.get("prep_effort", "")),
             prep_max_tokens=int(llm_raw.get("prep_max_tokens", 48000)),
-            auth_mode=_auth_mode(llm_raw.get("auth_mode", "auto")),
+            # The subscription, as the dataclass and the README say. One value
+            # in three places: the file's absence of a key must not pick a
+            # mode the documentation does not call the default.
+            auth_mode=_auth_mode(llm_raw.get("auth_mode", "subscription")),
             api_key=os.environ.get("ANTHROPIC_API_KEY") or None,
         ),
         mail=_mail(raw.get("mail") or {}),
@@ -800,6 +916,7 @@ def _enrol(raw: dict) -> EnrolConfig:
         android_testers=int(raw.get("android_testers", 12)),
         android_days=int(raw.get("android_days", 14)),
         include_in_draft=bool(raw.get("include_in_draft", True)),
+        brief=str(raw.get("brief", "") or "").strip(),
     )
 
 

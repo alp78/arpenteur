@@ -13,3 +13,5 @@ There are no placeholders. Every recipient of a language receives the same words
 A file is refused, naming the reason, when it has fewer than two rules, when its label is another language's, when the message is empty, or when it still carries an unfinished marker such as `À compléter`.
 
 Copy this folder to `templates/<your campaign>/` and replace the three messages with yours. This folder is only an example and is never sent.
+
+A programme whose drafts carry an invitation keeps it in the same kind of folder, named after the programme in lower case, as `invite.fr.md`, `invite.de.md` and `invite.it.md`. The invitation is the text between the two rules, with no subject line. It may use five placeholders, which the draft stage fills from Settings, Enrolment: `{ios_link}`, `{start}`, `{end}`, `{testers}` and `{days}`. A placeholder whose value is not set leaves a visible marker, so the draft cannot be sent as it stands.

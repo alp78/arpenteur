@@ -71,8 +71,16 @@ class Template:
         return f"{self.language}.{self.segment}" if self.segment else self.language
 
 
-def parse(text: str, *, language: str, path: str = "") -> tuple[str, str]:
-    """The subject and the body of one template file."""
+def parse(
+    text: str, *, language: str, path: str = "", require_subject: bool = True,
+) -> tuple[str, str]:
+    """The subject and the body of one template file.
+
+    `require_subject=False` reads a block that is not a message of its own
+    but a part of one, such as the invitation the draft stage appends: the
+    whole block is the body, the subject comes back empty, and the other
+    refusals still apply.
+    """
     where = path or f"the {language} template"
     lines = text.splitlines()
     rules = [i for i, line in enumerate(lines) if _RULE.match(line)]
@@ -85,6 +93,12 @@ def parse(text: str, *, language: str, path: str = "") -> tuple[str, str]:
     first = next((i for i, line in enumerate(block) if line.strip()), None)
     if first is None:
         raise TemplateError(f"{where}: nothing between the two `---` lines.")
+    if not require_subject:
+        body = "\n".join(block[first:]).strip("\n")
+        for marker in MARKERS:
+            if marker in body:
+                raise TemplateError(f"{where}: still marked `{marker}`; finish it first.")
+        return "", body
     found = _SUBJECT.match(block[first])
     expected = LABELS.get(language, ())
     if not found:
@@ -111,6 +125,16 @@ def parse(text: str, *, language: str, path: str = "") -> tuple[str, str]:
         if marker in subject or marker in body:
             raise TemplateError(f"{where}: still marked `{marker}`; finish it first.")
     return subject, body
+
+
+def is_template_name(name: str) -> bool:
+    """Whether a file name follows the convention: `fr.md`, `de.mountain-transport.md`."""
+    return bool(_FILE.match(name))
+
+
+def language_of_name(name: str) -> str:
+    found = _FILE.match(name)
+    return found["lang"] if found else ""
 
 
 def file_names(language: str, segment: str | None) -> list[str]:

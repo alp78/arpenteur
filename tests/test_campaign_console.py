@@ -174,3 +174,69 @@ def test_a_plan_with_a_number_that_is_not_one_is_refused(web, ids) -> None:
     reply = web.post(f"/campaign/{ids['campaign']}/plan", data={"wave_size": "abc"},
                      follow_redirects=False)
     assert reply.status_code == 303 and "error=" in reply.headers["location"]
+
+
+# --- the messages, edited in the application -----------------------------------
+
+
+def test_the_campaign_page_lists_its_messages_and_the_ones_not_written(web, ids) -> None:
+    body = web.get(f"/campaign/{ids['campaign']}").text
+    assert "<code>de.md</code>" in body and "Drymos: Einladung" in body
+    assert f"href='/campaign/{ids['campaign']}/template/fr.md'" in body
+    assert "not written" in body and "Write it" in body
+
+
+def test_a_message_is_written_from_the_page_and_a_broken_one_refused(web, ids, settings) -> None:
+    cid = ids["campaign"]
+    editor = web.get(f"/campaign/{cid}/template/fr.md").text
+    assert "<h1>fr.md of DRYMOS-A</h1>" in editor and "Objet :" in editor
+    refused = web.post(f"/campaign/{cid}/template/fr.md",
+                       data={"text": "---\nBetreff: Falsch\n\nTexte.\n---\n"})
+    assert refused.status_code == 200
+    assert 'class="banner banner-bad"' in refused.text
+    assert "the de label" in refused.text
+    assert "Betreff: Falsch" in refused.text, "what was typed stays in the box"
+    assert not (settings.root / "templates" / "drymos" / "fr.md").exists()
+    saved = web.post(f"/campaign/{cid}/template/fr.md",
+                     data={"text": "notes\n---\nObjet : Bonjour\n\nUn texte.\n---\n"},
+                     follow_redirects=False)
+    assert saved.headers["location"] == f"/campaign/{cid}?note=fr.md%20saved."
+    written = (settings.root / "templates" / "drymos" / "fr.md").read_text(encoding="utf-8")
+    assert "Objet : Bonjour" in written
+    assert "<code>fr.md</code>" in web.get(f"/campaign/{cid}").text
+    assert "Bonjour" in web.get(f"/campaign/{cid}").text
+
+
+def test_a_name_outside_the_convention_is_not_a_file(web, ids) -> None:
+    cid = ids["campaign"]
+    assert web.get(f"/campaign/{cid}/template/README.md").status_code == 404
+    assert web.get(f"/campaign/{cid}/template/..%2F..%2Fsecret.md").status_code == 404
+    assert web.get("/campaign/999/template/fr.md").status_code == 404
+
+
+def test_a_campaign_can_start_from_the_example(web, ids, settings, conn) -> None:
+    from shutil import copytree
+
+    example = settings.root / "templates" / "example"
+    copytree(Path(__file__).resolve().parent.parent / "templates" / "example", example)
+    reply = web.post("/campaigns/new", data={
+        "code": "drymos-b", "name": "Second", "audience": "LIST-1",
+        "start_from_example": "1", "strategy": "score-overall",
+    }, follow_redirects=False)
+    from urllib.parse import unquote
+
+    assert reply.status_code == 303
+    assert "Rewrite the three example messages" in unquote(reply.headers["location"])
+    folder = settings.root / "templates" / "drymos-b"
+    assert sorted(p.name for p in folder.glob("*.md")) == ["README.md", "de.md", "fr.md", "it.md"]
+    row = conn.execute("SELECT templates FROM crm.campaign WHERE code = 'DRYMOS-B'").fetchone()
+    assert row["templates"] == "templates/drymos-b"
+    again = web.post("/campaigns/new", data={
+        "code": "drymos-b", "name": "Again", "audience": "LIST-1",
+        "start_from_example": "1", "strategy": "score-overall",
+    }, follow_redirects=False)
+    assert "already exists" in again.headers["location"].replace("%20", " ")
+    neither = web.post("/campaigns/new", data={
+        "code": "drymos-c", "name": "Third", "audience": "LIST-1", "strategy": "score-overall",
+    }, follow_redirects=False)
+    assert "Name the templates folder" in neither.headers["location"].replace("%20", " ")

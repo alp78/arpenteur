@@ -121,57 +121,30 @@ source of the company universe. Access is free: email
 except the `source` stage still runs, and the test suite runs entirely on
 recorded fixtures.
 
-**Anthropic** powers the `profile`, `enrich` and `draft` stages. There are
-two ways to pay for it, and `llm.auth_mode` in `arpenteur.toml` decides
-which is used:
+**Anthropic** powers every stage that calls a model. There are two ways to pay for it, and Model access under Settings (`llm.auth_mode` in `arpenteur.toml`) decides which is used:
 
 | `auth_mode` | Credential | For |
 |---|---|---|
-| `subscription` | a local `ant auth login` sign-in | running it yourself on a Claude plan |
+| `subscription` *(default)* | the Claude Code CLI, signed in once on this machine | running it yourself on a Claude plan |
 | `api_key` | `ANTHROPIC_API_KEY` in `.env` | a published copy, a server, CI |
-| `auto` *(default)* | the key if set, otherwise the sign-in | either |
+| `auto` | the sign-in when there is one, else the key | either |
 
 #### Signing in with a Claude subscription
 
-Install the `ant` CLI, then sign in once. macOS:
+Install the Claude Code CLI, which needs Node 18 or later, then sign in once:
 
 ```bash
-brew install anthropics/tap/ant
+npm install -g @anthropic-ai/claude-code
+claude            # opens a browser the first time; sign in with your plan
 ```
 
-Linux or WSL, where there is no Homebrew. `~/.local/bin` needs to be on
-your `PATH`, which avoids needing `sudo`:
+The sign-in lives under `~/.claude/` on Linux and Windows and in the Keychain on macOS, where the CLI refreshes it. Nothing is copied into `.env`, and this codebase never reads the token: a model call runs `claude -p` as a subprocess, because that is the only transport that draws on a plan.
 
-```bash
-VERSION=1.22.1
-curl -fsSL "https://github.com/anthropics/anthropic-cli/releases/download/v${VERSION}/ant_${VERSION}_linux_amd64.tar.gz" \
-  | tar -xz -C "$HOME/.local/bin" ant
-ant --version
-```
-
-Newer releases are on the [releases page](https://github.com/anthropics/anthropic-cli/releases).
-Then:
-
-```bash
-ant auth login      # opens a browser
-ant auth status     # shows which credential and org won
-```
-
-That writes a profile to `~/.config/anthropic/`, which the Python SDK
-finds by itself. Nothing is copied into `.env`: the token is short lived
-(hours), the SDK refreshes it, and this codebase never reads it.
-
-Two things worth knowing. Claude Code may warn about an auth conflict
-afterwards, because its own `/login` credential lives elsewhere
-(`~/.claude/`) and is a separate sign-in for the same account; that is
-expected. And an `ANTHROPIC_API_KEY` that is set at all wins over the
-profile, so unset it before expecting the subscription to be used.
+In `auto` mode the sign-in is tried first. The key is used only when there is no sign-in, so a key left in `.env` does not pay while you are signed in.
 
 #### Using an API key instead
 
-Put a key from [console.anthropic.com](https://console.anthropic.com) in
-`.env` as `ANTHROPIC_API_KEY`. Nothing else changes: this is the path a
-published copy of the tool takes, and it needs no `ant` install.
+Put a key from [console.anthropic.com](https://console.anthropic.com) in `.env` as `ANTHROPIC_API_KEY` and set the mode to `api_key`. Nothing else changes: this is the path a published copy of the tool takes, and it needs no CLI.
 
 Either way, `enrich` is the expensive stage: about a franc and anywhere from
 seven to forty-five minutes per company, measured. Start a run with

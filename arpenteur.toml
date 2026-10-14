@@ -113,7 +113,7 @@ max_retries = 4
 # No page_cap: measured on 11.08.2026, the registry does not truncate. It
 # answers a search in full (4874 rows was the largest observed) or refuses it
 # with 400 RESULTLIST_TO_LARGE, and the sweep narrows the prefix on refusal.
-contact = "arpenteur (contact: alexis@peringer.ch)"
+contact = "arpenteur"
 
 [llm]
 provider = "anthropic"
@@ -249,21 +249,21 @@ reach = 0.10
 relationship = 0.10
 
 [issuer]
-name = "Alexis Peringer"
-street = "Chemin du Trabandan"
-building = "17"
-postcode = "1006"
-town = "Lausanne"
+name = ""
+street = ""
+building = ""
+postcode = ""
+town = ""
 country = "CH"
 # Compte BCV du mandat. IBAN ordinaire, institution 00767 : la partie paiement
 # prend une référence RF ou aucune, jamais une référence QR.
-iban = "CH25 0076 7000 R570 7595 3"
+iban = ""
 # Vide tant que l'assujettissement n'a pas commencé, ce qui fait écrire
 # l'exonération en toutes lettres plutôt qu'un taux de zéro.
 vat_number = ""
 # Printed under the total. Payment terms, and anything a client's accounts
 # payable department needs in order to pay without telephoning.
-payment_terms = "Payable within 30 days."
+payment_terms = ""
 # Days from the issue date to the due date, used when nothing else is said.
 payment_days = 30
 
@@ -283,34 +283,9 @@ payment_days = 30
 #
 # Write it however you actually quote. Name the unit (day, package, month),
 # give a range where you quote a range, and say what moves a price inside it.
-card = """
-One rate governs this whole card: CHF 86 an hour, and a day means eight hours, \
-so CHF 688. Every fixed fee below is a number of hours at that rate and \
-nothing else. A client who divides any fixed fee by its stated hours finds \
-CHF 86 every time.
-Hourly rate, time and materials: CHF 86, billed on the quarter hour against a \
-statement of actual time. Used where the volume cannot be fixed in advance.
-Day rate, time and materials: CHF 688, being eight hours.
-Diagnostic, fixed fee. 2 to 4 days on site, 16 to 32 hours: inventory of \
-systems, mapping of flows, written report and a prioritised list. CHF 1'376 to \
-CHF 2'752 depending on the number of sites and systems. This is the usual way in.
-Document review, fixed fee: CHF 4'816, being 7 days or 56 hours. Critical \
-review of a body of documents the client has produced, with the annexes \
-cross-checked against each other, written findings, and the corrections \
-carried into their document ready to issue.
-Attendance at a session, fixed fee: CHF 516 per occurrence, being 6 hours of \
-preparation, travel and the session itself. One board, management committee or \
-supplier hearing, no written deliverable.
-Second opinion on a supplier's proposal, fixed fee: CHF 688 to CHF 1'376, \
-being one to two days.
-Implementation, fixed fee, quoted only after a diagnostic: CHF 8'256 to \
-CHF 41'280, being 12 to 60 days. Never quoted before the diagnostic is done.
-Retainer, monthly: CHF 1'376 to CHF 3'440, being 2 to 5 days a month reserved, \
-minimum six months, for ongoing custody of a data platform or standing \
-advisory to a management team. Unused hours do not carry over.
-Travel inside the surveyed cantons is not billed. Nothing is billed before a \
-written order.
-"""
+card = ""
+# The catalogue as rows, with a price range and a unit per line, is kept under
+# Settings, Catalogue, as is the note printed under it.
 
 # The segments. Each is a filter a survey can be sliced by, and the
 # definitions below are the prompt: keep them one line, concrete, and
@@ -334,90 +309,6 @@ written order.
 # here is a suggestion from the tool: prices come from you, and a model asked
 # what a Swiss consulting day costs will produce a confident number from
 # nowhere.
-[[rates.service]]
-code = "diagnostic"
-name = "Diagnostic"
-unit = "fixed"
-low = 1376
-high = 2752
-what = "Two to four days on site: inventory of systems, mapping of flows, written report and a prioritised list. Sixteen to thirty-two hours."
-basis = "The number of sites and systems, counted in hours at the hourly rate."
-sort_order = 10
-
-[[rates.service]]
-code = "hour"
-name = "Hourly rate, time and materials"
-unit = "hour"
-low = 86
-high = 86
-what = "Work whose volume cannot be fixed in advance, billed on the quarter hour against a statement of actual time."
-basis = "One rate, whatever the work. A range on an hourly line invites an argument about which end applies after the hours are spent."
-sort_order = 15
-
-[[rates.service]]
-code = "day"
-name = "Day rate, time and materials"
-unit = "day"
-low = 688
-high = 688
-what = "Eight hours at the hourly rate, for work planned as whole days."
-basis = "Eight times the hourly rate exactly. Every other line on this card is hours at that same rate, so no client finds two prices for one hour of the same work."
-sort_order = 20
-
-[[rates.service]]
-code = "implementation"
-name = "Implementation"
-unit = "fixed"
-low = 8256
-high = 41280
-what = "Fixed fee, quoted only after a diagnostic. Twelve to sixty days, which is ninety-six to four hundred and eighty hours."
-prerequisite = "A completed diagnostic. Never quoted before."
-basis = "Scope, converted into hours at the hourly rate."
-sort_order = 30
-
-[[rates.service]]
-code = "retainer"
-name = "Retainer"
-unit = "month"
-low = 1376
-high = 3440
-what = "Ongoing custody of a data platform, or standing advisory to a management team. Two to five days a month, which is sixteen to forty hours."
-prerequisite = "Minimum six months."
-basis = "The hours reserved each month, at the hourly rate. Unused hours do not carry over."
-sort_order = 40
-
-[[rates.service]]
-code = "second-opinion"
-name = "Second opinion on a supplier's proposal"
-unit = "fixed"
-low = 688
-high = 1376
-what = "One to two days, which is eight to sixteen hours."
-basis = "The length of the proposal and whether a written note is wanted, counted in hours at the hourly rate."
-sort_order = 50
-
-[[rates.service]]
-code = "document-review"
-name = "Document review"
-unit = "fixed"
-low = 4816
-high = 4816
-what = "Critical review of a body of documents the client has produced: cross-checking the annexes against each other, written findings, and the corrections carried into their own document ready to issue. Seven days, which is fifty-six hours."
-basis = "The number of pieces in the file and the number of arbitrations the client asks to have settled, counted in hours at the hourly rate."
-sort_order = 60
-
-[[rates.service]]
-code = "session"
-name = "Attendance at a session"
-unit = "fixed"
-low = 516
-high = 516
-what = "One board, management committee or supplier hearing: attendance, technical questions answered on the spot, no written deliverable. Six hours, covering preparation, travel and the session itself."
-basis = "Per occurrence. A session running long is billed at the hourly rate for the excess rather than re-quoted."
-sort_order = 70
-
-[rates.card_note]
-text = "Travel inside the surveyed cantons is not billed. Nothing is billed before a written order."
 
 # How a company fits a campaign. Several at once is normal and expected: a
 # regulated laboratory is both compliance-sector and data-driven, and forcing
@@ -500,16 +391,19 @@ other = "The purpose text does not place the company in any sector above, or des
 # every recipient has to be given the same two dates, and a model asked for
 # "a fortnight" supplies a different fortnight each time.
 [enrol]
-# The first invitation asks for a reply. Installation details are given after
-# interest is expressed; do not append them to the initial message.
-include_in_draft = false
-# Which bands the campaign writes to, when --segment names none. regie-core is
-# the band whose registered purpose names managing property for third parties,
-# while a regie-letting company may delegate handovers to another firm.
-segments = ["regie-core"]
-# The programme whose cards this campaign moves. `arpenteur programme
-# list` names the ones that exist.
-programme = "LIMEN"
+# Whether each draft carries the invitation read from the programme's
+# templates folder. Off, the first message asks for a reply and the
+# installation details follow once interest is expressed.
+include_in_draft = true
+# Which segments the campaign writes to, when a draft run names none. Empty
+# means every segment.
+segments = []
+# The programme whose cards this campaign moves. The Programmes page names the
+# ones that exist.
+programme = ""
+# The message brief the draft stage writes from, as a file under the project
+# folder. Empty means the stage refuses to run.
+brief = ""
 ios_link = ""
 android_window_start = ""
 android_window_end = ""
@@ -523,7 +417,7 @@ android_days = 14
 # host needs nothing added here.
 # Port 587 wants starttls, port 465 wants ssl.
 security = "starttls"
-sender_name = "Alexis Peringer"
+sender_name = ""
 # Empty asks the server what it calls its Sent folder.
 sent_folder = ""
 # How many messages one run may post. A review limit before a politeness one.
@@ -535,7 +429,7 @@ signature_file = "signature.html"
 # remote image would report every open back to whoever hosts it, which is
 # tracking whether or not anybody reads the log. PNG, JPEG or GIF only: a mail
 # client renders those and not the SVG a webmail signature editor exports.
-signature_image = "assets/signature-logo.png"
+signature_image = ""
 # How many messages Arpenteur may hand the host in any 24 hours, counted from
 # its own log, tests and hand letters included. Infomaniak's published figures
 # disagree between 100 and 1'440 a day by plan: set this from your own plan, and

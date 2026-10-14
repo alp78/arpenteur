@@ -141,3 +141,77 @@ def test_auto_with_no_credential_explains_both_options(no_cli) -> None:
         llm.get_provider(settings("auto", None))
     assert "ANTHROPIC_API_KEY" in str(exc.value)
     assert "claude-code" in str(exc.value)
+
+
+# --- the transport, as it is run ---------------------------------------------------
+
+
+def test_the_prompt_goes_over_stdin_not_the_argument_list(monkeypatch) -> None:
+    """A dossier with a document attached is longer than an argument list may
+    be, and E2BIG names nothing a reader can use."""
+    import json
+    import subprocess
+
+    seen: dict[str, object] = {}
+
+    def fake_run(argv, **kwargs):
+        seen["argv"] = argv
+        seen.update(kwargs)
+        return subprocess.CompletedProcess(
+            argv, 0, stdout=json.dumps({"subtype": "success", "result": "ok",
+                                        "usage": {}, "modelUsage": {}}), stderr="")
+
+    monkeypatch.setattr(subprocess, "run", fake_run)
+    provider = llm.ClaudeCodeProvider("/usr/bin/claude", timeout=5)
+    provider._run(system="be brief", user="the whole dossier " * 10000,
+                  model="claude-sonnet-5-5", schema=None, tools="")
+    argv = seen["argv"]
+    assert seen["input"] == "the whole dossier " * 10000
+    assert argv[1] == "-p" and argv[2].startswith("--"), "no prompt in the argument list"
+    assert "--system-prompt" in argv and "--model" in argv
+
+
+def test_a_cli_that_cannot_be_started_is_one_sentence(monkeypatch) -> None:
+    import subprocess
+
+    def refuse(argv, **kwargs):
+        raise PermissionError(13, "Permission denied")
+
+    monkeypatch.setattr(subprocess, "run", refuse)
+    provider = llm.ClaudeCodeProvider("/usr/bin/claude", timeout=5)
+    with pytest.raises(RuntimeError, match="could not be started"):
+        provider._run(system="", user="x", model="", schema=None, tools="")
+
+
+def test_only_the_claude_code_sign_in_counts(tmp_path, monkeypatch) -> None:
+    """A profile written by another tool used to pass the check, after which
+    the first call failed."""
+    from pathlib import Path
+
+    monkeypatch.setattr(Path, "home", classmethod(lambda cls: tmp_path))
+    monkeypatch.setattr(llm, "_on_mac", lambda: False)
+    monkeypatch.setattr(llm, "_claude_cli", lambda: "/usr/bin/claude")
+    other = tmp_path / ".config" / "anthropic" / "credentials"
+    other.mkdir(parents=True)
+    (other / "default.json").write_text("{}", encoding="utf-8")
+    assert llm._has_local_profile() is False
+    (tmp_path / ".claude").mkdir()
+    (tmp_path / ".claude" / ".credentials.json").write_text("{}", encoding="utf-8")
+    assert llm._has_local_profile() is True
+
+
+def test_on_a_mac_the_installed_cli_is_trusted(tmp_path, monkeypatch) -> None:
+    from pathlib import Path
+
+    monkeypatch.setattr(Path, "home", classmethod(lambda cls: tmp_path))
+    monkeypatch.setattr(llm, "_on_mac", lambda: True)
+    monkeypatch.setattr(llm, "_claude_cli", lambda: "/opt/homebrew/bin/claude")
+    assert llm._has_local_profile() is True
+    monkeypatch.setattr(llm, "_claude_cli", lambda: None)
+    assert llm._has_local_profile() is False
+
+
+def test_the_unwired_provider_is_gone() -> None:
+    assert not hasattr(llm, "InfomaniakProvider")
+    with pytest.raises(RuntimeError, match="Unknown llm.provider"):
+        llm.get_provider(SimpleNamespace(llm=SimpleNamespace(provider="infomaniak")))

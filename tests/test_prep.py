@@ -44,12 +44,12 @@ contact = "tests"
 
 [llm]
 provider = "anthropic"
-classify_model = "test"
-draft_model = "test"
-match_model = "test-match"
-advise_model = "test-opus"
+classify_model = "claude-test"
+draft_model = "claude-test"
+match_model = "claude-test-match"
+advise_model = "claude-test-opus"
 advise_effort = "xhigh"
-prep_model = "test-sonnet"
+prep_model = "claude-test-sonnet"
 batch_size = 20
 """
 
@@ -154,21 +154,26 @@ def test_the_two_stages_use_different_models(root, conn, client_id, monkeypatch)
     advise.run(settings, conn, client_id=client_id, log=lambda _m: None)
     prep.run(settings, conn, client_id=client_id, log=lambda _m: None)
 
-    assert advising.calls[0]["model"] == "test-opus"
+    assert advising.calls[0]["model"] == "claude-test-opus"
     assert advising.calls[0]["effort"] == "xhigh"
-    assert preparing.calls[0]["model"] == "test-sonnet"
+    assert preparing.calls[0]["model"] == "claude-test-sonnet"
     assert preparing.calls[0]["effort"] == ""
 
 
-def test_a_missing_stage_model_falls_back_rather_than_failing(root, conn) -> None:
+def test_a_missing_stage_model_takes_the_familys_id_for_its_role(root, conn) -> None:
+    """A role named nowhere is not a failure and not a silent fallback to
+    another role's model: it runs on the current family's id for that role."""
+    from arpenteur.config import DEFAULT_MODELS
+
     (root / "arpenteur.toml").write_text(
-        TOML.replace('advise_model = "test-opus"', "")
-            .replace('prep_model = "test-sonnet"', ""),
+        TOML.replace('advise_model = "claude-test-opus"', "")
+            .replace('prep_model = "claude-test-sonnet"', ""),
         encoding="utf-8",
     )
     llm = load_settings(root).llm
-    assert (llm.advise_model or llm.match_model) == "test-match"
-    assert (llm.prep_model or llm.match_model) == "test-match"
+    assert llm.advise_model == DEFAULT_MODELS["advise_model"]
+    assert llm.prep_model == DEFAULT_MODELS["prep_model"]
+    assert llm.match_model == "claude-test-match", "a named role keeps its id"
 
 
 def test_an_unknown_effort_is_refused_at_load_time(root) -> None:

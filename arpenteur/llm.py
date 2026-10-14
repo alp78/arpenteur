@@ -441,8 +441,11 @@ class ClaudeCodeProvider:
         import subprocess
         import tempfile
 
+        # The prompt travels on stdin, never as an argument: a dossier with
+        # one document attached is longer than an argument list may be, and
+        # the failure that produces (E2BIG) names nothing a reader can use.
         argv = [
-            self.binary, "-p", user,
+            self.binary, "-p",
             "--output-format", "json",
             "--tools", tools,
             "--restricted", "--strict-mcp-config",
@@ -463,7 +466,7 @@ class ClaudeCodeProvider:
             try:
                 done = subprocess.run(
                     argv, cwd=cwd, capture_output=True, text=True,
-                    timeout=self.timeout,
+                    timeout=self.timeout, input=user,
                 )
             except FileNotFoundError as exc:
                 raise RuntimeError(
@@ -475,6 +478,10 @@ class ClaudeCodeProvider:
             except subprocess.TimeoutExpired as exc:
                 raise RuntimeError(
                     f"the subscription call did not finish in {self.timeout}s"
+                ) from exc
+            except OSError as exc:
+                raise RuntimeError(
+                    f"{self.binary!r} could not be started: {exc.strerror or exc}"
                 ) from exc
 
         if done.returncode != 0:
@@ -593,60 +600,28 @@ class ClaudeCodeProvider:
         )
 
 
-class InfomaniakProvider:
-    """Placeholder for the sovereign path: open models served from Switzerland.
+def _on_mac() -> bool:
+    import platform
 
-    Left unimplemented on purpose rather than half-written. When it lands it
-    implements the same two-prompt contract and nothing else changes.
-    """
-
-    name = "infomaniak"
-
-    def __init__(self, api_key: str, product_id: str) -> None:
-        self.api_key = api_key
-        self.product_id = product_id
-
-    def complete(self, *, system: str, user: str, model: str, max_tokens: int) -> str:
-        raise NotImplementedError(
-            "The Infomaniak provider is not wired yet. Set llm.provider = "
-            '"anthropic" in arpenteur.toml.'
-        )
-
-    def complete_json(self, **_kwargs: Any) -> dict[str, Any]:
-        raise NotImplementedError(
-            "The Infomaniak provider is not wired yet. Set llm.provider = "
-            '"anthropic" in arpenteur.toml.'
-        )
-
-    def research(self, **_kwargs: Any) -> Research:
-        # Distinct from the message above: even once this provider is wired,
-        # searching the web is a hosted capability rather than a model one, so
-        # the enrich stage would still need its own answer here.
-        raise NotImplementedError(
-            "The enrich stage needs server-side web search, which the "
-            "Infomaniak provider does not offer. Set llm.provider = "
-            '"anthropic" to run it.'
-        )
+    return platform.system() == "Darwin"
 
 
 def _has_local_profile() -> bool:
-    """Is there a Claude sign-in on this machine?
+    """Is there a Claude Code sign-in on this machine?
 
     Checked before constructing a client so a missing sign-in reads as "sign
-    in" rather than as a generic auth error. Two locations, because the two
-    tools that can hold a subscription login write to different places: the
-    Claude Code CLI keeps one credentials file, `ant auth login` a directory of
-    profiles. Either is enough.
+    in" rather than as a generic auth error. The CLI keeps its sign-in in one
+    credentials file under `~/.claude/` on Linux and Windows; on macOS it
+    keeps it in the Keychain, which nothing here can read, so there the
+    installed CLI is trusted and a missing sign-in is reported by the first
+    call. A profile written by any other tool is not a Claude Code sign-in
+    and used to pass this check, after which the first call failed.
     """
-    import os
     from pathlib import Path
 
     if (Path.home() / ".claude" / ".credentials.json").is_file():
         return True
-    configured = os.environ.get("ANTHROPIC_CONFIG_DIR")
-    base = Path(configured) if configured else Path.home() / ".config" / "anthropic"
-    credentials = base / "credentials"
-    return credentials.is_dir() and any(credentials.glob("*.json"))
+    return _on_mac() and _claude_cli() is not None
 
 
 def _claude_cli() -> str | None:
@@ -704,13 +679,6 @@ def get_provider(settings: Any) -> Provider:
         raise RuntimeError(
             "llm.auth_mode is 'api_key' but ANTHROPIC_API_KEY is not set; "
             "see .env.example"
-        )
-    if choice == "infomaniak":
-        import os
-
-        return InfomaniakProvider(
-            os.environ.get("INFOMANIAK_API_KEY", ""),
-            os.environ.get("INFOMANIAK_AI_PRODUCT_ID", ""),
         )
     raise RuntimeError(f"Unknown llm.provider: {choice!r}")
 

@@ -32,7 +32,9 @@ refusal is untouched and still applies.
 
 from __future__ import annotations
 
+import re
 from contextvars import ContextVar
+from decimal import Decimal, InvalidOperation
 from datetime import date, timedelta
 from typing import Any
 from urllib.parse import parse_qs, quote
@@ -58,7 +60,9 @@ from ..modules.analytics import store as analytics_store
 from ..modules.sales import money as money_lib
 from ..modules.sales import store as sales_store
 from ..modules.scout import store as scout_store
-from ..config import Settings, load_settings, project_root
+from .. import config as config_lib
+from ..config import SECTION_KEYS, Settings, env_state, load_settings, project_root
+from ..modules.scout import scoring
 from ..sources import geoadmin
 from ..sources import letter as letter_source
 from ..sources import mail as mail_source
@@ -250,6 +254,16 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             return HTMLResponse(home_view.shell(body, at("/")))
         finally:
             conn.close()
+
+    @app.get("/doctor", response_class=HTMLResponse)
+    def doctor() -> HTMLResponse:
+        """The full check, live: it signs in and opens a session, sending nothing."""
+        conn = connect()
+        try:
+            found = health.checks(_reload(), conn, live=True)
+        finally:
+            conn.close()
+        return HTMLResponse(home_view.shell(home_view.doctor_page(found), at("/")))
 
     # --- help -----------------------------------------------------------------
 
@@ -2395,10 +2409,45 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         finally:
             conn.close()
 
+    def _start_from_example(code: str) -> str:
+        """A new templates folder named after the campaign, filled from the example.
+
+        Copied rather than pointed at: the example is never sent, and a
+        campaign whose folder is the example would be one edit away from
+        sending the example.
+        """
+        import shutil
+
+        folder_name = code.strip().lower()
+        if not folder_name or not re.fullmatch(r"[a-z0-9][a-z0-9-]*", folder_name):
+            raise ValueError("The campaign's code names its folder, so it needs a code "
+                             "of letters, digits and dashes.")
+        source = settings.root / "templates" / "example"
+        target = settings.root / "templates" / folder_name
+        if target.exists():
+            raise ValueError(f"templates/{folder_name} already exists. Name it in the "
+                             "templates field instead of starting from the example.")
+        if not source.is_dir():
+            raise ValueError("The example templates folder is not there to copy from.")
+        target.mkdir(parents=True)
+        for file in sorted(source.glob("*.md")):
+            shutil.copy(file, target / file.name)
+        return f"templates/{folder_name}"
+
     @app.post("/campaigns/new")
     def campaign_new(code: str = Form(""), name: str = Form(""), audience: str = Form(""),
                      templates: str = Form(""), programme: str = Form(""),
-                     strategy: str = Form("canton-blocks")) -> RedirectResponse:
+                     strategy: str = Form("canton-blocks"),
+                     start_from_example: str = Form("")) -> RedirectResponse:
+        made_folder = ""
+        if start_from_example:
+            try:
+                templates = made_folder = _start_from_example(code)
+            except ValueError as exc:
+                return back("/campaigns", error=str(exc))
+        elif not templates.strip():
+            return back("/campaigns", error="Name the templates folder, or tick "
+                                            "\"Start from the example\".")
         conn = connect()
         try:
             new_id = campaign_stage.create(settings, conn, code=code, name=name,
@@ -2406,10 +2455,56 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                                            strategy=strategy, programme=programme)
         except ValueError as exc:
             conn.rollback()
+            if made_folder:
+                import shutil
+
+                shutil.rmtree(settings.root / made_folder, ignore_errors=True)
             return back("/campaigns", error=str(exc))
         finally:
             conn.close()
-        return back(f"/campaign/{new_id}", note="Campaign created. Plan its waves.")
+        return back(
+            f"/campaign/{new_id}",
+            note="Campaign created. Rewrite the three example messages, then plan its waves."
+            if made_folder else "Campaign created. Plan its waves.",
+        )
+
+    def _template_files(row: Any) -> list[dict[str, Any]]:
+        """Each message file of a campaign, with its state, and the standard
+        languages that are not written yet."""
+        from ..sources import template as template_source
+
+        try:
+            folder = campaign_stage._templates_dir(settings, row["templates"])
+        except ValueError:
+            return []
+        found: list[dict[str, Any]] = []
+        seen: set[str] = set()
+        if folder.is_dir():
+            for path in sorted(folder.glob("*.md")):
+                if not template_source.is_template_name(path.name):
+                    continue
+                language = template_source.language_of_name(path.name)
+                seen.add(path.name)
+                item: dict[str, Any] = {
+                    "name": path.name, "variant": path.name[:-3], "subject": "",
+                    "problem": "", "state": "ok",
+                }
+                try:
+                    subject, _body = template_source.parse(
+                        path.read_text(encoding="utf-8"), language=language,
+                        path=f"{row['templates']}/{path.name}",
+                    )
+                    item["subject"] = subject
+                except (template_source.TemplateError, UnicodeDecodeError) as exc:
+                    item["state"] = "broken"
+                    item["problem"] = str(exc)
+                found.append(item)
+        for language in ("fr", "de", "it"):
+            name = f"{language}.md"
+            if name not in seen:
+                found.append({"name": name, "variant": language, "subject": "",
+                              "problem": "", "state": "absent"})
+        return found
 
     @app.get("/campaign/{campaign_id}", response_class=HTMLResponse)
     def campaign_view_page(campaign_id: int, request: Request) -> HTMLResponse:
@@ -2422,10 +2517,69 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             wave_rows = campaign_store.waves(conn, campaign_id)
             return campaign_shell(campaign_view.campaign_page(
                 row, wave_rows, campaign_stage.results(settings, conn, campaign=campaign_id),
-                wave_rules.campaign_state(row, wave_rows),
+                wave_rules.campaign_state(row, wave_rows), files=_template_files(row),
             ))
         finally:
             conn.close()
+
+    def _template_target(campaign_id: int, name: str) -> tuple[Any, Any] | None:
+        """The campaign and the file a name points at inside its folder, or None."""
+        from ..sources import template as template_source
+
+        if not template_source.is_template_name(name):
+            return None
+        conn = connect()
+        try:
+            row = campaign_store.campaign(conn, campaign_id)
+        finally:
+            conn.close()
+        if row is None:
+            return None
+        try:
+            folder = campaign_stage._templates_dir(settings, row["templates"])
+        except ValueError:
+            return None
+        return row, folder / name
+
+    @app.get("/campaign/{campaign_id}/template/{name}", response_class=HTMLResponse)
+    def template_editor(campaign_id: int, name: str) -> HTMLResponse:
+        """One message file of a campaign, as a form."""
+        target = _template_target(campaign_id, name)
+        if target is None:
+            return shell(render.not_found("message file"), status=404)
+        row, path = target
+        text = path.read_text(encoding="utf-8") if path.is_file() else ""
+        return campaign_shell(campaign_view.template_editor_page(
+            row, name, text, exists=path.is_file(),
+        ))
+
+    @app.post("/campaign/{campaign_id}/template/{name}", response_class=HTMLResponse)
+    def template_save(campaign_id: int, name: str, text: str = Form("")) -> Response:
+        """Write the file when it parses; show it again with the reason when not.
+
+        The page is drawn again rather than redirected to, so a refused text
+        stays in the box: a redirect would throw away what was typed.
+        """
+        from ..sources import template as template_source
+
+        target = _template_target(campaign_id, name)
+        if target is None:
+            return shell(render.not_found("message file"), status=404)
+        row, path = target
+        text = text.replace("\r\n", "\n")
+        try:
+            template_source.parse(
+                text, language=template_source.language_of_name(name),
+                path=f"{row['templates']}/{name}",
+            )
+        except template_source.TemplateError as exc:
+            body = campaign_view.template_editor_page(row, name, text, exists=path.is_file())
+            return HTMLResponse(campaign_view.shell(
+                body, at("/campaigns").with_flash(error=str(exc)),
+            ))
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(text, encoding="utf-8")
+        return back(f"/campaign/{campaign_id}", note=f"{name} saved.")
 
     @app.post("/campaign/{campaign_id}/plan")
     def campaign_plan(campaign_id: int, strategy: str = Form(""),
@@ -3546,25 +3700,283 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             counts = scout_store.counts_by_legal_form(conn)
             brief_path = live.root / "campaign.md"
             text = brief_path.read_text(encoding="utf-8") if brief_path.is_file() else ""
+            programmes = (
+                [str(row["code"]) for row in clients_store.programmes(conn)]
+                if "clients" in enabled else []
+            )
             return HTMLResponse(
                 settings_view_page.shell(
                     settings_view_page.settings_page(
-                        cantons=list(live.territory.cantons),
-                        forms=list(live.territory.legal_forms),
+                        live=live,
                         catalogue=db.catalogue(conn),
                         counts=counts,
-                        segments=dict(live.segments),
-                        sectors=dict(live.sectors),
-                        signal_brief=live.signal_brief,
                         campaign=text,
                         campaign_digest=match.brief_digest(text.strip()) if text.strip() else "—",
                         scored=scout_store.scored_count(conn),
                         history=db.setting_history(conn),
-                        rate_card=live.rate_card,
+                        programmes=programmes,
+                        env_set=env_state(),
+                        enabled=sorted(enabled),
                     ),
                     at("/settings"),
                 )
             )
+        finally:
+            conn.close()
+
+    # --- the configuration tables, one form each ---------------------------------
+    #
+    # Each form posts its whole section and the route saves that section as
+    # one overlay key, which `load_settings` merges over the file's table. A
+    # field the environment decides is not on the form, so what the database
+    # held for it stays as it was.
+
+    def _section(conn: Connection, name: str) -> dict[str, Any]:
+        held = db.settings_overlay(conn).get(name)
+        return dict(held) if isinstance(held, dict) else {}
+
+    def _save_section(conn: Connection, name: str, value: dict[str, Any], *,
+                      note: str) -> RedirectResponse:
+        db.save_setting(conn, name, value)
+        conn.commit()
+        _reload()
+        return _back("/settings", note=note)
+
+    def _whole(form: Any, key: str, label: str, *, low: int, high: int) -> int:
+        """A whole number from a form, inside its bounds, or a refusal."""
+        try:
+            number = int(str(form.get(key, "")).strip())
+        except ValueError:
+            raise ValueError(f"{label} must be a whole number.") from None
+        if not low <= number <= high:
+            raise ValueError(f"{label} must be between {low} and {high}.")
+        return number
+
+    @app.post("/settings/issuer")
+    async def save_issuer(request: Request) -> RedirectResponse:
+        form = await request.form()
+        got: dict[str, Any] = {
+            key: str(form.get(key, "")).strip() for key in SECTION_KEYS["issuer"]
+        }
+        if not got["name"]:
+            return _back("/settings", error="Give the name that bills: it is printed "
+                                            "on every invoice.")
+        if got["iban"] and not money_lib.iban_is_valid(got["iban"]):
+            return _back("/settings", error=f"{got['iban']} is not a valid IBAN. "
+                                            "A Swiss one is CH and nineteen more characters.")
+        try:
+            got["payment_days"] = _whole(form, "payment_days", "Days to pay", low=0, high=365)
+        except ValueError as exc:
+            return _back("/settings", error=str(exc))
+        got["country"] = (got["country"] or "CH").upper()[:2]
+        conn = connect()
+        try:
+            return _save_section(conn, "issuer", got, note="Identity saved.")
+        finally:
+            conn.close()
+
+    @app.post("/settings/delivery")
+    async def save_smtp(request: Request) -> RedirectResponse:
+        form = await request.form()
+        conn = connect()
+        try:
+            got = _section(conn, "smtp")
+            for key in ("sender", "sender_name", "reply_to", "security", "sent_folder",
+                        "test_to", "signature_image"):
+                if key in form:
+                    got[key] = str(form.get(key, "")).strip()
+            try:
+                for key, label, low, high in (
+                    ("per_run", "Messages per run", 1, 1000),
+                    ("daily_quota", "Messages per day", 0, 100000),
+                    ("pause_seconds", "Seconds between messages", 0, 120),
+                ):
+                    if key in form:
+                        got[key] = _whole(form, key, label, low=low, high=high)
+            except ValueError as exc:
+                return _back("/settings", error=str(exc))
+            if got.get("security") not in (None, "", "starttls", "ssl"):
+                return _back("/settings", error="Security is starttls or ssl.")
+            if got.get("signature_image", "").startswith(("/", "\\")) or ".." in got.get("signature_image", ""):
+                return _back("/settings", error="The signature picture is a file under "
+                                                "the project folder, named from there.")
+            return _save_section(conn, "smtp", got, note="Sending saved.")
+        finally:
+            conn.close()
+
+    @app.post("/settings/mail")
+    def save_mail(own_domains: str = Form("")) -> RedirectResponse:
+        domains = sorted({
+            line.strip().lower().lstrip("@")
+            for line in own_domains.replace(",", "\n").splitlines() if line.strip()
+        })
+        conn = connect()
+        try:
+            return _save_section(conn, "mail", {"own_domains": domains},
+                                 note=f"Mailbox saved: {ui.num(len(domains))} own domain(s).")
+        finally:
+            conn.close()
+
+    @app.post("/settings/zefix")
+    def save_zefix(contact: str = Form("")) -> RedirectResponse:
+        if not contact.strip():
+            return _back("/settings", error="The contact cannot be empty: it is how "
+                                            "the register's operators reach whoever "
+                                            "is asking.")
+        conn = connect()
+        try:
+            return _save_section(conn, "zefix", {"contact": contact.strip()},
+                                 note="Contact saved.")
+        finally:
+            conn.close()
+
+    @app.post("/settings/llm")
+    async def save_llm(request: Request) -> RedirectResponse:
+        form = await request.form()
+        try:
+            got: dict[str, Any] = {
+                "auth_mode": config_lib._auth_mode(form.get("auth_mode", "subscription")),
+                "advise_effort": config_lib._effort(form.get("advise_effort", "")),
+                "prep_effort": config_lib._effort(form.get("prep_effort", "")),
+            }
+            for key in SECTION_KEYS["llm"]:
+                if key.endswith("_model"):
+                    got[key] = config_lib._model_id(key, form.get(key, ""))
+        except ValueError as exc:
+            return _back("/settings", error=str(exc))
+        conn = connect()
+        try:
+            return _save_section(conn, "llm", got, note="Model access saved.")
+        finally:
+            conn.close()
+
+    @app.post("/settings/enrol")
+    async def save_enrol(request: Request) -> RedirectResponse:
+        form = await request.form()
+        brief = str(form.get("brief", "")).strip()
+        if brief:
+            if brief.startswith(("/", "\\")) or ".." in brief:
+                return _back("/settings", error="The message brief is a file under the "
+                                                "project folder, named from there.")
+            if not (settings.root / brief).is_file():
+                return _back("/settings", error=f"No file named {brief} under the project "
+                                                "folder. Write it first, then name it here.")
+        try:
+            testers = _whole(form, "android_testers", "Testers Google asks for", low=1, high=1000)
+            days = _whole(form, "android_days", "Days of testing", low=1, high=365)
+        except ValueError as exc:
+            return _back("/settings", error=str(exc))
+        got = {
+            "programme": str(form.get("programme", "")).strip().upper(),
+            "segments": [str(v).strip() for v in form.getlist("segments") if str(v).strip()],
+            "brief": brief,
+            "include_in_draft": bool(form.get("include_in_draft")),
+            "ios_link": str(form.get("ios_link", "")).strip(),
+            "android_window_start": str(form.get("android_window_start", "")).strip(),
+            "android_window_end": str(form.get("android_window_end", "")).strip(),
+            "android_testers": testers,
+            "android_days": days,
+        }
+        conn = connect()
+        try:
+            return _save_section(conn, "enrol", got, note="Enrolment saved.")
+        finally:
+            conn.close()
+
+    @app.post("/settings/scoring")
+    async def save_scoring(request: Request) -> RedirectResponse:
+        form = await request.form()
+        name = str(form.get("name", "")).strip()
+        if not name:
+            return _back("/settings", error="Name the weighting: a score cites the set "
+                                            "it was made with.")
+        raw = {c.key: str(form.get(c.key, "")).strip() for c in scoring.COMPONENTS}
+        try:
+            normalised = scoring.normalise({k: Decimal(v) for k, v in raw.items()})
+        except (scoring.ScoringError, InvalidOperation, ValueError) as exc:
+            return _back("/settings", error=f"These weights cannot be used: {exc}")
+        conn = connect()
+        try:
+            db.save_setting(conn, "scoring", {
+                "name": name, "note": str(form.get("note", "")).strip(), "weights": raw,
+            })
+            conn.commit()
+            live = _reload()
+            set_id, active = scout_store.active_weights(conn)
+            same = set_id is not None and scoring.normalise(
+                {k: Decimal(str(v)) for k, v in active.items()}
+            ) == normalised
+            if same:
+                return _back("/settings", note="Weights saved; they are the set in "
+                                                "force, so no new version was opened.")
+            opened = scout_store.save_weight_set(
+                conn, live.weight_set_name, dict(live.weights), note=live.weight_set_note,
+            )
+            conn.commit()
+            return _back("/settings", note=f"Weights saved; weight set {opened} is in force.")
+        finally:
+            conn.close()
+
+    @app.post("/settings/services")
+    async def save_services(request: Request) -> RedirectResponse:
+        form = await request.form()
+        columns = {
+            key: [str(v) for v in form.getlist(key)]
+            for key in ("code", "name", "unit", "low", "high", "sort_order", "what",
+                        "prerequisite", "basis")
+        }
+        rows: list[dict[str, Any]] = []
+        seen: set[str] = set()
+        for i, code in enumerate(columns["code"]):
+            code = code.strip().lower()
+            if not code:
+                continue
+            if code in seen:
+                return _back("/settings", error=f"The code {code} is used twice.")
+            seen.add(code)
+
+            def cell(key: str) -> str:
+                values = columns[key]
+                return values[i].strip() if i < len(values) else ""
+
+            unit = cell("unit") or "fixed"
+            if unit not in sales_store.UNITS:
+                return _back("/settings", error=f"{code}: the unit is one of "
+                                                f"{', '.join(sales_store.UNITS)}.")
+            try:
+                low = money_lib.money(cell("low")) if cell("low") else None
+                high = money_lib.money(cell("high")) if cell("high") else None
+                order = int(cell("sort_order") or 100)
+            except ValueError:
+                return _back("/settings", error=f"{code}: the prices and the order "
+                                                "must be numbers.")
+            if low is not None and high is not None and low > high:
+                return _back("/settings", error=f"{code}: the lower price is above "
+                                                "the higher one.")
+            rows.append({
+                "code": code, "name": cell("name") or code, "unit": unit,
+                "low": None if low is None else str(low),
+                "high": None if high is None else str(high),
+                "what": cell("what"), "prerequisite": cell("prerequisite"),
+                "basis": cell("basis"), "sort_order": order,
+            })
+        rows.sort(key=lambda r: (r["sort_order"], r["code"]))
+        note_text = str(form.get("card_note", "")).strip()
+        conn = connect()
+        try:
+            before = tuple(settings.catalogue)
+            db.save_setting(conn, "rates", {"service": rows, "card_note": {"text": note_text}})
+            conn.commit()
+            live = _reload()
+            if "sales" not in enabled or not live.catalogue:
+                return _back("/settings", note="Catalogue saved.")
+            if live.catalogue == before and sales_store.current_card(conn) is not None:
+                return _back("/settings", note="Catalogue saved; the lines are unchanged, "
+                                                "so the rate card in force stays.")
+            sales_store.load_catalogue(conn, list(live.catalogue), note=live.card_note)
+            conn.commit()
+            return _back("/settings", note=f"Catalogue saved; a rate card with "
+                                            f"{ui.num(len(live.catalogue))} line(s) is in force.")
         finally:
             conn.close()
 

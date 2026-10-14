@@ -70,20 +70,59 @@ def conn(db_path) -> Connection:
     return connection
 
 
-def _settings(tmp_path, brief: str = BRIEF_FULL, *, mail: bool = True):
-    (tmp_path / draft.BRIEF).write_text(brief, encoding="utf-8")
+# The invitation each language's file carries, in the test programme's
+# folder. Short, and with every placeholder the stage knows.
+INVITES = {
+    "fr": "Comment participer\n\niOS, sans condition : {ios_link}\n\n"
+          "Android, sous deux conditions. Google exige {testers} testeurs pendant "
+          "{days} jours, du {start} au {end}, avec votre compte Google. "
+          "Ni séance de test, ni rapport.",
+    "de": "So nehmen Sie teil\n\niOS: {ios_link}\n\nAndroid: {testers} Tester, "
+          "{days} Tage, vom {start} bis zum {end}.",
+    "it": "Come partecipare\n\niOS: {ios_link}\n\nAndroid: {testers} tester, "
+          "{days} giorni, dal {start} al {end}.",
+}
+
+
+def _write_invites(root, programme: str = "pilot") -> None:
+    folder = root / "templates" / programme
+    folder.mkdir(parents=True, exist_ok=True)
+    for language, text in INVITES.items():
+        (folder / f"invite.{language}.md").write_text(
+            f"Notes for the editor.\n\n---\n\n{text}\n\n---\n", encoding="utf-8"
+        )
+
+
+def _settings(tmp_path, brief: str = BRIEF_FULL, *, mail: bool = True, invites: bool = True,
+              **enrol_fields):
+    """Settings over a project folder holding the brief and the invitations.
+
+    The brief is named under enrolment, as Settings names it, and the
+    invitation files sit in the programme's templates folder.
+    """
+    (tmp_path / "brief.md").write_text(brief, encoding="utf-8")
+    if invites:
+        _write_invites(tmp_path)
     from arpenteur.config import EnrolConfig
 
+    fields = dict(
+        brief="brief.md", programme="PILOT",
+        ios_link="https://testflight.apple.com/join/abc123",
+        android_window_start="20 octobre 2026",
+        android_window_end="3 novembre 2026",
+    )
+    fields.update(enrol_fields)
     return SimpleNamespace(
         root=tmp_path,
         mail=SimpleNamespace(configured=mail, user="me@arpenteur-demo.ch"),
         llm=SimpleNamespace(enrich_model="test-model", enrich_max_tokens=2000),
-        enrol=EnrolConfig(
-            ios_link="https://testflight.apple.com/join/abc123",
-            android_window_start="20 octobre 2026",
-            android_window_end="3 novembre 2026",
-        ),
+        enrol=EnrolConfig(**fields),
     )
+
+
+def _invite(tmp_path, language: str, **enrol_fields) -> str:
+    """The invitation as the stage composes it for one language."""
+    return draft.invitation(_settings(tmp_path, **enrol_fields), language)
 
 
 class FakeProvider:
@@ -207,14 +246,23 @@ def test_the_brief_digest_changes_with_the_brief() -> None:
 
 
 def test_a_missing_brief_is_refused_rather_than_defaulted(conn, tmp_path) -> None:
+    """The brief comes from Settings, never from a file name in the code."""
+    from arpenteur.config import EnrolConfig
+
+    assert not hasattr(draft, "BRIEF")
     settings = SimpleNamespace(
         root=tmp_path,
         mail=SimpleNamespace(configured=True, user="a@b.ch"),
         llm=SimpleNamespace(enrich_model="m", enrich_max_tokens=10),
+        enrol=EnrolConfig(),
     )
-    with pytest.raises(RuntimeError) as caught:
+    with pytest.raises(RuntimeError) as unset:
         draft.run(settings, conn, desk_parts=DESKS, log=lambda _m: None)
-    assert draft.BRIEF in str(caught.value)
+    assert "Settings, Enrolment" in str(unset.value)
+    settings.enrol = EnrolConfig(brief="absent.md")
+    with pytest.raises(RuntimeError) as absent:
+        draft.run(settings, conn, desk_parts=DESKS, log=lambda _m: None)
+    assert "absent.md" in str(absent.value)
 
 
 def test_the_gaps_in_a_brief_are_named_before_any_call(conn, tmp_path, monkeypatch) -> None:
@@ -306,10 +354,9 @@ def test_an_initial_invitation_keeps_the_opt_out_without_registration(
 ) -> None:
     from arpenteur.config import _enrol as read_enrol
 
-    enrol = read_enrol({"include_in_draft": False, **enrol_fields})
+    read_enrol({"include_in_draft": False, **enrol_fields})
     body = draft.compose(
         "An invitation to reply.", language=language, address="a@b.ch",
-        enrol=enrol,
     )
     assert body == (
         "An invitation to reply.\n\n"
@@ -322,8 +369,7 @@ def test_invitation_drafts_do_not_require_installation_settings(
 ) -> None:
     provider = FakeProvider()
     monkeypatch.setattr(draft, "get_provider", lambda _s: provider)
-    settings = _settings(tmp_path)
-    settings.enrol = _enrol(include_in_draft=False)
+    settings = _settings(tmp_path, invites=False, include_in_draft=False)
     said: list[str] = []
     stats = draft.run(settings, conn, desk_parts=DESKS, log=said.append)
 
@@ -342,47 +388,73 @@ def test_invitation_drafts_do_not_require_installation_settings(
     ("de", "So nehmen Sie teil"),
     ("it", "Come partecipare"),
 ])
-def test_the_enrolment_block_is_written_in_the_recipients_language(
-    language, marker
+def test_the_invitation_is_read_from_the_programmes_file_for_the_language(
+    tmp_path, language, marker
 ) -> None:
     body = draft.compose("Texte.", language=language, address="a@b.ch",
-                         enrol=_enrol(**FULL_ENROL))
+                         invitation=_invite(tmp_path, language))
     assert marker in body
     assert "https://testflight.apple.com/join/abc123" in body
+    assert "Notes for the editor" not in body, "only the block between the rules"
 
 
-def test_both_platforms_and_their_conditions_appear(language="fr") -> None:
+def test_both_platforms_and_their_conditions_appear(tmp_path, language="fr") -> None:
     body = draft.compose("Texte.", language=language, address="a@b.ch",
-                         enrol=_enrol(**FULL_ENROL))
+                         invitation=_invite(tmp_path, language))
     assert "iOS, sans condition" in body
     assert "Android, sous deux conditions" in body
     assert "compte Google" in body
     assert "20 octobre 2026" in body and "3 novembre 2026" in body
 
 
-def test_googles_own_numbers_come_from_settings() -> None:
+def test_googles_own_numbers_come_from_settings(tmp_path) -> None:
     """Twelve and fourteen are Google's, not ours, and have changed once."""
-    body = draft.compose("Texte.", language="fr", address="a@b.ch",
-                         enrol=_enrol(android_testers=20, android_days=21,
-                                      **FULL_ENROL))
+    body = _invite(tmp_path, "fr", android_testers=20, android_days=21)
     assert "20 testeurs" in body
     assert "21 jours" in body
 
 
-def test_the_commitment_is_stated_as_the_light_thing_it_is() -> None:
-    """Google checks the app is installed and used. Saying so is what keeps a
-    true condition from reading as a fortnight of unpaid work."""
-    body = draft.compose("Texte.", language="fr", address="a@b.ch",
-                         enrol=_enrol(**FULL_ENROL))
-    assert "Ni séance de test, ni rapport" in body
-
-
-def test_a_missing_link_leaves_a_marker_a_reviewer_cannot_miss() -> None:
-    body = draft.compose("Texte.", language="fr", address="a@b.ch",
-                         enrol=_enrol())
+def test_a_missing_link_leaves_a_marker_a_reviewer_cannot_miss(tmp_path) -> None:
+    body = _invite(tmp_path, "fr", ios_link="", android_window_start="",
+                   android_window_end="")
     assert "[[ MANQUE : lien TestFlight ]]" in body
     assert "[[ MANQUE : date de début ]]" in body
     assert "https://" not in body, "no invented URL stands in for the real one"
+
+
+def test_an_invitation_needs_no_subject_line(tmp_path) -> None:
+    from arpenteur.sources import template
+
+    text = "notes\n\n---\n\nComment participer\n\nOuvrez {ios_link}.\n\n---\n"
+    subject, body = template.parse(text, language="fr", require_subject=False)
+    assert subject == "" and body.startswith("Comment participer")
+    with pytest.raises(template.TemplateError, match="must open with"):
+        template.parse(text, language="fr")
+    with pytest.raises(template.TemplateError, match="À compléter"):
+        template.parse("---\nÀ compléter\n---\n", language="fr", require_subject=False)
+
+
+def test_a_missing_invitation_is_refused_before_any_model_call(
+    conn, tmp_path, monkeypatch
+) -> None:
+    provider = FakeProvider()
+    monkeypatch.setattr(draft, "get_provider", lambda _s: provider)
+    settings = _settings(tmp_path, invites=False)
+    with pytest.raises(RuntimeError) as caught:
+        draft.run(settings, conn, desk_parts=DESKS, limit=3, log=lambda _m: None)
+    assert "templates/pilot/invite." in str(caught.value)
+    assert provider.prompts == [], "found out before the first call, not after"
+    assert conn.execute("SELECT COUNT(*) AS n FROM intel.draft").fetchone()["n"] == 0
+
+
+def test_the_invitation_needs_a_programme(tmp_path) -> None:
+    with pytest.raises(RuntimeError, match="programme"):
+        _invite(tmp_path, "fr", programme="")
+
+
+def test_the_invitation_folder_is_the_programme_in_lower_case(tmp_path) -> None:
+    settings = _settings(tmp_path, programme="PILOT")
+    assert draft.invitation_path(settings, "de").as_posix().endswith("templates/pilot/invite.de.md")
 
 
 def test_the_unset_settings_are_named_before_any_model_call(
@@ -390,8 +462,8 @@ def test_the_unset_settings_are_named_before_any_model_call(
 ) -> None:
     provider = FakeProvider()
     monkeypatch.setattr(draft, "get_provider", lambda _s: provider)
-    settings = _settings(tmp_path)
-    settings.enrol = _enrol()
+    settings = _settings(tmp_path, ios_link="", android_window_start="",
+                         android_window_end="")
     said: list[str] = []
     stats = draft.run(settings, conn, desk_parts=DESKS, limit=1, log=said.append)
     assert stats["enrol_missing"]
@@ -399,10 +471,10 @@ def test_the_unset_settings_are_named_before_any_model_call(
     assert any("MANQUE" in line for line in said)
 
 
-def test_the_three_parts_arrive_in_reading_order() -> None:
+def test_the_three_parts_arrive_in_reading_order(tmp_path) -> None:
     """Why they are written to, what to do, how to refuse."""
     body = draft.compose("Pourquoi.", language="fr", address="a@b.ch",
-                         enrol=_enrol(**FULL_ENROL))
+                         invitation=_invite(tmp_path, "fr"))
     assert body.index("Pourquoi.") < body.index("Comment participer")
     assert body.index("Comment participer") < body.index("ne souhaitez plus")
 
@@ -413,12 +485,10 @@ def test_the_three_parts_arrive_in_reading_order() -> None:
 def test_the_campaign_bands_are_the_default(conn, tmp_path, monkeypatch) -> None:
     """Drafting respects the campaign's chosen audience rather than widening
     it to every firm that happens to have a deliverable address."""
-    from arpenteur.config import EnrolConfig
 
     provider = FakeProvider()
     monkeypatch.setattr(draft, "get_provider", lambda _s: provider)
-    settings = _settings(tmp_path)
-    settings.enrol = EnrolConfig(segments=("regie-core",), **FULL_ENROL)
+    settings = _settings(tmp_path, segments=("regie-core",))
     asked: dict[str, object] = {}
     real = draft.scout_store.send_list
 
@@ -434,12 +504,10 @@ def test_the_campaign_bands_are_the_default(conn, tmp_path, monkeypatch) -> None
 
 
 def test_an_explicit_segment_overrides_the_setting(conn, tmp_path, monkeypatch) -> None:
-    from arpenteur.config import EnrolConfig
 
     provider = FakeProvider()
     monkeypatch.setattr(draft, "get_provider", lambda _s: provider)
-    settings = _settings(tmp_path)
-    settings.enrol = EnrolConfig(segments=("regie-core",), **FULL_ENROL)
+    settings = _settings(tmp_path, segments=("regie-core",))
     asked: dict[str, object] = {}
     real = draft.scout_store.send_list
     monkeypatch.setattr(

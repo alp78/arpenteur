@@ -889,6 +889,90 @@ def cmd_rates(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_doctor(args: argparse.Namespace) -> int:
+    """Everything a first run needs, checked and printed; 1 when something is missing.
+
+    Live by default: the mailbox is signed in to and a session is opened with
+    the mail server, sending nothing. `--quick` reads settings and files only.
+    """
+    from . import health
+
+    settings = load_settings()
+    conn = db.open_db(settings.database_url)
+    try:
+        found = health.checks(settings, conn, live=not args.quick)
+    finally:
+        conn.close()
+    print(health.report(found))
+    return 1 if any(check.state == "missing" for check in found) else 0
+
+
+def _masked(key: str, value: Any) -> str:
+    """A setting's value for a terminal: an IBAN keeps its last four characters."""
+    if key == "iban" and value:
+        text = str(value).replace(" ", "")
+        return "*" * max(0, len(text) - 4) + text[-4:]
+    if isinstance(value, list):
+        return f"{len(value)} entr{'y' if len(value) == 1 else 'ies'}"
+    if isinstance(value, dict):
+        return ", ".join(f"{k}={v}" for k, v in value.items())
+    return str(value)
+
+
+def cmd_settings(args: argparse.Namespace) -> int:
+    """The operator settings held in the database: show them, or import them.
+
+    `import-toml` moves each configuration table the Settings page edits out
+    of `arpenteur.toml` and into the overlay, once: a section the database
+    already holds is kept unless `--force` says otherwise, so the file can be
+    cleaned of its personal values afterwards without a value being lost or
+    a later run of the command undoing a change made on the page.
+    """
+    from .config import OVERLAY_SECTIONS, SECTION_KEYS
+
+    settings = load_settings()
+    conn = db.open_db(settings.database_url)
+    try:
+        held = db.settings_overlay(conn)
+        if args.action == "show":
+            shown = 0
+            for section in OVERLAY_SECTIONS:
+                value = held.get(section)
+                if not isinstance(value, dict):
+                    continue
+                shown += 1
+                print(f"[{section}]")
+                for key, item in value.items():
+                    print(f"  {key} = {_masked(key, item)}")
+            if not shown:
+                print("No section is held in the database; the file is the "
+                      "whole configuration. `arpenteur settings import-toml` "
+                      "moves its tables here.")
+            return 0
+
+        with (settings.root / "arpenteur.toml").open("rb") as handle:
+            raw = tomllib.load(handle)
+        for section in OVERLAY_SECTIONS:
+            table = raw.get(section)
+            if not isinstance(table, dict):
+                print(f"{section}: not in the file")
+                continue
+            picked = {key: table[key] for key in SECTION_KEYS[section] if key in table}
+            if not picked:
+                print(f"{section}: nothing to import")
+                continue
+            if section in held and not args.force:
+                print(f"{section}: kept, the database already holds it "
+                      "(--force to overwrite)")
+                continue
+            db.save_setting(conn, section, picked, by="import-toml")
+            print(f"{section}: imported {len(picked)} key(s)")
+        conn.commit()
+        return 0
+    finally:
+        conn.close()
+
+
 def cmd_weights(args: argparse.Namespace) -> int:
     """The weight set: what the six parts of a score are worth to this campaign."""
     from .modules.scout import scoring, store as scout
@@ -2641,6 +2725,30 @@ def build_parser() -> argparse.ArgumentParser:
              "rate card, or print the card in force",
     )
     p.set_defaults(func=cmd_rates)
+
+    p = sub.add_parser(
+        "doctor", help="check everything a first run needs, and say what is missing"
+    )
+    p.add_argument(
+        "--quick", action="store_true",
+        help="read settings and files only; do not sign in to the mailbox or "
+             "open a session with the mail server",
+    )
+    p.set_defaults(func=cmd_doctor)
+
+    p = sub.add_parser(
+        "settings", help="the operator settings held in the database"
+    )
+    p.add_argument(
+        "action", choices=("import-toml", "show"),
+        help="move the configuration tables from arpenteur.toml into the "
+             "database, once, or print what it holds",
+    )
+    p.add_argument(
+        "--force", action="store_true",
+        help="overwrite a section the database already holds",
+    )
+    p.set_defaults(func=cmd_settings)
 
     p = sub.add_parser(
         "weights", help="what each part of a score is worth to this campaign"

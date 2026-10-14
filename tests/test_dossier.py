@@ -48,9 +48,9 @@ contact = "tests"
 
 [llm]
 provider = "anthropic"
-classify_model = "test"
-draft_model = "test"
-match_model = "test"
+classify_model = "claude-test"
+draft_model = "claude-test"
+match_model = "claude-test"
 batch_size = 20
 """
 

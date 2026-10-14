@@ -2259,8 +2259,11 @@ def close_orphans(conn: Connection, started_by: str = "console") -> int:
 
 # --- operator settings --------------------------------------------------------
 
+# The single keys first, then the whole configuration tables that
+# `config.OVERLAY_SECTIONS` names; a test keeps the two lists agreeing.
 SETTABLE = ("cantons", "legal_forms", "statuses", "admit_new", "segments",
-            "sectors", "signal_brief", "rate_card")
+            "sectors", "signal_brief", "rate_card",
+            "issuer", "smtp", "mail", "zefix", "enrol", "llm", "scoring", "rates")
 
 
 def settings_overlay(conn: Connection) -> dict[str, Any]:

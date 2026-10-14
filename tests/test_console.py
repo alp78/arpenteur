@@ -522,8 +522,9 @@ def test_home_names_what_is_missing_before_the_first_run(db_path) -> None:
     )
     body = TestClient(create_app(bare)).get("/").text
     assert "No canton is set" in body
-    assert 'href="/settings">Fix it</a>' in body
-    assert "1 thing(s) to set before the first run" in body
+    assert 'href="/settings#territory">Fix it</a>' in body
+    assert re.search(r"[1-9]\d* thing\(s\) to set before the first run", body)
+    assert "Register" in body and "Model access" in body and "Scoring brief" in body
 
 
 def test_the_company_list_lives_at_companies_and_filters_its_own_rows(client) -> None:

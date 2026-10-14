@@ -28,8 +28,13 @@ so a refusal arrives where somebody is already looking.
 `advise` applies to the rate card, for the same reason: a model asked what a
 handover app does answers fluently, and the first time an invented feature is
 read by a régie the message stops being an approach and becomes a false claim.
-`limen.md` carries what is established and marks what is not, and the prompt
-forbids filling the gaps.
+The message brief carries what is established and marks what is not, and the
+prompt forbids filling the gaps.
+
+**Nothing here belongs to one operator.** The brief is a file named under
+Settings, and the invitation a draft may carry is read from the programme's
+own templates folder, one file per language. Both used to be constants in
+this module, so every deployment drafted from one operator's brief or none.
 """
 
 from __future__ import annotations
@@ -43,8 +48,7 @@ from ..config import Settings
 from ..kernel.db import Connection, Row
 from ..llm import get_provider
 from ..modules.scout import store as scout_store
-
-BRIEF = "limen.md"
+from ..sources import template
 
 # The prose faults the brief names, checked on what came back.
 #
@@ -133,11 +137,19 @@ def language_of(canton: str | None) -> str:
 
 
 def brief_text(settings: Settings) -> str:
-    path = Path(settings.root) / BRIEF
-    if not path.exists():
+    """The message brief, from the file Settings names. There is no default."""
+    name = str(getattr(settings.enrol, "brief", "") or "").strip()
+    if not name:
         raise RuntimeError(
-            f"{BRIEF} is missing from {settings.root}. The brief is what the "
-            "message says; there is no default to fall back on."
+            "No message brief is set. Under Settings, Enrolment, name the file "
+            "the draft stage writes from: the brief is what the message says, "
+            "and there is no default to fall back on."
+        )
+    path = Path(settings.root) / name
+    if not path.is_file():
+        raise RuntimeError(
+            f"The message brief {name} is not under the project folder. Write "
+            "it, or name another under Settings, Enrolment."
         )
     return path.read_text(encoding="utf-8")
 
@@ -255,101 +267,76 @@ def build_prompt(
     ])
 
 
-# The enrolment block, per language. Everything factual in it is substituted
-# from settings, so no sentence here depends on a model having got a URL or a
-# date right.
-ENROL = {
-    "fr": (
-        "Comment participer\n"
-        "\n"
-        "iOS, sans condition. Ouvrez ce lien, installez TestFlight, "
-        "ajoutez-y Limen : {ios_link}\n"
-        "\n"
-        "Android, sous deux conditions. Google exige {testers} testeurs "
-        "pendant {days} jours continus avant qu'une application paraisse à "
-        "son catalogue. Il nous faut donc l'adresse de votre compte Google, "
-        "sans laquelle Google ne vous ouvre pas la version de test, et votre "
-        "accord pour garder l'application du {start} au {end} en l'ouvrant "
-        "sur vos états des lieux réels. Ni séance de test, ni rapport.\n"
-        "\n"
-        "Pour vous inscrire, répondez à ce courriel avec le nom de votre "
-        "régie, la plateforme retenue, et l'adresse de votre compte Google "
-        "s'il s'agit d'Android."
-    ),
-    "de": (
-        "So nehmen Sie teil\n"
-        "\n"
-        "iOS, ohne Bedingung. Öffnen Sie diesen Link, installieren Sie "
-        "TestFlight, fügen Sie Limen hinzu: {ios_link}\n"
-        "\n"
-        "Android, unter zwei Bedingungen. Google verlangt {testers} Tester "
-        "über {days} zusammenhängende Tage, bevor eine App in den Store "
-        "kommt. Wir benötigen daher die Adresse Ihres Google-Kontos, ohne die "
-        "Google Ihnen die Testversion nicht freigibt, und Ihr "
-        "Einverständnis, die App vom {start} bis zum {end} zu behalten und "
-        "bei Ihren echten Abnahmen zu öffnen. Keine Testsitzung, kein "
-        "Bericht.\n"
-        "\n"
-        "Antworten Sie zur Anmeldung auf diese E-Mail mit dem Namen Ihrer "
-        "Verwaltung, der gewählten Plattform und bei Android der Adresse "
-        "Ihres Google-Kontos."
-    ),
-    "it": (
-        "Come partecipare\n"
-        "\n"
-        "iOS, senza condizioni. Apra questo link, installi TestFlight, "
-        "aggiunga Limen: {ios_link}\n"
-        "\n"
-        "Android, a due condizioni. Google richiede {testers} tester per "
-        "{days} giorni continuativi prima che un'applicazione compaia nel "
-        "suo catalogo. Ci serve quindi l'indirizzo del suo account Google, "
-        "senza il quale Google non le apre la versione di prova, e il suo "
-        "accordo a conservare l'applicazione dal {start} al {end} aprendola "
-        "durante i suoi verbali reali. Nessuna sessione di test, nessun "
-        "rapporto.\n"
-        "\n"
-        "Per iscriversi, risponda a questa e-mail con il nome della sua "
-        "agenzia, la piattaforma scelta e, per Android, l'indirizzo del suo "
-        "account Google."
-    ),
-}
-
 # What a reviewer cannot miss. A draft whose link is unset must be unsendable
 # by inspection, not merely wrong.
 PLACEHOLDER = "[[ MANQUE : {what} ]]"
 
+# What an invitation file may ask for, and nothing else: a URL or a date a
+# model wrote would be a URL or a date it invented.
+_SLOT = re.compile(r"\{(ios_link|start|end|testers|days)\}")
 
-def enrol_block(enrol: Any, language: str) -> str:
-    """The enrolment instructions, with the links and dates substituted.
 
-    Composed here for the reason the opt-out is: a model asked for a
+def invitation_path(settings: Settings, language: str) -> Path:
+    """Where the programme keeps its invitation for one language."""
+    programme = str(getattr(settings.enrol, "programme", "") or "").strip().lower()
+    if not programme:
+        raise RuntimeError(
+            "The invitation belongs to a programme, and none is set under "
+            "Settings, Enrolment. Name one, or untick the invitation."
+        )
+    return Path(settings.root) / "templates" / programme / f"invite.{language}.md"
+
+
+def fill_invitation(text: str, enrol: Any) -> str:
+    """The invitation with the links and dates substituted.
+
+    Composed from settings for the reason the opt-out is: a model asked for a
     TestFlight URL writes a plausible, well-formed one that goes nowhere, and
-    a recipient who tries it once files the message as a scam. Google's window
-    has to be the same two dates for every recipient, which a model asked for
-    "a fortnight" cannot do either.
+    Google's window has to be the same two dates for every recipient. An
+    unset value leaves a marker a reviewer cannot miss.
     """
-    template = ENROL.get(language, ENROL["fr"])
-    return template.format(
-        ios_link=enrol.ios_link or PLACEHOLDER.format(what="lien TestFlight"),
-        start=enrol.android_window_start or PLACEHOLDER.format(what="date de début"),
-        end=enrol.android_window_end or PLACEHOLDER.format(what="date de fin"),
-        testers=enrol.android_testers,
-        days=enrol.android_days,
+    values = {
+        "ios_link": enrol.ios_link or PLACEHOLDER.format(what="lien TestFlight"),
+        "start": enrol.android_window_start or PLACEHOLDER.format(what="date de début"),
+        "end": enrol.android_window_end or PLACEHOLDER.format(what="date de fin"),
+        "testers": str(enrol.android_testers),
+        "days": str(enrol.android_days),
+    }
+    return _SLOT.sub(lambda m: values[m.group(1)], text)
+
+
+def invitation(settings: Settings, language: str) -> str:
+    """The invitation for one language, read from its file and filled in.
+
+    Refused, naming the file, when it is not there: a draft that silently
+    carried no invitation would ask the recipient for nothing.
+    """
+    path = invitation_path(settings, language)
+    relative = path.relative_to(Path(settings.root)).as_posix()
+    if not path.is_file():
+        raise RuntimeError(
+            f"No invitation for {language}: {relative} is missing. Write it, "
+            "or untick the invitation under Settings, Enrolment."
+        )
+    _subject, body = template.parse(
+        path.read_text(encoding="utf-8"), language=language, path=relative,
+        require_subject=False,
     )
+    return fill_invitation(body, settings.enrol)
 
 
 def compose(
-    body: str, *, language: str, address: str, enrol: Any | None = None
+    body: str, *, language: str, address: str, invitation: str = ""
 ) -> str:
-    """The model's text, optional enrolment instructions, then the opt-out.
+    """The model's text, the invitation when there is one, then the opt-out.
 
     Only the first of the three comes from a model. The order is the reading
     order a recipient needs: why they are being written to, what to do, how to
     refuse.
     """
     parts = [body.rstrip()]
-    if enrol is not None and enrol.include_in_draft:
-        parts.append(enrol_block(enrol, language))
+    if invitation.strip():
+        parts.append(invitation.strip())
     parts.append(OPT_OUT.get(language, OPT_OUT["fr"]).format(address=address))
     return "\n\n".join(parts) + "\n"
 
@@ -425,7 +412,7 @@ def run(
     )
     stats["enrol_missing"] = gaps_in_enrol
     if gaps_in_enrol:
-        log("These are unset in arpenteur.toml [enrol]:")
+        log("These are unset under Settings, Enrolment:")
         for gap in gaps_in_enrol:
             log(f"  - {gap}")
         log("Each draft will carry a visible [[ MANQUE : ... ]] marker in "
@@ -435,8 +422,8 @@ def run(
     # both bands by default would contradict the brief it is reading.
     wanted = segments or list(settings.enrol.segments) or None
     if wanted and not segments:
-        log(f"Writing to {', '.join(wanted)} (arpenteur.toml [enrol] "
-            "segments). Pass --segment to widen.")
+        log(f"Writing to {', '.join(wanted)}, the segments set under Settings, "
+            "Enrolment. Name a segment to widen.")
     rows: list[Row] = scout_store.send_list(
         conn, desk_parts=desk_parts, segments=wanted, cantons=cantons
     )
@@ -470,6 +457,14 @@ def run(
             "actually reading each one. Pass --yes with a larger --limit to "
             "go further.")
 
+    # Every invitation a draft will carry is read before the first model
+    # call: a file missing for one language is found out now, at no cost,
+    # rather than after twenty-four calls were spent on the other two.
+    invitations: dict[str, str] = {}
+    if settings.enrol.include_in_draft:
+        for language in sorted({language_of(r["canton"]) for r in capped}):
+            invitations[language] = invitation(settings, language)
+
     provider = None if dry_run else get_provider(settings)
     model = settings.llm.enrich_model
     for row in capped:
@@ -490,7 +485,7 @@ def run(
         )
         body = compose(
             str(reply.get("body") or ""), language=language,
-            address=opt_out_address, enrol=settings.enrol,
+            address=opt_out_address, invitation=invitations.get(language, ""),
         )
         save(
             conn, int(row["company_id"]), address=row["address"],

@@ -47,8 +47,8 @@ contact = "tests"
 
 [llm]
 provider = "anthropic"
-classify_model = "test"
-draft_model = "test"
+classify_model = "claude-test"
+draft_model = "claude-test"
 batch_size = 20
 """
 
@@ -119,7 +119,7 @@ def test_a_region_in_the_file_does_not_narrow_a_chosen_canton_list(
         '[regions]\nromandie = ["GE", "VD"]\n'
         '[segments]\nsme-owner = "x"\n'
         '[zefix]\nbase_url = ""\nrate_limit = 2.0\nmax_retries = 0\ncontact = "t"\n'
-        '[llm]\nprovider = "anthropic"\nclassify_model = "t"\ndraft_model = "t"\nbatch_size = 20\n',
+        '[llm]\nprovider = "anthropic"\nclassify_model = "claude-t"\ndraft_model = "claude-t"\nbatch_size = 20\n',
         encoding="utf-8",
     )
     assert set(load_settings(root).territory.cantons) == {"GE", "VD"}
@@ -489,3 +489,305 @@ def test_a_territory_saved_here_is_the_one_the_next_run_sweeps(client, root) -> 
                 data={"cantons": ["VD", "FR"], "legal_forms": ["0107"]})
     assert set(app.state.runner.settings.cantons) == {"VD", "FR"}
     assert set(app.state.settings.cantons) == {"VD", "FR"}
+
+
+# --- whole configuration tables in the overlay -----------------------------------
+
+
+def test_every_overlay_section_is_settable_and_lists_its_keys() -> None:
+    from arpenteur import config as arpenteur_config
+    from arpenteur.modules.scout import store as scout_store
+
+    assert set(arpenteur_config.OVERLAY_SECTIONS) <= set(scout_store.SETTABLE)
+    assert set(arpenteur_config.SECTION_KEYS) == set(arpenteur_config.OVERLAY_SECTIONS)
+    for section, keys in arpenteur_config.SECTION_KEYS.items():
+        assert keys and len(set(keys)) == len(keys), section
+
+
+def test_a_section_saved_in_the_database_is_merged_over_the_file(tmp_path, conn) -> None:
+    """One key saved on the page; the file's other keys of that table stay."""
+    (tmp_path / "arpenteur.toml").write_text(
+        TOML + '\n[issuer]\nname = "File Name"\npayment_days = 45\n'
+        '\n[smtp]\nper_run = 7\nsender_name = "File Sender"\n',
+        encoding="utf-8",
+    )
+    db.save_setting(conn, "issuer", {"name": "Console Name", "town": "Vevey"})
+    db.save_setting(conn, "smtp", {"per_run": 3})
+    conn.commit()
+    loaded = load_settings(tmp_path)
+    assert loaded.issuer.name == "Console Name"
+    assert loaded.issuer.town == "Vevey"
+    assert loaded.issuer.payment_days == 45
+    assert loaded.smtp.per_run == 3 and loaded.smtp.sender_name == "File Sender"
+
+
+def test_the_message_brief_is_a_setting(tmp_path, conn) -> None:
+    from arpenteur.config import _enrol
+
+    assert _enrol({}).brief == ""
+    assert _enrol({"brief": " limen.md "}).brief == "limen.md"
+    (tmp_path / "arpenteur.toml").write_text(TOML, encoding="utf-8")
+    db.save_setting(conn, "enrol", {"brief": "brief.md", "programme": "pilot"})
+    conn.commit()
+    loaded = load_settings(tmp_path)
+    assert loaded.enrol.brief == "brief.md" and loaded.enrol.programme == "PILOT"
+
+
+def test_the_scoring_table_and_the_catalogue_can_be_held_in_the_database(tmp_path, conn) -> None:
+    (tmp_path / "arpenteur.toml").write_text(TOML, encoding="utf-8")
+    db.save_setting(conn, "scoring", {
+        "name": "second pass", "note": "need first",
+        "weights": {"icp_fit": 0.2, "need": 0.4, "timing": 0.1, "value": 0.1,
+                    "reach": 0.1, "relationship": 0.1},
+    })
+    db.save_setting(conn, "rates", {
+        "service": [{"code": "day", "name": "Day", "unit": "day", "low": 800, "high": 800}],
+        "card_note": {"text": "Travel is not billed."},
+    })
+    conn.commit()
+    loaded = load_settings(tmp_path)
+    assert loaded.weight_set_name == "second pass" and loaded.weights["need"] == "0.4"
+    assert [e.code for e in loaded.catalogue] == ["day"]
+    assert loaded.catalogue[0].low == "800" and loaded.card_note == "Travel is not billed."
+
+
+def test_the_model_ids_default_to_the_current_family(tmp_path, conn) -> None:
+    (tmp_path / "arpenteur.toml").write_text(TOML, encoding="utf-8")
+    loaded = load_settings(tmp_path)
+    assert loaded.llm.classify_model == "claude-test"      # named in the file
+    assert loaded.llm.enrich_model == "claude-sonnet-5-5"  # not named: the family
+    assert loaded.llm.advise_model == "claude-opus-5-5"
+    assert loaded.llm.auth_mode == "subscription"
+
+
+# --- the configuration tables, saved from the page ---------------------------------
+
+
+def _location(reply) -> str:
+    from urllib.parse import unquote
+
+    return unquote(reply.headers["location"])
+
+
+ISSUER_FORM = {
+    "name": "Nadia Example", "street": "Rue du Lac", "building": "4",
+    "postcode": "1800", "town": "Vevey", "country": "ch",
+    "iban": "CH93 0076 2011 6238 5295 7", "vat_number": "", "payment_terms": "Net 30.",
+    "payment_days": "30",
+}
+
+
+def test_an_identity_saved_on_the_page_is_what_the_next_invoice_reads(client, root) -> None:
+    reply = client.post("/settings/issuer", data=ISSUER_FORM, follow_redirects=False)
+    assert _location(reply) == "/settings?note=Identity saved."
+    loaded = load_settings(root)
+    assert loaded.issuer.name == "Nadia Example" and loaded.issuer.town == "Vevey"
+    assert loaded.issuer.country == "CH" and loaded.issuer.payment_days == 30
+    assert loaded.issuer.can_bill
+    assert client.app.state.settings.issuer.name == "Nadia Example", "live, no restart"
+    page = client.get("/settings").text
+    assert 'value="Nadia Example"' in page
+
+
+def test_a_bad_iban_is_refused_and_nothing_is_written(client, root, conn) -> None:
+    before = (root / "arpenteur.toml").read_text(encoding="utf-8")
+    reply = client.post("/settings/issuer", data={**ISSUER_FORM, "iban": "CH00 1234"},
+                        follow_redirects=False)
+    assert "?error=" in reply.headers["location"] and "not a valid IBAN" in _location(reply)
+    assert (root / "arpenteur.toml").read_text(encoding="utf-8") == before
+    assert "issuer" not in db.settings_overlay(conn)
+    nameless = client.post("/settings/issuer", data={**ISSUER_FORM, "name": " "},
+                           follow_redirects=False)
+    assert "Give the name that bills" in _location(nameless)
+    days = client.post("/settings/issuer", data={**ISSUER_FORM, "payment_days": "soon"},
+                       follow_redirects=False)
+    assert "whole number" in _location(days)
+
+
+def test_a_saved_sending_limit_reaches_the_runner_without_a_restart(client, root) -> None:
+    reply = client.post("/settings/delivery", data={
+        "sender": "nadia@example.ch", "sender_name": "Nadia", "reply_to": "",
+        "security": "ssl", "sent_folder": "", "test_to": "", "per_run": "7",
+        "daily_quota": "40", "pause_seconds": "15", "signature_image": "",
+    }, follow_redirects=False)
+    assert _location(reply) == "/settings?note=Sending saved."
+    assert client.app.state.runner.settings.smtp.per_run == 7
+    assert client.app.state.settings.smtp.security == "ssl"
+    assert load_settings(root).smtp.daily_quota == 40
+    out_of_range = client.post("/settings/delivery", data={"per_run": "0"}, follow_redirects=False)
+    assert "between 1 and 1000" in _location(out_of_range)
+    assert client.app.state.settings.smtp.per_run == 7, "a refused save changes nothing"
+
+
+def test_a_field_the_environment_sets_is_shown_disabled_and_kept(client, root, monkeypatch, conn) -> None:
+    db.save_setting(conn, "smtp", {"sender": "from@database.ch", "per_run": 5})
+    conn.commit()
+    monkeypatch.setenv("SMTP_SENDER", "from@environment.ch")
+    page = client.get("/settings").text
+    assert 'value="from@environment.ch" disabled' in page
+    assert "Set by SMTP_SENDER in the environment" in page
+    # The disabled field is not posted; what the database held for it stays.
+    client.post("/settings/delivery", data={"sender_name": "Nadia", "per_run": "9"},
+                follow_redirects=False)
+    held = db.settings_overlay(conn)["smtp"]
+    assert held["sender"] == "from@database.ch" and held["per_run"] == 9
+    assert load_settings(root).smtp.sender == "from@environment.ch"
+
+
+def test_secrets_are_listed_as_set_or_not_and_never_shown(client, monkeypatch) -> None:
+    monkeypatch.setenv("ZEFIX_PASSWORD", "hunter2-very-secret")
+    monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+    page = client.get("/settings").text
+    assert "hunter2" not in page
+    secrets = page.split('id="secrets"')[1].split("</section>")[0]
+    assert "<code>ZEFIX_PASSWORD</code><span class='set'>set</span>" in secrets
+    assert "<code>ANTHROPIC_API_KEY</code><span class='unset'>not set</span>" in secrets
+    assert "POSTGRES_PASSWORD" not in secrets
+
+
+def test_the_contact_and_the_own_domains_are_saved(client, root, monkeypatch) -> None:
+    # An earlier test may have read the real .env into the process, and the
+    # environment's register URL would win over the file's.
+    monkeypatch.delenv("ZEFIX_URL", raising=False)
+    assert "cannot be empty" in _location(
+        client.post("/settings/zefix", data={"contact": " "}, follow_redirects=False)
+    )
+    client.post("/settings/zefix", data={"contact": "arpenteur (me@example.ch)"},
+                follow_redirects=False)
+    assert load_settings(root).zefix.contact == "arpenteur (me@example.ch)"
+    assert load_settings(root).zefix.base_url == "https://example.test/ZefixPublicREST"
+    client.post("/settings/mail", data={"own_domains": "Example.ch\n@mine.ch\n\nexample.ch"},
+                follow_redirects=False)
+    assert load_settings(root).mail.own_domains == ("example.ch", "mine.ch")
+
+
+def test_model_access_is_saved_and_a_wrong_id_refused(client, root) -> None:
+    wrong = client.post("/settings/llm", data={"auth_mode": "api_key", "match_model": "gpt-9"},
+                        follow_redirects=False)
+    assert "not a Claude model id" in _location(wrong)
+    reply = client.post("/settings/llm", data={
+        "auth_mode": "api_key", "classify_model": "claude-haiku-5-5",
+        "enrich_model": "", "match_model": "claude-sonnet-5-5", "advise_model": "",
+        "prep_model": "", "draft_model": "", "advise_effort": "high", "prep_effort": "",
+    }, follow_redirects=False)
+    assert _location(reply) == "/settings?note=Model access saved."
+    loaded = load_settings(root)
+    assert loaded.llm.auth_mode == "api_key" and loaded.llm.advise_effort == "high"
+    assert loaded.llm.enrich_model == "claude-sonnet-5-5", "empty takes the family default"
+
+
+def test_enrolment_names_a_brief_that_exists(client, root) -> None:
+    missing = client.post("/settings/enrol", data={
+        "brief": "nowhere.md", "android_testers": "12", "android_days": "14",
+    }, follow_redirects=False)
+    assert "No file named nowhere.md" in _location(missing)
+    outside = client.post("/settings/enrol", data={
+        "brief": "../etc/passwd", "android_testers": "12", "android_days": "14",
+    }, follow_redirects=False)
+    assert "under the project folder" in _location(outside)
+    (root / "brief.md").write_text("# Brief\n", encoding="utf-8")
+    reply = client.post("/settings/enrol", data={
+        "programme": "pilot", "segments": ["sme-owner"], "brief": "brief.md",
+        "include_in_draft": "1", "ios_link": "", "android_window_start": "1 mai",
+        "android_window_end": "15 mai", "android_testers": "12", "android_days": "14",
+    }, follow_redirects=False)
+    assert _location(reply) == "/settings?note=Enrolment saved."
+    enrol = load_settings(root).enrol
+    assert enrol.programme == "PILOT" and enrol.segments == ("sme-owner",)
+    assert enrol.brief == "brief.md" and enrol.include_in_draft is True
+    assert enrol.android_window_start == "1 mai"
+
+
+def test_weights_open_a_version_only_when_they_change(client, root, conn) -> None:
+    from arpenteur.modules.scout import store as scout_store
+
+    weights = {"icp_fit": "0.3", "need": "0.25", "timing": "0.15", "value": "0.1",
+               "reach": "0.1", "relationship": "0.1"}
+    first = client.post("/settings/scoring", data={**weights, "name": "pass one", "note": "n"},
+                        follow_redirects=False)
+    assert "weight set 1 is in force" in _location(first)
+    set_id, _ = scout_store.active_weights(conn)
+    assert set_id is not None
+    again = client.post("/settings/scoring", data={**weights, "name": "pass one", "note": "n"},
+                        follow_redirects=False)
+    assert "no new version" in _location(again)
+    assert scout_store.active_weights(conn)[0] == set_id
+    changed = client.post("/settings/scoring", data={**weights, "need": "0.5", "name": "pass two"},
+                          follow_redirects=False)
+    assert "weight set 2 is in force" in _location(changed)
+    assert scout_store.active_weights(conn)[0] != set_id
+    assert load_settings(root).weight_set_name == "pass two"
+    bad = client.post("/settings/scoring", data={**weights, "need": "lots", "name": "x"},
+                      follow_redirects=False)
+    assert "cannot be used" in _location(bad)
+    nameless = client.post("/settings/scoring", data={**weights, "name": ""},
+                           follow_redirects=False)
+    assert "Name the weighting" in _location(nameless)
+
+
+def test_the_catalogue_is_saved_as_rows_and_opens_a_rate_card(client, root, conn) -> None:
+    from arpenteur.modules.sales import store as sales_store
+
+    rows = {
+        "code": ["Day", "diag", ""], "name": ["Day rate", "Diagnostic", ""],
+        "unit": ["day", "fixed", "fixed"], "low": ["800", "1'500", ""],
+        "high": ["800", "3000", ""], "sort_order": ["20", "10", ""],
+        "what": ["Eight hours.", "Two days on site.", ""],
+        "prerequisite": ["", "", ""], "basis": ["", "Sites counted.", ""],
+        "card_note": "Travel is not billed.",
+    }
+    reply = client.post("/settings/services", data=rows, follow_redirects=False)
+    assert "a rate card with 2 line(s) is in force" in _location(reply)
+    loaded = load_settings(root)
+    assert [e.code for e in loaded.catalogue] == ["diag", "day"], "sorted by order"
+    assert loaded.catalogue[0].low == "1500.00" and loaded.card_note == "Travel is not billed."
+    card = sales_store.current_card(conn)
+    assert card is not None
+    again = client.post("/settings/services", data=rows, follow_redirects=False)
+    assert "unchanged" in _location(again)
+    assert sales_store.current_card(conn)["id"] == card["id"]
+    twice = client.post("/settings/services", data={**rows, "code": ["day", "day", ""]},
+                        follow_redirects=False)
+    assert "used twice" in _location(twice)
+    upside_down = client.post("/settings/services", data={**rows, "low": ["900", "1500", ""]},
+                              follow_redirects=False)
+    assert "lower price is above" in _location(upside_down)
+    page = client.get("/settings").text
+    assert 'value="diag"' in page and 'value="Travel is not billed."' in page
+
+
+def test_the_sales_sections_follow_the_sales_module(root, conn) -> None:
+    from dataclasses import replace
+
+    with_sales = TestClient(create_app(load_settings(root))).get("/settings").text
+    assert 'id="identity"' in with_sales and 'id="catalogue"' in with_sales
+    without = replace(load_settings(root), modules=("scout", "geo", "clients"))
+    page = TestClient(create_app(without)).get("/settings").text
+    assert 'id="identity"' not in page and 'id="catalogue"' not in page
+    assert 'href="#identity"' not in page
+
+
+# --- the shipped file carries nobody's identity ----------------------------------
+
+
+def test_the_shipped_configuration_carries_no_personal_value() -> None:
+    """The file is committed and read by every user; the operator's own values
+    live in the database, where `settings import-toml` put them."""
+    import tomllib
+
+    shipped = Path(__file__).resolve().parent.parent / "arpenteur.toml"
+    text = shipped.read_text(encoding="utf-8")
+    raw = tomllib.loads(text)
+    issuer = raw.get("issuer", {})
+    for key in ("name", "street", "building", "postcode", "town", "iban", "payment_terms"):
+        assert issuer.get(key, "") == "", key
+    assert raw["zefix"]["contact"] == "arpenteur"
+    assert raw.get("enrol", {}).get("programme", "") == ""
+    assert raw.get("enrol", {}).get("segments", []) == []
+    assert raw.get("smtp", {}).get("sender_name", "") == ""
+    assert raw.get("smtp", {}).get("signature_image", "") == ""
+    assert "service" not in raw.get("rates", {})
+    assert raw.get("rates", {}).get("card", "") == ""
+    mailboxes = set(re.findall(r"[\w.+-]+@[\w-]+\.[a-z]{2,}", text)) - {"zefix@bj.admin.ch"}
+    assert not mailboxes, f"no mailbox belongs in a committed file: {mailboxes}"
+    assert not re.search(r"\bCH\d{2}\s?\d{4}", text), "no IBAN belongs in a committed file"
