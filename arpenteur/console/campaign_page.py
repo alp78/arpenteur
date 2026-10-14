@@ -58,19 +58,14 @@ STYLES = """
 
 
 def shell(body: str, chrome: Any = None) -> str:
-    return page("arpenteur", body, chrome, css=STYLES)
-
-
-def _banners(note: str, error: str) -> str:
-    return (ui.banner(note, kind="good") if note else "") + (
-        ui.banner(error, kind="bad") if error else "")
+    return page("", body, chrome, css=STYLES)
 
 
 # --- lists --------------------------------------------------------------------
 
 
 def audiences_page(rows: Sequence[Row], segments: Sequence[str],
-                   programmes: Sequence[Row], *, note: str = "", error: str = "") -> str:
+                   programmes: Sequence[Row]) -> str:
     items = [
         f"<tr><td><a href='/audience/{r['id']}'>{esc(r['code'])}</a></td>"
         f"<td>{esc(r['name'])}</td><td class='n'>{ui.num(r['kept'])}</td>"
@@ -80,12 +75,13 @@ def audiences_page(rows: Sequence[Row], segments: Sequence[str],
     ]
     form = (
         "<form method='post' action='/audiences/new' class='grid'>"
-        + ui.text_field("code", "Code", placeholder="DRYMOS-1")
-        + ui.text_field("name", "Name", placeholder="Tourisme, première liste")
-        + ui.text_field("segments", "Bands and weights", wide=True,
+        + ui.text_field("code", "Code", placeholder="DRYMOS-1", required=True)
+        + ui.text_field("name", "Name", placeholder="Tourisme, première liste",
+                        required=True)
+        + ui.text_field("segments", "Segments and weights", wide=True, required=True,
                         placeholder="tourism-office=1, mountain-transport=0.7",
-                        hint="The bands the list draws from, each weighted between 0 "
-                             "and 1. Known: " + ", ".join(segments))
+                        hint="The segments the list draws from, each weighted between "
+                             "0 and 1. Known: " + ", ".join(segments))
         + ui.text_field("cantons", "Cantons", placeholder="VS, BE",
                         hint="Blank for every canton.")
         + ui.select_field("programme", "Programme",
@@ -99,14 +95,21 @@ def audiences_page(rows: Sequence[Row], segments: Sequence[str],
         + "<div class='ctl ctl-wide'>" + ui.button("Create the list", primary=True)
         + "</div></form>"
     )
+    listed = (
+        ui.table(
+            ["list", "name", "kept", "dropped", "campaigns", ""], items,
+            caption="Curated lists", numeric=["kept", "dropped", "campaigns"])
+        if items else ui.empty(
+            "No list yet.",
+            action="Start one below: name the segments it draws from and the "
+                   "cantons it covers, then build it to see which firms it keeps.",
+        )
+    )
     return (
         "<h1>Lists</h1><p class='lede'>A curated list keeps one mailbox per firm, the "
         "right one, and says for every firm left out why it was. Campaigns send "
-        "from a list in waves.</p>" + _banners(note, error)
-        + ui.panel("Your lists", ui.table(
-            ["list", "name", "kept", "dropped", "campaigns", ""], items,
-            caption="Curated lists", numeric=["kept", "dropped", "campaigns"],
-            empty_text="No list yet."), always=True)
+        "from a list in waves.</p>"
+        + ui.panel("Your lists", listed, always=True)
         + ui.panel("Start a list", form, always=True)
     )
 
@@ -137,8 +140,10 @@ def _pin_form(row: Row, *, frozen: bool) -> str:
     return (
         f"<form method='post' action='/audience-row/{row['id']}/pin' class='inline'>"
         f"<input type='hidden' name='verdict' value='{verdict}'>"
-        f"<input class='cm-why' name='why' required placeholder='why'>"
-        f"<select name='language'>{language}</select>"
+        + ui.sr_label(f"Why {row['company_name']} is pinned", f"pin-why-{row['id']}")
+        + f"<input class='cm-why' id='pin-why-{row['id']}' name='why' required placeholder='why'>"
+        + ui.sr_label("Language of the message", f"pin-lang-{row['id']}")
+        + f"<select name='language' id='pin-lang-{row['id']}'>{language}</select>"
         f"<button>{'drop' if verdict == 'dropped' else 'keep'}</button></form>"
         + (f"<form method='post' action='/audience-row/{row['id']}/unpin' class='inline'>"
            "<button>unpin</button></form>" if row["pinned"] else "")
@@ -146,11 +151,11 @@ def _pin_form(row: Row, *, frozen: bool) -> str:
 
 
 def audience_page(audience: Row, rows: Sequence[Row], funnel: Sequence[tuple[str, int]],
-                  *, reason: str = "", note: str = "", error: str = "") -> str:
+                  *, reason: str = "") -> str:
     frozen = bool(audience["frozen_at"])
     rule = audience["rule"] or {}
     summary = (
-        f"Bands {esc(', '.join(f'{k} {v}' for k, v in (rule.get('segments') or {}).items()))}"
+        f"Segments {esc(', '.join(f'{k} {v}' for k, v in (rule.get('segments') or {}).items()))}"
         f"; cantons {esc(', '.join(rule.get('cantons') or []) or 'all')}"
         f"; addresses {esc(', '.join(rule.get('kinds') or ['desk']))} read off "
         f"{esc(', '.join(rule.get('provenance') or ['page']))}"
@@ -169,11 +174,10 @@ def audience_page(audience: Row, rows: Sequence[Row], funnel: Sequence[tuple[str
         f"{ui.chip(f'{code} {n}')}</a>" for code, n in funnel
     )
     body = (
-        f"{ui.crumbs([('Lists', '/audiences'), (audience['code'], '')])}"
+        f"{ui.crumbs([('/audiences', 'Lists'), ('', audience['code'])])}"
         f"<h1>{esc(audience['code'])}: {esc(audience['name'])}</h1>"
         f"<p class='lede'>{summary} {built}."
         + (" Frozen: a campaign has sent from it." if frozen else "") + "</p>"
-        + _banners(note, error)
         + f"<div class='row'>{actions} <a href='/audience/{audience['id']}/export.csv'>CSV</a></div>"
         + f"<div class='cm-funnel'>{chips}</div>"
     )
@@ -214,34 +218,59 @@ def audience_page(audience: Row, rows: Sequence[Row], funnel: Sequence[tuple[str
 
 
 def campaigns_page(rows: Sequence[Row], audiences: Sequence[Row],
-                   programmes: Sequence[Row], *, note: str = "", error: str = "") -> str:
+                   programmes: Sequence[Row]) -> str:
     items = [
         f"<tr><td><a href='/campaign/{r['id']}'>{esc(r['code'])}</a></td>"
         f"<td>{esc(r['name'])}</td><td>{esc(r['audience_code'])}</td>"
         f"<td>{esc(r['strategy'])}</td><td class='n'>{r['waves_sent']}/{r['waves']}</td></tr>"
         for r in rows
     ]
+    if audiences:
+        list_field = ui.select_field("audience", "List",
+                                     [(a["code"], a["code"]) for a in audiences],
+                                     required=True)
+    else:
+        # A campaign sends from a list, so with none there is nothing to pick.
+        # Saying so beats a dropdown with nothing in it.
+        list_field = ui.field(
+            "List",
+            "<select name='audience' id='f-audience' disabled>"
+            "<option>No list yet</option></select>"
+            "<span class='hint'>A campaign sends from a list, so "
+            "<a href='/audiences'>make a list</a> first.</span>",
+            for_="f-audience",
+        )
     form = (
         "<form method='post' action='/campaigns/new' class='grid'>"
-        + ui.text_field("code", "Code", placeholder="DRYMOS-A")
-        + ui.text_field("name", "Name", placeholder="Drymos, essai")
-        + ui.select_field("audience", "List", [(a["code"], a["code"]) for a in audiences])
-        + ui.text_field("templates", "Templates", placeholder="templates/drymos",
-                        hint="A folder under templates/ holding fr.md, de.md, it.md.")
+        + ui.text_field("code", "Code", placeholder="DRYMOS-A", required=True)
+        + ui.text_field("name", "Name", placeholder="Drymos, essai", required=True)
+        + list_field
+        + ui.text_field("templates", "Message templates", placeholder="templates/drymos",
+                        required=True,
+                        hint="The folder holding the message in each language: fr, "
+                             "de and it.")
         + ui.select_field("programme", "Programme",
                           [(p["code"], p["code"]) for p in programmes], blank="none")
         + _strategy_field("canton-blocks")
-        + "<div class='ctl ctl-wide'>" + ui.button("Create the campaign", primary=True)
+        + "<div class='ctl ctl-wide'>"
+        + ui.button("Create the campaign", primary=True, disabled=not audiences)
         + "</div></form>"
+    )
+    listed = (
+        ui.table(
+            ["campaign", "name", "list", "strategy", "waves sent"], items,
+            caption="Campaigns", numeric=["waves sent"])
+        if items else ui.empty(
+            "No campaign yet.",
+            action=("Start one below." if audiences else
+                    "A campaign sends from a list, so make a list first."),
+        )
     )
     return (
         "<h1>Campaigns</h1><p class='lede'>One message plan over one list, sent in "
         "waves. Each wave is rendered, tested to you, approved and only then "
-        "sent.</p>" + _banners(note, error)
-        + ui.panel("Your campaigns", ui.table(
-            ["campaign", "name", "list", "strategy", "waves sent"], items,
-            caption="Campaigns", numeric=["waves sent"], empty_text="No campaign yet."),
-            always=True)
+        "sent.</p>"
+        + ui.panel("Your campaigns", listed, always=True)
         + ui.panel("Start a campaign", form, always=True)
     )
 
@@ -265,7 +294,7 @@ def _steps(wave: Row) -> str:
 
 
 def campaign_page(campaign: Row, wave_rows: Sequence[Row], results: dict[int, Any],
-                  state: str, *, note: str = "", error: str = "") -> str:
+                  state: str) -> str:
     cid = campaign["id"]
     plan_form = (
         f"<form method='post' action='/campaign/{cid}/plan' class='grid'>"
@@ -288,7 +317,8 @@ def campaign_page(campaign: Row, wave_rows: Sequence[Row], results: dict[int, An
             "", kind="bad", html_body=(
                 f"Paused: {esc(campaign['paused_reason'])}. "
                 f"<form method='post' action='/campaign/{cid}/resume' class='inline'>"
-                "<input name='why' required placeholder='why it may go on'>"
+                + ui.sr_label("Why it may go on", "resume-why")
+                + "<input name='why' id='resume-why' required placeholder='why it may go on'>"
                 "<button>Resume</button></form>"))
     cards = []
     for w in wave_rows:
@@ -308,18 +338,20 @@ def campaign_page(campaign: Row, wave_rows: Sequence[Row], results: dict[int, An
             + _steps(w) + tally + "</div>"
         )
     return (
-        f"{ui.crumbs([('Campaigns', '/campaigns'), (campaign['code'], '')])}"
+        f"{ui.crumbs([('/campaigns', 'Campaigns'), ('', campaign['code'])])}"
         f"<h1>{esc(campaign['code'])}: {esc(campaign['name'])}</h1>"
         f"<p class='lede'>List <a href='/audience/{campaign['audience_id']}'>"
         f"{esc(campaign['audience_code'])}</a>, templates {esc(campaign['templates'])}, "
-        f"programme {esc(campaign['programme_code'] or 'none')}. State: {esc(state)}.</p>"
-        + banner + _banners(note, error)
+        f"programme {esc(campaign['programme_code'] or 'none')}. State: {esc(state)}. "
+        'Every message carries your <a href="/signature">signature</a>.</p>'
+        + banner
         + ui.panel("Waves", "<div class='cm-grid'>" + "".join(cards) + "</div>"
                    if cards else ui.empty("No plan yet. Plan the waves below."), always=True)
         + ui.panel("Plan", plan_form, always=True,
                    note="Re-planning is free until the first message leaves.")
         + (f"<form method='post' action='/campaign/{cid}/pause' class='inline'>"
-           "<input name='why' required placeholder='why it should stop'>"
+           + ui.sr_label("Why it should stop", "pause-why")
+           + "<input name='why' id='pause-why' required placeholder='why it should stop'>"
            "<button>Pause</button></form>" if not campaign["paused_at"] else "")
     )
 
@@ -334,8 +366,7 @@ def preview(subject: str, body: str, signature: str) -> str:
 
 def wave_page(campaign: Row, wave: Row, messages: Sequence[Row], variants: Sequence[Row],
               tests: Sequence[Row], *, signature: str, quota_room: int,
-              pause_seconds: int, confirmation: str, block: str = "",
-              note: str = "", error: str = "") -> str:
+              pause_seconds: int, confirmation: str, block: str = "") -> str:
     cid, number = campaign["id"], wave["number"]
     base = f"/campaign/{cid}/wave/{number}"
     live = [m for m in messages if not m["dropped_at"]]
@@ -365,7 +396,8 @@ def wave_page(campaign: Row, wave: Row, messages: Sequence[Row], variants: Seque
     send_form = (
         f"<form method='post' action='{base}/send'>"
         f"<p>{len(live)} message(s), {pause_seconds}s apart, about {minutes:.0f} min. "
-        f"{quota_room} left in today's quota.</p>"
+        f"{quota_room} left in today's quota. Each one carries your "
+        '<a href="/signature">signature</a>.</p>'
         + (f"<p class='cm-reason'>{esc(block)}</p>" if block else "")
         + ui.text_field("confirm", f"Type {confirmation} to send", placeholder=confirmation)
         + ui.button("Send the wave", primary=approved and not sent and not block,
@@ -383,10 +415,10 @@ def wave_page(campaign: Row, wave: Row, messages: Sequence[Row], variants: Seque
         for t in tests
     ]
     return (
-        f"{ui.crumbs([('Campaigns', '/campaigns'), (campaign['code'], f'/campaign/{cid}'), (f'Wave {number}', '')])}"
+        f"{ui.crumbs([('/campaigns', 'Campaigns'), (f'/campaign/{cid}', campaign['code']), ('', f'Wave {number}')])}"
         f"<h1>{esc(campaign['code'])}, wave {number}" + (" (pilot)" if wave["pilot"] else "")
         + f"</h1><p class='lede'>{esc(wave['label'])}</p>"
-        + _steps(wave) + _banners(note, error)
+        + _steps(wave)
         + ui.panel("Steps", pipeline, always=True,
                    note="Each step clears the ones after it when repeated: a new render "
                         "needs a new test and a new approval.")

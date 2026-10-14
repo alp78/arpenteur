@@ -90,7 +90,7 @@ def table(rows: list[Row], *, caption: str = "") -> str:
 
 def reports_page(
     sections: list[tuple[str, str, list[Row]]], *, missing: list[tuple[str, str]],
-    fresh: dict[str, Any], chrome: Any = None, note: str = "",
+    fresh: dict[str, Any], chrome: Any = None,
 ) -> str:
     body = [
         "<h1>Reports</h1>",
@@ -101,14 +101,12 @@ def reports_page(
         '<form method="post" action="/reports/refresh">'
         '<button type="submit">Refresh the aggregates</button></form>'
         f'<span class="note">{fresh["views"]} materialised view(s), refreshed '
-        "on demand rather than on a timer, so the survey-wide figures are as "
-        "old as the last refresh."
+        "on demand rather than on a timer, so the figures across all "
+        "companies are as old as the last refresh."
         + (" Never populated: " + esc(", ".join(fresh["unpopulated"])) + "."
            if fresh["unpopulated"] else "")
         + "</span></div>",
     ]
-    if note:
-        body.append(f'<p class="lede">{esc(note)}</p>')
 
     for name, title, rows in sections:
         body.append(f'<section class="report"><h2>{esc(title)}</h2>')
@@ -118,7 +116,11 @@ def reports_page(
         body.append(
             table(rows, caption=f"analytics.{name}") if rows
             else f'<p class="lede"><code>analytics.{esc(name)}</code></p>'
-                 + ui.empty("Nothing to report yet.")
+                 + ui.empty(
+                     "Nothing to report yet.",
+                     action=f"Sweep the register from {ui.operations('source')}, "
+                            "then refresh the aggregates above.",
+                 )
         )
         body.append("</section>")
 

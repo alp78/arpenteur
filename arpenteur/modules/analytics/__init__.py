@@ -42,5 +42,5 @@ MODULE = Module(
     ),
     requires=("scout",),
     schemas=("analytics",),
-    nav=(Nav("Reports", "/reports", group="survey", order=150),),
+    nav=(Nav("Reports", "/reports", group="prospecting", order=150),),
 )

@@ -332,19 +332,6 @@ def cmd_legal_forms(args: argparse.Namespace) -> int:
     return 0
 
 
-def _desk_parts() -> tuple[str, ...]:
-    """Every local part that reaches a desk rather than a named person.
-
-    The union of the generic heads and all four language sets, so `verwaltung`,
-    `segreteria` and `administration` count as desks and not as people. Built
-    here rather than in the store, which may not import `sources`.
-    """
-    parts = set(mailcheck.ROLE_PARTS) | set(mailcheck.DESK_FUNCTIONS)
-    for group in mailcheck.ROLE_PARTS_BY_LANGUAGE.values():
-        parts.update(group)
-    return tuple(sorted(parts))
-
-
 def cmd_verify(args: argparse.Namespace) -> int:
     """Record what can be established about each address without sending.
 
@@ -384,7 +371,7 @@ def cmd_sendlist(args: argparse.Namespace) -> int:
     conn = db.open_db(settings.database_url)
     rows = scout_store.send_list(
         conn,
-        desk_parts=_desk_parts(),
+        desk_parts=mailcheck.desk_parts(),
         segments=[s.strip() for s in args.segment.split(",") if s.strip()]
         if args.segment else None,
         cantons=[c.strip() for c in args.canton.split(",") if c.strip()]
@@ -457,7 +444,7 @@ def cmd_draft(args: argparse.Namespace) -> int:
         with run_scope(conn, "draft", args) as run:
             stats = draft.run(
                 settings, conn,
-                desk_parts=_desk_parts(),
+                desk_parts=mailcheck.desk_parts(),
                 segments=_split(args.segment),
                 cantons=_split(args.canton),
                 limit=args.limit,

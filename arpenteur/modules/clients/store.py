@@ -2337,3 +2337,22 @@ def _by_thread(conn: Connection, thread_key: str | None) -> tuple[int, str, str]
     if found is None:
         return None
     return int(found["company_id"]), "thread", thread_key
+
+
+def home_counts(conn: Connection) -> dict[str, int]:
+    """Clients, campaigns under way and mail waiting, for the landing page.
+
+    A campaign is under way when it is neither closed nor paused and has a
+    wave planned: the state is its timestamps, as 0010_campaign.sql says.
+    """
+    clients = conn.execute("SELECT COUNT(*) AS n FROM crm.client").fetchone()["n"]
+    campaigns = conn.execute(
+        "SELECT COUNT(*) AS n FROM crm.campaign c"
+        " WHERE c.closed_at IS NULL AND c.paused_at IS NULL"
+        "   AND EXISTS (SELECT 1 FROM crm.campaign_wave w WHERE w.campaign_id = c.id)"
+    ).fetchone()["n"]
+    waiting = conn.execute(
+        "SELECT COUNT(*) AS n FROM crm.email_message WHERE state = 'pending'"
+    ).fetchone()["n"]
+    return {"clients": int(clients), "campaigns_running": int(campaigns),
+            "mail_waiting": int(waiting)}

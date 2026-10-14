@@ -90,11 +90,13 @@ def _proposal(row: Row | dict[str, Any], clients: list[Row]) -> str:
             f'{esc(client["code"])}</option>'
         )
     if not options:
-        return ('<span class="msg-why">No clients yet. Promote a company on '
-                'the <a href="/board">board</a> first.</span>')
+        return ('<span class="msg-why">No clients yet. A company becomes a '
+                'client from its own page in <a href="/companies">Companies'
+                "</a>, and then mail can be filed to it.</span>")
     return (
         f'<form method="post" action="/mail/{row["id"]}/file">'
-        f'<select name="client_id">{"".join(options)}</select> '
+        + ui.sr_label("Client to file it to", f"file-{row['id']}")
+        + f'<select name="client_id" id="file-{row["id"]}">{"".join(options)}</select> '
         f'<button type="submit">File</button></form>'
     )
 
@@ -177,19 +179,24 @@ def mail_page(
         body.append(
             '<p class="counts">No mailbox is configured. Set '
             "<code>MAIL_IMAP_SERVER</code>, <code>MAIL_USERNAME</code> and "
-            "<code>MAIL_PASSWORD</code> in <code>.env</code>. Most Swiss hosts "
+            "<code>MAIL_PASSWORD</code> in the environment. Most Swiss hosts "
             "issue one password per application rather than accepting the "
             "account password over IMAP.</p>"
         )
-    elif not rows:
+    if not rows:
+        fetch = (
+            f"Once the mailbox is set, {ui.operations('mail')} fetches it."
+            if not configured
+            else f"Use {ui.operations('mail')} to fetch new mail."
+        )
         body.append(
-            ui.empty(
-                "Nothing is waiting.",
-                action='Run the <a href="/pipeline">mail stage</a> to read the '
-                       "mailbox.",
-            )
+            ui.empty("Nothing is waiting.", action=fetch)
             if state == "pending"
-            else ui.empty(f"Nothing has been {state} yet.")
+            else ui.empty(
+                f"Nothing has been {state} yet.",
+                action='Messages appear here once you act on them from the '
+                       '<a href="/mail">Waiting</a> tab.',
+            )
         )
     decided = state != "pending"
     body.append('<div class="queue">')
@@ -209,8 +216,12 @@ def links_panel(links: list[Row]) -> str:
     rows = "".join(
         f'<tr><td>{esc(link["kind"])}</td><td><code>{esc(link["value"])}</code></td>'
         f'<td class="small">{esc(link["source"])}</td>'
-        f'<td><form method="post" action="/mail/link/{link["id"]}/delete">'
-        f'<button type="submit">Forget</button></form></td></tr>'
+        f'<td><form method="post" action="/mail/link/{link["id"]}/delete"'
+        + ui.attrs(data_confirm=(
+            f"Forget {link['value']}? Future mail from it stops matching this "
+            "company; what is already filed stays."
+        ))
+        + '><button type="submit" class="danger">Forget</button></form></td></tr>'
         for link in links
     )
     return (

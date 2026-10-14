@@ -27,5 +27,5 @@ MODULE = Module(
     ),
     requires=("scout",),
     schemas=("geo",),
-    nav=(Nav("Map", "/map", group="survey", order=140),),
+    nav=(Nav("Map", "/map", group="prospecting", order=140),),
 )

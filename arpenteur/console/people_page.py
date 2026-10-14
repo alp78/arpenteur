@@ -78,7 +78,7 @@ WEAK = {"name-only", "sole-origin"}
 
 
 def shell(body: str, chrome: Any = None) -> str:
-    return page("arpenteur", body, chrome, css=STYLES)
+    return page("", body, chrome, css=STYLES)
 
 
 def method_tag(party: Row) -> str:
@@ -99,13 +99,25 @@ def people_page(rows: list[Row], *, q: str = "", min_boards: int = 1,
             f'<td class="boards">{row["boards"]}</td>'
             f"<td>{method_tag(row)}</td></tr>"
         )
-    table = ui.table(
-        ["person", "origin", "domicile", "boards", "resolved on"],
-        body, caption="People resolved from the officer rows",
-        numeric=["boards"],
-        empty_text="Nobody matches. Run resolve, which is free, if the officer "
-                   "rows have changed.",
-    )
+    if body:
+        table = ui.table(
+            ["person", "origin", "domicile", "boards", "resolved on"],
+            body, caption="People resolved from the officer rows",
+            numeric=["boards"],
+        )
+    elif q or min_boards > 1:
+        table = ui.empty(
+            "Nobody matches these filters.",
+            action='Clear the search or lower "Sitting on at least".',
+        )
+    else:
+        table = ui.empty(
+            "No one is resolved yet.",
+            action="Officers come from the gazette notices: use "
+                   f"&quot;{esc(ui.stage_title('people', 'Extract officers'))}&quot; "
+                   f"and then &quot;{esc(ui.stage_title('resolve', 'Resolve the people'))}&quot; "
+                   'on <a href="/pipeline">Operations</a>. Both are free.',
+        )
     tiles = (
         '<div class="grid" style="margin-bottom:1.2rem">'
         f'<div class="tile"><h4>People</h4><div class="big">{ui.num(counts.get("parties", 0))}</div>'
@@ -128,7 +140,7 @@ def people_page(rows: list[Row], *, q: str = "", min_boards: int = 1,
             ui.text_field("q", "Search", value=q,
                           placeholder="Surname Firstname")
             + ui.text_field("min_boards", "Sitting on at least",
-                            value=str(min_boards), kind="number"),
+                            value=str(min_boards), kind="number", minimum="1"),
             action="/people", css="filters",
         )
         + table
@@ -175,7 +187,7 @@ def party_page(
         head
         + "<h2>boards</h2>"
         + ui.table(
-            ["company", "role", "when", "fit", "pipeline"], [rows],
+            ["company", "role", "when", "fit", "state"], [rows],
             caption="Seats held, current and finished",
             empty_text="No seat is recorded for this person.",
         )
@@ -229,7 +241,9 @@ def overlap_panel(rows: list[Row], company_id: int) -> str:
         + ("" if r["current"] else '<div class="past-tag">both have left</div>')
         + "</td>"
         f"<td>{band(r)}</td>"
-        f'<td class="small">{esc(r["state"] or "")}</td></tr>'
+        f'<td class="small">{esc(r["state"] or "")}</td>'
+        f'<td class="small"><a href="/company/{company_id}/route/{r["company_id"]}">'
+        "the way there</a></td></tr>"
         for r in rows[:12]
     )
     more = (
@@ -238,7 +252,7 @@ def overlap_panel(rows: list[Row], company_id: int) -> str:
     return (
         "<h2>shares an officer with</h2>"
         + ui.table(
-            ["company", "through", "fit", "pipeline"], [body],
+            ["company", "through", "fit", "state", "route"], [body],
             caption="Companies reachable through a shared officer",
         )
         + more

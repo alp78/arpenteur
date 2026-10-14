@@ -34,16 +34,16 @@ The approved plan of 13.10.2026 is the reference for every detail; this file tra
 
 ## Stage 3. Navigation, Home, feedback, help plumbing
 
-- [ ] Five nav groups with captions; the brand links home.
-- [ ] Home as a dashboard; the company list at `/companies`.
-- [ ] One flash banner from the query string; `?error=` on every refusal.
-- [ ] Confirmations on the remaining destructive actions.
-- [ ] Crumbs fixed; Settings in the shell; the signature and route pages linked.
-- [ ] Runs: cancel, a live header, honest status, advise and prep through the runner, History paged.
-- [ ] Operations lists bounces, draft and verify.
-- [ ] The vocabulary applied; titles per page; labels, required marks, empty states with a next step.
-- [ ] `/help` renders `docs/`; every page carries its help link.
-- [ ] Suite green, ruff clean, live smoke, commit stack.
+- [x] Five nav groups with captions; the brand links home.
+- [x] Home as a dashboard; the company list at `/companies`.
+- [x] One flash banner from the query string (the shell draws it); `?error=` on every refusal.
+- [x] Confirmations on the remaining destructive actions.
+- [x] Crumbs fixed; Settings in the shell; the signature and route pages linked.
+- [x] Runs: cancel, a live header, honest status, advise and prep through the runner, History paged.
+- [x] Operations lists bounces, draft and verify.
+- [x] The vocabulary applied; titles per page; labels, required marks, empty states with a next step.
+- [x] `/help` renders `docs/`; every page carries its help link.
+- [x] Suite green, ruff clean, live smoke, commit stack.
 
 ## Stage 4. Settings inside the app, setup, model access
 
@@ -131,3 +131,38 @@ Found and fixed on the way:
 One deviation from the plan: M7 is handled where the payment part is made rather than at issue. The standard allows a payment part without a debtor, so an invoice to a client whose register address lacks a town is issued and printed with the blank frame rather than refused.
 
 The suite: 1,408 passed, 104 of them new, ruff clean.
+
+### Stage 3, 14.10.2026
+
+What exists now, in the shell:
+
+- The header is five captioned groups in the order of the work, Prospecting to System, with the current group marked and an empty group not drawn; the brand links to Home; `load` refuses a module whose entry names a group the header does not draw.
+- Home is a page of its own: tiles that are links, the setup checklist from `health.py` (database, modules, territory for now), the last three runs. The company list lives at `/companies` and its fragment at `/companies/rows`.
+- The shell draws what a redirect asked it to say, once, red for `?error=` and green for `?note=`, read by a middleware into a context variable; no page draws its own banner any more, and every refusal in the console redirects with `?error=`.
+- The tab is named after the page's heading. Every page carries a help link to its section's guide, and `/help` renders `docs/` inside the shell with links rewritten; a page that is not written yet says so. An address no route answers renders inside the shell.
+
+What exists now, on the pages:
+
+- An action that cannot be taken back asks a question that names the thing: quote marked sent or closed, a line removed, a draft refused, a site, an event, a project, a note, a folder, a document, a mail link.
+- Crumbs on the list, campaign and wave pages point the right way; quotes and invoices go through Sales; the company page leads back to Companies; Settings is in the shell with the menu and a sentence for every save; the signature page is linked from Settings and the campaign pages; each company in the overlap panel links to its route page.
+- Every control has a label, required fields carry a mark and the attribute, a budget steps by centimes, the redirect guard refuses `//host`, every empty page says what would fill it, no page quotes a command line or a path on disk, the signature editor is in English, counts are grouped the Swiss way.
+- The vocabulary holds: Companies, scoring brief, List, Campaign, Draft, ledger, Operations, History.
+
+What exists now, for runs:
+
+- A run can be stopped from its page; the stage stops at its next log line, what it committed stays, and the run reads `cancelled`. The stages that post mail and the one-call stages refuse the stop.
+- The run page's state block rides along with the poll, so it follows the run to its end; the announced sentence says failed, cancelled or finished; the arguments read as fields; the page leads back to History and to the client it was about.
+- Advice and preparation run through the runner on their own lane, never behind a sweep and never inside a request.
+- Operations names every running run whatever its lane and disables only the lane's own cards; it offers the address check, the draft stage and the bounce read, each card stating what it needs in the console's words.
+- History is paged by run id and polls only while a run shown is unfinished.
+
+The live check: every header page answers 200 with its own title, Home shows the live counts and the three checks, Operations shows fifteen cards, a run page carries its state block and the way back, a refusal in the query string is one red banner, an unknown address is a 404 in the shell.
+
+Found and fixed on the way:
+
+- The two background agents were cut off by the account's session limit with their edits on disk and their tests unrun; the work was finished in the tree. Six of their tests were wrong rather than the code: two matched the stylesheet, one expected an Issue form the fixture cannot show, one a double-quoted link the page wrote single-quoted, one an unlabelled file input in the drop zone, one an empty mail queue hidden behind the "no mailbox" note.
+- The draft card named the operator's own brief file; it names the message brief, which stage 4 moves into Settings.
+- A run started with an exception carrying no message recorded an empty error and showed as done; the type name stands in.
+- A dry run of the bounce read counted as the read a campaign's next wave waits for; dry runs no longer open that gate.
+
+The suite: 1,654 passed, 246 of them new, ruff clean. The one red test in the full run asserted the old word "survey" on the client page and was updated to the new wording; the file passed on its own afterwards.

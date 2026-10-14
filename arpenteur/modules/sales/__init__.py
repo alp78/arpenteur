@@ -30,7 +30,7 @@ MODULE = Module(
     requires=("clients",),
     schemas=("commercial",),
     nav=(
-        Nav("Quotes", "/quotes", group="work", order=40),
-        Nav("Invoices", "/invoices", group="work", order=50),
+        Nav("Quotes", "/quotes", group="sales", order=410),
+        Nav("Invoices", "/invoices", group="sales", order=420),
     ),
 )

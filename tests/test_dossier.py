@@ -14,6 +14,7 @@ whose inputs cannot be reconstructed six months later.
 from __future__ import annotations
 
 import io
+import threading
 import zipfile
 from pathlib import Path
 
@@ -24,6 +25,7 @@ from arpenteur import attachments as att
 from arpenteur.kernel.db import Connection
 from arpenteur import db, dossier
 from arpenteur.config import load_settings
+from arpenteur.console import runner as runner_module
 from arpenteur.console.app import create_app
 from arpenteur.stages import advise
 
@@ -524,6 +526,119 @@ def test_a_dry_run_costs_nothing_and_saves_nothing(root, conn, client_id, fake) 
     assert stats["saved"] == 0
     assert fake.seen == []
     assert db.approaches_for(conn, client_id) == []
+
+
+def _join(web: TestClient) -> None:
+    """A run is a thread, so what it wrote is read after it has ended."""
+    for thread in list(web.app.state.runner.threads.values()):
+        thread.join(10)
+
+
+def _hold_lane(lane: str, release: threading.Event, name: str) -> None:
+    def work(_settings, _conn, *, log, **_kw):
+        log("working")
+        release.wait(5)
+        return {}
+
+    runner_module.STAGES[name] = runner_module.Stage(
+        name=name, title=name, what="a stage that holds its lane", call=work,
+        lane=lane, listed=False,
+    )
+
+
+def test_suggesting_an_approach_runs_through_the_runner(
+    web, conn, client_id, fake
+) -> None:
+    """Inline, it held the request open for the whole model call and left no
+    log; a run is watched, kept in the history and survives a reload."""
+    db.save_dossier_section(conn, client_id, "situation", "280 staff.")
+    conn.commit()
+    reply = web.post(f"/dossier/{client_id}/advise", follow_redirects=False)
+    assert reply.status_code == 303
+    where = reply.headers["location"]
+    assert where.startswith("/runs/")
+    _join(web)
+    run = db.run(conn, int(where.rsplit("/", 1)[1]))
+    assert run["stage"] == "advise" and run["finished_at"] and run["error"] is None
+    assert len(db.approaches_for(conn, client_id)) == 1
+    page = web.get(where).text
+    assert f"href='/client/{client_id}/dossier'" in page and "href='/runs'" in page
+
+
+def test_a_dry_run_of_advice_through_the_runner_costs_nothing(
+    web, conn, client_id, fake
+) -> None:
+    db.save_dossier_section(conn, client_id, "situation", "280 staff.")
+    conn.commit()
+    reply = web.post(f"/dossier/{client_id}/advise", data={"dry_run": "1"},
+                     follow_redirects=False)
+    _join(web)
+    assert fake.seen == [] and db.approaches_for(conn, client_id) == []
+    page = web.get(reply.headers["location"]).text
+    assert "dry run: nothing sent to the model" in page
+
+
+def test_advice_from_an_empty_dossier_fails_on_the_run_page(
+    web, conn, client_id, fake
+) -> None:
+    """The stage's own refusal is kept: it reads on the run, with the way back
+    to the dossier beside it."""
+    reply = web.post(f"/dossier/{client_id}/advise", follow_redirects=False)
+    _join(web)
+    run_id = int(reply.headers["location"].rsplit("/", 1)[1])
+    assert "nothing to advise from" in db.run(conn, run_id)["error"]
+    page = web.get(reply.headers["location"]).text
+    assert "nothing to advise from" in page
+    assert f"href='/client/{client_id}/dossier'" in page
+
+
+def test_advice_never_waits_behind_a_sweep(web, conn, client_id, fake) -> None:
+    """A one-client call before a meeting must not queue behind an enrich run
+    that takes the day."""
+    db.save_dossier_section(conn, client_id, "situation", "280 staff.")
+    conn.commit()
+    release = threading.Event()
+    _hold_lane("pipeline", release, "_sweep")
+    try:
+        web.app.state.runner.start("_sweep", {}, internal=True)
+        reply = web.post(f"/dossier/{client_id}/advise", follow_redirects=False)
+        assert reply.headers["location"].startswith("/runs/")
+        for thread in list(web.app.state.runner.threads.values()):
+            if thread.name.startswith("arpenteur-advise"):
+                thread.join(10)
+        assert len(db.approaches_for(conn, client_id)) == 1
+    finally:
+        release.set()
+        _join(web)
+        runner_module.STAGES.pop("_sweep", None)
+
+
+def test_advice_for_a_client_nobody_holds_is_refused_on_the_page(web) -> None:
+    reply = web.post("/dossier/999/advise", follow_redirects=False)
+    assert reply.status_code == 303
+    assert reply.headers["location"].startswith("/client/999/dossier?error=")
+    assert "No%20client" in reply.headers["location"]
+
+
+def test_a_second_advice_is_refused_on_the_page_it_came_from(
+    web, conn, client_id, fake
+) -> None:
+    db.save_dossier_section(conn, client_id, "situation", "280 staff.")
+    conn.commit()
+    release = threading.Event()
+    _hold_lane("dossier", release, "_busy")
+    try:
+        web.app.state.runner.start("_busy", {}, internal=True)
+        reply = web.post(f"/dossier/{client_id}/advise", follow_redirects=False)
+        assert reply.status_code == 303
+        assert reply.headers["location"].startswith(
+            f"/client/{client_id}/dossier?error=")
+        assert "still%20going" in reply.headers["location"]
+        assert fake.seen == []
+    finally:
+        release.set()
+        _join(web)
+        runner_module.STAGES.pop("_busy", None)
 
 
 def test_accepting_an_approach_is_recorded_once(conn, client_id) -> None:

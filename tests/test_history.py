@@ -164,7 +164,7 @@ def test_a_prospect_s_notes_survive_promotion(client, conn) -> None:
     client.post("/company/1/client")
     body = client.get("/client/1").text
     assert "avis indépendant sur trois offres" in body
-    assert "from the survey" in body
+    assert "company note" in body
 
 
 def test_a_carried_note_is_read_only_where_it_is_shown(client, conn) -> None:

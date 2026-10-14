@@ -352,7 +352,7 @@ def test_turning_off_a_module_removes_its_pages_from_the_header(
     labels = re.findall(r'<a href="[^"]+"[^>]*>([^<]+)</a>', header)
     assert "Quotes" not in labels and "Invoices" not in labels
     assert "Reports" not in labels
-    assert "Clients" in labels and "Survey" in labels and "Settings" in labels
+    assert "Clients" in labels and "Companies" in labels and "Settings" in labels
 
 
 # --- the furniture, over every page the console serves ------------------------

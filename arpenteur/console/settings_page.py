@@ -1,14 +1,14 @@
-"""Settings: what the survey is for, changed from the application.
+"""Settings: what the register is swept for, changed from the application.
 
-The territory, the segment vocabulary, what counts as a signal and the campaign
+The territory, the segment vocabulary, what counts as a signal and the scoring
 brief decide what every stage below them does. They lived in `arpenteur.toml`
 and `campaign.md`, which made the most consequential decisions in the tool the
 ones you had to leave the tool to make.
 
-It also hid them. A survey that silently contained no foundations because the
-code `0110` was absent from a list in a file is not a discoverable state: the
-canton was in scope, the sweep ran, and nothing anywhere said that an entire
-class of entity had never been asked for.
+It also hid them. A register sweep that silently contained no foundations
+because the code `0110` was absent from a list in a file is not a discoverable
+state: the canton was in scope, the sweep ran, and nothing anywhere said that
+an entire class of entity had never been asked for.
 
 So every one of them is here, with the register's own catalogue as the source
 for legal forms rather than a code typed from memory.
@@ -50,7 +50,7 @@ STYLES = """
 
 
 def shell(body: str, chrome: Any = None) -> str:
-    return page("arpenteur settings", body, chrome, css=STYLES)
+    return page("", body, chrome, css=STYLES)
 
 
 def _block(
@@ -115,9 +115,9 @@ def territory_block(
         )
     return _block(
         "Territory",
-        "Which cantons the survey covers, and which kinds of entity. A legal "
-        "form that is not ticked is never asked for, in any canton: this is "
-        "the setting that decides whether foundations, associations and "
+        "Which cantons the register is swept for, and which kinds of entity. A "
+        "legal form that is not ticked is never asked for, in any canton: this "
+        "is the setting that decides whether foundations, associations and "
         "cooperatives exist for this tool at all.",
         f'<h4 class="dim small">Cantons</h4><div class="picker">{cantons}</div>'
         f'<h4 class="dim small" style="margin-top:.9rem">Legal forms</h4>'
@@ -133,30 +133,34 @@ def territory_block(
 def segments_block(segments: dict[str, str], changed: str) -> str:
     rows = "".join(
         '<div class="seg">'
-        f'<input type="text" name="seg_name" value="{esc(name)}">'
-        f'<input type="text" name="seg_text" value="{esc(text)}">'
+        + ui.sr_label(f"Name of the segment {name}", f"seg-n-{i}")
+        + f'<input type="text" id="seg-n-{i}" name="seg_name" value="{esc(name)}">'
+        + ui.sr_label(f"Definition of {name}", f"seg-t-{i}")
+        + f'<input type="text" id="seg-t-{i}" name="seg_text" value="{esc(text)}">'
         '<label class="check small"><input type="checkbox" name="seg_drop" '
         f'value="{esc(name)}"> drop</label></div>'
-        for name, text in sorted(segments.items())
+        for i, (name, text) in enumerate(sorted(segments.items()))
     )
     rows += (
         '<div class="seg">'
-        '<input type="text" name="seg_name" placeholder="new-segment">'
-        '<input type="text" name="seg_text" placeholder="One concrete line. '
+        + ui.sr_label("Name of a new segment", "seg-n-new")
+        + '<input type="text" id="seg-n-new" name="seg_name" placeholder="new-segment">'
+        + ui.sr_label("Definition of the new segment", "seg-t-new")
+        + '<input type="text" id="seg-t-new" name="seg_text" placeholder="One concrete line. '
         'The classifier sees nothing else.">'
         "<span></span></div>"
     )
     return _block(
         "Segments",
-        "The vocabulary the survey is sliced by. These definitions are the "
+        "The vocabulary Companies is sliced by. These definitions are the "
         "classifier's prompt, word for word, so they are the whole of what it "
         "knows. Keep each to one concrete line, and keep them distinguishable "
         "from each other.",
         rows,
         "Save segments",
-        "Existing labels are kept. Re-run Sort into segments with "
-        "'re-label' to apply a changed definition; labels you set by hand are "
-        "never overwritten.",
+        f"Existing labels are kept. Run {ui.stage_title('profile', 'Sort into segments')} "
+        "with 're-label' to apply a changed definition; labels you set by hand "
+        "are never overwritten.",
         "/settings/segments",
         changed,
     )
@@ -172,23 +176,27 @@ def sectors_block(sectors: dict[str, str], changed: str) -> str:
     """
     rows = "".join(
         '<div class="seg">'
-        f'<input type="text" name="sec_name" value="{esc(name)}">'
-        f'<input type="text" name="sec_text" value="{esc(text)}">'
+        + ui.sr_label(f"Name of the sector {name}", f"sec-n-{i}")
+        + f'<input type="text" id="sec-n-{i}" name="sec_name" value="{esc(name)}">'
+        + ui.sr_label(f"Definition of {name}", f"sec-t-{i}")
+        + f'<input type="text" id="sec-t-{i}" name="sec_text" value="{esc(text)}">'
         '<label class="check small"><input type="checkbox" name="sec_drop" '
         f'value="{esc(name)}"> drop</label></div>'
-        for name, text in sorted(sectors.items())
+        for i, (name, text) in enumerate(sorted(sectors.items()))
     )
     rows += (
         '<div class="seg">'
-        '<input type="text" name="sec_name" placeholder="new-sector">'
-        '<input type="text" name="sec_text" placeholder="One concrete line '
+        + ui.sr_label("Name of a new sector", "sec-n-new")
+        + '<input type="text" id="sec-n-new" name="sec_name" placeholder="new-sector">'
+        + ui.sr_label("Definition of the new sector", "sec-t-new")
+        + '<input type="text" id="sec-t-new" name="sec_text" placeholder="One concrete line '
         'naming the trades it covers.">'
         "<span></span></div>"
     )
     return _block(
         "Sectors",
         "What line of business a company is in, which is a different question "
-        "from how it fits this campaign. Exactly one per company, chosen from "
+        "from how it scores against the scoring brief. Exactly one per company, chosen from "
         "this list and never invented, which is what makes 'restaurants in "
         "Vaud' a filter rather than a search for a word. Keep an entry for the "
         "purposes too general to place, or they will be forced into one that "
@@ -196,10 +204,24 @@ def sectors_block(sectors: dict[str, str], changed: str) -> str:
         rows,
         "Save sectors",
         "Costs nothing on its own: the same classify call that applies the "
-        "segments picks the sector. Re-run Sort into segments with 're-label' "
-        "to apply a changed list; sectors set by hand are never overwritten.",
+        f"segments picks the sector. Run {ui.stage_title('profile', 'Sort into segments')} "
+        "with 're-label' to apply a changed list; sectors set by hand are "
+        "never overwritten.",
         "/settings/sectors",
         changed,
+    )
+
+
+def signature_block() -> str:
+    """The way to the signature editor, which has no other door."""
+    return (
+        '<section class="setting"><header><h3>Signature</h3>'
+        "<p class='what'>The closing block appended to every message a "
+        "campaign wave sends, below a thin rule. Paste it from your mail "
+        "client; it is cleaned before it is stored.</p></header>"
+        '<footer><a href="/signature">Edit the signature</a>'
+        "<span class='hint'>It has its own page, with a preview of what a "
+        "recipient sees.</span></footer></section>"
     )
 
 
@@ -207,11 +229,13 @@ def signal_block(brief: str, changed: str) -> str:
     return _block(
         "What the research looks for",
         "The website research reads every company against this sentence and "
-        "returns what it found. It is the difference between a survey that "
-        "scouts for work, one that scouts for hiring and one that scouts for "
-        "partners. It must also ask for the evidence that argues against "
-        "approaching, because the scoring cannot weigh what was never collected.",
-        f'<textarea class="big-text" name="signal_brief">{esc(brief)}</textarea>',
+        "returns what it found. It is the difference between scouting for "
+        "work, scouting for hiring and scouting for partners. It must also ask "
+        "for the evidence that argues against approaching, because the scoring "
+        "cannot weigh what was never collected.",
+        ui.sr_label("What the research looks for", "signal-brief")
+        + f'<textarea class="big-text" id="signal-brief" name="signal_brief">'
+        f"{esc(brief)}</textarea>",
         "Save",
         "Applies to companies researched from now on. Companies already "
         "researched keep their previous reading until re-researched.",
@@ -227,7 +251,8 @@ def rate_card_block(text: str, changed: str) -> str:
         "dossier prices work from this and from nothing else: it must name the "
         "line it used, and work this card does not cover comes back with no "
         "price rather than an invented one.",
-        f'<textarea class="big-text" name="rate_card" '
+        ui.sr_label("Your rate card", "rate-card")
+        + f'<textarea class="big-text" id="rate-card" name="rate_card" '
         f'placeholder="Diagnostic, fixed fee. 2 to 4 days on site: inventory of '
         f'systems, mapping of flows, written report. CHF 3\'600 to CHF 7\'200 '
         f'depending on the number of sites.&#10;Day rate, time and materials: '
@@ -252,17 +277,18 @@ def rate_card_block(text: str, changed: str) -> str:
     )
 
 
-def campaign_block(text: str, digest: str, scored: int, path: str) -> str:
+def campaign_block(text: str, digest: str, scored: int) -> str:
     return _block(
-        "Campaign brief",
-        "What companies are scored against: what this campaign offers, who it "
-        "serves well, who it serves badly, what to look for, what warns off, "
-        "and how it opens a conversation. It is read into the prompt verbatim.",
-        f'<textarea class="big-text" name="campaign" '
+        "Scoring brief",
+        "What companies are scored against: what is on offer, who it serves "
+        "well, who it serves badly, what to look for, what warns off, and how "
+        "to open a conversation. It is read into the prompt verbatim.",
+        ui.sr_label("The scoring brief", "scoring-brief")
+        + f'<textarea class="big-text" id="scoring-brief" name="campaign" '
         f'style="min-height:22rem">{esc(text)}</textarea>'
-        f"<p class='hint'>Stored as <code>{esc(path)}</code>, so it stays in "
-        f"version control and a surprising run can be answered with a diff. "
-        f"Current version {esc(digest)}, {ui.num(scored)} scores taken against it.</p>",
+        f"<p class='hint'>Kept in version control, so a surprising run can be "
+        f"answered with a diff. Current version {esc(digest)}, "
+        f"{ui.num(scored)} scores taken against it.</p>",
         "Save brief",
         "Every score taken against the previous text becomes stale and the "
         "next scoring run re-takes exactly those. Scores set by hand survive.",
@@ -274,8 +300,8 @@ def settings_page(
     *,
     cantons: list[str], forms: list[str], catalogue: list[dict[str, Any]],
     counts: dict[str, int], segments: dict[str, str], signal_brief: str,
-    campaign: str, campaign_digest: str, scored: int, campaign_path: str,
-    history: list[Row], rate_card: str = "", note: str = "",
+    campaign: str, campaign_digest: str, scored: int,
+    history: list[Row], rate_card: str = "",
     sectors: dict[str, str] | None = None,
 ) -> str:
     when = {row["key"]: (row["updated_at"] or "")[:10] for row in history}
@@ -283,14 +309,13 @@ def settings_page(
     def changed(key: str) -> str:
         return f"changed {when[key]}" if key in when else "shipped default"
 
-    banner = f'<div class="warn">{esc(note)}</div>' if note else ""
     catalogue_when = when.get("_legal_form_catalogue", "")
     return (
         "<h1>Settings</h1>"
-        "<p class='lede'>What the survey is for. Everything here decides what "
-        "the stages below it do, so it lives in the application rather than in "
-        "a file you have to open a terminal to edit.</p>"
-        + banner
+        "<p class='lede'>What the register is swept for and how companies are "
+        "scored. Everything here decides what the stages on "
+        "<a href='/pipeline'>Operations</a> do, so it lives in the application "
+        "rather than in a file you have to open a terminal to edit.</p>"
         + territory_block(cantons, forms, catalogue, counts, changed("cantons"))
         + '<form class="setting" method="post" action="/settings/catalogue">'
         "<div class='inner'><b>Legal form catalogue</b>"
@@ -307,6 +332,7 @@ def settings_page(
         + sectors_block(sectors or {}, changed("sectors"))
         + segments_block(segments, changed("segments"))
         + signal_block(signal_brief, changed("signal_brief"))
-        + campaign_block(campaign, campaign_digest, scored, campaign_path)
+        + campaign_block(campaign, campaign_digest, scored)
         + rate_card_block(rate_card, changed("rate_card"))
+        + signature_block()
     )

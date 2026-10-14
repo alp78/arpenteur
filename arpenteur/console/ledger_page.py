@@ -61,7 +61,7 @@ STYLES = """
 
 
 def shell(body: str, chrome: Any = None) -> str:
-    return page("arpenteur", body, chrome, css=STYLES)
+    return page("", body, chrome, css=STYLES)
 
 
 def _when(value: Any) -> str:
@@ -72,7 +72,7 @@ def _when(value: Any) -> str:
 
 def _tally(tally: dict[str, int]) -> str:
     cells = "".join(
-        f"<span>{esc(label)}<b>{tally.get(key, 0):,}</b></span>"
+        f"<span>{esc(label)}<b>{ui.num(tally.get(key, 0))}</b></span>"
         for key, label in (
             ("members", "on the programme"),
             ("answered", "answered"),
@@ -86,30 +86,17 @@ def _tally(tally: dict[str, int]) -> str:
 
 
 def _filters(programme_id: int, flag: str, stage: str, stages: Sequence[str]) -> str:
-    flags = "".join(
-        f'<option value="{esc(code)}"{" selected" if flag == code else ""}>'
-        f"{esc(label)}</option>"
-        for code, label in (
-            ("", "every firm"),
-            ("answered", "answered"),
-            ("silent", "written to, silent"),
-            ("failed", "address failed"),
-            ("refused", "asked to stop"),
-            ("enrollable", "enrolled on a track"),
+    return ui.toolbar(
+        ui.select_field(
+            "flag", "Answer",
+            (("", "every firm"), ("answered", "answered"),
+             ("silent", "written to, silent"), ("failed", "address failed"),
+             ("refused", "asked to stop"), ("enrollable", "enrolled on a track")),
+            chosen=flag,
         )
-    )
-    cells = "".join(
-        f'<option value="{esc(name)}"{" selected" if stage == name else ""}>'
-        f"{esc(name)}</option>"
-        for name in stages
-    )
-    return (
-        f'<form method="get" action="/programme/{programme_id}/ledger" '
-        'class="row" style="margin:0 0 .9rem;gap:.5rem">'
-        f'<select name="flag">{flags}</select>'
-        f'<select name="stage"><option value="">every stage</option>{cells}'
-        "</select>"
-        '<button type="submit">Show</button></form>'
+        + ui.select_field("stage", "Stage", list(stages), chosen=stage,
+                          blank="every stage"),
+        action=f"/programme/{programme_id}/ledger", css="filters",
     )
 
 
@@ -121,35 +108,37 @@ def ledger_page(
     readings: dict[int, Any] | None = None,
     flag: str = "",
     stage: str = "",
-    note: str = "",
-    error: str = "",
 ) -> str:
     """The whole programme as one table, with the enrolment form per firm."""
     if flag and flag not in LEDGER_FLAGS:
         flag = ""
     proposals = readings or {}
-    banners = ui.banner(note, kind="good") if note else ""
-    if error:
-        banners += ui.banner(error, kind="bad")
+    banners = ""
     if tally.get("failed"):
         banners += ui.banner(
-            f"{tally['failed']} firm(s) hold an address that returned a "
-            "permanent failure. A message counted as sent to one of those "
-            "never arrived. `arpenteur verify` and `arpenteur bounces` write "
-            "those verdicts.",
+            "", html_body=(
+                f"{ui.num(tally['failed'])} firm(s) hold an address that "
+                "returned a permanent failure. A message counted as sent to "
+                "one of those never arrived. Those verdicts are written by "
+                f"&quot;{esc(ui.stage_title('audience-verify', 'Refresh the addresses of a list'))}&quot; "
+                f"and &quot;{esc(ui.stage_title('bounces', 'Read delivery failures'))}&quot; "
+                'on <a href="/pipeline">Operations</a>.'
+            ),
             kind="warn",
         )
     body = (
         _table(rows, proposals)
         if rows
         else ui.empty(
-            "No firm matches. `arpenteur programme bring-in` puts a shortlist "
-            "on the programme, and marking a draft sent moves the first card."
+            "No firm matches.",
+            action=f'<a href="/programme/{programme["id"]}#bring-in">Bring a '
+                   "shortlist in</a> from the programme page; marking a draft "
+                   "sent moves the first card.",
         )
     )
     return (
-        f'<a href="/programme/{programme["id"]}">&larr; board</a>'
-        f'<h1>{esc(programme["code"])} status</h1>'
+        f'<a href="/programme/{programme["id"]}">&larr; programme</a>'
+        f'<h1>{esc(programme["code"])} ledger</h1>'
         "<p class='lede'>One row per firm: what went out, what came back, "
         "whether the address survived, and what they enrolled on. Nothing "
         "here sends anything.</p>"
@@ -233,8 +222,10 @@ def _enrolment(row: Row, reading: Any = None) -> str:
     return (
         f'<form method="post" action="/member/{row["member_id"]}/answer" '
         'class="enrol-form">'
-        f'<select name="platform">{options}</select>'
-        f'<input name="account" value="{esc(account)}" '
+        + ui.sr_label("Platform", f"pf-{row['member_id']}")
+        + f'<select name="platform" id="pf-{row["member_id"]}">{options}</select>'
+        + ui.sr_label("Tester account", f"ac-{row['member_id']}")
+        + f'<input name="account" id="ac-{row["member_id"]}" value="{esc(account)}" '
         'placeholder="Google account">'
         '<label title="the tester accepted the dated window">'
         '<input type="checkbox" name="window_ok" value="1"> dates</label>'
@@ -244,7 +235,7 @@ def _enrolment(row: Row, reading: Any = None) -> str:
 
 
 def history_page(
-    member: Row, rows: list[Row], *, note: str = "", today: date | None = None
+    member: Row, rows: list[Row], *, today: date | None = None
 ) -> str:
     """Every message to and from one firm, oldest first.
 
@@ -267,20 +258,20 @@ def history_page(
         f'<table class="hist"><tbody>{listed}</tbody></table>'
         if rows
         else ui.empty(
-            "No message is attributed to this firm. `arpenteur mail` reads "
-            "every readable folder and matches a message by a published "
-            "address, a learnt link, or the domain."
+            "No message is attributed to this firm.",
+            action=f"Mail is read from {ui.operations('mail')}, which reads "
+                   "every readable folder and matches a message by a "
+                   "published address, a learnt link, or the domain.",
         )
     )
     return (
-        f'<a href="/programme/{member["programme_id"]}/ledger">&larr; status</a>'
+        f'<a href="/programme/{member["programme_id"]}/ledger">&larr; ledger</a>'
         f'<h1>{esc(member["company_name"])}</h1>'
         '<div class="meta" style="font-size:.8rem;color:var(--dim);'
         'margin:.2rem 0 1rem">'
         f'<span>{esc(member["stage"])}</span> &middot; '
         f'<span>{esc(member["canton"] or "")}</span> &middot; '
         f'<span>{len(rows)} message(s)</span></div>'
-        + (ui.banner(note, kind="good") if note else "")
         + body
     )
 

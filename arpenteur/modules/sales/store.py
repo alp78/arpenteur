@@ -1243,3 +1243,15 @@ def load_catalogue(
             basis=entry.basis or None,
         )
     return card_id, len(entries)
+
+
+def home_counts(conn: Connection) -> dict[str, int]:
+    """Quotes still open and invoices still owed, for the landing page."""
+    quotes = conn.execute(
+        "SELECT COUNT(*) AS n FROM commercial.quote WHERE status IN ('draft', 'sent')"
+    ).fetchone()["n"]
+    invoices = conn.execute(
+        "SELECT COUNT(*) AS n FROM commercial.invoice WHERE status = ANY(%s)",
+        (list(PAYABLE_STATES),),
+    ).fetchone()["n"]
+    return {"open_quotes": int(quotes), "unpaid_invoices": int(invoices)}

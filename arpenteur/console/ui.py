@@ -60,6 +60,25 @@ def num(value: Any) -> str:
     return sign + "'".join(groups)
 
 
+def local_path(path: str, default: str) -> str:
+    """A place on this console, or the default.
+
+    A redirect target that came from a form is only safe when it stays on this
+    host. `/campaigns` does; `//elsewhere.example` starts with a slash and a
+    browser reads it as another host, and `/\\elsewhere.example` is read the
+    same way by browsers that treat a backslash as a slash. Both are refused.
+    """
+    if (
+        path.startswith("/")
+        and not path.startswith("//")
+        and "\\" not in path
+        and "\n" not in path
+        and "\r" not in path
+    ):
+        return path
+    return default
+
+
 def classes(*parts: Any) -> str:
     """A class attribute from parts, any of which may be empty or falsy.
 
@@ -119,6 +138,37 @@ def panel(
     )
 
 
+def stage_title(name: str, fallback: str = "") -> str:
+    """The title a stage's card carries on Operations, as plain text.
+
+    For copy that is escaped on its way out and so cannot hold a link. Copy
+    that can hold one uses `operations`. Naming a stage by anything other than
+    its card's own title sends a reader looking for a card that is not there.
+    """
+    from .runner import STAGES
+
+    stage = STAGES.get(name)
+    return stage.title if stage is not None else fallback
+
+
+def operations(name: str = "") -> str:
+    """Where a stage is run, for copy that used to quote its command.
+
+    A command line is not something a page in a browser can ask anybody to
+    type: the person reading it came here so as not to. So the copy points at
+    the card instead, by the title the card carries on Operations, and the
+    link goes to that page. A name the stage list does not hold, or none,
+    points at the page itself. The stage list is imported when it is needed,
+    because `runner` reaches the stages and this module must stay a leaf.
+    """
+    from .runner import STAGES
+
+    stage = STAGES.get(name)
+    if stage is None:
+        return '<a href="/pipeline">Operations</a>'
+    return f'the <a href="/pipeline">{esc(stage.title)}</a> card on Operations'
+
+
 def banner(text: str, *, kind: str = "note", html_body: str = "") -> str:
     """Something the page needs to say before you read the rest of it.
 
@@ -175,17 +225,38 @@ def toolbar(
 # --- controls -----------------------------------------------------------------
 
 
+REQUIRED_MARK = (
+    '<span class="req" title="Required" aria-hidden="true">*</span>'
+)
+
+
+def sr_label(text: str, for_: str) -> str:
+    """A label that is read out and not drawn.
+
+    For the small control that sits in a row of buttons and whose purpose the
+    row already shows, such as the state a card moves to. It still names the
+    control for a screen reader and still takes a click, which a bare
+    `aria-label` does not.
+    """
+    return f'<label class="vh"{attrs(for_=for_)}>{esc(text)}</label>'
+
+
 def field(
     label: str, control: str, *, hint: str = "", wide: bool = False,
-    for_: str = "",
+    for_: str = "", required: bool = False,
 ) -> str:
     """One labelled control with its explanation attached rather than implied.
 
     The hint is part of the control, not a paragraph somewhere near it. The
     operations page learned this the hard way and the rest of the console never
     got the lesson.
+
+    A required control carries the mark beside its label as well as the
+    attribute on the control, because the attribute is read by the browser
+    when the form is sent and says nothing to a person looking at the page.
     """
-    tag = f'<label{attrs(for_=for_)}>{esc(label)}</label>'
+    mark = REQUIRED_MARK if required else ""
+    tag = f'<label{attrs(for_=for_)}>{esc(label)}{mark}</label>'
     note = f'<span class="hint">{esc(hint)}</span>' if hint else ""
     return f'<div{classes("ctl", wide and "ctl-wide")}>{tag}{control}{note}</div>'
 
@@ -214,7 +285,7 @@ def options(
 def select_field(
     name: str, label: str, values: Iterable[Any], *, chosen: Any = "",
     blank: str = "", hint: str = "", wide: bool = False, id: str = "",
-    multiple: bool = False,
+    multiple: bool = False, required: bool = False,
 ) -> str:
     ident = id or f"f-{name}"
     size = ""
@@ -223,22 +294,24 @@ def select_field(
         values = listed
         size = f" multiple size='{min(len(listed), 8)}'"
     control = (
-        f'<select name="{esc(name)}" id="{esc(ident)}"{size}>'
+        f'<select name="{esc(name)}" id="{esc(ident)}"{size}'
+        f'{attrs(required=required)}>'
         f"{options(values, chosen, blank)}</select>"
     )
-    return field(label, control, hint=hint, wide=wide, for_=ident)
+    return field(label, control, hint=hint, wide=wide, for_=ident, required=required)
 
 
 def text_field(
     name: str, label: str, *, value: str = "", placeholder: str = "",
     hint: str = "", kind: str = "text", wide: bool = False, id: str = "",
+    required: bool = False, step: str = "", minimum: str = "",
 ) -> str:
     ident = id or f"f-{name}"
     control = (
         f'<input type="{esc(kind)}" name="{esc(name)}" id="{esc(ident)}"'
-        f'{attrs(value=value, placeholder=placeholder)}>'
+        f'{attrs(value=value, placeholder=placeholder, required=required, step=step, min=minimum)}>'
     )
-    return field(label, control, hint=hint, wide=wide, for_=ident)
+    return field(label, control, hint=hint, wide=wide, for_=ident, required=required)
 
 
 def checkbox(
@@ -553,7 +626,7 @@ def dropzone(
         f'{attrs(data_drop_target=target, id=ident)}>'
         f'<form method="post" action="{esc(action)}" enctype="multipart/form-data">'
         f"{fields}"
-        f'<p class="drop-say">{esc(label)}</p>'
+        f'<label class="drop-say" for="{esc(ident)}-input">{esc(label)}</label>'
         f'<input type="file" name="{esc(name)}" multiple{attrs(accept=accept)}'
         f' id="{esc(ident)}-input">'
         f'<button class="primary" type="submit">{esc(submit)}</button>'

@@ -64,13 +64,13 @@ STYLES = BOARD_STYLES + """
 """
 
 def shell(body: str, chrome: Any = None) -> str:
-    return page("arpenteur", body, chrome, css=STYLES)
+    return page("", body, chrome, css=STYLES)
 
 
 # --- the list -----------------------------------------------------------------
 
 
-def programmes_page(rows: list[Row], *, note: str = "") -> str:
+def programmes_page(rows: list[Row]) -> str:
     """Every programme, with its members counted by stage.
 
     The tally is the whole row. A programme with forty members all still in the
@@ -85,7 +85,8 @@ def programmes_page(rows: list[Row], *, note: str = "") -> str:
         else ui.empty(
             "No programmes yet. A programme is one endeavour across many "
             "companies: an application sent to fifty agencies, a pilot, a "
-            "recruitment drive. Each company sits at its own stage inside it."
+            "recruitment drive. Each company sits at its own stage inside it.",
+            action='<a href="#start">Start the first one</a> below.',
         )
     )
     return (
@@ -93,7 +94,6 @@ def programmes_page(rows: list[Row], *, note: str = "") -> str:
         "<p class='lede'>One endeavour, many companies, each at its own stage. "
         "Distinct from a project, which is one client's piece of work, and from "
         "the board, where a company has one state across everything.</p>"
-        + (ui.banner(note, kind="good") if note else "")
         + body
         + _new_form()
     )
@@ -124,13 +124,13 @@ def _programme_row(row: Row) -> str:
 
 def _new_form() -> str:
     return (
-        "<h2>start a programme</h2>"
+        '<h2 id="start">start a programme</h2>'
         + ui.toolbar(
-            ui.text_field("code", "Code", placeholder="FLATCHECK",
+            ui.text_field("code", "Code", placeholder="FLATCHECK", required=True,
                           hint="Its own reference, said out loud and written "
                                "in a contract.")
             + ui.text_field("name", "Name", placeholder="Etat des lieux app",
-                            wide=True)
+                            wide=True, required=True)
             + ui.text_field("what", "What it is", wide=True,
                             placeholder="Handover application, sent to régies")
             + "<span class='hint' style='flex-basis:100%'>It starts with the "
@@ -212,17 +212,20 @@ def _card(
     move = (
         "<details><summary>move</summary>"
         f'<form method="post" action="/member/{row["id"]}/move">'
-        f'<select name="stage">{options}</select>'
+        + ui.sr_label(f"Move {row['company_name']} to", f"mv-{row['id']}")
+        + f'<select name="stage" id="mv-{row["id"]}">{options}</select>'
         "<button>go</button></form></details>"
     )
     say = (
         "<details><summary>they said</summary>"
         f'<form method="post" action="/member/{row["id"]}/feedback">'
-        '<select name="kind">'
+        + ui.sr_label("What kind of remark", f"fk-{row['id']}")
+        + f'<select name="kind" id="fk-{row["id"]}">'
         '<option value="note">note</option><option value="bug">bug</option>'
         '<option value="request">request</option>'
         '<option value="praise">praise</option></select>'
-        '<textarea name="body" rows="2" required '
+        + ui.sr_label(f"What {row['company_name']} told you", f"fb-{row['id']}")
+        + f'<textarea name="body" id="fb-{row["id"]}" rows="2" required '
         'placeholder="What they told you"></textarea>'
         "<button>keep it</button></form></details>"
     )
@@ -262,7 +265,7 @@ def _column(
 def programme_page(
     programme: Row, members: list[Row], *, clients: dict[int, Row],
     today: date, moved: dict[int, str], feedback: list[Row],
-    sectors: list[str], cantons: list[str], note: str = "", error: str = "",
+    sectors: list[str], cantons: list[str],
 ) -> str:
     stages = list(programme["stages"] or [])
     notes = dict(programme["stage_notes"] or {})
@@ -275,13 +278,9 @@ def programme_page(
         for stage in stages
     )
     banner = ""
-    if error:
-        banner += ui.banner(error, kind="bad")
-    if note:
-        banner += ui.banner(note, kind="good")
     if not members:
         banner += ui.banner(
-            "No members yet. Bring a shortlist in from the survey below, or add "
+            "No members yet. Bring a shortlist in from Companies below, or add "
             "companies one at a time by UID. Nothing arrives here by scoring "
             "well: a company is a member because somebody put it here.",
             kind="note",
@@ -299,7 +298,7 @@ def programme_page(
         + f'<p class="dim">{esc(programme["status"])}'
         + (f' · {esc(dates)}' if dates else "")
         + f' · {len(members)} member(s)'
-        + f' · <a href="/programme/{programme["id"]}/ledger">status of every'
+        + f' · <a href="/programme/{programme["id"]}/ledger">ledger of every'
           ' firm</a></p>'
         + banner
         + f'<div class="lane"><div class="board">{columns}</div></div>'
@@ -335,7 +334,7 @@ def _bring_in(programme_id: int, sectors: list[str], cantons: list[str]) -> str:
 def _add_one(programme_id: int) -> str:
     return ui.toolbar(
         ui.text_field("uid", "Company", placeholder="CHE-123.456.789",
-                      hint="A UID, or part of a name.", wide=True)
+                      hint="A UID, or part of a name.", wide=True, required=True)
         + ui.text_field("contact", "Who you deal with", wide=True,
                         placeholder="Mme Dubois, direction"),
         action=f"/programme/{programme_id}/members", method="post",
@@ -392,7 +391,8 @@ def _stage_editor(programme_id: int, stages: list[str], notes: dict[str, str]) -
         "stages",
         '<form method="post" class="stage-edit" '
         f'action="/programme/{programme_id}/stages">'
-        f'<textarea name="stages" rows="{max(6, len(stages) + 1)}">{esc(lines)}'
+        + ui.sr_label("Stages, one per line", "stage-lines")
+        + f'<textarea name="stages" id="stage-lines" rows="{max(6, len(stages) + 1)}">{esc(lines)}'
         "</textarea>"
         '<p class="hint">One per line, in the order the board draws them. Text '
         "after a colon is the note under the column head, which is what stops a "

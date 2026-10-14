@@ -66,7 +66,16 @@ textarea.md { min-height:16rem; font:13px/1.5 ui-monospace,SFMono-Regular,Menlo,
 
 
 def shell(body: str, chrome: Any = None) -> str:
-    return page("arpenteur", body, chrome, css=STYLES)
+    return page("", body, chrome, css=STYLES)
+
+
+def _file_name(path: str) -> str:
+    """The file's name without the folders it sits in.
+
+    The folders are the operator's own filing and say nothing a reader of this
+    page can use; the name is enough to tell which file is the master.
+    """
+    return str(path).replace("\\", "/").rsplit("/", 1)[-1]
 
 
 def _meta(note: Row) -> str:
@@ -78,7 +87,7 @@ def _meta(note: Row) -> str:
     if note["source_path"]:
         # Shown because it says which copy is the master. A note with a path is
         # edited in a file and re-imported; one without is edited here.
-        bits.append(f"from <code>{esc(note['source_path'])}</code>")
+        bits.append(f"from <code>{esc(_file_name(note['source_path']))}</code>")
     if note["author"]:
         bits.append(esc(note["author"]))
     tags = "".join(f'<span class="tag">{esc(t)}</span> ' for t in (note["tags"] or []))
@@ -99,9 +108,14 @@ def _acts(note: Row, *, on_page: bool = False) -> str:
         f'<input type="hidden" name="pinned" value="{0 if note["pinned"] else 1}">'
         f"<button>{pin}</button></form>"
         '<details class="del"><summary>delete</summary>'
-        f'<form method="post" action="/note/{note["id"]}/delete">'
-        "<input name='reason' placeholder='Why, for the tombstone'>"
-        "<button>Delete this note</button>"
+        f'<form method="post" action="/note/{note["id"]}/delete"'
+        + ui.attrs(data_confirm=(
+            f"Delete the note {note['title']}? A line in the record keeps "
+            "what went and why."
+        ))
+        + f'>{ui.sr_label("Why it is deleted", f"nd-{note["id"]}")}'
+        f"<input name='reason' id='nd-{note['id']}' placeholder='Why, for the tombstone'>"
+        "<button class='danger'>Delete this note</button>"
         "<span class='hint'>Removes the note and leaves a line in the record "
         "saying what went and why. The file it came from is untouched.</span>"
         "</form></details></div>"
@@ -109,7 +123,7 @@ def _acts(note: Row, *, on_page: bool = False) -> str:
 
 
 def notes_page(
-    client: Row, company: Row, notes: list[Row], *, q: str = "", note: str = "",
+    client: Row, company: Row, notes: list[Row], *, q: str = "",
     projects: list[Row] | None = None,
 ) -> str:
     head = (
@@ -120,7 +134,6 @@ def notes_page(
         "Written wherever you write, imported by path, and read here. Agents "
         "reading the client see these alongside the dossier.</p>"
     )
-    banner = f'<div class="warn">{esc(note)}</div>' if note else ""
 
     if notes:
         body = "".join(
@@ -133,14 +146,14 @@ def notes_page(
     elif q:
         body = f'<p class="dim">Nothing here matches “{esc(q)}”.</p>'
     else:
-        body = (
-            '<p class="dim">No notes yet. Paste one below, or import a file '
-            "with <code>arpenteur note add "
-            f"{esc(client['code'])} path/to/note.md</code>.</p>"
+        body = ui.empty(
+            "No notes yet.",
+            action="Open Write a note above, then paste Markdown or upload a "
+                   "Markdown file.",
         )
 
     return (
-        head + banner
+        head
         + ui.toolbar(
             ui.text_field("q", "Search these notes", value=q,
                           placeholder="A word in any of them", wide=True),
@@ -212,7 +225,8 @@ def _edit_form(note: Row) -> str:
         '<details class="card" style="margin-top:1rem"><summary><b>Edit</b></summary>'
         f'<form class="stack" method="post" action="/note/{note["id"]}" '
         'style="margin-top:.7rem">'
-        f'<textarea class="md" name="body">{esc(note["body"])}</textarea>'
+        + ui.sr_label("The note, in Markdown", "edit-body")
+        + f'<textarea class="md" id="edit-body" name="body">{esc(note["body"])}</textarea>'
         "<label for='et'>Tags</label>"
         f'<input id="et" name="tags" value="{esc(", ".join(note["tags"] or []))}">'
         + warning

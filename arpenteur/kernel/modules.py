@@ -28,6 +28,7 @@ is only written down decays; architecture with a failing test does not.
 from __future__ import annotations
 
 import importlib
+import re
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Callable, Iterable
@@ -49,12 +50,45 @@ SLOTS = (
 )
 
 
+# The header's groups, in the order they are drawn. A nav entry names one of
+# them, and `load` refuses a module whose entry names a group the header does
+# not draw. Five groups rather than one list of eighteen links: the question a
+# reader brings to the header is "where do I do X", and X is prospecting, or
+# reaching out, or a client, or money, or the machine itself.
+GROUPS: tuple[tuple[str, str], ...] = (
+    ("prospecting", "Prospecting"),
+    ("outreach", "Outreach"),
+    ("clients", "Clients"),
+    ("sales", "Sales"),
+    ("system", "System"),
+)
+
+
+def group_rank(name: str) -> int:
+    """Where a group sits in the header; unknown groups sort last."""
+    for rank, (key, _label) in enumerate(GROUPS):
+        if key == name:
+            return rank
+    return len(GROUPS)
+
+
 @dataclass(frozen=True)
 class Nav:
     label: str
     href: str
-    group: str = "main"
+    group: str = "prospecting"
     order: int = 100
+    # The help page for this section, as a path under docs/ without the
+    # extension. Derived from the label when not given: Companies reads
+    # guide/companies.
+    help: str = ""
+
+    @property
+    def guide(self) -> str:
+        if self.help:
+            return self.help
+        slug = re.sub(r"[^a-z0-9]+", "-", self.label.lower()).strip("-")
+        return f"guide/{slug}"
 
 
 @dataclass(frozen=True)
@@ -147,7 +181,7 @@ class Registry:
 
     def navigation(self) -> list[Nav]:
         items = [nav for module in self.modules for nav in module.nav]
-        return sorted(items, key=lambda n: (n.group != "main", n.order, n.label))
+        return sorted(items, key=lambda n: (group_rank(n.group), n.order, n.label))
 
     def stages(self) -> dict[str, Any]:
         found: dict[str, Any] = {}
@@ -201,6 +235,14 @@ def load(names: Iterable[str]) -> Registry:
             raise RuntimeError(
                 f"arpenteur.modules.{name} does not define a MODULE."
             )
+        known = {key for key, _label in GROUPS}
+        for item in module.nav:
+            if item.group not in known:
+                raise RuntimeError(
+                    f"Module {name} puts {item.label!r} in header group "
+                    f"{item.group!r}, which the header does not draw. "
+                    f"Groups: {', '.join(sorted(known))}."
+                )
         loaded[name] = module
 
     ordered: list[Module] = []

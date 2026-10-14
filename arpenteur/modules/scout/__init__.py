@@ -25,10 +25,10 @@ MODULE = Module(
     requires=(),
     schemas=("core", "intel", "audit"),
     nav=(
-        Nav("Survey", "/", group="survey", order=110),
-        Nav("Board", "/board", group="survey", order=120),
-        Nav("People", "/people", group="survey", order=130),
-        Nav("Drafts", "/drafts", group="survey", order=140),
+        Nav("Companies", "/companies", group="prospecting", order=110),
+        Nav("Board", "/board", group="prospecting", order=120),
+        Nav("People", "/people", group="prospecting", order=130),
+        Nav("Drafts", "/drafts", group="outreach", order=230),
     ),
     removable=False,
 )

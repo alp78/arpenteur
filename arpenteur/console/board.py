@@ -118,7 +118,7 @@ STYLES = """
 
 
 def shell(body: str, chrome: Any = None) -> str:
-    return page("arpenteur", body, chrome, css=STYLES)
+    return page("", body, chrome, css=STYLES)
 
 
 # --- putting a row in a lane --------------------------------------------------
@@ -256,7 +256,8 @@ def card(
         '<form method="post" action="/board/move">'
         f'<input type="hidden" name="company_id" value="{row["id"]}">'
         f'<input type="hidden" name="back" value="{esc(back)}">'
-        f'<select name="state">{options}</select>'
+        + ui.sr_label(f"Move {row['name']} to", f"bm-{row['id']}")
+        + f'<select name="state" id="bm-{row["id"]}">{options}</select>'
         "<button>go</button></form></details>"
     )
     classes = f'kard band-{esc(row["band"] or "none")}{" overdue" if late else ""}'
@@ -311,7 +312,6 @@ def board_page(
     owners: list[str],
     sectors: list[str] | None = None,
     back: str = "",
-    note: str = "",
 ) -> str:
     grouped: dict[str, dict[str, list[Row]]] = {}
     for row in rows:
@@ -336,20 +336,22 @@ def board_page(
         )
         lanes.append(f'<div class="lane">{head}<div class="board">{columns}</div></div>')
 
-    banner = f'<div class="warn">{esc(note)}</div>' if note else ""
+    empty = ""
     if not rows:
-        banner += (
-            '<div class="warn">Nothing is on the board. Bring a shortlist in '
-            "below, or set a state on any company's page in the survey. Only "
-            "companies somebody put here appear, which is what makes the counts "
-            "mean something.</div>"
+        empty = ui.empty(
+            "Nothing is on the board yet. Only companies somebody put here "
+            "appear, which is what makes the counts mean something.",
+            action=(
+                '<a href="#bring-in">Bring in a shortlist</a>, or set a state '
+                'on a company from <a href="/companies">Companies</a>.'
+            ),
         )
     return (
         "<h1>Board</h1>"
         "<p class='lede'>Where each company being worked stands. Drag a card to "
         "move it; the state is saved as it lands. Only companies with a state "
-        "are here, which is the difference between this and the survey.</p>"
-        + banner
+        "are here, which is the difference between this and Companies.</p>"
+        + empty
         + _filters(lane, q, canton, segment, band, owner, cantons, segments,
                    owners, sector, sectors or [])
         + "".join(lanes)
@@ -392,7 +394,7 @@ def _bring_in(band: str, segment: str, canton: str,
     them is the only thing that makes it a decision rather than a reflex.
     """
     return (
-        "<h2>bring in a shortlist</h2>"
+        '<h2 id="bring-in">bring in a shortlist</h2>'
         + ui.toolbar(
             ui.select_field("band", "Fit band", ["high", "medium", "low"],
                             chosen=band or "high")

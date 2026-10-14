@@ -290,7 +290,7 @@ def test_a_company_named_like_a_script_tag_is_escaped(client, conn) -> None:
          "status": "ACTIVE", "method": "zefix"},
     )
     conn.commit()
-    body = client.get("/").text
+    body = client.get("/companies").text
     assert "<script>alert(1)</script>" not in body
     assert "&lt;script&gt;" in body
 
@@ -305,7 +305,7 @@ def test_a_note_cannot_inject_markup(client, conn) -> None:
 
 def test_the_list_filters_without_reloading_the_page(client) -> None:
     """The HTMX target returns the table alone, not a whole document."""
-    fragment = client.get("/companies", params={"canton": "GE"}).text
+    fragment = client.get("/companies/rows", params={"canton": "GE"}).text
     assert "Fiduciaire" in fragment
     assert "<html" not in fragment.lower()
 
@@ -347,8 +347,9 @@ def test_the_pipeline_and_runs_pages_render(client) -> None:
 
 
 def test_the_header_says_which_section_you_are_on(client) -> None:
-    for url, label in (("/", "Survey"), ("/board", "Board"), ("/runs", "History"),
-                       ("/quotes", "Quotes"), ("/reports", "Reports")):
+    for url, label in (("/companies", "Companies"), ("/board", "Board"),
+                       ("/runs", "History"), ("/quotes", "Quotes"),
+                       ("/reports", "Reports"), ("/help", "Help")):
         header = client.get(url).text.split("<header>")[1].split("</header>")[0]
         current = re.findall(r'<a href="[^"]+" aria-current="page">([^<]+)</a>', header)
         assert current == [label], (url, current)
@@ -360,8 +361,8 @@ def test_a_filtered_list_is_given_an_address_that_renders_whole(client) -> None:
     Pushing the fragment's own URL would put an address in the bar that answers
     with a bare table when anybody opens it.
     """
-    reply = client.get("/companies?canton=GE", headers={"HX-Request": "true"})
-    assert reply.headers["HX-Push-Url"] == "/?canton=GE"
+    reply = client.get("/companies/rows?canton=GE", headers={"HX-Request": "true"})
+    assert reply.headers["HX-Push-Url"] == "/companies?canton=GE"
     whole = client.get(reply.headers["HX-Push-Url"])
     assert whole.status_code == 200
     assert "<header>" in whole.text
@@ -460,6 +461,15 @@ def test_a_fault_inside_a_route_renders_inside_the_shell(settings, conn) -> None
     assert "Traceback" not in page.text
 
 
+def test_an_address_no_route_answers_is_a_page_in_the_shell(client) -> None:
+    """FastAPI's own 404 is two words of JSON; a mistyped link deserves the
+    menu and a way back."""
+    reply = client.get("/no-such-page")
+    assert reply.status_code == 404
+    assert "<header>" in reply.text and "<title>Not found | Arpenteur</title>" in reply.text
+    assert 'href="/"' in reply.text
+
+
 def test_a_missing_record_answers_inside_the_shell(client) -> None:
     page = client.get("/company/987654321")
     assert page.status_code == 404
@@ -485,3 +495,67 @@ def test_a_run_nothing_is_running_can_be_marked_interrupted(client, conn) -> Non
     settled = db.run(conn, run_id)
     assert settled["finished_at"] and "interrupted" in settled["error"]
     assert "Mark as interrupted" not in client.get(f"/runs/{run_id}").text
+
+
+# --- home, help, and what the shell says first ----------------------------------
+
+
+def test_home_shows_the_counts_the_checks_and_the_last_runs(client, conn) -> None:
+    body = client.get("/").text
+    assert "<h1>Home</h1>" in body
+    assert "<title>Home | Arpenteur</title>" in body
+    # Every tile is a link to the page that holds the number.
+    for href in ("/companies", "/board", "/clients", "/quotes", "/invoices", "/mail"):
+        assert f'class="tile" href="{href}"' in body, href
+    assert "Setup" in body and "Territory" in body
+    assert "Nothing has run yet." in body
+    db.start_run(conn, "source", {}, started_by="console")
+    conn.commit()
+    assert "/runs/1" in client.get("/").text
+
+
+def test_home_names_what_is_missing_before_the_first_run(db_path) -> None:
+    bare = SimpleNamespace(
+        database_url=db_path,
+        territory=Territory(cantons=(), legal_forms=(), name="nowhere"),
+        segments=SEGMENTS, sectors=SECTORS, mail=SimpleNamespace(configured=False),
+    )
+    body = TestClient(create_app(bare)).get("/").text
+    assert "No canton is set" in body
+    assert 'href="/settings">Fix it</a>' in body
+    assert "1 thing(s) to set before the first run" in body
+
+
+def test_the_company_list_lives_at_companies_and_filters_its_own_rows(client) -> None:
+    body = client.get("/companies").text
+    assert "<h1>Companies</h1>" in body
+    assert 'hx-get="/companies/rows"' in body
+    rows = client.get("/companies/rows?canton=GE", headers={"HX-Request": "true"})
+    assert "<header>" not in rows.text and "Fiduciaire" in rows.text
+
+
+def test_a_refusal_in_the_query_string_is_drawn_red_by_the_shell(client) -> None:
+    """Every page, not only the ones that remembered to read `?note=`."""
+    body = client.get("/people?error=Nothing%20to%20save").text
+    assert '<div class="banner banner-bad" role="status">Nothing to save</div>' in body
+    good = client.get("/board?note=Saved").text
+    assert '<div class="banner banner-good" role="status">Saved</div>' in good
+    assert 'class="banner banner-bad"' not in good
+
+
+def test_help_renders_the_docs_and_rewrites_their_links(client) -> None:
+    body = client.get("/help").text
+    assert "<title>Help | Arpenteur</title>" in body
+    assert 'href="/help/guide/companies"' in body
+    assert "<script" not in body.split('<article class="doc">')[1]
+    gone = client.get("/help/guide/does-not-exist")
+    assert gone.status_code == 404 and "<header>" in gone.text
+    assert "No help page here" in gone.text
+    assert client.get("/help/../../README").status_code == 404
+    assert client.get("/help/%2e%2e/pyproject").status_code == 404
+
+
+def test_every_page_links_to_the_help_of_its_section(client) -> None:
+    assert 'href="/help/guide/board"' in client.get("/board").text
+    assert 'href="/help/guide/history"' in client.get("/runs").text
+    assert 'href="/help/guide/operations"' in client.get("/pipeline").text

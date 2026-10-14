@@ -152,6 +152,8 @@ def state_tag(state: str) -> str:
 # 14'200 francs outstanding and not whose.
 
 QUOTE_STATES = ("draft", "sent", "accepted", "declined", "expired", "withdrawn")
+# The states that close a quote. Reaching one is asked about; accepted is not.
+CLOSING_STATES = frozenset({"declined", "withdrawn", "expired"})
 INVOICE_STATES = ("draft", "issued", "part_paid", "paid", "overdue",
                   "credited", "cancelled")
 
@@ -459,7 +461,9 @@ def invoices_panel(invoices: list[Row], client_id: int) -> str:
     )
 
 
-def _line_cells(line: Row, *, editable: bool, delete_to: str = "") -> str:
+def _line_cells(
+    line: Row, *, editable: bool, delete_to: str = "", document: str = "document",
+) -> str:
     detail = (f'<div class="basis">{esc(line["detail"])}</div>'
               if line["detail"] else "")
     # A quote line records which card line priced it; an invoice line does not
@@ -469,8 +473,13 @@ def _line_cells(line: Row, *, editable: bool, delete_to: str = "") -> str:
              if line.get("basis") else "")
     remove = ""
     if editable and delete_to:
-        remove = (f'<td><form method="post" action="{delete_to}/{line["id"]}/delete">'
-                  '<button type="submit">Remove</button></form></td>')
+        remove = (
+            f'<td><form method="post" action="{delete_to}/{line["id"]}/delete"'
+            + ui.attrs(data_confirm=(
+                f"Remove the line {line['label']} from this {document}?"
+            ))
+            + '><button type="submit" class="danger">Remove</button></form></td>'
+        )
     return (
         f'<td>{esc(line["label"])}{detail}{basis}</td>'
         f'<td class="num">{line["quantity"]}</td>'
@@ -482,7 +491,7 @@ def _line_cells(line: Row, *, editable: bool, delete_to: str = "") -> str:
 
 def lines_table(
     lines: list[Row], totals: Row, *, editable: bool, delete_to: str,
-    reorder_to: str, id: str, frozen_because: str = "",
+    reorder_to: str, id: str, frozen_because: str = "", document: str = "document",
 ) -> str:
     """The lines, in the order they will be read, and movable while they can be.
 
@@ -497,7 +506,8 @@ def lines_table(
     """
     frozen = frozen_because if not editable else ""
     body = ui.sortable_body(
-        [(line["id"], _line_cells(line, editable=editable, delete_to=delete_to))
+        [(line["id"], _line_cells(line, editable=editable, delete_to=delete_to,
+                                  document=document))
          for line in lines],
         endpoint=reorder_to, id=id, label="line", frozen=frozen,
     )
@@ -551,7 +561,7 @@ def _totals_rows(row: Row, *, columns: int) -> str:
 
 def quote_page(
     quote: Row, versions: list[Row], shown: Row, lines: list[Row],
-    services: list[Row], *, chrome: Any = None, note: str = "", error: str = "",
+    services: list[Row], *, chrome: Any = None,
 ) -> str:
     frozen = shown["sent_at"] is not None
     tabs = "".join(
@@ -563,9 +573,11 @@ def quote_page(
         for v in versions
     )
     body = [
-        f'<p class="crumbs"><a href="/clients">Clients</a> / '
-        f'<a href="/client/{quote["client_id"]}">{esc(quote["client_code"])}</a>'
-        f" / {esc(quote['code'])}</p>",
+        ui.crumbs([
+            ("/quotes", "Quotes"),
+            (f"/client/{quote['client_id']}", quote["client_code"]),
+            ("", quote["code"]),
+        ]),
         '<div class="money-head">',
         f"<h1>{esc(quote['code'])}</h1>",
         state_tag(quote["status"]),
@@ -588,6 +600,7 @@ def quote_page(
         id=f'quote-lines-{shown["id"]}',
         frozen_because="This version was sent, so its lines keep the order the "
                        "client received them in.",
+        document="quote",
     ))
 
     if not frozen:
@@ -597,26 +610,32 @@ def quote_page(
         )
         body.append(
             f'<form class="addline" method="post" action="/quote-version/{shown["id"]}/lines">'
-            f'<div class="ctl"><label>From the catalogue</label>'
-            f'<select name="service_id"><option value="">(free line)</option>'
+            '<div class="ctl"><label for="q-service">From the catalogue</label>'
+            f'<select name="service_id" id="q-service"><option value="">(free line)</option>'
             f"{options}</select></div>"
-            '<div class="ctl"><label>Or a label of your own</label>'
-            '<input type="text" name="label" size="26"></div>'
-            '<div class="ctl"><label>Quantity</label>'
-            '<input type="number" name="quantity" value="1" step="0.25" min="0"></div>'
-            '<div class="ctl"><label>Price</label>'
-            '<input type="number" name="unit_price" step="0.05" min="0" '
-            'placeholder="from the card"></div>'
-            '<div class="ctl"><label>Card end</label>'
-            '<select name="at"><option value="low">low</option>'
+            '<div class="ctl"><label for="q-label">Or a label of your own</label>'
+            '<input type="text" name="label" id="q-label" size="26"></div>'
+            '<div class="ctl"><label for="q-quantity">Quantity</label>'
+            '<input type="number" name="quantity" id="q-quantity" value="1" '
+            'step="0.25" min="0"></div>'
+            '<div class="ctl"><label for="q-price">Price</label>'
+            '<input type="number" name="unit_price" id="q-price" step="0.05" '
+            'min="0" placeholder="from the card"></div>'
+            '<div class="ctl"><label for="q-end">Card end</label>'
+            '<select name="at" id="q-end"><option value="low">low</option>'
             '<option value="high">high</option></select></div>'
             '<button type="submit">Add</button></form>'
         )
         body.append('<div class="money-acts">')
         body.append(
-            f'<form method="post" action="/quote-version/{shown["id"]}/sent">'
-            '<input type="text" name="to" placeholder="sent to" size="24"> '
-            '<button type="submit">Mark as sent</button></form>'
+            f'<form method="post" action="/quote-version/{shown["id"]}/sent"'
+            + ui.attrs(data_confirm=(
+                f"Mark version {shown['version']} of quote {quote['code']} as "
+                "sent? The version is frozen and its lines can no longer change."
+            ))
+            + '><label class="vh" for="q-sent-to">Sent to</label>'
+            '<input type="text" name="to" id="q-sent-to" placeholder="sent to" '
+            'size="24"> <button type="submit">Mark as sent</button></form>'
         )
         body.append("</div>")
         body.append(
@@ -628,8 +647,17 @@ def quote_page(
         body.append('<div class="money-acts">')
         for state, label in (("accepted", "Accepted"), ("declined", "Declined"),
                              ("withdrawn", "Withdrawn")):
+            # Accepting is the way the quote goes forward; the other two close
+            # it, so only they ask first, and say which quote they close.
+            ask = (
+                ui.attrs(data_confirm=(
+                    f"Mark quote {quote['code']} as {state}? "
+                    "The change is recorded."
+                ))
+                if state in CLOSING_STATES else ""
+            )
             body.append(
-                f'<form method="post" action="/quote/{quote["id"]}/status">'
+                f'<form method="post" action="/quote/{quote["id"]}/status"{ask}>'
                 f'<input type="hidden" name="status" value="{state}">'
                 f'<button type="submit">{label}</button></form>'
             )
@@ -645,27 +673,22 @@ def quote_page(
         body.append("</div>")
 
     body.append(f'<p><a href="/quote/{quote["id"]}/print">Print this version</a></p>')
-    return page(
-        quote["code"],
-        ui.banner(error, kind="bad") + ui.banner(note, kind="good") + "".join(body),
-        chrome, css=STYLES,
-    )
+    return page(quote["code"], "".join(body), chrome, css=STYLES)
 
 
 def invoice_page(
     invoice: Row, lines: list[Row], services: list[Row], *,
-    issuer: IssuerConfig, chrome: Any = None, note: str = "", error: str = "",
-    credit_note: Row | None = None,
+    issuer: IssuerConfig, chrome: Any = None, credit_note: Row | None = None,
 ) -> str:
     draft = invoice["status"] == "draft"
     is_note = invoice["credits_id"] is not None
     title = invoice["reference"] or invoice["number"] or "Draft invoice"
     body = [
-        f'<p class="crumbs"><a href="/clients">Clients</a> / '
-        f'<a href="/client/{invoice["client_id"]}">{esc(invoice["client_code"])}</a>'
-        f" / {esc(title)}</p>",
-        ui.banner(error, kind="bad"),
-        ui.banner(note, kind="good"),
+        ui.crumbs([
+            ("/invoices", "Invoices"),
+            (f"/client/{invoice['client_id']}", invoice["client_code"]),
+            ("", title),
+        ]),
         '<div class="money-head">',
         f"<h1>{esc(title)}</h1>",
         state_tag(invoice["status"]),
@@ -703,6 +726,7 @@ def invoice_page(
         id=f'invoice-lines-{invoice["id"]}',
         frozen_because="This invoice was issued, so its lines keep the order "
                        "the client received them in.",
+        document="invoice",
     ))
     if draft:
         options = "".join(
@@ -711,24 +735,26 @@ def invoice_page(
         )
         body.append(
             f'<form class="addline" method="post" action="/invoice/{invoice["id"]}/lines">'
-            '<div class="ctl"><label>From the catalogue</label>'
-            f'<select name="service_id"><option value="">(free line)</option>{options}'
-            "</select></div>"
-            '<div class="ctl"><label>Or a label of your own</label>'
-            '<input type="text" name="label" size="26"></div>'
-            '<div class="ctl"><label>Quantity</label>'
-            '<input type="number" name="quantity" value="1" step="0.25"></div>'
-            '<div class="ctl"><label>Price</label>'
-            '<input type="number" name="unit_price" step="0.05" value="0"></div>'
+            '<div class="ctl"><label for="i-service">From the catalogue</label>'
+            '<select name="service_id" id="i-service"><option value="">'
+            f"(free line)</option>{options}</select></div>"
+            '<div class="ctl"><label for="i-label">Or a label of your own</label>'
+            '<input type="text" name="label" id="i-label" size="26"></div>'
+            '<div class="ctl"><label for="i-quantity">Quantity</label>'
+            '<input type="number" name="quantity" id="i-quantity" value="1" '
+            'step="0.25"></div>'
+            '<div class="ctl"><label for="i-price">Price</label>'
+            '<input type="number" name="unit_price" id="i-price" step="0.05" '
+            'value="0"></div>'
             '<button type="submit">Add</button></form>'
         )
         body.append('<div class="money-acts">')
         if not issuer.can_bill:
             body.append(
                 '<p class="dim small">This invoice cannot be issued: '
-                "<code>[issuer]</code> in arpenteur.toml needs at least a name "
-                "and an IBAN. A bill with no way to pay it is worse than no "
-                "bill.</p>"
+                "the <code>[issuer]</code> section of the configuration needs "
+                "at least a name and an IBAN. A bill with no way to pay it is "
+                "worse than no bill.</p>"
             )
         elif not money.iban_is_valid(issuer.iban):
             body.append(
@@ -750,8 +776,9 @@ def invoice_page(
         if invoice["status"] in PAYABLE_STATES and not is_note:
             body.append(
                 f'<form method="post" action="/invoice/{invoice["id"]}/payment">'
-                '<label>Amount received <input type="number" name="amount" '
-                f'step="0.05" min="0.05" value="{owed}"></label> '
+                '<label for="i-amount">Amount received</label> '
+                '<input type="number" name="amount" id="i-amount" '
+                f'step="0.05" min="0.05" value="{owed}"> '
                 "<button type=\"submit\">Record a payment</button></form>"
             )
         if invoice["status"] in CREDITABLE_STATES and not is_note:
@@ -759,8 +786,9 @@ def invoice_page(
                 f'<form method="post" action="/invoice/{invoice["id"]}/credit" '
                 'data-confirm="Issue a credit note reversing this invoice? It takes '
                 'its own rank, and this invoice is marked credited.">'
-                '<label>Reason <input type="text" name="reason" placeholder="why" '
-                'size="22"></label> '
+                '<label for="i-reason">Reason</label> '
+                '<input type="text" name="reason" id="i-reason" placeholder="why" '
+                'size="22"> '
                 '<button type="submit">Credit note</button></form>'
             )
         body.append("</div>")

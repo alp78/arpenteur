@@ -306,6 +306,55 @@ def test_the_page_groups_by_shelf_and_shows_the_agenda(
         assert name in body
 
 
+def _join(web: TestClient) -> None:
+    """A run is a thread, so what it wrote is read after it has ended."""
+    for thread in list(web.app.state.runner.threads.values()):
+        thread.join(10)
+
+
+def test_preparing_runs_through_the_runner(web, conn, client_id, fake) -> None:
+    reply = web.post(f"/client/{client_id}/prep", follow_redirects=False)
+    assert reply.status_code == 303
+    where = reply.headers["location"]
+    assert where.startswith("/runs/")
+    _join(web)
+    run = db.run(conn, int(where.rsplit("/", 1)[1]))
+    assert run["stage"] == "prep" and run["finished_at"] and run["error"] is None
+    assert {t["term"] for t in db.glossary_for(conn, client_id)} == {"DMARC", "nLPD"}
+    page = web.get(where).text
+    assert f"href='/client/{client_id}/prep'" in page and "href='/runs'" in page
+
+
+def test_a_dry_run_of_preparation_through_the_runner_costs_nothing(
+    web, conn, client_id, fake
+) -> None:
+    reply = web.post(f"/client/{client_id}/prep", data={"dry_run": "1"},
+                     follow_redirects=False)
+    _join(web)
+    assert fake.calls == [] and db.glossary_for(conn, client_id) == []
+    assert "dry run" in web.get(reply.headers["location"]).text
+
+
+def test_preparing_for_a_client_nobody_holds_is_refused_on_the_page(web) -> None:
+    reply = web.post("/client/999/prep", follow_redirects=False)
+    assert reply.status_code == 303
+    assert reply.headers["location"].startswith("/client/999/prep?error=")
+
+
+def test_preparing_from_an_empty_dossier_fails_on_the_run_page(web, conn) -> None:
+    company_id = conn.execute(
+        "INSERT INTO core.company (uid, name, canton, source_url, method)"
+        " VALUES ('CHE1', 'Vide SA', 'VD', 'x', 'zefix') RETURNING id"
+    ).fetchone()["id"]
+    empty = db.promote_to_client(conn, company_id)
+    conn.commit()
+    reply = web.post(f"/client/{empty}/prep", follow_redirects=False)
+    _join(web)
+    page = web.get(reply.headers["location"]).text
+    assert "no vocabulary to extract" in page
+    assert f"href='/client/{empty}/prep'" in page
+
+
 def test_ticking_a_term_is_the_only_writable_field(web, root, conn, client_id, fake) -> None:
     prep.run(load_settings(root), conn, client_id=client_id, log=lambda _m: None)
     term = db.glossary_for(conn, client_id)[0]

@@ -305,6 +305,17 @@ CONSOLE_JS = r"""
 
   function palette() { return document.getElementById('palette'); }
 
+  // The shortcut is named for the keyboard in front of the person. The
+  // header is rendered once for everybody and says Ctrl; a Mac reads it as
+  // the command key, which is what the key is called there.
+  if (/Mac|iPhone|iPad/.test(navigator.platform || '')) {
+    document.querySelectorAll('[data-shortcut]').forEach(function (el) {
+      el.textContent = '\u2318K';
+    });
+    var opener = document.querySelector('[data-palette-open]');
+    if (opener) opener.setAttribute('aria-label', 'Find anything. Shortcut: command K');
+  }
+
   document.addEventListener('keydown', function (e) {
     var box = palette();
     if (!box) return;

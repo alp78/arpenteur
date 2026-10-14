@@ -245,14 +245,18 @@ def test_the_shell_marks_the_section_you_are_on() -> None:
 
 
 def test_the_header_lists_what_this_deployment_actually_has() -> None:
+    """In the order of the work: find, reach, serve, bill, run the machine."""
     chrome = render.Chrome.of(modules.load(modules.DEFAULT))
     labels = [item.label for item in chrome.nav]
     assert labels == [
-        "Clients", "Programmes", "Lists", "Campaigns", "Mail", "Calendar",
+        "Companies", "Board", "People", "Map", "Reports",
+        "Lists", "Campaigns", "Drafts", "Mail",
+        "Clients", "Programmes", "Calendar",
         "Quotes", "Invoices",
-        "Survey", "Board", "People", "Drafts", "Map", "Reports",
-        "Operations", "History", "Settings",
+        "Operations", "History", "Settings", "Help",
     ]
+    groups = [item.group for item in chrome.nav]
+    assert groups == sorted(groups, key=modules.group_rank)
 
 
 def test_turning_a_module_off_takes_its_links_with_it() -> None:
@@ -265,22 +269,76 @@ def test_turning_a_module_off_takes_its_links_with_it() -> None:
     labels = [item.label for item in without.nav]
     assert "Quotes" not in labels and "Invoices" not in labels
     assert "Reports" not in labels          # analytics is off too
-    assert "Clients" in labels and "Survey" in labels
+    assert "Clients" in labels and "Companies" in labels
     assert "Settings" in labels             # the console's own pages stay
 
 
 def test_the_console_own_pages_belong_to_no_module_and_always_appear() -> None:
     bare = render.Chrome.of(modules.load(("scout",)))
     assert [n.label for n in bare.nav if n.group == "system"] == [
-        "Operations", "History", "Settings",
+        "Operations", "History", "Settings", "Help",
     ]
 
 
-def test_a_rule_is_drawn_between_groups_and_not_at_the_ends() -> None:
+def test_the_header_draws_each_group_under_its_caption() -> None:
+    """A group is a word above a run of links, never a link, and an empty
+    group is not drawn: with sales off there is no Sales caption pointing at
+    nothing."""
     out = render.page("t", "", render.Chrome.of(modules.load(modules.DEFAULT)))
     header = out.split("<header>")[1].split("</header>")[0]
-    assert header.count('class="sep"') == 2   # work | survey | system
-    assert not header.split("<nav")[1].lstrip().startswith('<span class="sep"')
+    captions = re.findall(r'<span class="caption" aria-hidden="true">([^<]+)</span>', header)
+    assert captions == ["Prospecting", "Outreach", "Clients", "Sales", "System"]
+    assert header.count('role="group"') == 5
+    assert header.index(">Companies<") < header.index(">Lists<") < header.index(">Quotes<")
+    without = render.page("t", "", render.Chrome.of(modules.load(("scout", "geo", "clients"))))
+    assert 'aria-label="Sales"' not in without
+    assert '<a class="brand" href="/">' in without
+
+
+def test_the_group_holding_the_current_page_is_marked() -> None:
+    chrome = render.Chrome.of(modules.load(modules.DEFAULT), here="/quotes")
+    header = render.page("t", "", chrome).split("<header>")[1].split("</header>")[0]
+    assert header.count('class="group on"') == 1
+    assert 'class="group on" role="group" aria-label="Sales"' in header
+
+
+def test_a_module_cannot_put_a_link_in_a_group_the_header_does_not_draw(monkeypatch) -> None:
+    """Refused at load, where the module is named, rather than drawn nowhere."""
+    import dataclasses
+
+    import arpenteur.modules.geo as geo
+
+    bad = dataclasses.replace(
+        geo.MODULE, nav=(modules.Nav("Elsewhere", "/elsewhere", group="misc"),)
+    )
+    monkeypatch.setattr(geo, "MODULE", bad)
+    with pytest.raises(RuntimeError, match="header group 'misc'"):
+        modules.load(("scout", "geo"))
+
+
+def test_the_tab_is_named_after_the_heading() -> None:
+    out = render.page("", "<h1>Board <span class='dim'>12</span></h1>")
+    assert "<title>Board 12 | Arpenteur</title>" in out
+    assert "<title>Arpenteur</title>" in render.page("", "<p>no heading</p>")
+    assert "<title>Given | Arpenteur</title>" in render.page("Given", "<h1>Other</h1>")
+
+
+def test_the_shell_says_what_the_redirect_asked_it_to() -> None:
+    """One banner for a refusal, one for a success, drawn before the body."""
+    chrome = render.Chrome().with_flash(note="Saved.", error="Refused: no label.")
+    out = render.page("t", "<h1>x</h1>", chrome)
+    main = out.split('<main id="main">')[1]
+    assert main.index("banner-bad") < main.index("banner-good") < main.index("<h1>")
+    assert "Refused: no label." in main and "Saved." in main
+    assert "banner" not in render.page("t", "<h1>x</h1>").split('<main id="main">')[1]
+
+
+def test_every_page_carries_a_help_link_for_its_section() -> None:
+    registry = modules.load(modules.DEFAULT)
+    assert 'href="/help/guide/board"' in render.page("t", "", render.Chrome.of(registry, here="/board"))
+    assert 'href="/help/guide/companies"' in render.page("t", "", render.Chrome.of(registry, here="/companies"))
+    assert 'href="/help/index"' in render.page("t", "", render.Chrome.of(registry, here="/help"))
+    assert 'href="/help/index"' in render.page("t", "", render.Chrome.of(registry, here="/nowhere"))
 
 
 def test_every_navigation_entry_names_a_distinct_place() -> None:

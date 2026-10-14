@@ -1989,13 +1989,20 @@ def delete_unsent_drafts(conn: Connection, draft_ids: Sequence[int]) -> int:
 
 
 def last_run(conn: Connection, stage: str, *, finished: bool = True) -> Row | None:
-    """The latest run of a stage, by default the latest that finished cleanly."""
+    """The latest run of a stage, by default the latest that finished cleanly.
+
+    A dry run is not a run of the stage. It reads and writes nothing, and a
+    caller asking when the bounces were last read would otherwise count a dry
+    run as that read and open the gate a campaign's next wave waits behind.
+    The flag is `true` from the command line and `1` or `on` from a form.
+    """
     clause = "AND finished_at IS NOT NULL AND error IS NULL" if finished else ""
     return conn.execute(
         f"""
         SELECT id, stage, started_at, finished_at, error, args_json
           FROM intel.run
          WHERE stage = %s {clause}
+           AND COALESCE(args_json->>'dry_run', '') NOT IN ('true', '1', 'on')
          ORDER BY started_at DESC, id DESC
          LIMIT 1
         """,
@@ -2212,9 +2219,19 @@ def finish_run(
     conn.commit()
 
 
-def runs(conn: Connection, limit: int = 40) -> list[Row]:
+def runs(conn: Connection, limit: int = 40, before: int | None = None) -> list[Row]:
+    """The newest runs, or the page of them older than the run `before`.
+
+    Paged by id rather than by offset: a run starting while somebody reads the
+    history shifts every offset by one, and the page would repeat a row.
+    """
+    if before is None:
+        return conn.execute(
+            "SELECT * FROM intel.run ORDER BY id DESC LIMIT %s", (limit,)
+        ).fetchall()
     return conn.execute(
-        "SELECT * FROM intel.run ORDER BY id DESC LIMIT %s", (limit,)
+        "SELECT * FROM intel.run WHERE id < %s ORDER BY id DESC LIMIT %s",
+        (before, limit),
     ).fetchall()
 
 
@@ -2625,3 +2642,10 @@ def record_selection(
     )
     return {"selection_p": percentile, "score": standing["score"],
             "band": standing["band"]}
+
+
+def home_counts(conn: Connection) -> dict[str, int]:
+    """The two numbers the landing page shows for the survey."""
+    companies = conn.execute("SELECT COUNT(*) AS n FROM core.company").fetchone()["n"]
+    on_board = conn.execute("SELECT COUNT(*) AS n FROM intel.prospect").fetchone()["n"]
+    return {"companies": int(companies), "on_board": int(on_board)}

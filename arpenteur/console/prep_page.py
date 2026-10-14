@@ -60,7 +60,7 @@ STYLES = """
 
 
 def shell(body: str, chrome: Any = None) -> str:
-    return page("arpenteur", body, chrome, css=CLIENT_STYLES + STYLES)
+    return page("", body, chrome, css=CLIENT_STYLES + STYLES)
 
 
 def _agenda(row: Row | None) -> str:
@@ -162,7 +162,6 @@ def prep_page(
     filled: int,
     model: str,
     effort: str,
-    note: str = "",
 ) -> str:
     known = sum(1 for t in terms if t["known"])
     must = sum(1 for t in terms if t["priority"] == "must" and not t["known"])
@@ -215,7 +214,6 @@ def prep_page(
         "client's file, what it is, and above all why it is in "
         "<i>their</i> file, which is the part a general glossary cannot give "
         "you and the only part worth reading twice.</p>"
-        + (f'<div class="warn">{esc(note)}</div>' if note else "")
         + '<div class="counts">'
         f'<div><b>{len(terms)}</b><span>terms</span></div>'
         f'<div><b>{must}</b><span>to know cold, unticked</span></div>'

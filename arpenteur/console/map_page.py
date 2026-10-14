@@ -65,7 +65,7 @@ STYLES = """
 
 
 def shell(body: str, chrome: Any = None) -> str:
-    return page("arpenteur", body, chrome, css=STYLES)
+    return page("", body, chrome, css=STYLES)
 
 
 def feature(row: Row) -> dict[str, Any]:
@@ -152,13 +152,13 @@ def map_page(
     waiting = with_address - placed
     note = (
         f'<div class="warn">Nothing is placed yet. {ui.num(with_address)} companies '
-        "hold a postal address from the register and none has been geocoded. "
-        'Run <a href="/pipeline">geocode</a>, which is free.</div>'
+        "hold a postal address from the register and none has been placed on "
+        f"the map. Use {ui.operations('geocode')}, which is free.</div>"
         if placed == 0
         else (
             f'<p class="dim small">{ui.num(waiting)} companies hold an address that '
-            'has not been placed yet. <a href="/pipeline">Geocode</a> is free '
-            "and picks up where it left off.</p>"
+            f"has not been placed yet. Use {ui.operations('geocode')}: it is "
+            "free and picks up where it left off.</p>"
             if waiting > 0
             else ""
         )
@@ -176,8 +176,8 @@ def map_page(
         + (f'<p class="dim small">{regions} cantonal boundary(ies) drawn from '
            "swissBOUNDARIES3D. Without them the territory is a text comparison "
            'on a column.</p>' if regions else
-           '<p class="dim small">No cantonal boundaries held. Run '
-           '<a href="/pipeline">regions</a>, which is free and one request per '
+           '<p class="dim small">No cantonal boundaries held. Use '
+           f"{ui.operations('boundaries')}, which is free and one request per "
            "canton.</p>")
         + _script(source_url, "/map/regions.geojson" if regions else "")
     )

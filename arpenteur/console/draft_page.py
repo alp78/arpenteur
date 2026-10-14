@@ -16,11 +16,11 @@ banner and the approve button is not offered. Leaving the operator to notice a
 bracketed string inside a paragraph is how it reaches a recipient.
 
 **Approved is not sent.** No route on these pages posts anything. `reviewed_at`
-says a person read it; `sent_at` is set afterwards, by hand on this page, by
-`arpenteur send`, or by a campaign wave, each of which refuses any draft this
-page would not approve. A campaign's own drafts are kept off this queue and
-approved a wave at a time on the wave's page.
-Collapsing the two would make the record claim something nobody confirmed.
+says a person read it; `sent_at` is set afterwards, by hand on this page or by
+a campaign wave, which refuses any draft this page would not approve. A
+campaign's own drafts are kept off this queue and approved a wave at a time on
+the wave's page. Collapsing the two would make the record claim something
+nobody confirmed.
 """
 
 from __future__ import annotations
@@ -70,7 +70,7 @@ MARKER = "[[ MANQUE"
 
 
 def shell(body: str, chrome: Any = None) -> str:
-    return page("arpenteur", body, chrome, css=STYLES)
+    return page("", body, chrome, css=STYLES)
 
 
 def flawed(row: Row) -> bool:
@@ -97,40 +97,51 @@ def _ago(when: str | None, today: date | None = None) -> str:
 
 
 def queue_page(
-    rows: list[Row], tally: dict[str, int], *, note: str = "",
-    stale: int = 0, language: str = "",
+    rows: list[Row], tally: dict[str, int], *, stale: int = 0, language: str = "",
 ) -> str:
     """The review queue, with what cannot be sent marked before it is opened."""
     listed = "".join(_row(row) for row in rows)
     body = (
         f'<div class="draft-q">{listed}</div>'
         if rows
-        else ui.empty(
-            "No drafts awaiting review. `arpenteur draft` writes proposals "
-            "here; they stay until somebody reads them."
+        else (
+            ui.empty("No draft in that language is waiting for review.")
+            if language
+            else ui.empty(
+                "No drafts are waiting for review.",
+                action=f"They are written from {ui.operations('draft')} and "
+                       "stay here until somebody reads them.",
+            )
         )
     )
-    banners = ui.banner(note, kind="good") if note else ""
+    banners = ""
     bad = sum(1 for row in rows if flawed(row))
     if bad:
         banners += ui.banner(
-            f"{bad} of these carry a [[ MANQUE ]] marker where a setting was "
-            "not filled in. They cannot be approved until arpenteur.toml "
-            "[enrol] is complete and `arpenteur draft` has run again.",
-            kind="bad",
+            html_body=(
+                f"{bad} of these carry a [[ MANQUE ]] marker where a setting "
+                "was not filled in. They cannot be approved until the [enrol] "
+                "section of the configuration is complete and the drafts are "
+                f"written again from {ui.operations('draft')}."
+            ),
+            text="", kind="bad",
         )
     if stale:
         banners += ui.banner(
-            f"{stale} unsent draft(s) were written against an older version of "
-            "the brief. Rewriting the brief does not rewrite them; run "
-            "`arpenteur draft` again to replace them.",
+            "", html_body=(
+                f"{ui.num(stale)} unsent draft(s) were written against an "
+                "older version of the brief. Changing the brief does not "
+                f"rewrite them; write them again from {ui.operations('draft')} "
+                "to replace them."
+            ),
             kind="warn",
         )
     return (
         "<h1>Drafts</h1>"
-        "<p class='lede'>Proposals, each for one mailbox at one firm. Nothing "
-        "here has been sent, and nothing in this program sends: approving "
-        "records that a person read it.</p>"
+        "<p class='lede'>A draft is a message the model wrote for one mailbox "
+        "at one firm. A draft is never sent by itself: approving records that "
+        "a person read it, and sending happens from a wave of a "
+        "<a href='/campaigns'>campaign</a>.</p>"
         + _tally(tally)
         + banners
         + _filter(language)
@@ -140,7 +151,7 @@ def queue_page(
 
 def _tally(tally: dict[str, int]) -> str:
     cells = "".join(
-        f"<span>{esc(label)}<b>{tally.get(key, 0):,}</b></span>"
+        f"<span>{esc(label)}<b>{ui.num(tally.get(key, 0))}</b></span>"
         for key, label in (
             ("awaiting", "awaiting review"),
             ("approved", "approved, not sent"),
@@ -153,17 +164,14 @@ def _tally(tally: dict[str, int]) -> str:
 
 
 def _filter(language: str) -> str:
-    options = "".join(
-        f'<option value="{code}"{" selected" if language == code else ""}>'
-        f"{label}</option>"
-        for code, label in (("", "every language"), ("fr", "français"),
-                            ("de", "Deutsch"), ("it", "italiano"))
-    )
-    return (
-        '<form method="get" action="/drafts" class="row" '
-        'style="margin:0 0 .9rem">'
-        f'<select name="language">{options}</select> '
-        '<button type="submit">Show</button></form>'
+    return ui.toolbar(
+        ui.select_field(
+            "language", "Language",
+            (("", "every language"), ("fr", "français"),
+             ("de", "Deutsch"), ("it", "italiano")),
+            chosen=language,
+        ),
+        action="/drafts", css="filters",
     )
 
 
@@ -182,7 +190,7 @@ def _row(row: Row) -> str:
     )
 
 
-def one_page(row: Row, *, note: str = "") -> str:
+def one_page(row: Row) -> str:
     """One draft, whole, with the actions a reviewer has.
 
     `Approve` is withheld from a draft carrying a marker rather than shown and
@@ -201,8 +209,9 @@ def one_page(row: Row, *, note: str = "") -> str:
     acts = []
     if flawed(row):
         acts.append(
-            "<span class='muted'>Not approvable: fill arpenteur.toml [enrol] "
-            "and run <code>arpenteur draft</code> again.</span>"
+            "<span class='muted'>Not approvable: complete the [enrol] section "
+            f"of the configuration, then write the draft again from "
+            f"{ui.operations('draft')}.</span>"
         )
     elif reviewed:
         acts.append(_post(f"/draft/{row['id']}/sent", "Mark as sent"))
@@ -211,10 +220,15 @@ def one_page(row: Row, *, note: str = "") -> str:
         acts.append(_post(f"/draft/{row['id']}/review", "Approve"))
     acts.append(
         f'<form method="post" action="/draft/{row["id"]}/refuse" '
-        'style="display:inline-flex;gap:.4rem">'
-        '<input name="reason" placeholder="why, for the next run" '
-        'style="width:16rem">'
-        '<button type="submit">Refuse</button></form>'
+        'style="display:inline-flex;gap:.4rem;align-items:center"'
+        + ui.attrs(data_confirm=(
+            f"Refuse the draft to {row['company_name']}? "
+            "A later run will not propose this mailbox again."
+        ))
+        + '><label class="vh" for="refuse-reason">Reason for refusing</label>'
+        '<input name="reason" id="refuse-reason" '
+        'placeholder="why, for the next run" style="width:16rem">'
+        '<button type="submit" class="danger">Refuse</button></form>'
     )
     if row["sent_at"]:
         state = "sent " + _ago(row["sent_at"])
@@ -236,7 +250,6 @@ def one_page(row: Row, *, note: str = "") -> str:
         f'<span>brief {esc((row["brief_digest"] or "?")[:8])}</span>'
         f'<span>{esc(row["model"] or "")}</span>'
         "</div>"
-        + (ui.banner(note, kind="good") if note else "")
         + (
             ui.banner(
                 "The brief proscribes "

@@ -61,7 +61,7 @@ STYLES = """
 
 
 def shell(body: str, chrome: Any = None) -> str:
-    return page("arpenteur", body, chrome, css=STYLES)
+    return page("", body, chrome, css=STYLES)
 
 
 # The editor writes into a hidden field on submit, because a contenteditable
@@ -79,7 +79,7 @@ SCRIPT = """
       e.preventDefault();
       var cmd = b.getAttribute('data-cmd');
       if (cmd === 'createLink') {
-        var url = window.prompt('Adresse du lien');
+        var url = window.prompt('Link address');
         if (!url) return;
         document.execCommand('createLink', false, url);
       } else {
@@ -93,48 +93,43 @@ SCRIPT = """
 """
 
 
-def signature_page(
-    fragment: str, *, path: str = "", note: str = "", error: str = "",
-) -> str:
+def signature_page(fragment: str) -> str:
     """The editor, the HTML behind it, and a preview in the message's styling."""
-    banners = ui.banner(note, kind="good") if note else ""
-    if error:
-        banners += ui.banner(error, kind="bad")
+    banners = ""
     if not fragment.strip():
         banners += ui.banner(
             "No signature is written yet. Anything saved here is appended to "
-            "every message `arpenteur send` posts, below a thin rule.",
+            "every message a campaign wave sends, below a thin rule.",
             kind="note",
         )
     buttons = "".join(
-        f'<button data-cmd="{cmd}" title="{esc(title)}">{esc(label)}</button>'
+        f'<button type="button" data-cmd="{cmd}" title="{esc(title)}" '
+        f'aria-label="{esc(title)}">{esc(label)}</button>'
         for cmd, label, title in (
-            ("bold", "B", "gras"),
-            ("italic", "I", "italique"),
-            ("underline", "U", "souligné"),
-            ("createLink", "Lien", "ajouter un lien"),
-            ("removeFormat", "Effacer", "retirer la mise en forme"),
-            ("insertUnorderedList", "Liste", "liste à puces"),
+            ("bold", "B", "Bold"),
+            ("italic", "I", "Italic"),
+            ("underline", "U", "Underline"),
+            ("createLink", "Link", "Add a link"),
+            ("removeFormat", "Clear", "Remove the formatting"),
+            ("insertUnorderedList", "List", "Bulleted list"),
         )
     )
     return (
         '<div class="sig-wrap">'
         "<h1>Signature</h1>"
-        "<p class='lede'>Appended to every message the send stage posts. Paste "
-        "from your mail client, or type here. What is saved is cleaned down to "
-        "a short tag allow-list, so a script or a tracking pixel never "
-        "survives.</p>"
+        "<p class='lede'>Appended to every message a "
+        "<a href='/campaigns'>campaign</a> wave sends. Paste from your mail "
+        "client, or type here. What is saved is cleaned down to a short tag "
+        "allow-list, so a script or a tracking pixel never survives.</p>"
         + banners
         + f'<form method="post" action="/signature" id="sig-form">'
         f'<div class="sig-bar">{buttons}</div>'
-        f'<div class="sig-edit" id="sig-edit" contenteditable="true">'
+        f'<div class="sig-edit" id="sig-edit" contenteditable="true" '
+        'role="textbox" aria-multiline="true" aria-label="Signature">'
         f"{fragment}</div>"
         '<input type="hidden" name="html" id="sig-html">'
         '<div class="row" style="margin-top:.9rem;gap:.5rem">'
-        '<button type="submit">Save</button>'
-        + (f'<span class="muted" style="font-size:.8rem">{esc(path)}</span>'
-           if path else "")
-        + "</div></form>"
+        '<button type="submit">Save</button></div></form>'
         + _preview(fragment)
         + _source(fragment)
         + "</div>"
@@ -170,7 +165,9 @@ def _source(fragment: str) -> str:
     return (
         "<h2 style='margin-top:1.4rem'>the stored fragment</h2>"
         '<form method="post" action="/signature">'
-        f'<textarea class="sig-src" name="html">{esc(fragment)}</textarea>'
+        + ui.sr_label("The stored fragment", "sig-source")
+        + f'<textarea class="sig-src" id="sig-source" name="html">'
+        f"{esc(fragment)}</textarea>"
         '<div class="row" style="margin-top:.5rem">'
         '<button type="submit">Save this instead</button></div></form>'
     )

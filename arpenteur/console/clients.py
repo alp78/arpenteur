@@ -153,8 +153,9 @@ def portfolio(rows: list[Row], total_projects: int, upcoming: int) -> str:
         body = (
             '<div class="card"><p>No clients yet.</p>'
             "<p class='dim small'>A client is a company you are working with. "
-            "Promote one from its page in the survey, or add one by UID below "
-            "if it was never surveyed.</p></div>"
+            'Make one from a company\'s page in <a href="/companies">Companies</a> '
+            "or from the board once it is won, or add one by UID below if it is "
+            "not in Companies.</p></div>"
         )
     else:
         cells = []
@@ -185,15 +186,15 @@ def portfolio(rows: list[Row], total_projects: int, upcoming: int) -> str:
         '<div class="dim small">next 30 days</div></div></div>'
     )
     add = (
-        '<h2>add a client the survey never saw</h2>'
+        '<h2>add a client that is not in Companies</h2>'
         '<form class="card stack" method="post" action="/clients/import" '
         'style="max-width:32rem">'
         "<p class='dim small' style='margin:0'>Fetches the company from the "
         "commercial register and makes it a client. Use this when the client "
-        "is outside the surveyed territory, which is normal: the survey covers "
-        "a region and a set of legal forms, and a client does not have to be "
-        "inside either.</p>"
-        "<label for='uid'>Swiss UID</label>"
+        "is outside the territory, which is normal: Companies covers a region "
+        "and a set of legal forms, and a client does not have to be inside "
+        "either.</p>"
+        f"<label for='uid'>Swiss UID{ui.REQUIRED_MARK}</label>"
         "<input id='uid' name='uid' placeholder='CHE-100.000.011' required>"
         "<span class='hint'>On any company's page at zefix.ch, and on its "
         "letterhead. Dots and dashes optional.</span>"
@@ -218,7 +219,6 @@ def client_page(
     documents: int = 0,
     has_approach: bool = False,
     sites: list[Row] | None = None,
-    note: str = "",
     notes: str = "",
     moves: list[Row] | None = None,
     # Rendered by the sales module's own page module and passed in as
@@ -227,14 +227,14 @@ def client_page(
     money: str = "",
 ) -> str:
     head = (
-        f'<p class="crumbs"><a href="/clients">Clients</a> / {esc(client["code"])}</p>'
-        f'<div class="ident"><h1 style="margin:0">{esc(company["name"])}</h1>'
+        ui.crumbs([("/clients", "Clients"), ("", client["code"])])
+        + f'<div class="ident"><h1 style="margin:0">{esc(company["name"])}</h1>'
         f'<span class="code">{esc(client["code"])}</span>{_badge(client["status"])}</div>'
         f'<p class="dim small">{esc(company["uid"])} &middot; '
         f'{esc(company["legal_form_label"])} &middot; '
         f'{esc(company["legal_seat"])} ({esc(company["canton"])}) &middot; '
         f'client since {esc(client["since"] or "?")} &middot; '
-        f'<a href="/company/{company["id"]}">survey record</a></p>'
+        f'<a href="/company/{company["id"]}">company record</a></p>'
         + _dossier_strip(
             client["id"], dossier_filled, dossier_total, documents, has_approach,
             notes,
@@ -276,7 +276,6 @@ def client_page(
 
     return (
         head
-        + (f'<div class="warn">{esc(note)}</div>' if note else "")
         + '<div class="split"><div>'
         + "<h2>projects</h2>"
         + project_table
@@ -381,7 +380,7 @@ def _new_project_form(client_id: int) -> str:
         "</summary>"
         f'<form class="stack" method="post" action="/client/{client_id}/projects" '
         'style="margin-top:.7rem">'
-        "<label for='pname'>Name</label>"
+        f"<label for='pname'>Name{ui.REQUIRED_MARK}</label>"
         "<input id='pname' name='name' required placeholder='Refonte du socle de données'>"
         "<div class='row2'>"
         "<div><label for='billing'>Billing</label>"
@@ -395,7 +394,8 @@ def _new_project_form(client_id: int) -> str:
         "<span class='hint'>These are different agreements, not one number: "
         "a retainer and a fixed fee are billed and tracked differently.</span></div>"
         "<div><label for='budget'>Budget (CHF)</label>"
-        "<input id='budget' name='budget' type='number' step='100' placeholder='4800'>"
+        "<input id='budget' name='budget' type='number' step='0.05' min='0' "
+        "placeholder='4800'>"
         "</div></div>"
         "<div class='row2'>"
         "<div><label for='started'>Starts</label>"
@@ -448,14 +448,19 @@ def _sites(client_id: int, sites: list[Row]) -> str:
             + f'</td><td class="small">{esc(address)}</td>'
             f'<td class="small">{where}</td>'
             '<td><form method="post" class="inline" '
-            f'action="/establishment/{site["id"]}/delete">'
-            "<button>remove</button></form></td></tr>"
+            f'action="/establishment/{site["id"]}/delete"'
+            + ui.attrs(data_confirm=(
+                f"Remove the site {site['name'] or address or 'with no name'}? "
+                "Its place on the map goes with it."
+            ))
+            + '><button class="danger">remove</button></form></td></tr>'
         )
     table = ui.table(
         ["site", "address", "where", ""], rows,
         caption="Where this client actually is",
-        empty_text="No site recorded. The registered address arrives with the "
-                   "geocode stage; the other sites are typed here.",
+        empty_text="No site recorded. The registered address arrives when "
+                   f"\"{ui.stage_title('geocode', 'Put them on the map')}\" "
+                   "has run on Operations; the other sites are typed here.",
     )
     return (
         '<h2 id="sites">sites</h2>' + table
@@ -463,7 +468,7 @@ def _sites(client_id: int, sites: list[Row]) -> str:
         '<span class="dim small">geocoded as it is saved</span></summary>'
         f'<form class="stack" method="post" action="/client/{client_id}/sites" '
         'style="margin-top:.7rem">'
-        "<label for='sname'>Name</label>"
+        f"<label for='sname'>Name{ui.REQUIRED_MARK}</label>"
         "<input id='sname' name='name' required placeholder='EMS Petit-Flon'>"
         "<div class='row2'>"
         "<div><label for='sstreet'>Street</label>"
@@ -511,7 +516,7 @@ def _log_form(client_id: int, projects: list[Row]) -> str:
         "Once it has happened only meetings and deadlines stay there; "
         "everything else lives here, in the record.</span></div></div>"
         "<div class='row2'>"
-        "<div><label for='at'>When</label>"
+        f"<div><label for='at'>When{ui.REQUIRED_MARK}</label>"
         "<input id='at' name='occurred_at' type='datetime-local' required></div>"
         "<div><label for='dir'>Direction</label><select id='dir' name='direction'>"
         "<option value=''>—</option><option value='in'>Received</option>"
@@ -607,11 +612,11 @@ def _timeline(events: list[Row]) -> str:
             out.append(
                 f'<li class="ev survey" data-mark="{esc(mark)}">'
                 f'<div class="when">{esc((e["occurred_at"] or "")[:16].replace("T", " "))}'
-                f' &middot; {esc(label)} &middot; from the survey'
+                f' &middot; {esc(label)} &middot; company note'
                 f'{" &middot; " + esc(e["author"]) if e["author"] else ""}</div>'
                 f'<div class="body">{esc(e["body"])}</div>'
                 f'<div class="small"><a href="/company/{e["company_id"]}">'
-                "on the company record</a></div></li>"
+                "open on the company record</a></div></li>"
             )
             continue
 
@@ -631,10 +636,15 @@ def _timeline(events: list[Row]) -> str:
         # struck through, it has to go, and its going leaves a tombstone.
         actions += (
             f'<details class="del"><summary>delete</summary>'
-            f'<form method="post" action="/event/{e["id"]}/delete">'
-            "<input name='reason' placeholder='Why, for the tombstone. "
+            f'<form method="post" action="/event/{e["id"]}/delete"'
+            + ui.attrs(data_confirm=(
+                f"Delete the entry {e['subject'] or label}? Its row is removed "
+                "and a note records why."
+            ))
+            + f'><label class="vh" for="del-{e["id"]}">Why it is deleted</label>'
+            f"<input name='reason' id='del-{e['id']}' placeholder='Why, for the tombstone. "
             "&quot;Never happened, seeded by mistake&quot;'>"
-            "<button>Delete this entry</button>"
+            "<button class='danger'>Delete this entry</button>"
             "<span class='hint'>Removes the row and leaves a note saying what "
             "was removed and why. Use this when the entry is not true. Use "
             "Cancel when it was true and then did not happen.</span>"
@@ -660,7 +670,7 @@ def project_page(
     events: list[Row],
 ) -> str:
     money = (
-        f'{project["budget"]:,.0f} {esc(project["currency"] or "CHF")}'
+        f'{ui.num(round(project["budget"]))} {esc(project["currency"] or "CHF")}'
         if project["budget"]
         else "&mdash;"
     )
@@ -721,7 +731,7 @@ def _project_form(project: Row) -> str:
         "</div>"
         "<div class='row2'>"
         "<div><label for='bg'>Budget</label>"
-        f'<input id="bg" name="budget" type="number" step="100" '
+        f'<input id="bg" name="budget" type="number" step="0.05" min="0" '
         f'value="{esc(project["budget"] or "")}"></div>'
         "<div><label for='du'>Due</label>"
         f'<input id="du" name="due_at" type="date" value="{esc(project["due_at"] or "")}"></div>'
@@ -731,9 +741,14 @@ def _project_form(project: Row) -> str:
         '<div><button class="primary">Save</button></div></form>'
         + '<details class="del" style="display:block;margin-top:.6rem">'
         "<summary>delete this project</summary>"
-        f'<form method="post" action="/project/{project["id"]}/delete">'
-        "<input name='reason' placeholder='Why, for the tombstone'>"
-        "<button>Delete project</button>"
+        f'<form method="post" action="/project/{project["id"]}/delete"'
+        + ui.attrs(data_confirm=(
+            f"Delete the project {project['name']} ({project['code']})? "
+            "What was logged against it stays, detached."
+        ))
+        + '><label class="vh" for="pdel">Why it is deleted</label>'
+        "<input name='reason' id='pdel' placeholder='Why, for the tombstone'>"
+        "<button class='danger'>Delete project</button>"
         "<span class='hint'>Removes the project. Anything logged against it "
         "survives, detached: correspondence that happened is still "
         "correspondence that happened. Use Cancelled instead when the work was "
@@ -857,6 +872,11 @@ def calendar_page(
                 caption="The rest of this month",
             )
             if agenda
-            else "<p class='dim small'>Nothing is scheduled in this month.</p>"
+            else ui.empty(
+                "Nothing is scheduled in this month.",
+                action='Record a meeting or a deadline from <a href="/clients">'
+                       "a client's page</a>, set to Planned, and it appears "
+                       "here.",
+            )
         )
     )

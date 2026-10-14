@@ -81,7 +81,7 @@ table.price td.none { color:var(--late); font-size:.85rem; }
 def shell(body: str, chrome: Any = None) -> str:
     """This page borrows the client section's furniture, so it takes its
     stylesheet too rather than restating the breadcrumbs and the code chip."""
-    return page("arpenteur", body, chrome, css=CLIENT_STYLES + STYLES)
+    return page("", body, chrome, css=CLIENT_STYLES + STYLES)
 
 
 def _money(value: Any, currency: str) -> str:
@@ -131,7 +131,8 @@ def section_block(section: vocab.Section, row: dict[str, Any] | None) -> str:
         f"<header><h3>{esc(section.title)} {state}</h3>"
         f'<p class="what">{esc(section.what)}</p></header>'
         f'<div class="inner">'
-        f'<textarea name="body" rows="{section.rows}" '
+        f'{ui.sr_label(section.title, "body-" + section.name)}'
+        f'<textarea name="body" id="body-{esc(section.name)}" rows="{section.rows}" '
         f'placeholder="{esc(section.example)}">{esc(body)}</textarea>'
         f'<div class="srcline"><label for="src-{esc(section.name)}">Source</label>'
         f'<input id="src-{esc(section.name)}" name="source" value="{esc(source)}" '
@@ -432,10 +433,12 @@ def new_folder_form(client_id: int) -> str:
     return (
         f'<details class="card"><summary>new folder</summary>'
         f'<form method="post" action="/dossier/{client_id}/folder" class="row">'
-        "<input name='name' placeholder='Dossier de consultation 09.2026' "
-        "style='width:16rem' required>"
-        "<input name='note' placeholder='What this batch is and where it came "
-        "from' style='width:22rem'>"
+        f"<label for='nf-name'>Name{ui.REQUIRED_MARK}</label>"
+        "<input name='name' id='nf-name' placeholder='Dossier de consultation "
+        "09.2026' style='width:16rem' required>"
+        "<label for='nf-note'>Note</label>"
+        "<input name='note' id='nf-note' placeholder='What this batch is and "
+        "where it came from' style='width:22rem'>"
         "<button>Make the folder</button>"
         "<span class='hint'>An empty folder is a fine thing to have: it is "
         "where the next delivery goes. Documents are moved into it from the "
@@ -463,9 +466,14 @@ def documents_by_folder(
                 empty="Nothing filed here yet.",
             )
             + f'<details class="del"><summary>delete this folder</summary>'
-            f'<form method="post" action="/folder/{folder["id"]}/delete">'
-            "<input name='reason' placeholder='Why, for the tombstone'>"
-            "<button>Delete folder</button>"
+            f'<form method="post" action="/folder/{folder["id"]}/delete"'
+            + ui.attrs(data_confirm=(
+                f"Delete the folder {folder['name']}? Its {len(held)} "
+                "document(s) stay, unfiled."
+            ))
+            + f'>{ui.sr_label("Why the folder is deleted", f"fd-{folder["id"]}")}'
+            f"<input name='reason' id='fd-{folder['id']}' placeholder='Why, for the tombstone'>"
+            "<button class='danger'>Delete folder</button>"
             "<span class='hint'>Removes the folder only. The "
             f"{len(held)} document(s) in it stay, unfiled, and the timeline "
             "keeps a note saying the folder went and why.</span>"
@@ -513,15 +521,20 @@ def documents_table(
             + (f'<div class="hint">{esc(row["note"])}</div>' if row["note"] else "")
             + "</td>"
             f'<td class="small">{esc(KIND_LABELS.get(row["kind"] or "", row["kind"] or "—"))}</td>'
-            f'<td class="small nowrap">{row["bytes"] / 1024:,.0f} kB</td>'
+            f'<td class="small nowrap">{ui.num(round(row["bytes"] / 1024))} kB</td>'
             f'<td class="small">{state}</td>'
             f'<td class="small dim nowrap">{esc((row["created_at"] or "")[:10])}</td>'
             f'<td class="small dim" title="content digest">{esc((row["sha256"] or "")[:12])}</td>'
             + f'<td class="small">{_move_form(row, folders)}</td>'
             + f'<td class="small"><details class="del"><summary>delete</summary>'
-            f'<form method="post" action="/attachment/{row["id"]}/delete">'
-            "<input name='reason' placeholder='Why, for the tombstone'>"
-            "<button>Delete document</button>"
+            f'<form method="post" action="/attachment/{row["id"]}/delete"'
+            + ui.attrs(data_confirm=(
+                f"Delete the document {row['filename']}? The entry goes and "
+                "a note records why."
+            ))
+            + f'>{ui.sr_label("Why the document is deleted", f"ad-{row["id"]}")}'
+            f"<input name='reason' id='ad-{row['id']}' placeholder='Why, for the tombstone'>"
+            "<button class='danger'>Delete document</button>"
             "<span class='hint'>Removes the entry, leaves a note saying what "
             "was removed and why, and erases the stored file unless another "
             "client holds the same bytes.</span></form></details></td>"
@@ -553,7 +566,8 @@ def _move_form(row: Row, folders: list[Row]) -> str:
     return (
         f'<details><summary>{label}</summary>'
         f'<form method="post" action="/attachment/{row["id"]}/folder">'
-        f'<select name="folder_id">'
+        + ui.sr_label(f"Folder for {row['filename']}", f"mf-{row['id']}")
+        + f'<select name="folder_id" id="mf-{row["id"]}">'
         f'<option value=""{"" if here else " selected"}>Not filed</option>'
         f"{options}</select>"
         "<button>Move</button></form></details>"
@@ -572,7 +586,6 @@ def dossier_page(
     papers: list[Row],
     projects: list[Row],
     rate_card: bool,
-    note: str = "",
     folders: list[Row] = (),
 ) -> str:
     filled = len(vocab.filled(sections))
@@ -602,7 +615,6 @@ def dossier_page(
         "and what it was built on. The register says what a company is; this "
         "says what it runs, who decides, what is exposed and what has already "
         "been tried, none of which is in any register.</p>"
-        + (f'<div class="warn">{esc(note)}</div>' if note else "")
         + f'<p class="meta">{filled} of {len(vocab.SECTIONS)} sections filled '
           f'&middot; {len(papers)} documents held'
           + (f' in {len(folders)} folder(s)' if folders else "")

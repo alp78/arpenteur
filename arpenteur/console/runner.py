@@ -16,10 +16,24 @@ button plus the guards that made the command line safe:
   the stage's own    The cost refusals inside the stages are untouched and
                      still apply. This adds guards, it does not replace them.
 
-Each run gets a thread and its own SQLite connection: connections are not
+Each run gets a thread and its own database connection: connections are not
 shareable across threads, and the console must keep answering while a stage
 works. The stage's `log` output is written to `run_line`, which is what the
 progress view reads.
+
+A run can be stopped from its page. A stage is a function that is not
+interrupted, so it is stopped the only way it can be: its own `log` raises
+`RunCancelled` on the first call after the stop was asked for. A stage is
+therefore cancelled at its next log line, which for a sweep is seconds and for
+a stage waiting on one slow company can be minutes. What the stage committed
+before that line stays, and the run is recorded as `cancelled`. A stage whose
+log line follows an act that must be recorded in the same breath (a message
+posted, then marked sent) says `cancellable=False` and is never stopped this
+way.
+
+Runs of one client's advice or preparation go through the same runner, on a
+lane of their own, so a single model call before a meeting never waits behind
+a sweep and never holds a request open.
 """
 
 from __future__ import annotations
@@ -33,10 +47,26 @@ from typing import Any, Callable
 from .. import db
 from ..config import Settings
 from ..kernel.db import Connection
+from ..sources import mailcheck
 from ..stages import (
-    audience, boundaries, bounces, campaign, enrich, geocode, mail, match,
-    people, profile, reach, resolve, source, sync,
+    advise, audience, boundaries, bounces, campaign, draft, enrich, geocode,
+    mail, match, people, prep, profile, reach, resolve, source, sync, verify,
 )
+
+# What a stopped run records as its error. The history and the run page read
+# the state `cancelled` from the prefix (`render.run_status`), so the text can
+# be reworded after it but not before it.
+CANCELLED = "cancelled: stopped from the run page"
+
+
+class RunCancelled(BaseException):
+    """Raised by a stage's own `log` when its run was stopped.
+
+    A `BaseException` on purpose. Enrich and match catch `Exception` around
+    each company so that one failure does not end a shortlist, and a stop that
+    those handlers could catch would be one more failed company followed by
+    the rest of the list.
+    """
 
 
 @dataclass(frozen=True)
@@ -125,6 +155,10 @@ class Stage:
     # so a refusal reaches the person as a sentence on the page they came from
     # rather than as a failed run in the history.
     precheck: Callable[[Settings, dict[str, Any]], None] | None = None
+    # Whether the run page may stop it, at the next log line. False where a log
+    # line follows an act that has to be recorded in the same breath, and where
+    # the work is a single call that nothing can interrupt.
+    cancellable: bool = True
 
 
 # --- the controls shared between stages ---------------------------------------
@@ -156,8 +190,9 @@ CANTON = Field(
 
 SEGMENT = Field(
     "segment", "Segment", "select", source="segments",
-    help="Only companies carrying this label. Segments come from profile, "
-         "and are defined in arpenteur.toml.",
+    help="Only companies carrying this label. The Sort into segments card puts "
+         "the labels on, and the segments themselves are defined on the "
+         "Settings page.",
 )
 
 SECTOR = Field(
@@ -180,13 +215,77 @@ UIDS = Field(
     help="Runs on exactly these companies and ignores the filters above.",
 )
 
+CLIENT = Field("client_id", "Client", "int", help="The client's number.")
+
+# Domains, not companies: one lookup answers for every address at a domain.
+DOMAIN_SIZES = Field(
+    "limit", "How many domains", "select",
+    choices=(
+        ("100", "100 domains"),
+        ("500", "500 domains"),
+        ("1000", "1000 domains"),
+        ("", "No limit, every domain waiting"),
+    ),
+    default="",
+    help="Each domain is one lookup. A thousand take about a minute.",
+)
+
+# A draft is one model call, and the batch is capped on purpose.
+DRAFT_SIZES = Field(
+    "limit", "How many drafts", "select",
+    choices=(
+        ("10", "10 drafts"),
+        (str(draft.SAFE_BATCH), f"{draft.SAFE_BATCH} drafts, the safe batch"),
+        ("50", "50 drafts"),
+        ("100", "100 drafts"),
+    ),
+    default=str(draft.SAFE_BATCH),
+    help="Each draft is one model call. The run takes the first companies on "
+         "the list, in company order, up to this number.",
+)
+
+
+def _verify(_settings: Settings, conn: Connection, *, log: Callable[[str], None],
+            **kwargs: Any) -> dict[str, Any]:
+    """The address check takes a connection and no settings: it resolves DNS."""
+    return verify.run(conn, log=log, **kwargs)
+
+
+def _draft(settings: Settings, conn: Connection, *, log: Callable[[str], None],
+           segment: str = "", canton: str = "", **kwargs: Any) -> dict[str, Any]:
+    """The draft stage takes lists and the desk vocabulary; a form gives one
+    segment and one canton, and the vocabulary is the address checks' own."""
+    return draft.run(
+        settings, conn, desk_parts=mailcheck.desk_parts(),
+        segments=[segment] if segment else None,
+        cantons=[canton] if canton else None,
+        log=log, **kwargs,
+    )
+
+
+def _known_client(settings: Settings, form: dict[str, Any]) -> None:
+    """Refuse a client nobody holds before a run is opened for it.
+
+    Without this the run starts, fails on its first query and sits in the
+    history as a failure about a number somebody mistyped.
+    """
+    raw = str(form.get("client_id") or "").strip()
+    if not raw:
+        raise ValueError("Name the client.")
+    conn = db.open_db(settings.database_url)
+    try:
+        if db.client(conn, int(raw)) is None:
+            raise ValueError(f"No client has the number {raw}.")
+    finally:
+        conn.close()
+
 
 STAGES: dict[str, Stage] = {
     "source": Stage(
         name="source",
         title="Sweep the register",
         what="Ask the commercial register for every company in the chosen cantons "
-             "and legal forms, and store their names. This is where the survey "
+             "and legal forms, and store their names. This is where Companies "
              "comes from: nothing below can run on a company this has not found.",
         call=source.run_zefix,
         fields=(
@@ -308,8 +407,8 @@ STAGES: dict[str, Stage] = {
         title="Sort into segments",
         what="Read each company's registered purpose and say two things about it: which "
              "line of business it is in, one from your sector list, and which of your "
-             "segments it fits, any number of them. Both from the same call, so the "
-             "survey can be sliced by what a company does as well as by canton.",
+             "segments it fits, any number of them. Both from the same call, so "
+             "Companies can be sliced by what a company does as well as by canton.",
         call=profile.run,
         fields=(
             SIZES,
@@ -367,9 +466,9 @@ STAGES: dict[str, Stage] = {
     ),
     "match": Stage(
         name="match",
-        title="Score against the campaign",
-        what="Read campaign.md and each company's file together, and answer three "
-             "questions: how good a fit, why, and what you would actually say first.",
+        title="Score against the brief",
+        what="Read the scoring brief and each company's file together, and answer "
+             "three questions: how good a fit, why, and what you would actually say first.",
         call=match.run,
         fields=(
             SECTOR, SEGMENT, UIDS, SIZES,
@@ -378,15 +477,16 @@ STAGES: dict[str, Stage] = {
                   help="Turn off to score on the register entry alone. Weaker, but it "
                        "costs nothing to research and is how you choose what to research."),
             Field("rescore", "Score again", "bool",
-                  help="Not usually needed: a score expires by itself when campaign.md "
-                       "is rewritten or the research is re-run."),
+                  help="Not usually needed: a score expires by itself when the scoring "
+                       "brief is rewritten or the research is re-run."),
             DRY,
         ),
-        needs="A written campaign.md. Website research is optional but makes it far better.",
+        needs="A written scoring brief. Website research is optional but makes it "
+              "far better.",
         produces="A 0-100 score, a band, the reasoning, and the opening line.",
         cost="One model call per company. A few centimes each.",
         button="Score companies",
-        button_does="Scores companies not yet scored against the current campaign brief. "
+        button_does="Scores companies not yet scored against the current scoring brief. "
                     "Scores you set by hand are never touched.",
         done_sql="SELECT COUNT(*) FROM intel.fit",
         waiting_sql="SELECT COUNT(*) FROM intel.site w JOIN core.company c ON c.id = w.company_id "
@@ -414,12 +514,89 @@ STAGES: dict[str, Stage] = {
         waiting_sql="SELECT COUNT(*) FROM intel.site WHERE status = 'found' "
                     "AND url IS NOT NULL AND url <> '' AND reached_at IS NULL",
     ),
+    "verify": Stage(
+        name="verify",
+        title="Check the addresses",
+        what="Ask the domain name system whether the domain behind each address "
+             "takes mail, and record the answer on every address at that domain. "
+             "A domain that does not exist is a certain no. A live one says the "
+             "domain takes mail and nothing about the mailbox, which only a send "
+             "settles.",
+        call=_verify,
+        fields=(
+            DOMAIN_SIZES,
+            Field("refresh", "Check every domain again", "bool",
+                  help="Off by default: only domains with no answer, or one older "
+                       "than thirty days, are looked up."),
+            DRY,
+        ),
+        needs="Find an address, which is what brings the addresses in.",
+        produces="A verdict on each address: deliverable, maybe, dead or unknown. "
+                 "Drafts and lists take only deliverable addresses.",
+        cost="Free. One lookup per domain, no model, and no mail is sent.",
+        button="Check addresses",
+        button_does="Looks up each domain that has no answer yet or an old one, and "
+                    "writes the answer to every address at it. An address that "
+                    "bounced keeps its bounce.",
+        done_sql="SELECT COUNT(*) FROM (SELECT 1 FROM core.contact "
+                 "WHERE kind = 'email' GROUP BY lower(split_part(value, '@', 2)) "
+                 "HAVING bool_and(status IS NOT NULL AND status_at IS NOT NULL "
+                 "AND status_at >= now() - make_interval(days => 30))) d",
+        waiting_sql="SELECT COUNT(*) FROM (SELECT 1 FROM core.contact "
+                    "WHERE kind = 'email' GROUP BY lower(split_part(value, '@', 2)) "
+                    "HAVING NOT bool_and(status IS NOT NULL AND status_at IS NOT NULL "
+                    "AND status_at >= now() - make_interval(days => 30))) d",
+        done_label="domains checked",
+        waiting_label="domains to check",
+    ),
+    "draft": Stage(
+        name="draft",
+        title="Draft the first messages",
+        what="Write one proposed message per company, in the language of its "
+             "canton, from what is held about it and from the message "
+             "brief. A person reads and approves each one on the Drafts page "
+             "before anything can go out. This stage sends nothing.",
+        call=_draft,
+        fields=(
+            Field("segment", "Segment", "select", source="segments",
+                  help="Only companies carrying this label. On 'All segments' the "
+                       "run uses the segments the [enrol] section of the "
+                       "configuration names, if it names any."),
+            CANTON, DRAFT_SIZES,
+            Field("confirmed", "Acknowledge the batch size", "bool",
+                  help="Swiss law (LCD art. 3 al. 1 let. o) draws its line at mass "
+                       "advertising email, which is why a batch is kept small and "
+                       "every draft is read by a person. When more companies match "
+                       "than the batch holds, the run says so; ticking this box "
+                       "acknowledges it and removes that reminder. It does not raise "
+                       "the batch, which is the number chosen above."),
+            DRY,
+        ),
+        needs="Companies with an address that was found and checked as "
+              "deliverable, the message brief, a mailbox set up in .env whose "
+              "address the opt-out sentence names, "
+              "and model access.",
+        produces="One proposal per company on the Drafts page, with a subject, a "
+                 "body and the opt-out sentence. None is sent. A company that "
+                 "already has an open proposal gets it replaced, and the new one "
+                 "waits for review again.",
+        cost="Costs money: one model call per company, with no web search. The "
+             "batch is capped on purpose.",
+        button="Write drafts",
+        button_does="Writes a proposal for each of the first companies on the "
+                    "list, up to the batch size, in company order. Run again with "
+                    "the same filters, it writes the same companies again.",
+        done_sql="SELECT COUNT(*) FROM intel.draft "
+                 "WHERE sent_at IS NULL AND refused_at IS NULL",
+        done_label="open drafts",
+        needs_limit=True,
+    ),
     "resolve": Stage(
         name="resolve",
         title="Resolve the people",
         what="Work out which officer rows are the same human, and record the "
              "boards each of them sits on. This is what makes 'who else does "
-             "this director sit with' a question the survey can answer.",
+             "this director sit with' a question the People page can answer.",
         call=resolve.run,
         fields=(DRY,),
         needs="Officers, from the people stage. Nothing else.",
@@ -477,7 +654,7 @@ STAGES: dict[str, Stage] = {
                   param="cantons", multi=True,
                   help="Leave nothing selected to take the configured "
                        "territory. There is no use fetching Appenzell's "
-                       "outline for a survey of Romandie."),
+                       "outline for a territory in Romandie."),
             Field("refresh", "Take them again", "bool",
                   help="Boundaries change when a commune merges, which is a "
                        "few times a year and never on the outer cantonal "
@@ -555,6 +732,46 @@ STAGES: dict[str, Stage] = {
         button_does="Fetches envelopes read-only and opens only the reports.",
         module="clients",
     ),
+    "advise": Stage(
+        name="advise",
+        title="Suggest an approach",
+        what="Read one client's dossier, documents and rate card, and suggest what "
+             "to raise, what to offer and what it costs.",
+        call=advise.run,
+        fields=(CLIENT, DRY),
+        needs="At least one dossier section or one readable document.",
+        produces="A new suggested approach on the client's dossier. The earlier "
+                 "ones are kept.",
+        cost="One model call about one client. No web search.",
+        button="Suggest an approach",
+        button_does="Reads the dossier, the documents and the rate card, and "
+                    "saves what the model suggests as a record to compare.",
+        module="clients",
+        listed=False,
+        lane="dossier",
+        precheck=_known_client,
+        cancellable=False,
+    ),
+    "prep": Stage(
+        name="prep",
+        title="Extract the vocabulary",
+        what="Read one client's dossier and documents, and list the terms to "
+             "revise before the meeting, with an agenda for the revision.",
+        call=prep.run,
+        fields=(CLIENT, DRY),
+        needs="At least one dossier section or one readable document.",
+        produces="The client's glossary and a revision agenda. Terms ticked as "
+                 "known are kept.",
+        cost="One model call about one client. No web search.",
+        button="Extract the vocabulary",
+        button_does="Reads the dossier and the documents, and saves the terms "
+                    "the model finds.",
+        module="clients",
+        listed=False,
+        lane="dossier",
+        precheck=_known_client,
+        cancellable=False,
+    ),
     "audience-verify": Stage(
         name="audience-verify",
         title="Refresh a list's addresses",
@@ -579,6 +796,7 @@ STAGES: dict[str, Stage] = {
         listed=False,
         lane="send",
         precheck=campaign.precheck_test,
+        cancellable=False,
     ),
     "campaign-send": Stage(
         name="campaign-send",
@@ -593,6 +811,7 @@ STAGES: dict[str, Stage] = {
         listed=False,
         lane="send",
         precheck=campaign.precheck_send,
+        cancellable=False,
     ),
 }
 
@@ -602,7 +821,8 @@ TRANSMITTING_STAGES = frozenset({"campaign-test", "campaign-send"})
 
 # The order the operations page shows them in, which is the order they run in.
 ORDER = ("source", "sync", "hydrate", "people", "resolve", "profile", "enrich",
-         "match", "reach", "geocode", "boundaries", "mail")
+         "match", "reach", "verify", "draft", "geocode", "boundaries", "mail",
+         "bounces")
 
 # Sizes offered instead of a free number box. "No limit" is last and named
 # rather than blank, so choosing it is a decision rather than an oversight.
@@ -775,27 +995,93 @@ class Runner:
     lock: threading.Lock = field(default_factory=threading.Lock)
     # The run each lane holds, and its thread. `pipeline` is every stage the
     # operations page offers; `send` is a campaign's test and send, so a
-    # wave never waits behind an enrich run and two sends never overlap.
+    # wave never waits behind an enrich run and two sends never overlap;
+    # `dossier` is one client's advice or preparation, which never waits
+    # behind a sweep.
     current: dict[str, int] = field(default_factory=dict)
     threads: dict[str, threading.Thread] = field(default_factory=dict)
+    # Which stage each live run is, for the run page and the operations page.
+    names: dict[int, str] = field(default_factory=dict)
+    # The runs somebody asked to stop. In memory on purpose: only this
+    # console's own threads can be stopped, and a run that outlives the process
+    # is settled at the next start.
+    cancelled: set[int] = field(default_factory=set)
+
+    def _forget(self, lane: str) -> None:
+        """Drop everything held for the run a lane had. Called with the lock held."""
+        self.threads.pop(lane, None)
+        run_id = self.current.pop(lane, None)
+        if run_id is not None:
+            self.names.pop(run_id, None)
+            self.cancelled.discard(run_id)
 
     def _settle(self) -> None:
         """Forget runs whose thread has ended. Called with the lock held."""
         for lane, thread in list(self.threads.items()):
             if not thread.is_alive():
-                self.threads.pop(lane, None)
-                self.current.pop(lane, None)
+                self._forget(lane)
 
     def running(self, lane: str = "pipeline") -> int | None:
         with self.lock:
             self._settle()
             return self.current.get(lane)
 
+    def live(self) -> dict[str, int]:
+        """The run each busy lane holds, whatever the lane.
+
+        `running` answers for one lane and defaults to the pipeline, so a page
+        asking only that stayed silent while a wave was going out.
+        """
+        with self.lock:
+            self._settle()
+            return dict(self.current)
+
     def is_live(self, run_id: int) -> bool:
         """Whether this console is running that run right now."""
         with self.lock:
             self._settle()
             return run_id in self.current.values()
+
+    def stage_of(self, run_id: int) -> str | None:
+        """The stage a live run is running, or None when it is not live."""
+        with self.lock:
+            self._settle()
+            return self.names.get(run_id)
+
+    def _stoppable(self, run_id: int) -> bool:
+        """Live, and of a stage that may be stopped. Called with the lock held."""
+        stage = STAGES.get(self.names.get(run_id, ""))
+        return (
+            run_id in self.current.values()
+            and stage is not None and stage.cancellable
+        )
+
+    def can_cancel(self, run_id: int) -> bool:
+        """Whether the run page should still offer the stop."""
+        with self.lock:
+            self._settle()
+            return self._stoppable(run_id) and run_id not in self.cancelled
+
+    def cancelling(self, run_id: int) -> bool:
+        """Whether a stop was asked for and the stage has not reached it yet."""
+        with self.lock:
+            self._settle()
+            return run_id in self.cancelled and run_id in self.current.values()
+
+    def cancel(self, run_id: int) -> bool:
+        """Ask a live run to stop. True when it will.
+
+        Sets a flag and nothing else: the stage stops at its next log line,
+        when its own `log` raises `RunCancelled`. A run this console is not
+        running, one that has ended, and a stage that cannot be stopped without
+        leaving a half-recorded act are all refused, and set no flag.
+        """
+        with self.lock:
+            self._settle()
+            if not self._stoppable(run_id):
+                return False
+            self.cancelled.add(run_id)
+            return True
 
     def start(self, name: str, form: dict[str, Any], *, by: str = "console",
               internal: bool = False) -> int:
@@ -826,6 +1112,7 @@ class Runner:
             finally:
                 conn.close()
             self.current[stage.lane] = run_id
+            self.names[run_id] = name
             thread = threading.Thread(
                 target=self._work, args=(stage, run_id, kwargs), daemon=True,
                 name=f"arpenteur-{name}-{run_id}",
@@ -835,24 +1122,34 @@ class Runner:
             return run_id
 
     def _work(self, stage: Stage, run_id: int, kwargs: dict[str, Any]) -> None:
-        # Its own connection: sqlite3 objects belong to the thread that made
-        # them, and the console must keep answering while this works.
+        # Its own connection: connections belong to the thread that made them,
+        # and the console must keep answering while this works.
         # Read once: the console rebinds its settings when they are saved, and
         # one run sees one object from its first line to its last.
         settings = self.settings
         conn = db.open_db(settings.database_url)
 
-        def log(message: str) -> None:
+        def write(message: str) -> None:
             # Committed line by line. A run that dies at company 4'000 should
             # leave four thousand lines explaining how it got there, not an
-            # empty log and a traceback.
+            # empty log and a traceback. Never refused: the lines that say how
+            # a run ended must reach the log whatever was asked of it.
             db.append_line(conn, run_id, str(message))
             conn.commit()
 
+        def log(message: str) -> None:
+            # What the stage calls. The line is written and committed first,
+            # so everything the stage did up to it stays; the stop is raised
+            # after it. A set read is atomic, so no lock on every line of a
+            # sweep that writes sixty thousand.
+            write(message)
+            if run_id in self.cancelled:
+                raise RunCancelled
+
         try:
-            log(f"{stage.title}: {stage.what}")
+            write(f"{stage.title}: {stage.what}")
             if kwargs:
-                log("  " + ", ".join(f"{k}={v}" for k, v in sorted(kwargs.items())))
+                write("  " + ", ".join(f"{k}={v}" for k, v in sorted(kwargs.items())))
             result = stage.call(settings, conn, log=log, **kwargs)
             stats = (
                 result
@@ -862,9 +1159,20 @@ class Runner:
             # The log always ends with what happened. A stage whose progress
             # lines are pitched for sixty thousand companies says nothing at
             # all on a run of five, and a finished view that reports nothing
-            # is worse than no view.
-            log("done: " + ", ".join(f"{k}={v}" for k, v in stats.items()))
+            # is worse than no view. Written, not logged: a stage that has
+            # finished is finished, whatever was asked of it a moment ago.
+            write("done: " + ", ".join(f"{k}={v}" for k, v in stats.items()))
             db.finish_run(conn, run_id, stats)
+        except RunCancelled:
+            try:
+                conn.rollback()
+            except psycopg.Error:
+                pass
+            try:
+                write(CANCELLED)
+            except psycopg.Error:
+                pass
+            db.finish_run(conn, run_id, error=CANCELLED)
         except Exception as exc:
             # A failed statement leaves the transaction aborted, and every
             # statement after it fails too, the log line included. Rolled back
@@ -873,16 +1181,18 @@ class Runner:
                 conn.rollback()
             except psycopg.Error:
                 pass
+            # An exception with no message would record an empty error, which
+            # every page reads as none: the run would show as done.
+            said = str(exc) or type(exc).__name__
             # The message goes to both places on purpose: the log is what the
             # watcher is reading, the run row is what the history shows.
             try:
-                log(f"! {exc}")
-                log(traceback.format_exc().strip().splitlines()[-1])
+                write(f"! {said}")
+                write(traceback.format_exc().strip().splitlines()[-1])
             except psycopg.Error:
                 pass
-            db.finish_run(conn, run_id, error=str(exc))
+            db.finish_run(conn, run_id, error=said)
         finally:
             conn.close()
             with self.lock:
-                self.current.pop(stage.lane, None)
-                self.threads.pop(stage.lane, None)
+                self._forget(stage.lane)

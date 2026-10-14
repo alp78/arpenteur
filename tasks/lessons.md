@@ -126,3 +126,15 @@ The first was guessed one line after printing the signature that said so.
 **What happened.** Two of the fifteen tests written for the money fixes passed before any fix: one asserted that a town appeared on the printed invoice, and the town was there in the letterhead, not in the payment part the test was about. The other was a page test that passed because a different fault, an invoice page that crashed on every line, masked the behaviour it meant to pin.
 
 **The rule.** When a new test passes before the fix, read why before writing the fix: either the assertion looks at the wrong element, or something else is broken underneath. Narrow the assertion to the element the finding names, and a page test opens the page with the data the finding describes, not with the empty record the fixture gives for free.
+
+## A green suite in under a second is a suite that ran nothing
+
+**What happened.** After a resumed session, the test files reported "95 passed, 343 skipped in 0.42 s". Docker Desktop had stopped with the machine, the Postgres container with it, and every database-backed test skipped with "no PostgreSQL reachable". Read as a pass, that run would have sent a commit stack for code nothing had exercised.
+
+**The rule.** Read the skip count in every pytest summary, not only the failures. A database-backed suite that finishes in seconds has not run. Check the container before trusting the number, and start Docker Desktop from WSL when `docker` is not found.
+
+## Two agents cut off mid-task leave a tree, not a report
+
+**What happened.** Both background agents were terminated by the account's session limit before they could run their tests. Their edits were on disk and ruff-clean, their test files unrun, and neither had reported.
+
+**The rule.** When an agent ends without a report, read `git status` and the diff before anything else, run its test files yourself, and finish the work in the tree rather than relaunching the agent on a tree it no longer knows.

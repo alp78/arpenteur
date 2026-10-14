@@ -430,6 +430,20 @@ PERSON = "person"
 UNCLEAR = "unclear"
 
 
+def desk_parts() -> tuple[str, ...]:
+    """Every local part that reaches a desk rather than a named person.
+
+    The union of the generic heads and all four language sets, so `verwaltung`,
+    `segreteria` and `administration` count as desks and not as people. Built
+    here rather than in the store, which may not import `sources`, and shared
+    by the command line and the console's draft stage.
+    """
+    parts = set(ROLE_PARTS) | set(DESK_FUNCTIONS)
+    for group in ROLE_PARTS_BY_LANGUAGE.values():
+        parts.update(group)
+    return tuple(sorted(parts))
+
+
 def mailbox_kind(address: str, name: str = "") -> str:
     """Whether this address reaches a desk, a named person, or something unclear.
 

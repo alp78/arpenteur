@@ -12,12 +12,14 @@ register and notes are typed by hand, so neither is trusted: a company called
 
 from __future__ import annotations
 
+import html
 import json
+import re
 from dataclasses import dataclass, replace
 from typing import Any, Iterable
 
 from ..kernel.db import Row
-from ..kernel.modules import Nav
+from ..kernel.modules import GROUPS, Nav, group_rank
 from .assets import CONSOLE_JS_URL
 from . import ui
 from .ui import esc
@@ -136,6 +138,7 @@ STYLESHEET = """
   .dim { color:var(--dim); }
   .small { font-size:var(--t-sm); }
   .nowrap { white-space:nowrap; }
+  .req { color:var(--bad); margin-left:.2rem; }
   .lede { color:var(--dim); max-width:62ch; margin:.2rem 0 var(--s5); }
   .hint { font-size:.79rem; color:var(--dim); line-height:1.4; }
   form.inline { display:inline; }
@@ -150,14 +153,25 @@ STYLESHEET = """
   header { border-bottom:1px solid var(--line); padding:var(--s3) 1.2rem;
            display:flex; gap:1.2rem; align-items:baseline; background:var(--paper);
            position:sticky; top:0; z-index:5; flex-wrap:wrap; }
-  header .brand { font-weight:600; color:var(--ink); letter-spacing:.02em; }
-  header nav { display:flex; gap:1.2rem; align-items:baseline; flex-wrap:wrap; }
+  header .brand { font-weight:600; color:var(--ink); letter-spacing:.02em;
+                  text-decoration:none; }
+  header nav { display:flex; gap:1.4rem; align-items:baseline; flex-wrap:wrap; }
+  header nav .group { display:flex; gap:.75rem; align-items:baseline; }
+  header nav .caption { font-size:.66rem; text-transform:uppercase;
+                        letter-spacing:.09em; color:var(--dim); opacity:.75;
+                        margin-right:.1rem; }
+  header nav .group.on .caption { color:var(--accent); opacity:1; }
   header a { color:var(--dim); text-decoration:none; }
   header a:hover, header a.on, header a[aria-current] { color:var(--accent); }
   header a[aria-current] { font-weight:600; }
   header .sep { color:var(--line); }
   header .where { margin-left:auto; display:flex; gap:var(--s3);
                   align-items:baseline; }
+  header .help { display:inline-block; min-width:1.4rem; text-align:center;
+                 border:1px solid var(--line); border-radius:50%;
+                 font-size:var(--t-sm); line-height:1.3rem; color:var(--dim); }
+  header .help:hover { border-color:var(--accent); }
+  main > .banner:first-child { margin-top:0; }
   main { padding:1.2rem; max-width:1100px; margin:0 auto; }
 
   /* --- containers --- */
@@ -203,6 +217,14 @@ STYLESHEET = """
   .chip { background:var(--ink); color:var(--paper); border-radius:2px;
           padding:0 .3rem; text-decoration:none; font-weight:600;
           font-size:.7rem; letter-spacing:.02em; }
+  /* A link that looks like a button. A <button> inside an <a> is two
+     interactive controls in one place, which a keyboard tabs to twice and a
+     screen reader announces as nested, so the link is styled instead. */
+  a.btn { display:inline-block; padding:.3rem .45rem; border:1px solid var(--line);
+          background:var(--paper); color:inherit; text-decoration:none; }
+  a.btn.primary { background:var(--accent); color:var(--paper);
+                  border-color:var(--accent); }
+  .act a.btn { font-weight:600; text-align:center; }
   .stat { display:flex; flex-direction:column; }
   .stat b { font-size:1.15rem; font-variant-numeric:tabular-nums; }
   .stat span { font-size:.7rem; text-transform:uppercase; letter-spacing:.05em;
@@ -221,6 +243,7 @@ STYLESHEET = """
   .state-running { color:var(--accent); font-weight:600; }
   .state-error { color:var(--bad); font-weight:600; }
   .state-done { color:var(--dim); }
+  .state-cancelled { color:var(--caution); font-weight:600; }
   .stamp { display:inline-block; width:1.15rem; height:1.15rem; line-height:1.15rem;
            text-align:center; border-radius:2px; font-size:.66rem; font-weight:700;
            margin-right:.12rem; border:1px solid var(--line); color:var(--dim);
@@ -281,7 +304,8 @@ STYLESHEET = """
   .dropzone.over { border-color:var(--good); background:var(--good-bg);
                    border-style:solid; }
   .dropzone.busy { opacity:.6; }
-  .drop-say { margin:0 0 var(--s2); color:var(--dim); font-size:var(--t-sm); }
+  .drop-say { display:block; margin:0 0 var(--s2); color:var(--dim);
+              font-size:var(--t-sm); }
   .drop-progress:empty { display:none; }
   .drop-progress { font-size:var(--t-xs); color:var(--accent);
                    margin-top:var(--s2); text-align:left; }
@@ -380,9 +404,10 @@ FOOT = "</main></body></html>"
 # every run, Settings configures the lot. Everything else in the header is
 # contributed by a module and disappears with it.
 SHELL_NAV: tuple[Nav, ...] = (
-    Nav("Operations", "/pipeline", group="system", order=310),
-    Nav("History", "/runs", group="system", order=320),
-    Nav("Settings", "/settings", group="system", order=330),
+    Nav("Operations", "/pipeline", group="system", order=510),
+    Nav("History", "/runs", group="system", order=520),
+    Nav("Settings", "/settings", group="system", order=530),
+    Nav("Help", "/help", group="system", order=540, help="index"),
 )
 
 
@@ -404,9 +429,25 @@ class Chrome:
     territory: str = ""
     nav: tuple[Nav, ...] = ()
     here: str = ""
+    # What the page has to say first, carried in the query string by the
+    # route that redirected here. One of each: a refusal in red, a success
+    # in green. The shell draws them, so no page has its own banner code.
+    note: str = ""
+    error: str = ""
 
     def at(self, here: str) -> "Chrome":
         return replace(self, here=here)
+
+    def with_flash(self, note: str = "", error: str = "") -> "Chrome":
+        return replace(self, note=note or "", error=error or "")
+
+    @property
+    def guide(self) -> str:
+        """The help page for the section this page belongs to."""
+        for item in self.nav:
+            if item.href == self.here:
+                return item.guide
+        return "index"
 
     @classmethod
     def of(cls, registry: Any, territory: str = "", here: str = "") -> "Chrome":
@@ -420,27 +461,65 @@ class Chrome:
         items = tuple(registry.navigation()) + SHELL_NAV
         return cls(
             territory=territory,
-            nav=tuple(sorted(items, key=lambda n: (n.order, n.label))),
+            nav=tuple(sorted(
+                items, key=lambda n: (group_rank(n.group), n.order, n.label)
+            )),
             here=here,
         )
 
 
 def _nav(chrome: Chrome) -> str:
-    """The header links, with a rule between groups and one marked as here.
+    """The header links in their groups, each group captioned, one marked as here.
 
     `aria-current` rather than a colour alone. "Which of these am I on" is a
     question, and a shade of red is not an answer for everybody. The console
     styled `header a.on` from the beginning and never once applied it.
+
+    The caption is a word above a run of links, not a link itself: a group is
+    not a place. The group holding the current page is marked so the eye finds
+    its neighbours, which is what a group is for.
     """
-    out: list[str] = []
-    group = ""
+    by_group: dict[str, list[Nav]] = {}
     for item in chrome.nav:
-        if group and item.group != group:
-            out.append('<span class="sep" aria-hidden="true">|</span>')
-        group = item.group
-        current = ' aria-current="page"' if item.href == chrome.here else ""
-        out.append(f'<a href="{esc(item.href)}"{current}>{esc(item.label)}</a>')
+        by_group.setdefault(item.group, []).append(item)
+    out: list[str] = []
+    for key, label in GROUPS:
+        items = by_group.get(key)
+        if not items:
+            continue
+        on = any(item.href == chrome.here for item in items)
+        links = "".join(
+            f'<a href="{esc(item.href)}"'
+            + (' aria-current="page"' if item.href == chrome.here else "")
+            + f">{esc(item.label)}</a>"
+            for item in items
+        )
+        out.append(
+            f'<div class="group{" on" if on else ""}" role="group" '
+            f'aria-label="{esc(label)}">'
+            f'<span class="caption" aria-hidden="true">{esc(label)}</span>'
+            f"{links}</div>"
+        )
     return f'<nav aria-label="Sections">{"".join(out)}</nav>'
+
+
+_H1 = re.compile(r"<h1[^>]*>(.*?)</h1>", re.S)
+_TAG = re.compile(r"<[^>]+>")
+
+
+def title_of(body: str, fallback: str = "") -> str:
+    """The page's own heading, as the browser tab shows it.
+
+    Read from the body rather than asked for a second time: a title typed
+    separately from the heading is a title that disagrees with it by the
+    third edit. Tags inside the heading are dropped, so "enrich run 12" is
+    what a tab reads for a heading that styles its run number small.
+    """
+    found = _H1.search(body or "")
+    if not found:
+        return fallback
+    text = html.unescape(_TAG.sub("", found.group(1)))
+    return " ".join(text.split()) or fallback
 
 
 # The palette. A dialog rather than a floating div: the top layer, the backdrop,
@@ -485,32 +564,45 @@ def page(
     A bare string is still accepted where a `Chrome` is expected, and means the
     territory with no navigation. That is for tests and for anything rendering
     a page outside the application, which has no registry to ask.
+
+    `title` may be empty, and usually is: the tab is then named after the
+    page's own heading, followed by the application's name.
     """
     if chrome is None:
         chrome = Chrome()
     elif isinstance(chrome, str):
         chrome = Chrome(territory=chrome)
     layer = f"@layer page {{\n{css}\n}}" if css else ""
+    name = title or title_of(body)
+    tab = f"{name} | Arpenteur" if name else "Arpenteur"
+    flash = (
+        (ui.banner(chrome.error, kind="bad") if chrome.error else "")
+        + (ui.banner(chrome.note, kind="good") if chrome.note else "")
+    )
     return (
         "<!doctype html>\n"
         '<html lang="en"><head>\n'
         '<meta charset="utf-8">'
         '<meta name="viewport" content="width=device-width,initial-scale=1">\n'
-        f"<title>{esc(title)}</title>\n"
+        f"<title>{esc(tab)}</title>\n"
         f"{HTMX}\n"
         f'<script src="{CONSOLE_JS_URL}" defer></script>\n'
         f"<style>{STYLESHEET}{layer}</style></head><body>\n"
         '<a class="skip" href="#main">Skip to the content</a>\n'
         "<header>\n"
-        '  <span class="brand">ARPENTEUR</span>\n'
+        '  <a class="brand" href="/">ARPENTEUR</a>\n'
         f"  {_nav(chrome)}\n"
         '  <span class="where">'
         '<button type="button" data-palette-open class="kbd" '
-        'aria-label="Find anything. Shortcut: control K">&#8984;K find</button>'
-        f'<span class="dim small">{esc(chrome.territory)}</span></span>\n'
+        'aria-label="Find anything. Shortcut: control K">'
+        '<span data-shortcut>Ctrl K</span> find</button>'
+        f'<span class="dim small">{esc(chrome.territory)}</span>'
+        f'<a class="help" href="/help/{esc(chrome.guide)}" '
+        'title="Help for this page" aria-label="Help for this page">?</a></span>\n'
         "</header>\n"
         f"{PALETTE}"
         '<main id="main">\n'
+        + flash
         + body
         + FOOT
     )
@@ -522,7 +614,7 @@ def not_found(what: str = "page") -> str:
         "<h1>Not found</h1>"
         f"<p>There is no {esc(what)} at this address. It may have been deleted, "
         "or the link is older than the record.</p>"
-        '<p><a href="/">Back to the start</a></p>'
+        '<p><a href="/">Back to Home</a></p>'
     )
 
 
@@ -578,7 +670,7 @@ PROGRESS = (
     ("D", "hydrated", "Detail fetched from the register"),
     ("S", "classified", "Sorted into segments"),
     ("W", "researched", "Website researched"),
-    ("F", "scored", "Scored against the campaign"),
+    ("F", "scored", "Scored against the scoring brief"),
     ("@", "reached", "An address was looked for"),
 )
 
@@ -627,7 +719,25 @@ def company_rows(rows: list[Row]) -> str:
     return "".join(out)
 
 
-def company_table(rows: list[Row], total: int) -> str:
+def company_table(rows: list[Row], total: int, *, filtered: bool = True) -> str:
+    """The companies that match, or the sentence that says why there are none.
+
+    Two empty states, because they ask for opposite things. A filter that
+    matches nothing is answered by loosening it. A register nobody has swept
+    holds nothing whatever the filter says, and loosening it changes nothing:
+    the way forward is a stage on Operations.
+    """
+    if not rows:
+        if filtered:
+            return ui.empty(
+                "Nothing matches these filters.",
+                action="Loosen one, or clear the search.",
+            )
+        return ui.empty(
+            "No company is held yet.",
+            action=f"Sweep the register from {ui.operations('source')}. It is "
+                   "free and takes minutes.",
+        )
     legend = " &middot; ".join(
         f"<b>{esc(letter)}</b> {esc(title.lower())}" for letter, _key, title in PROGRESS
     )
@@ -637,10 +747,8 @@ def company_table(rows: list[Row], total: int) -> str:
         + ui.table(
             ["company", "canton", "sector", "progress", "segments", "fit",
              "website", "state"],
-            [company_rows(rows)] if rows else [],
+            [company_rows(rows)],
             caption=f"{ui.num(total)} companies match this filter",
-            empty_text="Nothing matches. Widen the filter, or run a stage on "
-                       "the operations page.",
         )
     )
 
@@ -659,7 +767,7 @@ STAGE_FILTERS = (
     ("unresearched", "Segmented, website not researched"),
     ("researched", "Website researched"),
     ("unscored", "Researched, not yet scored"),
-    ("scored", "Scored against the campaign"),
+    ("scored", "Scored against the scoring brief"),
     ("with-address", "Has a usable email address"),
 )
 
@@ -689,10 +797,10 @@ def filter_form(
     in Vaud" was to describe it in words.
 
     The URL is pushed by the route rather than by `hx-push-url="true"` here.
-    This form fetches `/companies`, which serves the table alone, and pushing
-    that would put an address in the bar that answers with a bare fragment when
-    anybody opens it. The route sends `HX-Push-Url` naming `/`, which is the
-    page that renders it whole.
+    This form fetches `/companies/rows`, which serves the table alone, and
+    pushing that would put an address in the bar that answers with a bare
+    fragment when anybody opens it. The route sends `HX-Push-Url` naming
+    `/companies`, which is the page that renders it whole.
     """
     return ui.toolbar(
         ui.text_field("q", "Search", value=q,
@@ -710,7 +818,7 @@ def filter_form(
                           blank="Any state")
         + ui.select_field("stage", "Progress", STAGE_FILTERS, chosen=stage,
                           wide=True),
-        action="/companies", target="#list", submit="Filter", css="filters",
+        action="/companies/rows", target="#list", submit="Filter", css="filters",
     )
 
 
@@ -743,11 +851,11 @@ def _client_action(company: Row, client: Row | None) -> str:
     """
     if client is not None:
         return (
-            f"<form class='act'><a href='/client/{client['id']}'>"
-            f"<button type='button' class='primary'>Open client "
-            f"{esc(client['code'])}</button></a>"
+            "<div class='act'>"
+            f"<a class='btn primary' href='/client/{client['id']}'>Open client "
+            f"{esc(client['code'])}</a>"
             "<span class='hint'>This company is a client. Projects, "
-            "correspondence and the diary are on its client page.</span></form>"
+            "correspondence and the diary are on its client page.</span></div>"
         )
     return (
         f"<form method='post' action='/company/{company['id']}/client' class='act'>"
@@ -777,7 +885,8 @@ def _actions(
              "About 1 franc, and anywhere from 7 to 45 minutes.", busy),
         _act(uid, "match",
              "Score again" if fit else "Score this company",
-             "Reads it against campaign.md and writes the fit and the opening line.",
+             "Reads it against the scoring brief and writes the fit and the "
+             "opening line.",
              busy),
     ]
     if site is not None and site["url"]:
@@ -818,6 +927,7 @@ def company_page(
     sector_vocabulary: list[str] | None = None,
 ) -> str:
     out = [
+        ui.crumbs([("/companies", "Companies"), ("", company["name"])]),
         f"<h1>{esc(company['name'])}</h1>",
         f'<p class="dim small">{esc(company["uid"])} &middot; '
         f'{esc(company["legal_form_label"])} &middot; '
@@ -890,8 +1000,8 @@ def company_page(
                 caption="Officers, from the published notices",
             )
             + '<p class="dim small">Parsed from FOSC publications, and not yet '
-              'resolved into people. Run <a href="/pipeline">resolve</a>, '
-              "which is free, to see what else they sit on.</p>"
+              f"resolved into people. Use {ui.operations('resolve')}, which "
+              "is free, to see what else they sit on.</p>"
         )
 
     if overlap:
@@ -924,8 +1034,8 @@ def company_page(
 def _fit_card(fit: Row | None) -> str:
     if fit is None:
         return (
-            '<h2>fit</h2><div class="card dim">Not scored yet. '
-            "<code>arpenteur match</code></div>"
+            '<h2>fit</h2><div class="card dim">Not scored yet. Use '
+            "&quot;Score this company&quot; above.</div>"
         )
     against = as_list(fit["against"])
     matched = as_list(fit["matched"])
@@ -946,10 +1056,10 @@ def _fit_card(fit: Row | None) -> str:
         )
     if fit["advice"]:
         body.append(
-            "<h2 style='margin-top:1rem'>suggested opening</h2>"
+            "<h2 style='margin-top:1rem'>draft opening</h2>"
             f'<div style="white-space:pre-line">{esc(fit["advice"])}</div>'
-            '<p class="dim small">A draft for a human to rewrite. No route '
-            "here sends, and this text was never reviewed for sending.</p>"
+            '<p class="dim small">A draft for a person to rewrite. Nothing on '
+            "this page sends it, and nobody has reviewed it for sending.</p>"
         )
     return f'<h2>fit</h2><div class="card">{"".join(body)}</div>'
 
@@ -1052,8 +1162,8 @@ def _segments_card(
 def _site_card(site: Row | None) -> str:
     if site is None:
         return (
-            '<h2>web research</h2><div class="card dim">Not researched. '
-            "<code>arpenteur enrich</code></div>"
+            '<h2>web research</h2><div class="card dim">Not researched. Use '
+            "&quot;Research this website&quot; above.</div>"
         )
     body = [
         f'<p><a href="{esc(site["url"])}" target="_blank" rel="noreferrer">'
@@ -1133,9 +1243,16 @@ def _notes_card(company_id: int, notes: list[Row]) -> str:
     return (
         '<h2>notes</h2><div class="card" id="notes">'
         f'<form hx-post="/company/{company_id}/notes" hx-target="#notes" hx-swap="outerHTML">'
-        '<textarea name="body" placeholder="What happened, and what you thought."></textarea>'
-        f'<div class="filters" style="margin:.5rem 0 0"><select name="kind">{kinds}</select>'
-        '<input name="occurred_at" type="date"><input name="author" placeholder="who">'
+        + ui.sr_label("The note", "note-body")
+        + '<textarea name="body" id="note-body" required '
+        'placeholder="What happened, and what you thought."></textarea>'
+        '<div class="filters" style="margin:.5rem 0 0">'
+        + ui.sr_label("Kind of note", "note-kind")
+        + f'<select name="kind" id="note-kind">{kinds}</select>'
+        + ui.sr_label("Date it happened", "note-date")
+        + '<input name="occurred_at" id="note-date" type="date">'
+        + ui.sr_label("Who wrote it", "note-author")
+        + '<input name="author" id="note-author" placeholder="who">'
         '<button class="primary">add</button></div></form>'
         f"<div style='margin-top:.8rem'>{items}</div></div>"
     )
@@ -1153,15 +1270,36 @@ def _compact(value: Any) -> str:
     return json.dumps(value, ensure_ascii=False, separators=(", ", ": "))
 
 
-def runs_table(rows: list[Row]) -> str:
+def run_status(run: Row) -> str:
+    """running, done, error or cancelled, from the columns a run row holds.
+
+    A cancelled run is an error row whose text starts with `cancelled`, which
+    is what `runner.CANCELLED` writes, so the state needs no column of its own.
+    """
+    error = run["error"]
+    if error:
+        return "cancelled" if str(error).startswith("cancelled") else "error"
+    return "done" if run["finished_at"] else "running"
+
+
+# How many runs a page of the history holds. A full page offers the next one.
+RUNS_PAGE = 40
+
+
+def runs_table(rows: list[Row], *, before: int | None = None,
+               page: int = RUNS_PAGE) -> str:
     """The table alone, which is what the poll replaces.
 
-    Separate from the page so the refresh swaps exactly this element. It
-    carries its own hx-get, so each replacement re-arms the next poll.
+    Separate from the page so the refresh swaps exactly this element. While a
+    run is unfinished it carries its own hx-get, so each replacement re-arms
+    the next poll; once every run shown has ended it is a plain table and
+    nothing asks the server again. The poll asks for the same page it was
+    drawn for, and the links to the neighbouring pages are inside the table so
+    they are replaced with it.
     """
     out = []
     for row in rows:
-        state = "error" if row["error"] else ("done" if row["finished_at"] else "running")
+        state = run_status(row)
         # stats_json is a parsed dict now, not the text SQLite stored, so it
         # is rendered rather than sliced. `detail[:160]` on a dict raises a
         # KeyError naming a slice object, which is a memorable way to discover
@@ -1174,25 +1312,41 @@ def runs_table(rows: list[Row]) -> str:
             f"<td class='small dim'>{esc(row['started_by'] or '')}</td>"
             f"<td class='small dim'>{esc(detail[:160])}</td></tr>"
         )
+    polling = any(not row["finished_at"] for row in rows)
+    poll = (
+        f' hx-get="/runs/rows{f"?before={before}" if before else ""}"'
+        ' hx-trigger="every 3s" hx-swap="outerHTML"'
+        if polling else ""
+    )
+    links = []
+    if before:
+        links.append("<a href='/runs'>Newest runs</a>")
+    if rows and len(rows) >= page:
+        links.append(f"<a href='/runs?before={rows[-1]['id']}'>Older runs</a>")
+    foot = (
+        '<tfoot><tr><td colspan="5" class="small">'
+        + "&nbsp;&nbsp;".join(links) + "</td></tr></tfoot>"
+        if links else ""
+    )
+    empty = "No older runs." if before else "Nothing has been run yet."
     return (
-        '<table id="runs" hx-get="/runs/rows" hx-trigger="every 3s"'
-        ' hx-swap="outerHTML">'
-        "<caption>Every stage this console has run</caption>"
+        f'<table id="runs"{poll}>'
+        "<caption>Every run, newest first</caption>"
         "<thead><tr><th scope=\"col\">started</th><th scope=\"col\">stage</th>"
         "<th scope=\"col\">state</th><th scope=\"col\">by</th>"
         "<th scope=\"col\">result</th></tr></thead><tbody>"
-        + ("".join(out) or
-           '<tr><td colspan="5" class="dim">Nothing has been run yet.</td></tr>')
-        + "</tbody></table>"
+        + ("".join(out) or f'<tr><td colspan="5" class="dim">{empty}</td></tr>')
+        + f"</tbody>{foot}</table>"
     )
 
 
-def runs_page(rows: list[Row]) -> str:
+def runs_page(rows: list[Row], *, before: int | None = None,
+              page: int = RUNS_PAGE) -> str:
     return (
-        "<h1>Runs</h1>"
-        "<p class='dim small'>Every stage records what it did. This view refreshes "
-        "itself while a run is in progress. Open one to read it line by line.</p>"
-        + runs_table(rows)
+        "<h1>History</h1>"
+        "<p class='dim small'>Every stage records what it did. This list refreshes "
+        "itself while a run is going. Open one to read it line by line.</p>"
+        + runs_table(rows, before=before, page=page)
     )
 
 
@@ -1267,14 +1421,19 @@ def stage_card(
     controls = "".join(_control(f, stage.name, options) for f in stage.fields)
     waiting = status.get("waiting", 0)
     done = status.get("done", 0)
+    # A count is drawn only for a stage that has a query to answer it. A stage
+    # with none used to read "0 done, 0 waiting, nothing is waiting", which is
+    # a claim about a queue nobody counted.
+    counts_done = bool(stage.done_sql)
+    counts_waiting = bool(stage.waiting_sql and stage.waiting_label)
 
     if busy:
         action = (
             f"<button disabled>{esc(stage.button)}</button>"
-            f"<span class='hint'>Run {busy} is still going. "
-            "One stage at a time.</span>"
+            f"<span class='hint'><a href='/runs/{busy}'>Run {busy}</a> is still "
+            "going. One stage at a time.</span>"
         )
-    elif waiting == 0:
+    elif counts_waiting and waiting == 0:
         # Not disabled: a filter or a re-run flag can still make work for it,
         # and a button that refuses to be pressed cannot say why.
         action = (
@@ -1288,17 +1447,24 @@ def stage_card(
         )
 
     money = "cost" in stage.cost.lower() or "centimes" in stage.cost.lower()
+    counts = ""
+    if counts_done:
+        counts += (
+            f"<div><b>{ui.num(done)}</b><span>{esc(stage.done_label)}</span></div>"
+        )
+    if counts_waiting:
+        counts += (
+            f"<div class='{'waiting' if waiting else ''}'>"
+            f"<b>{ui.num(waiting)}</b><span>{esc(stage.waiting_label)}</span></div>"
+        )
     return (
         f"<form class='stage' method='post' action='/run/{esc(stage.name)}'>"
         f"<div class='stage-head'>"
         f"<span class='step'>{index}</span>"
         f"<div class='stage-title'><h3>{esc(stage.title)}</h3>"
         f"<p class='what'>{esc(stage.what)}</p></div>"
-        f"<div class='stage-count'>"
-        f"<div><b>{ui.num(done)}</b><span>{esc(stage.done_label)}</span></div>"
-        f"<div class='{'waiting' if waiting else ''}'>"
-        f"<b>{ui.num(waiting)}</b><span>{esc(stage.waiting_label)}</span></div>"
-        f"</div></div>"
+        + (f"<div class='stage-count'>{counts}</div>" if counts else "")
+        + f"</div>"
         f"<dl class='facts'>"
         f"<dt>Needs first</dt><dd>{esc(stage.needs)}</dd>"
         f"<dt>Produces</dt><dd>{esc(stage.produces)}</dd>"
@@ -1312,31 +1478,50 @@ def stage_card(
 
 def pipeline_page(
     stages: Any, statuses: dict[str, dict[str, int]], options: dict[str, tuple],
-    busy: int | None, note: str = "",
+    live: dict[str, int], titles: dict[int, str] | None = None,
 ) -> str:
+    """Every stage, and every run that is going, whatever lane it runs on.
+
+    `live` is lane to run id, as `Runner.live` reports it. A card is disabled
+    only when the lane its own stage runs on is busy, so a wave being sent
+    does not stop anybody reading the mailbox. What the shell says first, a
+    refusal or a note, comes from the query string and is drawn by the shell.
+    """
+    titles = titles or {}
     cards = "".join(
-        stage_card(stage, statuses.get(stage.name, {}), options, busy, index)
+        stage_card(stage, statuses.get(stage.name, {}), options,
+                   live.get(stage.lane), index)
         for index, stage in enumerate(stages, 1)
     )
-    banner = f"<div class='warn'>{esc(note)}</div>" if note else ""
+    going = "".join(
+        f"<li>{esc(titles.get(run_id, 'A stage'))} is running as run {run_id}. "
+        f"<a href='/runs/{run_id}'>Watch it</a>.</li>"
+        for run_id in live.values()
+    )
     running = (
-        f"<div class='warn'>A stage is running. "
-        f"<a href='/runs/{busy}'>Watch it</a>, or wait for it to finish.</div>"
-        if busy
-        else ""
+        ui.banner("", kind="note", html_body=f"<ul>{going}</ul>") if going else ""
     )
     return (
         "<h1>Operations</h1>"
         "<p class='lede'>The pipeline runs top to bottom. Each stage works on what "
         "the one above it produced, and every stage picks up where it left off, so "
         "running one twice is safe and costs nothing extra.</p>"
-        + banner + running + f"<div class='stages'>{cards}</div>"
+        + running + f"<div class='stages'>{cards}</div>"
     )
+
+
 # --- watching one run ---------------------------------------------------------
 
 
-def run_log(rows: list[Row], run_id: int, done: bool, after: int) -> str:
+def run_log(rows: list[Row], run_id: int, done: bool, after: int, *,
+            error: str | None = None, state: str = "") -> str:
     """The lines, followed by the element that asks for the ones after them.
+
+    `error` is the run's error text, so the sentence a screen reader announces
+    can say that the run failed or was cancelled rather than finished. `state`
+    is the run page's state block, drawn out of band: the poll that fetches new
+    lines replaces the header with it, so the header stops saying "running"
+    once the run has ended.
 
     The tail replaces itself, carrying the sequence number it has reached, so
     each poll fetches only what is new. A run emitting sixty thousand lines
@@ -1364,38 +1549,135 @@ def run_log(rows: list[Row], run_id: int, done: bool, after: int) -> str:
     # would be made to read every one of them aloud as it arrived, with no way
     # to get ahead of it. What a person actually needs told is that it
     # finished, so that is what is announced and the log is marked off.
-    said = "The run has finished." if done else "Running."
+    if done and error:
+        said = (
+            "The run was cancelled."
+            if str(error).startswith("cancelled") else "The run failed."
+        )
+    else:
+        said = "The run has finished." if done else "Running."
     return (
         f"{lines}<span id='tail'{poll}></span>"
-        f'<span class="vh" role="status" aria-live="polite">{said}</span>'
+        f'<span class="vh" role="status" aria-live="polite">{said}</span>{state}'
     )
 
 
-def run_page(run: Row, rows: list[Row], after: int, *, stale: bool = False) -> str:
-    done = bool(run["finished_at"])
-    state = "error" if run["error"] else ("done" if done else "running")
+def args_text(stage: str | None, args: Any) -> str:
+    """A run's arguments as the fields they were: "limit 50, canton VD".
+
+    A form records what was posted, so a blank field is an empty string and a
+    ticked box is "1"; a terminal records what argparse parsed. Both read the
+    same here: what was left blank or unticked is not shown, and a box is
+    named rather than given a value. Which keys are boxes comes from the
+    stage's own fields, because "1" means a box for `dry_run` and a number for
+    `limit`. The order is the order the database returns the keys in.
+    """
+    if not isinstance(args, dict):
+        return ""
+    # Imported here: `runner` reaches the stages, and this module must stay a
+    # leaf for the pages that import it, as `ui.operations` does for the same.
+    from .runner import STAGES
+
+    spec = STAGES.get(stage or "")
+    boxes = {f.name for f in spec.fields if f.kind == "bool"} if spec else set()
+    parts = []
+    for key, value in args.items():
+        if key == "command" or value is None or value is False or value in ("", [], {}):
+            continue
+        name = key[:-3] if key.endswith("_id") else key.replace("_", " ")
+        if value is True or key in boxes:
+            parts.append(name)
+        elif isinstance(value, list):
+            parts.append(f"{name} {'/'.join(str(v) for v in value)}")
+        elif key.endswith("_id"):
+            parts.append(f"{name} {value}")
+        else:
+            counted = isinstance(value, int) or (isinstance(value, str) and value.isdigit())
+            parts.append(f"{name} {ui.num(int(value)) if counted else value}")
+    return ", ".join(parts)
+
+
+def _client_of(run: Row) -> int | None:
+    """The client a run was about, when its arguments name one."""
+    args = run["args_json"]
+    try:
+        client_id = int(args.get("client_id")) if isinstance(args, dict) else 0
+    except (TypeError, ValueError):
+        return None
+    return client_id if client_id > 0 else None
+
+
+def run_links(run: Row) -> str:
+    """The way back: the history always, and the client page the run was for.
+
+    Advice and preparation start from a client's page and no longer return to
+    it on their own, so the run says where to go next.
+    """
+    links = ["<a href='/runs'>History</a>"]
+    client_id = _client_of(run)
+    if client_id is not None and run["stage"] == "advise":
+        links.append(f"<a href='/client/{client_id}/dossier'>Back to the dossier</a>")
+    elif client_id is not None and run["stage"] == "prep":
+        links.append(f"<a href='/client/{client_id}/prep'>Back to the preparation</a>")
+    return f"<p class='small'>{'&nbsp;&nbsp;'.join(links)}</p>"
+
+
+def run_state(run: Row, *, stale: bool = False, stop: str = "",
+              oob: bool = False) -> str:
+    """The block that says where a run stands, as an element the poll replaces.
+
+    `stop` is "offer" while the run can be cancelled, "asked" once a cancel is
+    waiting for the stage's next log line, and empty otherwise. `oob` draws it
+    as the out-of-band element the lines reply carries, which htmx swaps over
+    the one on the page by its id.
+    """
+    state = run_status(run)
     detail = run["error"] or _compact(run["stats_json"])
-    settle = ""
+    args = args_text(run["stage"], run["args_json"])
+    controls = ""
     if stale:
         # Open, and nothing in this console is running it: a terminal that was
         # closed, or a process that died. The person at the keyboard knows
         # which, so the question is asked rather than decided.
-        settle = (
+        controls += (
             f"<form method='post' action='/runs/{run['id']}/settle' class='inline'>"
             "<button type='submit'>Mark as interrupted</button> "
             "<span class='dim small'>if nothing is still running it in a "
             "terminal</span></form>"
         )
+    if stop == "offer":
+        controls += ui.confirm_button(
+            "Cancel the run", f"/runs/{run['id']}/cancel",
+            f"Stop the {run['stage']} run? What it has already written stays.",
+        )
+    elif stop == "asked":
+        controls += (
+            "<div class='dim small'>Cancel requested. The stage stops at its next "
+            "log line, which can take a while when it is waiting on a slow "
+            "company.</div>"
+        )
+    swap = " hx-swap-oob='true'" if oob else ""
+    return (
+        f"<div id='run-state' class='card small'{swap}>"
+        f"<div>started {esc(run['started_at'][:19])} by {esc(run['started_by'] or '?')}"
+        f"</div>"
+        f"<div>state <span class='state-{state}'>{esc(state)}</span></div>"
+        + (f"<div class='dim'>{esc(args)}</div>" if args else "")
+        + (f"<div>{esc(detail)}</div>" if detail else "")
+        + f"{controls}</div>"
+    )
+
+
+def run_page(run: Row, rows: list[Row], after: int, *, stale: bool = False,
+             stop: str = "") -> str:
+    done = bool(run["finished_at"])
     header = (
         f"<h1>{esc(run['stage'])} <span class='dim small'>run {run['id']}</span></h1>"
-        f"<div class='card small'>"
-        f"<div>started {esc(run['started_at'][:19])} by {esc(run['started_by'] or '?')}"
-        f" &middot; <span class='state-{state}'>{esc(state)}</span></div>"
-        f"<div class='dim'>{esc(_compact(run['args_json']))}</div>"
-        f"<div>{esc(detail)}</div>{settle}</div>"
+        + run_links(run)
+        + run_state(run, stale=stale, stop=stop)
     )
     return (
         header
         + "<pre id='log' class='log' aria-live='off' aria-label='Run log' "
-          f"tabindex='0'>{run_log(rows, run['id'], done, after)}</pre>"
+          f"tabindex='0'>{run_log(rows, run['id'], done, after, error=run['error'])}</pre>"
     )
