@@ -326,7 +326,8 @@ def template_editor_page(campaign: Row, name: str, text: str, *, exists: bool) -
     """One message file, as a form; refused with the reason when it cannot be sent."""
     cid = campaign["id"]
     language = name.split(".")[0]
-    label = {"fr": "Objet :", "de": "Betreff:", "it": "Oggetto:"}.get(language, "Subject:")
+    label = {"fr": "Objet :", "de": "Betreff:", "it": "Oggetto:",
+             "rm": "Object:"}.get(language, "Subject:")
     if not text.strip():
         text = (
             f"Notes for the person editing this file go above the first rule.\n\n"

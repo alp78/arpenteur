@@ -161,6 +161,7 @@ def test_an_unknown_canton_falls_to_german() -> None:
     ("fr", "ne souhaitez plus"),
     ("de", "keine weiteren Nachrichten"),
     ("it", "non desidera"),
+    ("rm", "na giavischais betg pli"),
 ])
 def test_the_opt_out_is_added_in_the_recipients_language(language, marker) -> None:
     body = draft.compose("Texte.", language=language, address="a@b.ch")

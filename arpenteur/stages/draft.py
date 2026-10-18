@@ -114,6 +114,9 @@ OPT_OUT = {
     "it": ("Se non desidera più ricevere messaggi da parte nostra, risponda "
            "« STOP » a questo indirizzo ({address}) e il suo indirizzo sarà "
            "rimosso dai nostri elenchi."),
+    "rm": ("Sche Vus na giavischais betg pli da survegnir messadis da nus, "
+           "respundai cun « STOP » a questa adressa ({address}). Vossa "
+           "adressa vegn alura stritgada da nossas glistas."),
 }
 
 ROMAND = ("GE", "VD", "NE", "JU", "FR", "VS")
