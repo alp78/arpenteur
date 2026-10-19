@@ -239,3 +239,26 @@ def test_a_campaign_can_start_from_the_example(web, ids, settings, conn) -> None
         "code": "drymos-c", "name": "Third", "audience": "LIST-1", "strategy": "score-overall",
     }, follow_redirects=False)
     assert "Name the templates folder" in neither.headers["location"].replace("%20", " ")
+
+
+def test_the_plan_form_sets_and_clears_the_bilingual_cantons(web, conn, ids) -> None:
+    page = f"/campaign/{ids['campaign']}"
+    reply = web.post(f"{page}/plan", data={"bilingual": "vs, fr"}, follow_redirects=False)
+    assert "error=" not in reply.headers["location"], reply.headers["location"]
+    assert K.campaign(conn, ids["campaign"])["bilingual"] == ["FR", "VS"]
+    assert "French and German together in FR, VS" in web.get(page).text
+    refused = web.post(f"{page}/plan", data={"bilingual": "GE"}, follow_redirects=False)
+    assert "error=" in refused.headers["location"]
+    web.post(f"{page}/plan", data={"bilingual": ""}, follow_redirects=False)
+    assert K.campaign(conn, ids["campaign"])["bilingual"] == []
+
+
+def test_a_list_made_in_the_console_keeps_its_places_per_canton(web, conn) -> None:
+    form = {"code": "L9", "name": "Essai", "segments": "tourism-office=1"}
+    bad = web.post("/audiences/new", data={**form, "per_canton": "abc"},
+                   follow_redirects=False)
+    assert "error=" in bad.headers["location"]
+    web.post("/audiences/new", data={**form, "per_canton": "2"}, follow_redirects=False)
+    assert K.audience_by_code(conn, "L9")["rule"]["per_canton"] == 2
+    assert "at most 2 firms each" in web.get(
+        f"/audience/{K.audience_by_code(conn, 'L9')['id']}").text

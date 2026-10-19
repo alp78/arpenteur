@@ -926,7 +926,7 @@ def cmd_audience(args: argparse.Namespace) -> int:
                 exclude_legal_forms=() if "sole-traders" in (args.allow or "") else ("0101",),
                 verdicts=tuple(verdicts), provenance=tuple(provenance), kinds=tuple(kinds),
                 cooldown_days=args.cooldown, max_age_days=args.max_age,
-                use_size=args.size,
+                use_size=args.size, per_canton=args.per_canton or 0,
             )
             new_id = audience_stage.create(conn, code=args.rest[0],
                                            name=" ".join(args.rest[1:]), rule=rule)
@@ -1052,6 +1052,7 @@ def cmd_campaign(args: argparse.Namespace) -> int:
         ("wave_size", args.wave_size), ("gap_days", args.gap),
         ("start_on", args.start), ("bounce_ceiling", args.bounce_ceiling),
         ("settle_hours", args.settle), ("cooldown_days", args.cooldown),
+        ("bilingual", args.bilingual),
     ) if v is not None}
 
     try:
@@ -1103,7 +1104,9 @@ def cmd_campaign(args: argparse.Namespace) -> int:
             outcome = campaign_stage.results(settings, conn, campaign=row["id"])
             print(f"{row['code']}  {row['name']}  "
                   f"[{wave_rules.campaign_state(row, waves)}]  list {row['audience_code']}, "
-                  f"strategy {row['strategy']}, templates {row['templates']}")
+                  f"strategy {row['strategy']}, templates {row['templates']}"
+                  + (f", both languages in {', '.join(row['bilingual'])}"
+                     if row["bilingual"] else ""))
             if row["paused_at"]:
                 print(f"  paused: {row['paused_reason']}")
             for w in waves:
@@ -1393,6 +1396,8 @@ def add_parsers(sub: argparse._SubParsersAction) -> None:
     p.add_argument("--max-age", type=int, default=30,
                    help="days a DNS verdict stays good enough")
     p.add_argument("--size", action="store_true", help="let registered capital count")
+    p.add_argument("--per-canton", type=positive_int, default=None,
+                   help="for new: the most firms kept in each canton, best score first")
     p.add_argument("--dropped", action="store_true", help="for show: the dropped firms too")
     p.add_argument("--reason", default="", help="for show: one drop reason only")
     p.add_argument("--why", default="", help="for keep and drop: the reason, required")
@@ -1433,6 +1438,9 @@ def add_parsers(sub: argparse._SubParsersAction) -> None:
                    help="hours bounces get to arrive before the next wave")
     p.add_argument("--cooldown", type=int, default=None,
                    help="days a mailbox, firm or domain rests after a message")
+    p.add_argument("--bilingual", default=None,
+                   help="for new and plan: cantons whose firms read every official "
+                        "language in one message, e.g. FR,VS; an empty value clears it")
     p.add_argument("--to", default="", help="for test: where the test goes")
     p.add_argument("--read", action="store_true",
                    help="for approve: you received and read every test message")

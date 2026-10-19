@@ -158,3 +158,7 @@ FastAPI 0.141 keeps an included router as one entry of `app.routes`, so a test t
 ## A cache can hide a leak between tests (14.10.2026)
 
 A test wrote a tampered migration digest into the shared database and never restored it; nothing noticed for as long as `open_db` migrated each database once per process. Keying that cache by the module list made later tests migrate again and refuse. A test that changes shared state restores it in `finally`, and a cache that hides a fault is not evidence the fault is absent.
+
+## A pilot samples every market the operator targets (19.10.2026)
+
+Asked for a sending strategy for Limen, I proposed the 25 Jura agencies because a list already held them, and the operator refused it: the pilot is 20 agencies in each French-speaking canton. A list that exists is not a market that was chosen. Before proposing a first wave, size it from the markets the campaign is for, one sample per canton, and ask which cantons when the brief does not say. In Fribourg and Valais the operator writes in French and German together, so a bilingual canton is one message in both languages, not two audiences.

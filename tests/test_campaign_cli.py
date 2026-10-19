@@ -106,3 +106,23 @@ def test_pause_and_resume_take_no_wave_number(conn) -> None:
     assert K.campaign_by_code(conn, "C1")["paused_at"] is not None
     assert run("campaign", "resume", "C1", "--why", "checked") == 0
     assert K.campaign_by_code(conn, "C1")["paused_at"] is None
+
+
+def test_a_list_keeps_at_most_its_places_in_each_canton(conn) -> None:
+    assert run("audience", "new", "L1", "Tourisme", "--segment", "tourism-office=1",
+               "--per-canton", "1") == 0
+    assert run("audience", "build", "L1") == 0
+    listed = K.audience_by_code(conn, "L1")
+    assert listed["rule"]["per_canton"] == 1
+    assert len(K.members(conn, listed["id"], verdict="kept")) == 2, "one in VS, one in BE"
+
+
+def test_a_campaign_names_its_bilingual_cantons_and_refuses_the_others(conn, capsys) -> None:
+    run("audience", "new", "L1", "Tourisme", "--segment", "tourism-office=1")
+    run("audience", "build", "L1")
+    assert run("campaign", "new", "C1", "Essai", "--audience", "L1", "--templates",
+               "templates/drymos", "--bilingual", "vs") == 0
+    assert K.campaign_by_code(conn, "C1")["bilingual"] == ["VS"]
+    capsys.readouterr()
+    assert run("campaign", "plan", "C1", "--bilingual", "GE", "--dry-run") == 1
+    assert "GE has one official language" in capsys.readouterr().err

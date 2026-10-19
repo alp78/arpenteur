@@ -41,6 +41,7 @@ from ..kernel.db import Connection, Row
 from ..modules.clients import campaigns as campaign_store
 from ..modules.clients import store as clients_store
 from ..modules.scout import store as scout_store
+from ..sources import language as language_source
 from ..sources import template, waves
 from . import audience as audience_stage
 from . import send as send_stage
@@ -75,6 +76,45 @@ def _templates_dir(settings: Settings, folder: str) -> Path:
     return Path(settings.root) / relative
 
 
+def bilingual_cantons(value: Any) -> list[str]:
+    """The cantons a campaign writes in every official language, checked."""
+    if isinstance(value, str):
+        value = value.split(",")
+    cantons = sorted({str(c).strip().upper() for c in (value or ()) if str(c).strip()})
+    single = [c for c in cantons if c not in language_source.OFFICIAL]
+    if single:
+        raise ValueError(
+            f"{', '.join(single)} {'has' if len(single) == 1 else 'have'} one official "
+            "language. A message is written in several only in "
+            f"{', '.join(sorted(language_source.OFFICIAL))}."
+        )
+    return cantons
+
+
+def _languages(campaign: Row, canton: str | None, language: str) -> list[str]:
+    """The languages of the message to one firm, its own first."""
+    canton = (canton or "").upper()
+    if canton not in (campaign.get("bilingual") or ()):
+        return [language]
+    return [language] + [lang for lang in language_source.OFFICIAL[canton]
+                         if lang != language]
+
+
+def _wave_language(campaign: Row, canton: str | None, language: str) -> str:
+    """What the waves group a firm under. Every firm of a bilingual canton reads
+    the same versions, so they make one group whatever each one speaks."""
+    canton = (canton or "").upper()
+    if canton in (campaign.get("bilingual") or ()):
+        return "+".join(language_source.OFFICIAL[canton])
+    return language
+
+
+def _parts(found: Any, campaign: Row, message: Row) -> list[template.Template | None]:
+    """The template of each language the message is written in, in order."""
+    return [template.pick(found, lang, message["segment"])
+            for lang in _languages(campaign, message["canton"], message["language"])]
+
+
 def create(settings: Settings, conn: Connection, *, code: str, name: str,
            audience: str | int, templates: str, strategy: str,
            programme: str = "", **params: Any) -> int:
@@ -82,6 +122,8 @@ def create(settings: Settings, conn: Connection, *, code: str, name: str,
         raise ValueError(f"Unknown strategy {strategy!r}. Known: "
                          + ", ".join(sorted(waves.STRATEGIES)))
     _templates_dir(settings, templates)
+    if params.get("bilingual") is not None:
+        params["bilingual"] = bilingual_cantons(params["bilingual"])
     listed = audience_stage.resolve(conn, audience)
     programme_id = None
     if programme:
@@ -109,6 +151,8 @@ def plan(settings: Settings, conn: Connection, *, campaign: str | int,
     if changes:
         if "strategy" in changes and changes["strategy"] not in waves.STRATEGIES:
             raise ValueError(f"Unknown strategy {changes['strategy']!r}.")
+        if "bilingual" in changes:
+            changes["bilingual"] = bilingual_cantons(changes["bilingual"])
         if not dry_run:
             campaign_store.update_campaign(conn, int(row["id"]), **changes)
         row = {**row, **changes}
@@ -119,7 +163,8 @@ def plan(settings: Settings, conn: Connection, *, campaign: str | int,
             "deliberately, or plan smaller waves."
         )
     people = [
-        waves.Recipient(int(r["member_id"]), r["company"], r["canton"], r["language"],
+        waves.Recipient(int(r["member_id"]), r["company"], r["canton"],
+                        _wave_language(row, r["canton"], r["language"]),
                         r["segment"], float(r["score"]))
         for r in campaign_store.kept_members(conn, int(row["audience_id"]))
     ]
@@ -191,7 +236,8 @@ def render_wave(settings: Settings, conn: Connection, *, campaign: str | int,
                                         f"dropped from the list since the plan: "
                                         f"{m['member_reason']}")
     messages = _live(campaign_store.wave_messages(conn, int(w["id"])))
-    needs = Counter((m["language"], m["segment"]) for m in messages)
+    needs = Counter((lang, m["segment"]) for m in messages
+                    for lang in _languages(row, m["canton"], m["language"]))
     gaps = template.missing(needs, found, row["templates"])
     if gaps:
         conn.rollback()
@@ -201,21 +247,23 @@ def render_wave(settings: Settings, conn: Connection, *, campaign: str | int,
     used: list[template.Template] = []
     written = skipped = 0
     for m in messages:
-        t = template.pick(found, m["language"], m["segment"])
-        body = t.body.rstrip() + "\n"
+        parts = _parts(found, row, m)
+        subject, body = template.combine(parts)
         draft_id = scout_store.propose(
             conn, int(m["company_id"]), address=m["address"], language=m["language"],
-            subject=t.subject, body=body, model=f"template:{t.path}@{t.sha[:8]}",
-            digest=t.sha[:16], replace_id=m["draft_id"],
+            subject=subject, body=body,
+            model="template:" + "+".join(f"{t.path}@{t.sha[:8]}" for t in parts),
+            digest=parts[0].sha[:16] if len(parts) == 1 else template.digest(parts)[:16],
+            replace_id=m["draft_id"],
         )
         if draft_id is None:
             campaign_store.drop_message(conn, int(m["message_id"]),
                                         "another open draft already holds this mailbox")
             skipped += 1
             continue
-        campaign_store.link_draft(conn, int(m["message_id"]), draft_id, t.variant)
-        if t not in used:
-            used.append(t)
+        campaign_store.link_draft(conn, int(m["message_id"]), draft_id,
+                                  "+".join(t.variant for t in parts))
+        used.extend(t for t in parts if t not in used)
         written += 1
     campaign_store.set_rendered(conn, int(w["id"]), template.digest(used))
     conn.commit()
@@ -232,9 +280,8 @@ def _current_digest(settings: Settings, conn: Connection, campaign: Row,
                          root=Path(settings.root))
     used = []
     for m in _live(campaign_store.wave_messages(conn, int(wave["id"]))):
-        t = template.pick(found, m["language"], m["segment"])
-        if t is not None and t not in used:
-            used.append(t)
+        used.extend(t for t in _parts(found, campaign, m)
+                    if t is not None and t not in used)
     return template.digest(used)
 
 

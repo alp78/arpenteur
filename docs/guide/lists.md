@@ -13,6 +13,7 @@ The form under the table takes:
 - a code, such as DRYMOS-1, and a name
 - the segments it draws from, each with a weight between 0 and 1, written as `tourism-office=1, mountain-transport=0.7`
 - the cantons it covers, or none for every canton
+- the most firms kept in each canton, for a pilot that samples every canton rather than filling up from the largest; blank keeps every firm the rule accepts
 - the programme it feeds, if any, and whether to keep only firms already on that programme
 - whether to accept unclear mailboxes, and addresses that only a web search reported
 
@@ -34,7 +35,7 @@ One table per canton, best score first, with the language the message will be wr
 
 **The dropped rows**
 
-The chips above the table name each drop reason with its count. Clicking one shows the firms dropped for it. A commune's administration, a role one person holds, the firm's restaurant, a named person and a consumer mailbox are each set aside with their reason. A mailbox shared by sibling firms is written to once, for the best-scoring of them, and the others say who covers them.
+The chips above the table name each drop reason with its count. Clicking one shows the firms dropped for it. A commune's administration, a role one person holds, the firm's restaurant, a named person and a consumer mailbox are each set aside with their reason. A mailbox shared by sibling firms is written to once, for the best-scoring of them, and the others say who covers them. When the list keeps a set number per canton, the firms past it say their canton was full, and a pinned firm always takes its place.
 
 **Pins**
 

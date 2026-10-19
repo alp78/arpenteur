@@ -29,7 +29,7 @@ from __future__ import annotations
 
 import hashlib
 import re
-from collections.abc import Iterable, Mapping
+from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -125,6 +125,32 @@ def parse(
         if marker in subject or marker in body:
             raise TemplateError(f"{where}: still marked `{marker}`; finish it first.")
     return subject, body
+
+
+# The line that opens every version after the first in a message written in
+# several languages, in that version's own language.
+VERSION_LINE = {
+    "fr": "Version française",
+    "de": "Deutsche Version",
+    "it": "Versione italiana",
+    "rm": "Versiun rumantscha",
+}
+
+
+def combine(parts: Sequence[Template]) -> tuple[str, str]:
+    """The subject and the text of one message from its language versions.
+
+    One version is that version, word for word. Several are joined in the order
+    given: the subjects with a slash, the texts one after the other, every one
+    after the first opened by its own name so a reader can find their language.
+    """
+    if not parts:
+        raise ValueError("A message needs at least one template.")
+    subject = " / ".join(t.subject for t in parts)
+    blocks = [parts[0].body.rstrip()]
+    blocks += [f"{VERSION_LINE.get(t.language, t.language)}\n\n{t.body.rstrip()}"
+               for t in parts[1:]]
+    return subject, "\n\n".join(blocks) + "\n"
 
 
 def is_template_name(name: str) -> bool:

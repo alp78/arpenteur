@@ -105,3 +105,11 @@ def test_every_guess_names_its_evidence() -> None:
 def test_the_canton_rule_agrees_with_the_draft_stage(canton: str) -> None:
     """Repeated here because a source may not import a stage."""
     assert by_canton(canton) == language_of(canton)
+
+
+def test_every_bilingual_canton_names_its_official_languages() -> None:
+    """A campaign writing a canton in each of its languages reads them here."""
+    from arpenteur.sources import language
+
+    assert set(language.OFFICIAL) == language.BILINGUAL
+    assert all(len(langs) >= 2 for langs in language.OFFICIAL.values())

@@ -370,7 +370,7 @@ def stale_domains(conn: Connection, audience_id: int, *, max_age_days: int) -> l
 CAMPAIGN_FIELDS = (
     "name", "templates", "strategy", "strategy_params", "pilot_size", "wave_size",
     "gap_days", "start_on", "bounce_ceiling", "settle_hours", "cooldown_days",
-    "programme_id",
+    "programme_id", "bilingual",
 )
 
 

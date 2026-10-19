@@ -607,9 +607,13 @@ def router(ctx: Console) -> APIRouter:
         code: str = Form(""), name: str = Form(""), segments: str = Form(""),
         cantons: str = Form(""), programme: str = Form(""),
         members_only: str = Form(""), allow_unclear: str = Form(""),
-        allow_hearsay: str = Form(""),
+        allow_hearsay: str = Form(""), per_canton: str = Form(""),
     ) -> RedirectResponse:
         from ...sources import audience as rules
+        places = per_canton.strip()
+        if places and (not places.isdigit() or int(places) < 1):
+            return back("/audiences", error=f"Firms per canton wants a whole number "
+                                            f"from 1, or nothing; not {places!r}.")
         conn = connect()
         try:
             rule = rules.Rule(
@@ -618,6 +622,7 @@ def router(ctx: Console) -> APIRouter:
                 programme=programme.strip().upper(), members_only=bool(members_only),
                 kinds=("desk", "unclear") if allow_unclear else ("desk",),
                 provenance=("page", "hearsay") if allow_hearsay else ("page",),
+                per_canton=int(places) if places else 0,
             )
             new_id = audience_stage.create(conn, code=code, name=name, rule=rule)
         except ValueError as exc:
@@ -768,7 +773,7 @@ def router(ctx: Console) -> APIRouter:
     @router.post("/campaigns/new")
     def campaign_new(code: str = Form(""), name: str = Form(""), audience: str = Form(""),
                      templates: str = Form(""), programme: str = Form(""),
-                     strategy: str = Form("canton-blocks"),
+                     strategy: str = Form("canton-blocks"), bilingual: str = Form(""),
                      start_from_example: str = Form("")) -> RedirectResponse:
         made_folder = ""
         if start_from_example:
@@ -783,7 +788,8 @@ def router(ctx: Console) -> APIRouter:
         try:
             new_id = campaign_stage.create(ctx.settings, conn, code=code, name=name,
                                            audience=audience, templates=templates,
-                                           strategy=strategy, programme=programme)
+                                           strategy=strategy, programme=programme,
+                                           bilingual=bilingual)
         except ValueError as exc:
             conn.rollback()
             if made_folder:
@@ -916,8 +922,11 @@ def router(ctx: Console) -> APIRouter:
     def campaign_plan(campaign_id: int, strategy: str = Form(""),
                       pilot_size: str = Form(""), wave_size: str = Form(""),
                       gap_days: str = Form(""), start_on: str = Form(""),
+                      bilingual: str = Form(""),
                       dry_run: str = Form("")) -> RedirectResponse:
-        changes: dict[str, Any] = {}
+        # The plan form always carries the field, prefilled, so what it posts is
+        # the whole set: a blank clears it.
+        changes: dict[str, Any] = {"bilingual": bilingual}
         if strategy:
             changes["strategy"] = strategy
         for key, raw in (("pilot_size", pilot_size), ("wave_size", wave_size),

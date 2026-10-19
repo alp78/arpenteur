@@ -49,6 +49,16 @@ ITALIAN = frozenset({"TI"})
 # either side of the Sarine and the Raspille, Grisons with three.
 BILINGUAL = frozenset({"BE", "FR", "VS", "GR"})
 
+# The official languages of each of those cantons, the majority's first. A
+# campaign that writes a canton in all of them follows the firm's own language
+# with the others in this order.
+OFFICIAL: dict[str, tuple[str, ...]] = {
+    "BE": ("de", "fr"),
+    "FR": ("fr", "de"),
+    "VS": ("fr", "de"),
+    "GR": ("de", "rm", "it"),
+}
+
 # Stems matched inside a word, because German writes its trades as compounds:
 # `Luftseilbahn`, `Skiliftgenossenschaft`, `Tourismusverein`.
 STEMS: dict[str, tuple[str, ...]] = {

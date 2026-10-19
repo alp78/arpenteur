@@ -73,7 +73,7 @@ ADDRESS_CHECKS: tuple[str, ...] = (
 REASONS: tuple[str, ...] = (
     FIRM_CHECKS
     + tuple(c for c in ADDRESS_CHECKS if c not in FIRM_CHECKS)
-    + ("covered-mailbox", "covered-domain", "operator", KEPT)
+    + ("covered-mailbox", "covered-domain", "canton-full", "operator", KEPT)
 )
 
 # A pin cannot reach past these. Each is a fact about the mailbox that a
@@ -122,6 +122,9 @@ class Rule:
     dedup_domain: bool = True
     use_size: bool = False
     weights: Weights = field(default_factory=Weights)
+    # The most firms kept in any one canton, best score first; 0 keeps all. A
+    # pilot across several cantons samples each of them, not the largest.
+    per_canton: int = 0
 
     def to_json(self) -> dict:
         raw = asdict(self)
@@ -152,6 +155,7 @@ class Rule:
             dedup_domain=bool(raw.get("dedup_domain", base.dedup_domain)),
             use_size=bool(raw.get("use_size", base.use_size)),
             weights=Weights(**{k: float(v) for k, v in weights.items()}),
+            per_canton=int(raw.get("per_canton") or 0),
         )
 
     def digest(self) -> str:
@@ -460,6 +464,7 @@ def assign(judged: Sequence[Judgement], rule: Rule,
 
     mailboxes: dict[str, int] = {}
     domains: dict[str, int] = {}
+    placed: dict[str, int] = {}
     outcomes: list[Outcome] = []
     for j, candidates, pin, total, parts in planned:
         language = j.language
@@ -503,6 +508,15 @@ def assign(judged: Sequence[Judgement], rule: Rule,
                                     option=first, covered_by=holder, **common))
             continue
 
+        if (rule.per_canton and not forced
+                and placed.get(j.canton, 0) >= rule.per_canton):
+            outcomes.append(Outcome(
+                verdict=DROPPED, reason_code="canton-full",
+                reason=f"{j.canton or 'its canton'} has its {rule.per_canton} places "
+                       "taken by firms scored higher",
+                option=chosen, **common))
+            continue
+        placed[j.canton] = placed.get(j.canton, 0) + 1
         mailboxes[chosen.address] = j.company_id
         domains.setdefault(chosen.domain, j.company_id)
         if forced:

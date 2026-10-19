@@ -33,7 +33,7 @@ arpenteur answers [--programme PROGRAMME] [--from-stage FROM_STAGE] [--limit LIM
 A curated list: one chosen mailbox per firm, ranked, deduplicated.
 
 ```text
-arpenteur audience {list,new,show,refresh,build,keep,drop,language,address,unpin,export} [REST ...] [--segment SEGMENT] [--canton CANTON] [--programme PROGRAMME] [--members-only] [--allow ALLOW] [--cooldown COOLDOWN] [--max-age MAX_AGE] [--size] [--dropped] [--reason REASON] [--why WHY] [--out OUT] [--dry-run]
+arpenteur audience {list,new,show,refresh,build,keep,drop,language,address,unpin,export} [REST ...] [--segment SEGMENT] [--canton CANTON] [--programme PROGRAMME] [--members-only] [--allow ALLOW] [--cooldown COOLDOWN] [--max-age MAX_AGE] [--size] [--per-canton PER_CANTON] [--dropped] [--reason REASON] [--why WHY] [--out OUT] [--dry-run]
 ```
 
 - `{list,new,show,refresh,build,keep,drop,language,address,unpin,export}`: list: every list. new CODE "Name" --segment ...: start one. refresh CODE: check its addresses with DNS again. build CODE: choose one mailbox per firm. show CODE: what it keeps and drops. keep, drop CODE UID --why ...: pin a firm either way. language, address CODE UID VALUE: pin a firm's language or mailbox. unpin CODE UID: let the rules decide again. export CODE --out FILE: write it as CSV
@@ -46,6 +46,7 @@ arpenteur audience {list,new,show,refresh,build,keep,drop,language,address,unpin
 - `--cooldown COOLDOWN`: days a mailbox, firm or domain rests after a message (default 180)
 - `--max-age MAX_AGE`: days a DNS verdict stays good enough (default 30)
 - `--size`: let registered capital count
+- `--per-canton PER_CANTON`: for new: the most firms kept in each canton, best score first
 - `--dropped`: for show: the dropped firms too
 - `--reason REASON`: for show: one drop reason only
 - `--why WHY`: for keep and drop: the reason, required
@@ -82,7 +83,7 @@ arpenteur boundaries [--canton CANTON] [--refresh] [--dry-run]
 A message plan over one list, sent in waves after a test and an approval.
 
 ```text
-arpenteur campaign {list,strategies,new,show,plan,render,test,approve,send,pause,resume,results} [REST ...] [--audience AUDIENCE] [--templates TEMPLATES] [--programme PROGRAMME] [--strategy STRATEGY] [--pilot PILOT] [--wave-size WAVE_SIZE] [--gap GAP] [--start START] [--bounce-ceiling BOUNCE_CEILING] [--settle SETTLE] [--cooldown COOLDOWN] [--to TO] [--read] [--confirm CONFIRM] [--why WHY] [--yes] [--dry-run]
+arpenteur campaign {list,strategies,new,show,plan,render,test,approve,send,pause,resume,results} [REST ...] [--audience AUDIENCE] [--templates TEMPLATES] [--programme PROGRAMME] [--strategy STRATEGY] [--pilot PILOT] [--wave-size WAVE_SIZE] [--gap GAP] [--start START] [--bounce-ceiling BOUNCE_CEILING] [--settle SETTLE] [--cooldown COOLDOWN] [--bilingual BILINGUAL] [--to TO] [--read] [--confirm CONFIRM] [--why WHY] [--yes] [--dry-run]
 ```
 
 - `{list,strategies,new,show,plan,render,test,approve,send,pause,resume,results}`: list: every campaign. strategies: the ways waves can be cut. new CODE "Name" --audience LIST --templates DIR: start one. plan CODE: cut the list into waves. render, test, approve, send CODE N: walk wave N through its four steps, none skipped. show, results CODE: where it stands. pause, resume CODE --why: hold the next wave or release it
@@ -98,6 +99,7 @@ arpenteur campaign {list,strategies,new,show,plan,render,test,approve,send,pause
 - `--bounce-ceiling BOUNCE_CEILING`: pause above this share of bounces, e.g. 0.05
 - `--settle SETTLE`: hours bounces get to arrive before the next wave
 - `--cooldown COOLDOWN`: days a mailbox, firm or domain rests after a message
+- `--bilingual BILINGUAL`: for new and plan: cantons whose firms read every official language in one message, e.g. FR,VS; an empty value clears it
 - `--to TO`: for test: where the test goes
 - `--read`: for approve: you received and read every test message
 - `--confirm CONFIRM`: for send: the wave typed back, CODE/N

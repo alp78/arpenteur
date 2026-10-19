@@ -237,3 +237,45 @@ def test_the_rule_round_trips_and_fills_defaults() -> None:
 
 def test_a_rule_always_accepts_a_desk() -> None:
     assert "desk" in A.Rule.from_json({"segments": {}, "kinds": ["unclear"]}).kinds
+
+
+# --- the places per canton ----------------------------------------------------
+
+def test_a_canton_keeps_no_more_firms_than_its_places() -> None:
+    """A pilot of N per canton: the best N of each canton keep their mailbox, and
+    every firm past them says its canton was full rather than vanishing."""
+    rule = A.Rule(segments={"tourism-office": 1.0}, per_canton=2)
+    out = run(firm(1, "A Tourismus", address(11, "info@a.ch"), canton="VS"),
+              firm(2, "B Tourismus", address(21, "info@b.ch"), canton="VS"),
+              firm(3, "C Tourismus", address(31, "info@c.ch"), canton="VS"),
+              firm(4, "D Tourisme", address(41, "info@d.ch"), canton="GE"),
+              rule=rule)
+    kept = sorted(cid for cid, o in out.items() if o.verdict == "kept")
+    assert kept == [1, 2, 4]
+    assert out[3].reason_code == "canton-full"
+    assert "VS" in out[3].reason and "2" in out[3].reason
+    assert sum(n for _, n in A.funnel(out.values())) == 4
+
+
+def test_a_firm_left_out_of_a_full_canton_frees_its_mailbox() -> None:
+    rule = A.Rule(segments={"tourism-office": 1.0}, per_canton=1)
+    out = run(firm(1, "A Tourismus", address(11, "info@a.ch"), canton="VS"),
+              firm(2, "B Tourismus", address(21, "info@b.ch"), canton="VS"),
+              rule=rule)
+    assert out[2].reason_code == "canton-full" and out[2].covered_by is None
+
+
+def test_a_pinned_firm_takes_a_place_and_is_never_left_out() -> None:
+    rule = A.Rule(segments={"tourism-office": 1.0}, per_canton=1)
+    out = run(firm(1, "A Tourismus", address(11, "info@a.ch"), canton="VS"),
+              firm(2, "B Tourismus", address(21, "info@b.ch"), canton="VS"),
+              rule=rule, pins={2: A.Pin(verdict="kept", why="met at a fair")})
+    assert out[2].verdict == "kept"
+    assert out[1].reason_code == "canton-full"
+
+
+def test_no_places_means_no_limit_and_the_rule_round_trips() -> None:
+    assert RULE.per_canton == 0
+    capped = A.Rule(segments={"tourism-office": 1.0}, per_canton=20)
+    assert A.Rule.from_json(capped.to_json()) == capped
+    assert A.Rule.from_json({"segments": {}}).per_canton == 0

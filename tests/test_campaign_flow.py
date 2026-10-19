@@ -170,6 +170,68 @@ def test_rendering_writes_the_template_text_and_appends_nothing(settings, conn, 
     assert not [r for r in rows if "STOP" in r["body"]]
 
 
+def test_a_bilingual_canton_gets_both_versions_its_own_language_first(
+    settings, conn, campaign
+) -> None:
+    """In Valais an agency may work in French or in German. The message carries
+    both, so a wrong guess costs the reader a scroll rather than the message."""
+    planned = C.plan(settings, conn, campaign=campaign, bilingual=["vs"], log=lambda _: None)
+    for wave in range(1, planned["waves"] + 1):
+        C.render_wave(settings, conn, campaign=campaign, wave=wave, log=lambda _: None)
+    rows = conn.execute("SELECT language, subject, body FROM intel.draft").fetchall()
+    assert len(rows) == len(FIRMS)
+    for r in rows:
+        own, other, label = (("Guten Tag", "Madame, Monsieur,", "Version française")
+                             if r["language"] == "de" else
+                             ("Madame, Monsieur,", "Guten Tag", "Deutsche Version"))
+        assert r["body"].index(own) < r["body"].index(label) < r["body"].index(other)
+        assert r["subject"].count(" / ") == 1
+    variants = {r["variant"] for r in conn.execute(
+        "SELECT variant FROM crm.campaign_message WHERE draft_id IS NOT NULL")}
+    assert variants == {"fr+de", "de+fr"}
+
+
+def test_a_bilingual_canton_is_one_wave_whatever_each_firm_speaks(
+    settings, conn, campaign
+) -> None:
+    split = C.plan(settings, conn, campaign=campaign, strategy="canton-per-wave",
+                   pilot_size=0, wave_size=10, log=lambda _: None)
+    assert len(split["sizes"]) == 2
+    joined = C.plan(settings, conn, campaign=campaign, bilingual=["VS"], log=lambda _: None)
+    assert joined["sizes"] == [len(FIRMS)]
+
+
+def test_a_canton_with_one_official_language_cannot_be_bilingual(
+    settings, conn, campaign
+) -> None:
+    with pytest.raises(ValueError, match="GE"):
+        C.plan(settings, conn, campaign=campaign, bilingual=["GE"], log=lambda _: None)
+
+
+def test_a_bilingual_message_needs_the_other_language_too(settings, conn, campaign) -> None:
+    conn.execute("UPDATE crm.audience_member SET language = 'fr'")
+    conn.commit()
+    (Path(settings.root) / "templates" / "drymos" / "de.md").unlink()
+    C.render_wave(settings, conn, campaign=campaign, wave=1, log=lambda _: None)
+    C.plan(settings, conn, campaign=campaign, bilingual=["VS"], log=lambda _: None)
+    with pytest.raises(ValueError, match="templates/drymos/de.md"):
+        C.render_wave(settings, conn, campaign=campaign, wave=1, log=lambda _: None)
+
+
+def test_an_edit_to_the_second_version_blocks_the_send(settings, conn, campaign) -> None:
+    C.plan(settings, conn, campaign=campaign, bilingual=["VS"], log=lambda _: None)
+    ready(settings, conn, campaign)
+    folder = Path(settings.root) / "templates" / "drymos"
+    for name, text in (("de.md", DE), ("fr.md", FR)):
+        (folder / name).write_text(text.replace("Ein Atlas", "Ein neuer Atlas"),
+                                   encoding="utf-8")
+        with pytest.raises(ValueError, match="changed after it was rendered"):
+            C.send_wave(settings, conn, campaign=campaign, wave=1, confirm="DRYMOS-A/1",
+                        open_sender=FakeSender(), sleep=lambda _s: None,
+                        log=lambda _: None)
+        (folder / name).write_text(text, encoding="utf-8")
+
+
 def test_rendering_refuses_without_a_signature(settings, conn, campaign) -> None:
     (Path(settings.root) / "signature.html").write_text("", encoding="utf-8")
     with pytest.raises(ValueError, match="signature"):

@@ -15,12 +15,19 @@ A campaign needs a list, so make one first. The form takes:
 - the folder holding its messages, one file per language, or the box "Start from the example", which copies the example folder under the campaign's code
 - the programme whose cards the sends move, if any
 - how the waves are cut: the cantons together by language, one canton per wave, the best score within each language, or the best score overall
+- the bilingual cantons, if any, where every firm reads the French and the German text in one message
 
 ## The campaign's page
 
 **The messages**
 
 The Messages panel lists the campaign's folder, one row per language, with the subject the file carries or the fault it has. Each row opens an editor. The message is the text between two lines of three dashes; its first line is the subject, written as the language's own label followed by a colon, such as `Objet :`. There are no placeholders: every recipient of a language receives the same words, so the test you receive is the message every firm in the wave receives. The text goes out word for word with the signature appended at sending time, so an opt-out sentence is written here, as the last paragraph before the closing. The example templates carry one in each language. The editor refuses a file that cannot be sent, names the reason, and keeps your text in the box.
+
+**The bilingual cantons**
+
+In Fribourg and Valais an agency may work in French or in German, and the language guessed from its name is least certain there. A campaign that names such a canton writes each of its firms one message carrying both texts: the firm's own language first, then the other, opened by a line such as "Deutsche Version". The subject joins the two subjects with a slash. Both files must exist, and the test sends one message per order, French first and German first. Bern and Grisons can be named as well, each with German first. A canton with one official language is refused.
+
+With one canton per wave, the firms of a bilingual canton make a single wave, since they all read the same message.
 
 **The plan**
 

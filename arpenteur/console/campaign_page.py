@@ -84,6 +84,9 @@ def audiences_page(rows: Sequence[Row], segments: Sequence[str],
                              "0 and 1. Known: " + ", ".join(segments))
         + ui.text_field("cantons", "Cantons", placeholder="VS, BE",
                         hint="Blank for every canton.")
+        + ui.text_field("per_canton", "Firms per canton", placeholder="20",
+                        hint="The most firms kept in each canton, best score first. "
+                             "Blank keeps every firm the rule accepts.")
         + ui.select_field("programme", "Programme",
                           [(p["code"], p["code"]) for p in programmes], blank="none")
         + ui.checkbox("members_only", "Only firms on the programme")
@@ -157,7 +160,8 @@ def audience_page(audience: Row, rows: Sequence[Row], funnel: Sequence[tuple[str
     summary = (
         f"Segments {esc(', '.join(f'{k} {v}' for k, v in (rule.get('segments') or {}).items()))}"
         f"; cantons {esc(', '.join(rule.get('cantons') or []) or 'all')}"
-        f"; addresses {esc(', '.join(rule.get('kinds') or ['desk']))} read off "
+        + (f", at most {esc(rule['per_canton'])} firms each" if rule.get("per_canton") else "")
+        + f"; addresses {esc(', '.join(rule.get('kinds') or ['desk']))} read off "
         f"{esc(', '.join(rule.get('provenance') or ['page']))}"
         f"; cooldown {esc(rule.get('cooldown_days', 180))} days."
     )
@@ -254,6 +258,8 @@ def campaigns_page(rows: Sequence[Row], audiences: Sequence[Row],
         + ui.select_field("programme", "Programme",
                           [(p["code"], p["code"]) for p in programmes], blank="none")
         + _strategy_field("canton-blocks")
+        + ui.text_field("bilingual", "Bilingual cantons", placeholder="FR, VS",
+                        hint="Their firms read the French and the German text in one message, their own language first. Blank writes every firm in its own language only.")
         + "<div class='ctl ctl-wide'>"
         + ui.button("Create the campaign", primary=True, disabled=not audiences)
         + "</div></form>"
@@ -366,6 +372,9 @@ def campaign_page(campaign: Row, wave_rows: Sequence[Row], results: dict[int, An
                         kind="number")
         + ui.text_field("start_on", "First wave", kind="date",
                         value=str(campaign["start_on"] or ""))
+        + ui.text_field("bilingual", "Bilingual cantons", placeholder="FR, VS",
+                        value=", ".join(campaign["bilingual"] or ()),
+                        hint="Their firms read the French and the German text in one message, their own language first. Blank writes every firm in its own language only.")
         + ui.checkbox("dry_run", "Show the cut, keep nothing", checked=True)
         + "<div class='ctl ctl-wide'>" + ui.button("Plan the waves", primary=True)
         + "</div></form>"
@@ -401,7 +410,10 @@ def campaign_page(campaign: Row, wave_rows: Sequence[Row], results: dict[int, An
         f"<h1>{esc(campaign['code'])}: {esc(campaign['name'])}</h1>"
         f"<p class='lede'>List <a href='/audience/{campaign['audience_id']}'>"
         f"{esc(campaign['audience_code'])}</a>, templates {esc(campaign['templates'])}, "
-        f"programme {esc(campaign['programme_code'] or 'none')}. State: {esc(state)}. "
+        f"programme {esc(campaign['programme_code'] or 'none')}"
+        + (f", French and German together in {esc(', '.join(campaign['bilingual']))}"
+           if campaign["bilingual"] else "")
+        + f". State: {esc(state)}. "
         'Every message carries your <a href="/signature">signature</a>.</p>'
         + banner
         + (_messages_panel(cid, campaign["templates"], files) if files else "")
