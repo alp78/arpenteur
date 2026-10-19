@@ -638,6 +638,27 @@ def resume(conn: Connection, campaign_id: int, *, reason: str, by: str) -> None:
                         from_state="paused", to_state="running", by=by, reason=reason)
 
 
+def resumed_after_gate(conn: Connection, campaign_id: int, wave_number: int) -> bool:
+    """Whether a person resumed the campaign after the gate paused it over this
+    wave's bounces. That resume, with its written reason, is the answer the
+    pause asked for; a resume that came before the pause, or after a pause for
+    another reason, is not. Rows are ordered by id rather than by time: the
+    log keeps whole seconds, and a resume can share its pause's second."""
+    return conn.execute(
+        """
+        SELECT 1 FROM audit.state_change r
+         WHERE r.entity = 'campaign' AND r.entity_id = %s
+           AND r.from_state = 'paused' AND r.to_state = 'running'
+           AND r.id > (SELECT max(p.id) FROM audit.state_change p
+                        WHERE p.entity = 'campaign' AND p.entity_id = %s
+                          AND p.to_state = 'paused' AND p."by" = 'gate'
+                          AND p.reason LIKE %s)
+         LIMIT 1
+        """,
+        (campaign_id, campaign_id, f"wave {int(wave_number)}:%"),
+    ).fetchone() is not None
+
+
 def tests_of_wave(conn: Connection, wave_id: int) -> list[Row]:
     """Every test this wave sent the operator, newest first."""
     return conn.execute(

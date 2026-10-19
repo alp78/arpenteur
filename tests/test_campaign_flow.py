@@ -350,6 +350,50 @@ def test_a_pilot_above_the_ceiling_pauses_the_campaign(settings, conn, campaign)
     assert K.campaign_by_code(conn, campaign)["paused_at"] is not None
 
 
+def _bounce_the_pilot(settings, conn, campaign) -> None:
+    """Send wave 1, bounce its one message, read the mailbox, render wave 2."""
+    ready(settings, conn, campaign, wave=1)
+    out = FakeSender()
+    C.send_wave(settings, conn, campaign=campaign, wave=1, confirm="DRYMOS-A/1",
+                open_sender=out, sleep=lambda _s: None, log=lambda _: None)
+    conn.execute("UPDATE core.contact SET status = 'bounced', status_at = now()"
+                 " WHERE lower(value) = %s", (str(out.posted[0]["To"]).lower(),))
+    conn.execute("INSERT INTO intel.run (stage, started_at, finished_at)"
+                 " VALUES ('bounces', now(), now())")
+    conn.commit()
+    ready(settings, conn, campaign, wave=2)
+
+
+def _send_two(settings, conn, campaign) -> dict:
+    return C.send_wave(settings, conn, campaign=campaign, wave=2, confirm="DRYMOS-A/2",
+                       open_sender=FakeSender(), sleep=lambda _s: None, log=lambda _: None)
+
+
+def test_a_resume_with_a_reason_lets_the_next_wave_past_the_ceiling(
+    settings, conn, campaign
+) -> None:
+    """The pause asks a person to read the bounces. Once they have resumed the
+    campaign with a reason, the wave that paused it holds it no longer."""
+    _bounce_the_pilot(settings, conn, campaign)
+    with pytest.raises(ValueError, match="above"):
+        _send_two(settings, conn, campaign)
+    campaign_id = int(K.campaign_by_code(conn, campaign)["id"])
+    K.resume(conn, campaign_id, reason="a dead domain, not a refusal of ours", by="test")
+    conn.commit()
+    assert _send_two(settings, conn, campaign)["sent"] >= 1
+
+
+def test_a_resume_before_the_gate_paused_is_no_answer_to_it(settings, conn, campaign) -> None:
+    _bounce_the_pilot(settings, conn, campaign)
+    campaign_id = int(K.campaign_by_code(conn, campaign)["id"])
+    K.pause(conn, campaign_id, reason="lunch", by="test")
+    K.resume(conn, campaign_id, reason="back", by="test")
+    conn.commit()
+    with pytest.raises(ValueError, match="above"):
+        _send_two(settings, conn, campaign)
+    assert K.campaign_by_code(conn, campaign)["paused_at"] is not None
+
+
 def test_planning_refuses_a_wave_larger_than_one_run(settings, conn, campaign) -> None:
     with pytest.raises(ValueError, match="per_run"):
         C.plan(settings, conn, campaign=campaign, wave_size=40, log=lambda _: None)

@@ -463,7 +463,9 @@ def why_not_send(settings: Settings, conn: Connection, row: Row, w: Row,
             if ready and datetime.now(timezone.utc) < ready:
                 return f"the gap after wave {number - 1} runs until {ready:%d.%m.%Y %H:%M}"
             gate = results(settings, conn, campaign=row["id"]).get(number - 1)
-            if gate and not gate["gate"].open:
+            answered = bool(gate and gate["gate"].pause and campaign_store.resumed_after_gate(
+                conn, int(row["id"]), number - 1))
+            if gate and not gate["gate"].open and not answered:
                 if gate["gate"].pause and act:
                     campaign_store.pause(conn, int(row["id"]),
                                          reason=f"wave {number - 1}: {gate['gate'].why}",
