@@ -2734,3 +2734,111 @@ def home_counts(conn: Connection) -> dict[str, int]:
     companies = conn.execute("SELECT COUNT(*) AS n FROM core.company").fetchone()["n"]
     on_board = conn.execute("SELECT COUNT(*) AS n FROM intel.prospect").fetchone()["n"]
     return {"companies": int(companies), "on_board": int(on_board)}
+
+
+# --- a replacement for an address that bounced ---------------------------------
+#
+# A search for one firm, and what it proposed. A proposal becomes an address
+# only when a person accepts it, and a refused one is kept so no later search
+# offers it again. The methods an accepted address is stored under say where
+# it was found, so a list built later can still weigh it.
+
+FOUND_BY_METHOD = {"page": "published", "listing": "listing", "inferred": "inferred"}
+
+
+def record_address_search(
+    conn: Connection, company_id: int, *, replaces: Sequence[str],
+    domains: Sequence[dict[str, str]], tried: Sequence[dict[str, str]],
+    searches: int = 0, pages: int = 0,
+) -> None:
+    conn.execute(
+        """
+        INSERT INTO intel.address_search
+            (company_id, replaces, domains, tried, searches, pages, searched_at)
+        VALUES (%s, %s, %s, %s, %s, %s, now())
+        ON CONFLICT (company_id) DO UPDATE SET
+            replaces = excluded.replaces, domains = excluded.domains,
+            tried = excluded.tried, searches = excluded.searches,
+            pages = excluded.pages, searched_at = excluded.searched_at
+        """,
+        (company_id, list(replaces), json_param(list(domains)), json_param(list(tried)),
+         searches, pages),
+    )
+
+
+def address_search(conn: Connection, company_id: int) -> Row | None:
+    return conn.execute(
+        "SELECT * FROM intel.address_search WHERE company_id = %s", (company_id,)
+    ).fetchone()
+
+
+def propose_address(
+    conn: Connection, company_id: int, *, address: str, kind: str, found_by: str,
+    source_url: str | None, verdict: str | None, note: str = "",
+) -> bool:
+    """Offer one address for a person to decide on. False when already offered."""
+    row = conn.execute(
+        """
+        INSERT INTO intel.address_proposal
+            (company_id, address, kind, found_by, source_url, verdict, note)
+        VALUES (%s, %s, %s, %s, %s, %s, %s)
+        ON CONFLICT (company_id, lower(address)) DO NOTHING
+        RETURNING id
+        """,
+        (company_id, address.strip(), kind, found_by, source_url, verdict, note),
+    ).fetchone()
+    return row is not None
+
+
+def address_proposals(conn: Connection, company_id: int) -> list[Row]:
+    """Every proposal for this firm, the undecided first, then the newest."""
+    return conn.execute(
+        """
+        SELECT * FROM intel.address_proposal WHERE company_id = %s
+         ORDER BY decision IS NOT NULL, found_at DESC, id
+        """,
+        (company_id,),
+    ).fetchall()
+
+
+def decide_address(conn: Connection, proposal_id: int, *, accept: bool, by: str) -> Row:
+    """Accept a proposal, which stores it as the firm's address, or refuse it."""
+    row = conn.execute(
+        "SELECT * FROM intel.address_proposal WHERE id = %s FOR UPDATE", (proposal_id,)
+    ).fetchone()
+    if row is None:
+        raise ValueError(f"No proposal {proposal_id}.")
+    if row["decision"]:
+        raise ValueError(f"{row['address']} was already {row['decision']}.")
+    contact_id = None
+    if accept:
+        save_contact(conn, company_id=int(row["company_id"]), kind="email",
+                     value=row["address"], source_url=row["source_url"],
+                     method=FOUND_BY_METHOD[row["found_by"]], status=row["verdict"])
+        contact_id = conn.execute(
+            "SELECT id FROM core.contact WHERE company_id = %s AND kind = 'email'"
+            " AND value = %s", (row["company_id"], row["address"])).fetchone()["id"]
+    return conn.execute(
+        """
+        UPDATE intel.address_proposal
+           SET decision = %s, decided_at = now(), decided_by = %s, contact_id = %s
+         WHERE id = %s RETURNING *
+        """,
+        ("accepted" if accept else "refused", by, contact_id, proposal_id),
+    ).fetchone()
+
+
+def accepted_address(conn: Connection, company_id: int) -> Row | None:
+    """The address a person last accepted for this firm, while it still works."""
+    return conn.execute(
+        """
+        SELECT p.*, k.status AS contact_status, k.suppressed
+          FROM intel.address_proposal p
+          JOIN core.contact k ON k.id = p.contact_id
+         WHERE p.company_id = %s AND p.decision = 'accepted'
+           AND k.suppressed IS NOT TRUE AND coalesce(k.status, '') <> 'bounced'
+         ORDER BY p.decided_at DESC, p.id DESC
+         LIMIT 1
+        """,
+        (company_id,),
+    ).fetchone()

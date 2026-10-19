@@ -248,3 +248,37 @@ Found and fixed on the way:
 - Every test fixture naming a model id outside the family was renamed into it, since an id is now checked at load.
 
 The suite: 1,694 passed, 40 of them new, ruff clean.
+
+---
+
+## A replacement for an address that bounced (19.10.2026)
+
+The operator asked for a button that does what was done by hand for three bounced Limen addresses: look further, propose what was found, and let the operator accept or refuse each one. A refused proposal is never proposed again; an accepted one becomes the firm's address and can receive the wave's message.
+
+Decisions:
+- The domain verdict checks that a named mail server exists. `agencefj.ch` passed as deliverable with an MX record pointing at a host that does not exist; one function now gives the verdict for the list check, the hunt and the search.
+- The search reuses the hunt's pieces: the firm's own pages under robots.txt, one paid web search asked for every address the firm publishes anywhere, and the role address at a domain that takes mail. Addresses outside the firm's domain are proposed with that said, since a person decides; the hunt itself still drops them.
+- The message to an accepted address goes through the wave's own send route and stage, with the wave's typed confirmation. No third route sends.
+
+- [x] Domain verdict: a mail server that does not exist, and a null MX, read as dead. Tests.
+- [x] Schema: `intel.address_search` and `intel.address_proposal` (scout 0019); `crm.campaign_message.replacement_draft_id` (clients 0014).
+- [x] Store: record a search, list proposals, accept (stores the address with its source) or refuse.
+- [x] Stage `replace`: diagnose the domain, read the own pages, search, guess the role address, classify, store. Tests with a fake site and a fake model.
+- [x] Console: "Find a replacement" on a bounced address, the proposals panel with Use and Refuse, a run for the search. Tests.
+- [x] Wave: a bounced recipient links to its replacement; an accepted one is sent the wave's message through the wave's send route. Tests, the sending guards kept.
+- [x] Command line: `arpenteur replace UID [--accept A | --refuse A]`, `campaign send CODE N --replacement UID`.
+- [x] Manual: companies, campaigns, legal; the command reference regenerated.
+- [x] Suite, ruff, a live search for the one bounced agency still without an address.
+
+### Review, 19.10.2026
+
+What exists now:
+
+- A domain whose named mail server does not exist, or that declares a null MX, reads as dead in the list check, the hunt and the search alike.
+- A bounced address says so on the company page, which then offers Find a replacement. The search runs as a run on its own lane: the firm's mail domains with their verdict, its own pages under robots.txt, one web search told which addresses bounced, and one desk guess per domain at a domain that takes mail. Each proposal names what it reaches, where it was found and what is uncertain; Use this address stores it with its source, Refuse keeps it from ever being proposed again.
+- A wave's page lists its bounced recipients. Once a replacement is accepted, the recipient is sent the wave's own draft, word for word, through the wave's send route and stage with the wave's code typed again; no cooldown, allowed while paused, once per message. The company page links to the wave where its message bounced.
+- `arpenteur replace UID` with `--show`, `--accept`, `--refuse`, and `campaign send CODE N --replacement UID`.
+
+On the live database: the two replacements sent by hand this morning are recorded as accepted proposals and as their messages' replacements, saying they were made by hand. A real search for Axis Immobilier read its site, which still prints only the bounced `contact@`, ran three web searches that found nothing else, and proposed `info@axis-immobilier.com` as a guess, undecided.
+
+The suite: 1,797 passed, 27 of them new, ruff clean.

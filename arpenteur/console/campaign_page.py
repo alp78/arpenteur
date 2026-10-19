@@ -446,9 +446,10 @@ def wave_page(campaign: Row, wave: Row, messages: Sequence[Row], variants: Seque
         f"<tr><td>{esc(m['company_name'])}</td><td>{esc(m['canton'])}</td>"
         f"<td>{esc(m['language'])}</td><td>{esc(m['address'])}</td>"
         f"<td>{esc(m['variant'] or '')}</td>"
-        f"<td>{'sent' if m['sent_at'] else ('dropped: ' + esc(m['dropped_reason']) if m['dropped_at'] else ('approved' if m['reviewed_at'] else ''))}</td></tr>"
+        f"<td>{(('bounced' if m.get('address_status') == 'bounced' else 'sent') if m['sent_at'] else ('dropped: ' + esc(m['dropped_reason']) if m['dropped_at'] else ('approved' if m['reviewed_at'] else '')))}</td></tr>"
         for m in messages
     ]
+    bounced = [m for m in messages if m["sent_at"] and m.get("address_status") == "bounced"]
     rendered, tested, approved, sent = (bool(wave["rendered_at"]), bool(wave["tested_at"]),
                                         bool(wave["approved_at"]), bool(wave["sent_at"]))
 
@@ -486,6 +487,16 @@ def wave_page(campaign: Row, wave: Row, messages: Sequence[Row], variants: Seque
         f"<td>{'posted' if t['posted_at'] else ('failed: ' + esc(t['failure'] or '') if t['failed_at'] else 'no outcome')}</td></tr>"
         for t in tests
     ]
+    bounced_panel = ui.panel(
+        "Bounced",
+        ui.table(["firm", "address that bounced", "replacement", ""],
+                 [_bounced_row(m, base, confirmation) for m in bounced],
+                 caption=f"Wave {number} recipients whose address bounced"),
+        always=True,
+        note="Find a replacement on the firm's page and accept it there. The message "
+             "this wave sent then goes to it, word for word, once the wave's code is "
+             "typed again.",
+    ) if bounced else ""
     return (
         f"{ui.crumbs([('/campaigns', 'Campaigns'), (f'/campaign/{cid}', campaign['code']), ('', f'Wave {number}')])}"
         f"<h1>{esc(campaign['code'])}, wave {number}" + (" (pilot)" if wave["pilot"] else "")
@@ -499,7 +510,29 @@ def wave_page(campaign: Row, wave: Row, messages: Sequence[Row], variants: Seque
         + ui.panel("Tests sent", ui.table(["when", "to", "variant", "outcome"], test_rows,
                                           caption="Tests of this wave",
                                           empty_text="No test sent yet."), always=True)
+        + bounced_panel
         + ui.panel("Recipients", ui.table(
             ["firm", "canton", "lang", "address", "variant", "state"], rows,
             caption=f"Wave {number} recipients"), always=True)
     )
+
+
+def _bounced_row(m: Row, base: str, confirmation: str) -> str:
+    """One bounced recipient: what bounced, what replaces it, and the next act."""
+    firm = f"<a href='/company/{m['company_id']}'>{esc(m['company_name'])}</a>"
+    if m["replacement_sent_at"]:
+        act = f"sent again to {esc(m['replacement_address'])}"
+    elif m["accepted_address"]:
+        field_id = f"again-{m['company_id']}"
+        act = (
+            f"<form method='post' action='{base}/send' class='inline'>"
+            f"<input type='hidden' name='replacement' value='{m['company_id']}'>"
+            + ui.sr_label(f"Type {confirmation} to send", field_id)
+            + f"<input name='confirm' id='{field_id}' required placeholder='{esc(confirmation)}'> "
+            + ui.button(f"Send to {m['accepted_address']}", primary=True) + "</form>"
+        )
+    else:
+        act = f"<a href='/company/{m['company_id']}#replacement'>Find a replacement</a>"
+    return (f"<tr><td>{firm}</td><td>{esc(m['address'])}</td>"
+            f"<td>{esc(m['accepted_address'] or m['replacement_address'] or '')}</td>"
+            f"<td>{act}</td></tr>")

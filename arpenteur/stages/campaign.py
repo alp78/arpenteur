@@ -478,24 +478,106 @@ def why_not_send(settings: Settings, conn: Connection, row: Row, w: Row,
     return ""
 
 
+def why_not_replace(settings: Settings, conn: Connection, row: Row, w: Row,
+                    company_id: int, confirm: str) -> tuple[str, Row | None]:
+    """Why one bounced message may not be sent again now, or "" with the message.
+
+    The wave's typed code is asked for again: this is the wave's send route
+    posting one more message, and it takes the same deliberate act. A paused
+    campaign may still send a replacement, since the pause holds the next
+    wave and this one has already gone.
+    """
+    if (confirm or "").strip().upper() != confirmation(row, w).upper():
+        return f"type {confirmation(row, w)} to send", None
+    if row["closed_at"]:
+        return f"{row['code']} is closed", None
+    if not w["sent_at"]:
+        return (f"wave {w['number']} has not been sent, and its own send writes to "
+                "its recipients"), None
+    m = next((m for m in campaign_store.wave_messages(conn, int(w["id"]))
+              if int(m["company_id"]) == int(company_id)), None)
+    if m is None:
+        return f"that firm is not in wave {w['number']}", None
+    if m["address_status"] != "bounced":
+        return f"{m['address']} did not bounce", None
+    if m["replacement_sent_at"]:
+        return f"already sent again, to {m['replacement_address']}", None
+    if not m["accepted_address"]:
+        return ("no replacement address is accepted for this firm yet; find one on "
+                "its page"), None
+    room = settings.smtp.daily_quota - campaign_store.attempts_since(conn, hours=24)
+    if room <= 0:
+        return f"the daily quota of {settings.smtp.daily_quota} is used up", None
+    return "", m
+
+
 def precheck_send(settings: Settings, form: dict[str, Any]) -> None:
     """Run synchronously by the console before the job starts."""
     from .. import db
     with db.open_db(settings.database_url, getattr(settings, "modules", ())) as conn:
         row = resolve(conn, form["campaign"])
-        reason = why_not_send(settings, conn, row, _wave(conn, row, int(form["wave"])),
-                               str(form.get("confirm") or ""))
+        w = _wave(conn, row, int(form["wave"]))
+        confirm = str(form.get("confirm") or "")
+        if str(form.get("replacement") or "").strip():
+            reason, _m = why_not_replace(settings, conn, row, w,
+                                         int(form["replacement"]), confirm)
+        else:
+            reason = why_not_send(settings, conn, row, w, confirm)
         if reason:
             raise ValueError(reason)
 
 
+def send_replacement(settings: Settings, conn: Connection, row: Row, w: Row, *,
+                     company_id: int, confirm: str, log: Callable[[str], None],
+                     open_sender: Callable[..., Any] | None,
+                     sleep: Callable[[float], None]) -> dict[str, Any]:
+    """Send a bounced message again, word for word, to the address accepted for it.
+
+    The words are the draft the wave approved and sent, not a fresh render, so
+    what goes is what was tested even if a template changed since. No cooldown
+    applies: the first message never arrived.
+    """
+    reason, m = why_not_replace(settings, conn, row, w, company_id, confirm)
+    if reason:
+        raise ValueError(reason)
+    draft_id = scout_store.propose(
+        conn, int(m["company_id"]), address=m["accepted_address"], language=m["language"],
+        subject=m["subject"] or "", body=m["body"] or "",
+        model=f"replacement of draft {m['draft_id']}", digest=f"draft-{m['draft_id']}",
+        replace_id=m["replacement_draft_id"],
+    )
+    if draft_id is None:
+        raise ValueError(f"another open draft already holds {m['accepted_address']}")
+    scout_store.review_drafts(conn, [draft_id])
+    campaign_store.link_replacement(conn, int(m["message_id"]), draft_id)
+    conn.commit()
+    log(f"{row['code']} wave {w['number']}: {m['company_name']}, {m['address']} "
+        f"bounced; the same message goes to {m['accepted_address']}")
+    stats = send_stage.run(
+        settings, conn, draft_ids=[draft_id], confirm=True,
+        programme=row["programme_code"] or "", wave_id=int(w["id"]), kind="message",
+        log=log, open_sender=open_sender, sleep=sleep,
+    )
+    conn.commit()
+    return {**stats, "replacement": m["accepted_address"]}
+
+
 def send_wave(settings: Settings, conn: Connection, *, campaign: str | int, wave: int,
-              confirm: str, log: Callable[[str], None] = print,
+              confirm: str, replacement: int | None = None,
+              log: Callable[[str], None] = print,
               open_sender: Callable[..., Any] | None = None,
               sleep: Callable[[float], None] = time.sleep) -> dict[str, Any]:
-    """Post the wave's approved drafts, checked again inside the job."""
+    """Post the wave's approved drafts, checked again inside the job.
+
+    With `replacement`, a firm's number, it posts instead that firm's bounced
+    message again to the address accepted for it, and nothing else.
+    """
     row = resolve(conn, campaign)
     w = _wave(conn, row, wave)
+    if replacement is not None:
+        return send_replacement(settings, conn, row, w, company_id=int(replacement),
+                                confirm=confirm, log=log, open_sender=open_sender,
+                                sleep=sleep)
     reason = why_not_send(settings, conn, row, w, confirm)
     if reason:
         raise ValueError(reason)

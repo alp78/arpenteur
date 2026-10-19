@@ -29,6 +29,7 @@ from __future__ import annotations
 
 import re
 import unicodedata
+from typing import Any
 
 import dns.exception
 import dns.resolver
@@ -156,40 +157,117 @@ def domain_of(address: str) -> str:
     return (address or "").strip().lower().rpartition("@")[2]
 
 
+# What a domain's mail setup says, and what each answer means for a send.
+#
+# `deliverable` is a mail server that exists, not a mailbox that does: the
+# strongest thing DNS offers and still not proof. `maybe` is an address record
+# with no MX, which RFC 5321 §5.1 requires a sender to try. `dead` is a domain
+# that does not exist, declares that it takes no mail, or names only mail
+# servers that do not exist. `unknown` is a resolver that did not answer, a
+# fact about the network rather than about the domain.
+DELIVERABLE, MAYBE, DEAD, UNKNOWN = "deliverable", "maybe", "dead", "unknown"
+
+
+def _resolver(timeout: float) -> Any:
+    resolver = dns.resolver.Resolver()
+    resolver.timeout = resolver.lifetime = timeout
+    return resolver
+
+
+def _host_exists(resolver: Any, host: str) -> bool | None:
+    """Whether a mail server's name resolves: True, False, or None unanswered."""
+    unanswered = False
+    for rdtype in ("A", "AAAA"):
+        try:
+            if resolver.resolve(host, rdtype):
+                return True
+        except dns.resolver.NXDOMAIN:
+            return False
+        except dns.resolver.NoAnswer:
+            continue
+        except (dns.exception.Timeout, dns.resolver.NoNameservers):
+            unanswered = True
+        except dns.exception.DNSException:
+            continue
+    return None if unanswered else False
+
+
+def mail_verdict(
+    domain: str, *, timeout: float = 6.0, resolver: Any = None
+) -> tuple[str, str]:
+    """Whether this domain can receive mail, as a verdict and the reason.
+
+    An MX record is not enough. `agencefj.ch` published one naming
+    `agencefj-ch.mail.protection.outlook.com`, a host that no longer exists,
+    and every message to the domain bounced while the check said deliverable.
+    So the servers it names are resolved too, best preference first, and the
+    first one that exists settles it.
+    """
+    domain = (domain or "").strip().lower().rstrip(".")
+    if not domain:
+        return DEAD, "no domain"
+    resolver = resolver or _resolver(timeout)
+    try:
+        answer = resolver.resolve(domain, "MX")
+    except dns.resolver.NXDOMAIN:
+        return DEAD, "the domain does not exist"
+    except (dns.exception.Timeout, dns.resolver.NoNameservers):
+        return UNKNOWN, "the resolver did not answer"
+    except dns.resolver.NoAnswer:
+        answer = None
+    except dns.exception.DNSException as exc:
+        return UNKNOWN, type(exc).__name__
+
+    if answer is not None:
+        hosts = [host for _, host in sorted(
+            (int(record.preference), str(record.exchange).rstrip(".")) for record in answer
+        )]
+        if not any(hosts):
+            return DEAD, "the domain declares that it takes no mail"
+        missing: list[str] = []
+        for host in hosts:
+            exists = _host_exists(resolver, host)
+            if exists:
+                return DELIVERABLE, f"MX {host}"
+            if exists is None:
+                return UNKNOWN, f"the resolver did not answer for {host}"
+            missing.append(host)
+        if len(missing) == 1:
+            return DEAD, f"its mail server {missing[0]} does not exist"
+        return DEAD, "none of its mail servers exists: " + ", ".join(missing)
+
+    # No MX is not no mail: the address record is the fallback a sender must
+    # try, so this is sendable and recorded as the weaker thing it is.
+    try:
+        resolver.resolve(domain, "A")
+        return MAYBE, "no MX, an A record only"
+    except dns.resolver.NXDOMAIN:
+        return DEAD, "the domain does not exist"
+    except (dns.exception.Timeout, dns.resolver.NoNameservers):
+        return UNKNOWN, "the resolver did not answer"
+    except dns.exception.DNSException:
+        return DEAD, "resolves to nothing that takes mail"
+
+
 def accepts_mail(
     domain: str, *, timeout: float = 5.0, cache: dict[str, bool] | None = None
 ) -> bool:
-    """Whether this domain accepts mail at all.
+    """Whether this domain accepts mail at all, by `mail_verdict`.
 
-    MX first, then A: a domain with no MX but an address record still takes
-    mail there, which RFC 5321 §5.1 requires a sender to try and which small
-    Swiss hosts still rely on. One query settles every candidate at that
-    domain, so the caller passes a cache and a hundred guesses cost one lookup.
+    One query settles every candidate at that domain, so the caller passes a
+    cache and a hundred guesses cost one lookup. A resolver that did not
+    answer is recorded as no for this run and not cached, so a transient
+    failure does not become a permanent verdict.
     """
     domain = (domain or "").strip().lower().rstrip(".")
     if not domain:
         return False
     if cache is not None and domain in cache:
         return cache[domain]
-
-    answer = False
-    resolver = dns.resolver.Resolver()
-    resolver.timeout = timeout
-    resolver.lifetime = timeout
-    for record in ("MX", "A"):
-        try:
-            if resolver.resolve(domain, record):
-                answer = True
-                break
-        except (dns.resolver.NoAnswer, dns.resolver.NXDOMAIN):
-            continue
-        except (dns.exception.Timeout, dns.resolver.NoNameservers):
-            # A resolver that did not answer is not a domain that refused.
-            # Recorded as undeliverable for this run rather than cached, so a
-            # transient failure does not become a permanent verdict.
-            return False
-        except dns.exception.DNSException:
-            continue
+    verdict, _why = mail_verdict(domain, timeout=timeout)
+    if verdict == UNKNOWN:
+        return False
+    answer = verdict in (DELIVERABLE, MAYBE)
     if cache is not None:
         cache[domain] = answer
     return answer

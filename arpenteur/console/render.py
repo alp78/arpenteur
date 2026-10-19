@@ -900,6 +900,7 @@ def company_page(
     score_parts: str = "",
     sector: Row | None = None,
     sector_vocabulary: list[str] | None = None,
+    replacement: str = "",
 ) -> str:
     out = [
         ui.crumbs([("/companies", "Companies"), ("", company["name"])]),
@@ -987,7 +988,10 @@ def company_page(
     if score_parts:
         out.append(score_parts)
     out.append(_site_card(site))
-    out.append(_contacts_card(contacts))
+    out.append(_contacts_card(contacts, company["id"]))
+    # What a search found for an address that bounced, beside the addresses.
+    if replacement:
+        out.append(replacement)
     # What filing a message taught the matcher. An inference nobody can see is
     # one nobody can correct, so it sits beside the contacts it behaves like.
     if panels:
@@ -1177,7 +1181,8 @@ def contact_row(c: Row) -> str:
     page that published it, and a row that only says "published" cannot
     answer where.
     """
-    state = "suppressed" if c["suppressed"] else ""
+    state = ("suppressed" if c["suppressed"]
+             else "bounced" if c.get("status") == "bounced" else "")
     source = (
         f"<a href='{esc(c['source_url'])}' rel='noreferrer noopener' "
         f"target='_blank'>{esc(c['method'])}</a>"
@@ -1194,14 +1199,17 @@ def contact_row(c: Row) -> str:
     )
 
 
-def _contacts_card(contacts: list[Row]) -> str:
+def _contacts_card(contacts: list[Row], company_id: int) -> str:
     if not contacts:
         return ""
+    from . import replacement_page
+
+    bounced = any(c.get("status") == "bounced" and not c["suppressed"] for c in contacts)
     return "<h2>contacts</h2>" + ui.table(
         ["address", "found by", "state", ""],
         [contact_row(c) for c in contacts],
         caption="Addresses published by this company",
-    )
+    ) + (f"<p>{replacement_page.find_button(company_id)}</p>" if bounced else "")
 
 
 def _notes_card(company_id: int, notes: list[Row]) -> str:

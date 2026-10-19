@@ -30,6 +30,7 @@ from .. import score_page as score_view
 from .. import people_page as people_view_page
 from .. import draft_page as draft_view
 from .. import render
+from .. import replacement_page as replacement_view
 from fastapi import APIRouter
 
 from ..context import Console
@@ -167,6 +168,10 @@ def router(ctx: Console) -> APIRouter:
                 ),
                 sector=scout_store.sector_for(conn, company_id),
                 sector_vocabulary=sorted(ctx.settings.sectors),
+                replacement=replacement_view.panel(
+                    scout_store.address_search(conn, company_id),
+                    scout_store.address_proposals(conn, company_id),
+                ),
             )
             return shell(body, "/companies")
         finally:
@@ -270,6 +275,42 @@ def router(ctx: Console) -> APIRouter:
             )
         finally:
             conn.close()
+
+    @router.post("/company/{company_id}/replacement")
+    def find_replacement(company_id: int) -> RedirectResponse:
+        """Look again for a firm whose address bounced, as a run of its own.
+
+        Through the runner, on its own lane, because it spends a model call and
+        reads strangers' pages: the history keeps what it did, and it neither
+        waits behind a sweep nor holds one up.
+        """
+        ctx.reload()
+        try:
+            run_id = runner.start("replace", {"company": str(company_id)}, internal=True)
+        except (ValueError, RuntimeError) as exc:
+            return _back(f"/company/{company_id}", error=str(exc))
+        return RedirectResponse(f"/runs/{run_id}", status_code=303)
+
+    @router.post("/proposal/{proposal_id}/{decision}")
+    def decide_proposal(proposal_id: int, decision: str) -> RedirectResponse:
+        """Accept a proposed address, which stores it as the firm's, or refuse it."""
+        if decision not in ("accept", "refuse"):
+            return _back("/companies", error=f"No decision called {decision!r}.")
+        conn = connect()
+        try:
+            row = scout_store.decide_address(conn, proposal_id, accept=decision == "accept",
+                                             by="console")
+            conn.commit()
+        except ValueError as exc:
+            conn.rollback()
+            return _back("/companies", error=str(exc))
+        finally:
+            conn.close()
+        back = f"/company/{row['company_id']}"
+        if row["decision"] == "accepted":
+            return _back(back, note=f"{row['address']} is now one of this firm's addresses.")
+        return _back(back, note=f"{row['address']} is refused, and no search will "
+                                "propose it again.")
 
     @router.post("/contact/{contact_id}/suppress", response_class=HTMLResponse)
     def suppress(contact_id: int) -> HTMLResponse:

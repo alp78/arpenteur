@@ -536,20 +536,62 @@ def wave_messages(conn: Connection, wave_id: int) -> list[Row]:
     return conn.execute(
         """
         SELECT cm.id AS message_id, cm.member_id, cm.draft_id, cm.variant,
-               cm.dropped_at, cm.dropped_reason,
+               cm.dropped_at, cm.dropped_reason, cm.replacement_draft_id,
                m.company_id, m.address, m.language, m.segment, m.score,
                m.verdict AS member_verdict, m.reason AS member_reason,
                c.name AS company_name, c.canton,
-               d.subject, d.body, d.reviewed_at, d.sent_at, d.refused_at
+               d.subject, d.body, d.reviewed_at, d.sent_at, d.refused_at,
+               k.status AS address_status,
+               rd.address AS replacement_address, rd.sent_at AS replacement_sent_at,
+               accepted.address AS accepted_address
           FROM crm.campaign_message cm
           JOIN crm.audience_member m ON m.id = cm.member_id
           JOIN core.company c ON c.id = m.company_id
           LEFT JOIN intel.draft d ON d.id = cm.draft_id
+          LEFT JOIN intel.draft rd ON rd.id = cm.replacement_draft_id
+          LEFT JOIN core.contact k ON k.company_id = m.company_id AND k.kind = 'email'
+                                  AND lower(k.value) = lower(m.address)
+          LEFT JOIN LATERAL (
+                SELECT p.address FROM intel.address_proposal p
+                  JOIN core.contact pk ON pk.id = p.contact_id
+                 WHERE p.company_id = m.company_id AND p.decision = 'accepted'
+                   AND pk.suppressed IS NOT TRUE AND coalesce(pk.status, '') <> 'bounced'
+                 ORDER BY p.decided_at DESC, p.id DESC LIMIT 1
+          ) accepted ON TRUE
          WHERE cm.wave_id = %s
          ORDER BY m.score DESC NULLS LAST, c.name
         """,
         (wave_id,),
     ).fetchall()
+
+
+def bounced_messages_of(conn: Connection, company_id: int) -> list[Row]:
+    """The campaign messages to this firm whose address bounced, newest first."""
+    return conn.execute(
+        """
+        SELECT k.id AS campaign_id, k.code, w.number, m.address,
+               rd.address AS replacement_address, rd.sent_at AS replacement_sent_at
+          FROM crm.campaign_message cm
+          JOIN crm.audience_member m ON m.id = cm.member_id
+          JOIN crm.campaign k ON k.id = cm.campaign_id
+          JOIN crm.campaign_wave w ON w.id = cm.wave_id
+          JOIN intel.draft d ON d.id = cm.draft_id AND d.sent_at IS NOT NULL
+          JOIN core.contact c ON c.company_id = m.company_id AND c.kind = 'email'
+                             AND lower(c.value) = lower(m.address) AND c.status = 'bounced'
+          LEFT JOIN intel.draft rd ON rd.id = cm.replacement_draft_id
+         WHERE m.company_id = %s
+         ORDER BY d.sent_at DESC
+        """,
+        (company_id,),
+    ).fetchall()
+
+
+def link_replacement(conn: Connection, message_id: int, draft_id: int) -> None:
+    """Record the second draft a bounced message was sent again as."""
+    conn.execute(
+        "UPDATE crm.campaign_message SET replacement_draft_id = %s WHERE id = %s",
+        (draft_id, message_id),
+    )
 
 
 def link_draft(conn: Connection, message_id: int, draft_id: int | None,

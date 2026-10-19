@@ -406,3 +406,79 @@ def test_a_plan_can_be_read_before_it_is_kept(settings, conn, campaign) -> None:
     after = [w["id"] for w in K.waves(conn, K.campaign_by_code(conn, campaign)["id"])]
     assert before == after
     assert K.campaign_by_code(conn, campaign)["strategy"] == "score-overall"
+
+
+# --- a bounced message sent again to an accepted replacement --------------------
+
+def _bounced_and_replaced(settings, conn, campaign, *, accept: bool = True):
+    """Send the pilot, bounce it, and propose a replacement for its firm."""
+    from arpenteur.modules.scout import store as scout_store
+
+    ready(settings, conn, campaign, wave=1)
+    out = FakeSender()
+    C.send_wave(settings, conn, campaign=campaign, wave=1, confirm="DRYMOS-A/1",
+                open_sender=out, sleep=lambda _s: None, log=lambda _: None)
+    sent = out.posted[0]
+    to = str(sent["To"]).lower()
+    company_id = int(conn.execute("SELECT company_id FROM core.contact WHERE lower(value) = %s",
+                                  (to,)).fetchone()["company_id"])
+    conn.execute("UPDATE core.contact SET status = 'bounced' WHERE lower(value) = %s", (to,))
+    scout_store.propose_address(conn, company_id, address="bureau@nouveau.ch", kind="desk",
+                                found_by="listing", source_url="https://www.local.ch/x",
+                                verdict="deliverable")
+    if accept:
+        proposal = scout_store.address_proposals(conn, company_id)[0]
+        scout_store.decide_address(conn, proposal["id"], accept=True, by="test")
+    conn.commit()
+    return company_id, sent
+
+
+def _again(settings, conn, campaign, company_id, *, confirm="DRYMOS-A/1"):
+    out = FakeSender()
+    stats = C.send_wave(settings, conn, campaign=campaign, wave=1, confirm=confirm,
+                        replacement=company_id, open_sender=out, sleep=lambda _s: None,
+                        log=lambda _: None)
+    return stats, out
+
+
+def test_a_bounced_message_goes_again_word_for_word_to_the_accepted_address(
+    settings, conn, campaign
+) -> None:
+    company_id, first = _bounced_and_replaced(settings, conn, campaign)
+    stats, out = _again(settings, conn, campaign, company_id)
+    assert stats["sent"] == 1 and len(out.posted) == 1
+    again = out.posted[0]
+    assert str(again["To"]) == "bureau@nouveau.ch"
+    assert str(again["Subject"]) == str(first["Subject"])
+    assert again.get_body(("plain",)).get_content() == first.get_body(("plain",)).get_content()
+    row = conn.execute("SELECT replacement_draft_id FROM crm.campaign_message"
+                       " WHERE replacement_draft_id IS NOT NULL").fetchone()
+    assert row is not None
+    with pytest.raises(ValueError, match="already sent again"):
+        _again(settings, conn, campaign, company_id)
+
+
+def test_a_replacement_needs_the_wave_code_and_an_accepted_address(
+    settings, conn, campaign
+) -> None:
+    company_id, _first = _bounced_and_replaced(settings, conn, campaign, accept=False)
+    with pytest.raises(ValueError, match="no replacement address is accepted"):
+        _again(settings, conn, campaign, company_id)
+    with pytest.raises(ValueError, match="type DRYMOS-A/1"):
+        _again(settings, conn, campaign, company_id, confirm="yes")
+
+
+def test_only_a_message_that_bounced_goes_again(settings, conn, campaign) -> None:
+    company_id, first = _bounced_and_replaced(settings, conn, campaign)
+    conn.execute("UPDATE core.contact SET status = 'deliverable' WHERE lower(value) = %s",
+                 (str(first["To"]).lower(),))
+    conn.commit()
+    with pytest.raises(ValueError, match="did not bounce"):
+        _again(settings, conn, campaign, company_id)
+
+
+def test_a_paused_campaign_may_still_send_a_replacement(settings, conn, campaign) -> None:
+    company_id, _first = _bounced_and_replaced(settings, conn, campaign)
+    K.pause(conn, int(K.campaign_by_code(conn, campaign)["id"]), reason="bounces", by="gate")
+    conn.commit()
+    assert _again(settings, conn, campaign, company_id)[0]["sent"] == 1

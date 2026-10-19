@@ -52,6 +52,10 @@ The steps go in order, and each repeated step clears the ones after it: a new re
 
 The panels under the steps show the messages as recipients receive them, the tests sent with their outcome, and every recipient with the address and the variant chosen.
 
+**A bounced recipient**
+
+Once Read delivery failures has run, a recipient whose address bounced appears in the Bounced panel. Its link opens the firm's page, where Find a replacement looks for another address and lists what it found. When you accept one there, the panel offers to send that recipient the message this wave sent, word for word, to the accepted address. It asks for the wave's code typed back, as the wave's own send does, and goes through the same send. No cooldown applies, since the first message never arrived, and a paused campaign can still send it, since the pause holds the next wave. Each message is sent again once at most.
+
 **The gate between waves**
 
 The next wave waits until:

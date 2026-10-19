@@ -72,6 +72,22 @@ def _mail_links(conn: Connection, company_id: int) -> str:
     return mail_view.links_panel(clients_store.links_for(conn, company_id))
 
 
+def _bounced_in_campaigns(conn: Connection, company_id: int) -> str:
+    """Where this firm's campaign message bounced, and where to send it again."""
+    rows = [
+        f"<li>{ui.esc(r['code'])}, wave {r['number']}: {ui.esc(r['address'])} bounced; "
+        + (f"sent again to {ui.esc(r['replacement_address'])}"
+           if r["replacement_sent_at"] else
+           f"<a href='/campaign/{r['campaign_id']}/wave/{r['number']}'>send the wave's "
+           "message to an accepted replacement from the wave's page</a>")
+        + "</li>"
+        for r in campaign_store.bounced_messages_of(conn, company_id)
+    ]
+    if not rows:
+        return ""
+    return f"<h2>campaigns</h2><div class='card'><ul class='small'>{''.join(rows)}</ul></div>"
+
+
 def _tiles(conn: Connection) -> str:
     crm = clients_store.home_counts(conn)
     return (
@@ -114,6 +130,7 @@ def _draft_sent(conn: Connection, draft_id: int, row: Any, fallback: str) -> str
 CONTRIBUTIONS = (
     Contribution("company.actions", _company_action, order=10),
     Contribution("company.panels", _mail_links, order=50),
+    Contribution("company.panels", _bounced_in_campaigns, order=40),
     Contribution("home.tiles", _tiles, order=20),
     Contribution("board.clients", _board_clients, order=10),
     Contribution("draft.sent", _draft_sent, order=10),
@@ -1056,8 +1073,13 @@ def router(ctx: Console) -> APIRouter:
         return transmit("campaign-test", campaign_id, number, {})
 
     @router.post("/campaign/{campaign_id}/wave/{number}/send")
-    def wave_send(campaign_id: int, number: int, confirm: str = Form("")) -> RedirectResponse:
-        return transmit("campaign-send", campaign_id, number, {"confirm": confirm})
+    def wave_send(campaign_id: int, number: int, confirm: str = Form(""),
+                  replacement: str = Form("")) -> RedirectResponse:
+        """The wave's send, or with `replacement` one bounced message sent again."""
+        extra = {"confirm": confirm}
+        if replacement.strip():
+            extra["replacement"] = replacement.strip()
+        return transmit("campaign-send", campaign_id, number, extra)
 
     @router.post("/outbound/{outbound_id}/settle")
     def outbound_settle(outbound_id: int, posted: str = Form(""),

@@ -262,3 +262,66 @@ def test_a_list_made_in_the_console_keeps_its_places_per_canton(web, conn) -> No
     assert K.audience_by_code(conn, "L9")["rule"]["per_canton"] == 2
     assert "at most 2 firms each" in web.get(
         f"/audience/{K.audience_by_code(conn, 'L9')['id']}").text
+
+
+# --- a bounced recipient, replaced from the wave's page -------------------------
+
+def _sent_and_bounced(settings, conn, ids) -> int:
+    """Send wave 1 with a fake session, bounce its first recipient; that firm's id."""
+    from tests.test_campaign_flow import FakeSender
+
+    C.render_wave(settings, conn, campaign=ids["campaign"], wave=1, log=lambda _: None)
+    C.test_wave(settings, conn, campaign=ids["campaign"], wave=1, log=lambda _: None,
+                open_sender=FakeSender(), sleep=lambda _s: None)
+    C.approve(settings, conn, campaign=ids["campaign"], wave=1, by="test", read=True)
+    C.send_wave(settings, conn, campaign=ids["campaign"], wave=1, confirm="DRYMOS-A/1",
+                open_sender=FakeSender(), sleep=lambda _s: None, log=lambda _: None)
+    conn.execute("UPDATE core.contact SET status = 'bounced' WHERE value = 'info@zermatt.ch'")
+    conn.commit()
+    return int(conn.execute("SELECT company_id FROM core.contact WHERE value = 'info@zermatt.ch'"
+                            ).fetchone()["company_id"])
+
+
+def _accept(conn, company_id: int) -> None:
+    from arpenteur.modules.scout import store as scout_store
+
+    scout_store.propose_address(conn, company_id, address="bureau@zermatt.swiss", kind="desk",
+                                found_by="listing", source_url=None, verdict="deliverable")
+    scout_store.decide_address(conn, scout_store.address_proposals(conn, company_id)[0]["id"],
+                               accept=True, by="test")
+    conn.commit()
+
+
+def test_the_wave_page_lists_a_bounce_with_the_way_to_replace_it(web, conn, ids, settings) -> None:
+    company_id = _sent_and_bounced(settings, conn, ids)
+    page = web.get(f"/campaign/{ids['campaign']}/wave/1").text
+    assert "Bounced" in page and f"/company/{company_id}#replacement" in page
+    _accept(conn, company_id)
+    page = web.get(f"/campaign/{ids['campaign']}/wave/1").text
+    assert "Send to bureau@zermatt.swiss" in page
+    assert f"name='replacement' value='{company_id}'" in page
+    company = web.get(f"/company/{company_id}").text
+    assert "DRYMOS-A, wave 1: info@zermatt.ch bounced" in company
+
+
+def test_the_wave_send_route_carries_the_replacement_to_the_send_stage(
+    web, conn, ids, settings
+) -> None:
+    company_id = _sent_and_bounced(settings, conn, ids)
+    _accept(conn, company_id)
+    started = []
+    web.app.state.console.runner.start = lambda name, form, **kw: started.append((name, form)) or 9
+    reply = web.post(f"/campaign/{ids['campaign']}/wave/1/send",
+                     data={"confirm": "DRYMOS-A/1", "replacement": str(company_id)},
+                     follow_redirects=False)
+    assert reply.headers["location"] == "/runs/9"
+    assert started == [("campaign-send", {"campaign": str(ids["campaign"]), "wave": "1",
+                                          "confirm": "DRYMOS-A/1",
+                                          "replacement": str(company_id)})]
+
+
+def test_the_precheck_refuses_a_replacement_nobody_accepted(conn, ids, settings) -> None:
+    company_id = _sent_and_bounced(settings, conn, ids)
+    with pytest.raises(ValueError, match="no replacement address is accepted"):
+        C.precheck_send(settings, {"campaign": str(ids["campaign"]), "wave": "1",
+                                   "confirm": "DRYMOS-A/1", "replacement": str(company_id)})

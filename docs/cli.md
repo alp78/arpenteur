@@ -83,7 +83,7 @@ arpenteur boundaries [--canton CANTON] [--refresh] [--dry-run]
 A message plan over one list, sent in waves after a test and an approval.
 
 ```text
-arpenteur campaign {list,strategies,new,show,plan,render,test,approve,send,pause,resume,results} [REST ...] [--audience AUDIENCE] [--templates TEMPLATES] [--programme PROGRAMME] [--strategy STRATEGY] [--pilot PILOT] [--wave-size WAVE_SIZE] [--gap GAP] [--start START] [--bounce-ceiling BOUNCE_CEILING] [--settle SETTLE] [--cooldown COOLDOWN] [--bilingual BILINGUAL] [--to TO] [--read] [--confirm CONFIRM] [--why WHY] [--yes] [--dry-run]
+arpenteur campaign {list,strategies,new,show,plan,render,test,approve,send,pause,resume,results} [REST ...] [--audience AUDIENCE] [--templates TEMPLATES] [--programme PROGRAMME] [--strategy STRATEGY] [--pilot PILOT] [--wave-size WAVE_SIZE] [--gap GAP] [--start START] [--bounce-ceiling BOUNCE_CEILING] [--settle SETTLE] [--cooldown COOLDOWN] [--bilingual BILINGUAL] [--replacement FIRM] [--to TO] [--read] [--confirm CONFIRM] [--why WHY] [--yes] [--dry-run]
 ```
 
 - `{list,strategies,new,show,plan,render,test,approve,send,pause,resume,results}`: list: every campaign. strategies: the ways waves can be cut. new CODE "Name" --audience LIST --templates DIR: start one. plan CODE: cut the list into waves. render, test, approve, send CODE N: walk wave N through its four steps, none skipped. show, results CODE: where it stands. pause, resume CODE --why: hold the next wave or release it
@@ -100,6 +100,7 @@ arpenteur campaign {list,strategies,new,show,plan,render,test,approve,send,pause
 - `--settle SETTLE`: hours bounces get to arrive before the next wave
 - `--cooldown COOLDOWN`: days a mailbox, firm or domain rests after a message
 - `--bilingual BILINGUAL`: for new and plan: cantons whose firms read every official language in one message, e.g. FR,VS; an empty value clears it
+- `--replacement FIRM`: for send: the firm, by UID or name, whose bounced message goes again to the address accepted for it
 - `--to TO`: for test: where the test goes
 - `--read`: for approve: you received and read every test message
 - `--confirm CONFIRM`: for send: the wave typed back, CODE/N
@@ -437,6 +438,19 @@ Territories defined in arpenteur.toml, and the active one.
 ```text
 arpenteur regions
 ```
+
+## arpenteur replace
+
+Look again for a firm whose address bounced, and decide what was found.
+
+```text
+arpenteur replace COMPANY [--show] [--accept ADDRESS] [--refuse ADDRESS]
+```
+
+- `COMPANY`: the firm's UID or name
+- `--show`: list what is proposed, without searching
+- `--accept ADDRESS`: store this proposed address as the firm's
+- `--refuse ADDRESS`: refuse this proposed address; no search offers it again
 
 ## arpenteur report
 

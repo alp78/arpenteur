@@ -30,11 +30,10 @@ from __future__ import annotations
 from concurrent.futures import ThreadPoolExecutor
 from typing import Any, Callable, Sequence
 
-import dns.exception
-import dns.resolver
 
 from ..kernel.db import Connection
 from ..modules.scout import store as scout_store
+from ..sources import mailcheck
 
 # What a verdict can say, and what each one means for a send.
 #
@@ -45,45 +44,19 @@ from ..modules.scout import store as scout_store
 # the domain not existing, which is the one verdict here that is certain.
 # `unknown` is a resolver that did not answer, and it is deliberately not
 # `dead`: a timeout is a fact about the network, not about the domain.
-DELIVERABLE = "deliverable"
-MAYBE = "maybe"
-DEAD = "dead"
-UNKNOWN = "unknown"
+DELIVERABLE, MAYBE, DEAD, UNKNOWN = (
+    mailcheck.DELIVERABLE, mailcheck.MAYBE, mailcheck.DEAD, mailcheck.UNKNOWN)
 
 
 def resolve_domain(
     domain: str, *, timeout: float = 6.0
 ) -> tuple[str, str]:
-    """One domain's verdict, as a status and the note behind it."""
-    resolver = dns.resolver.Resolver()
-    resolver.timeout = resolver.lifetime = timeout
-    try:
-        answer = resolver.resolve(domain, "MX")
-        best = sorted(
-            (record.preference, str(record.exchange).rstrip("."))
-            for record in answer
-        )
-        return DELIVERABLE, f"MX {best[0][1]}" if best else "MX"
-    except dns.resolver.NXDOMAIN:
-        return DEAD, "the domain does not exist"
-    except (dns.exception.Timeout, dns.resolver.NoNameservers):
-        return UNKNOWN, "the resolver did not answer"
-    except dns.resolver.NoAnswer:
-        pass
-    except dns.exception.DNSException as exc:
-        return UNKNOWN, f"{type(exc).__name__}"
+    """One domain's verdict, as a status and the note behind it.
 
-    # No MX is not no mail: the address record is the fallback a sender must
-    # try, so this is sendable and recorded as the weaker thing it is.
-    try:
-        resolver.resolve(domain, "A")
-        return MAYBE, "no MX, an A record only"
-    except dns.resolver.NXDOMAIN:
-        return DEAD, "the domain does not exist"
-    except (dns.exception.Timeout, dns.resolver.NoNameservers):
-        return UNKNOWN, "the resolver did not answer"
-    except dns.exception.DNSException:
-        return DEAD, "resolves to nothing that takes mail"
+    The same verdict the hunt reads, so a list never keeps an address at a
+    domain whose named mail server does not exist.
+    """
+    return mailcheck.mail_verdict(domain, timeout=timeout)
 
 
 def run(

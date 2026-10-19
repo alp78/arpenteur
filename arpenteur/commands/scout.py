@@ -20,6 +20,7 @@ from ..stages import (
     people,
     profile,
     reach,
+    replace,
     resolve,
     source,
     sync,
@@ -469,6 +470,48 @@ def cmd_reach(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_replace(args: argparse.Namespace) -> int:
+    """Look again for a firm whose address bounced, or decide what was found.
+
+    Without a flag it runs the search: the firm's mail domains, its own pages
+    under robots.txt, one web search, and the desk address at a domain that
+    takes mail. `--show` lists what is proposed without searching. `--accept`
+    and `--refuse` decide one proposal, named by its address.
+    """
+    settings = common.load_settings()
+    conn = db.open_db(settings.database_url, settings.modules)
+    try:
+        firm = common._find_company(conn, args.company)
+        company_id = int(firm["id"])
+        decide = args.accept or args.refuse
+        if decide:
+            match = [p for p in scout_store.address_proposals(conn, company_id)
+                     if p["address"].lower() == decide.strip().lower()]
+            if not match:
+                print(f"error: {decide} is not proposed for {firm['name']}", file=sys.stderr)
+                return 1
+            row = scout_store.decide_address(conn, int(match[0]["id"]),
+                                             accept=bool(args.accept), by="cli")
+            conn.commit()
+            print(f"{row['address']}: {row['decision']}")
+            return 0
+        if not args.show:
+            with run_scope(conn, "replace", args, close=False) as run:
+                run.stats = replace.search(settings, conn, company=company_id)
+        rows = scout_store.address_proposals(conn, company_id)
+        if not rows:
+            print(f"{firm['name']}: nothing proposed")
+        for p in rows:
+            print(f"  {p['address']:<40} {p['kind']:<8} {p['found_by']:<9} "
+                  f"{p['decision'] or 'undecided':<10} {p['source_url'] or ''}")
+    except Exception as exc:  # noqa: BLE001
+        print(f"error: {exc}", file=sys.stderr)
+        return 1
+    finally:
+        conn.close()
+    return 0
+
+
 def cmd_weights(args: argparse.Namespace) -> int:
     """The weight set: what the six parts of a score are worth to this campaign."""
     from ..modules.scout import scoring, store as scout
@@ -828,6 +871,20 @@ def add_parsers(sub: argparse._SubParsersAction) -> None:
     )
     p.add_argument("--dry-run", action="store_true", help="list the sites, fetch nothing")
     p.set_defaults(func=cmd_reach)
+
+    p = sub.add_parser(
+        "replace",
+        help="look again for a firm whose address bounced, and decide what was found",
+    )
+    p.add_argument("company", help="the firm's UID or name")
+    group = p.add_mutually_exclusive_group()
+    group.add_argument("--show", action="store_true",
+                       help="list what is proposed, without searching")
+    group.add_argument("--accept", default="", metavar="ADDRESS",
+                       help="store this proposed address as the firm's")
+    group.add_argument("--refuse", default="", metavar="ADDRESS",
+                       help="refuse this proposed address; no search offers it again")
+    p.set_defaults(func=cmd_replace)
 
 
     p = sub.add_parser(

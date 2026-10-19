@@ -57,6 +57,7 @@ Before the first campaign:
 - decide whether sole proprietorships are in the territory, and why
 - write the opt-out address into the mailbox settings and confirm the mailbox is read
 - decide, per campaign, whether its templates carry an opt-out sentence: without one, a message to a firm that never asked for it does not tell the recipient how to refuse, which the act requires
+- decide on each address a replacement search proposes: a named person's address or an owner's free mailbox is personal data, and accepting one is your decision to write to that person
 - keep the register's notice on every output that leaves the tool
 - read the model provider's data processing terms
 - keep the weekly export encrypted and off the machine

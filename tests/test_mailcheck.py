@@ -212,3 +212,81 @@ def test_a_domain_echoes_an_umlaut_in_either_spelling() -> None:
 def test_a_two_letter_name_word_still_counts() -> None:
     assert mailcheck.domain_echoes_name("km-immobilien.ch", "KM Immobilien AG") == 2
     assert "km" in mailcheck.distinctive_words("KM Immobilien AG")
+
+
+# --- the domain's mail servers ------------------------------------------------
+
+import dns.exception  # noqa: E402
+import dns.resolver  # noqa: E402
+
+
+class _MX:
+    def __init__(self, preference: int, exchange: str) -> None:
+        self.preference, self.exchange = preference, exchange
+
+
+class FakeResolver:
+    """Answers from a table: a list of records, or an exception to raise."""
+
+    def __init__(self, table: dict) -> None:
+        self.table = table
+
+    def resolve(self, name: str, rdtype: str):
+        answer = self.table.get((name, rdtype), dns.resolver.NoAnswer())
+        if isinstance(answer, Exception):
+            raise answer
+        return answer
+
+
+def test_a_domain_whose_mail_server_resolves_is_deliverable():
+    resolver = FakeResolver({("a.ch", "MX"): [_MX(10, "mx.a.ch.")],
+                             ("mx.a.ch", "A"): ["192.0.2.1"]})
+    assert mailcheck.mail_verdict("a.ch", resolver=resolver) == ("deliverable", "MX mx.a.ch")
+
+
+def test_a_mail_server_that_does_not_exist_makes_the_domain_dead():
+    """agencefj.ch: an MX record naming a Microsoft host nobody runs."""
+    resolver = FakeResolver({
+        ("agencefj.ch", "MX"): [_MX(0, "agencefj-ch.mail.protection.outlook.com.")],
+        ("agencefj-ch.mail.protection.outlook.com", "A"): dns.resolver.NXDOMAIN(),
+    })
+    verdict, why = mailcheck.mail_verdict("agencefj.ch", resolver=resolver)
+    assert verdict == "dead"
+    assert "agencefj-ch.mail.protection.outlook.com" in why and "does not exist" in why
+
+
+def test_one_live_server_among_dead_ones_is_enough():
+    resolver = FakeResolver({
+        ("b.ch", "MX"): [_MX(1, "gone.b.ch."), _MX(5, "mx2.b.ch.")],
+        ("gone.b.ch", "A"): dns.resolver.NXDOMAIN(),
+        ("mx2.b.ch", "AAAA"): ["2001:db8::1"],
+    })
+    assert mailcheck.mail_verdict("b.ch", resolver=resolver)[0] == "deliverable"
+
+
+def test_a_null_mx_says_the_domain_takes_no_mail():
+    resolver = FakeResolver({("c.ch", "MX"): [_MX(0, ".")]})
+    assert mailcheck.mail_verdict("c.ch", resolver=resolver)[0] == "dead"
+
+
+def test_a_server_the_resolver_cannot_answer_for_is_unknown_not_dead():
+    resolver = FakeResolver({("d.ch", "MX"): [_MX(10, "mx.d.ch.")],
+                             ("mx.d.ch", "A"): dns.exception.Timeout(),
+                             ("mx.d.ch", "AAAA"): dns.exception.Timeout()})
+    assert mailcheck.mail_verdict("d.ch", resolver=resolver)[0] == "unknown"
+
+
+def test_no_mx_falls_back_to_the_address_record():
+    resolver = FakeResolver({("e.ch", "A"): ["192.0.2.5"]})
+    assert mailcheck.mail_verdict("e.ch", resolver=resolver)[0] == "maybe"
+    gone = FakeResolver({("f.ch", "MX"): dns.resolver.NXDOMAIN()})
+    assert mailcheck.mail_verdict("f.ch", resolver=gone)[0] == "dead"
+
+
+def test_the_list_check_and_the_hunt_read_the_same_verdict(monkeypatch):
+    from arpenteur.stages import verify
+
+    monkeypatch.setattr(mailcheck, "mail_verdict",
+                        lambda domain, **_k: ("dead", "its mail server x does not exist"))
+    assert verify.resolve_domain("x.ch") == ("dead", "its mail server x does not exist")
+    assert mailcheck.accepts_mail("x.ch") is False

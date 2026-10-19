@@ -52,10 +52,23 @@ A company that is winding up or struck off the register says so under its name. 
 - Officers, parsed from the gazette notices: name, role, since when, and how many other boards each sits on. Officers who left are greyed. The parse is not the certified excerpt, and the card says so.
 - Shares an officer with: the companies connected through a common officer, each with a link to the route between the two.
 - Web research: the website found, how sure the match is, the summary and the signals. A company not yet researched says so.
-- Contacts: every address held, where it was found, and its state. Suppress removes an address from every list and every draft; a suppressed address is never restored by a later run. Restore undoes a suppression.
+- Contacts: every address held, where it was found, and its state. Suppress removes an address from every list and every draft; a suppressed address is never restored by a later run. Restore undoes a suppression. An address that bounced says so, and the card then offers Find a replacement.
+- Replacement: what the last search for a bounced address found. It names each of the firm's mail domains with its verdict, since a domain whose mail server does not exist makes every address at it useless. Each proposal says what the address reaches, where it was found and what is uncertain about it, then offers Use this address and Refuse. An accepted address joins the contacts with its source; a refused one is never proposed again.
+- Campaigns: the campaign waves in which this firm's message bounced, each with a link to the wave's page, where the message is sent again to the accepted address.
 - Mail recognised by: the addresses and domains mail is matched on. Forget stops future matching and keeps what was filed.
 - Notes: a text box with a kind, a date and an author. The notes follow the company when it becomes a client.
 - Register notices: the last eight publications, with the attribution the register requires.
+
+## A replacement for an address that bounced
+
+Find a replacement runs one search for this firm, as a run with its own log:
+
+1. Each of the firm's mail domains is checked. A domain that does not exist, refuses mail or names a mail server that does not exist is reported, and nothing at it is proposed.
+2. The firm's own home and contact pages are read, under their robots.txt. An address there, at the firm's own domain, is the strongest find.
+3. One web search is asked for every address the firm publishes anywhere, with the page each is on, and is told which addresses bounced. A directory listing turns up here.
+4. When nothing better was found at a domain that takes mail, its desk address is guessed once, such as `info@` beside a `contact@` that bounced, and marked as a guess.
+
+The search costs one model call with up to three web searches. An address at another domain, a free mailbox or a named person is proposed with that said in its note, because you decide on each one; writing to a named person is personal data processing, and [the legal page](../legal.md) says what that asks of you.
 
 ## The route between two companies
 

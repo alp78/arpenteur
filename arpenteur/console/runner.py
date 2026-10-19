@@ -50,7 +50,7 @@ from ..kernel.db import Connection
 from ..sources import mailcheck
 from ..stages import (
     advise, audience, boundaries, bounces, campaign, draft, enrich, geocode,
-    mail, match, people, prep, profile, reach, resolve, source, sync, verify,
+    mail, match, people, prep, profile, reach, replace, resolve, source, sync, verify,
 )
 
 # What a stopped run records as its error. The history and the run page read
@@ -216,6 +216,7 @@ UIDS = Field(
 )
 
 CLIENT = Field("client_id", "Client", "int", help="The client's number.")
+COMPANY = Field("company", "Company", "int", help="The company's number.")
 
 # Domains, not companies: one lookup answers for every address at a domain.
 DOMAIN_SIZES = Field(
@@ -261,6 +262,19 @@ def _draft(settings: Settings, conn: Connection, *, log: Callable[[str], None],
         cantons=[canton] if canton else None,
         log=log, **kwargs,
     )
+
+
+def _known_company(settings: Settings, form: dict[str, Any]) -> None:
+    """Refuse a company nobody holds before a run is opened for it."""
+    raw = str(form.get("company") or "").strip()
+    if not raw.isdigit():
+        raise ValueError("Name the company by its number.")
+    conn = db.open_db(settings.database_url, getattr(settings, "modules", ()))
+    try:
+        if db.company(conn, int(raw)) is None:
+            raise ValueError(f"No company has the number {raw}.")
+    finally:
+        conn.close()
 
 
 def _known_client(settings: Settings, form: dict[str, Any]) -> None:
@@ -751,6 +765,29 @@ STAGES: dict[str, Stage] = {
         precheck=_known_client,
         cancellable=False,
     ),
+    "replace": Stage(
+        name="replace",
+        title="Find a replacement address",
+        what="Look again for a firm whose address bounced: whether its domain can "
+             "still receive mail, what its own pages publish, one web search, and "
+             "the desk address at a domain that takes mail.",
+        call=replace.search,
+        fields=(COMPANY,),
+        needs="A firm, usually one whose address bounced.",
+        produces="Proposals on the company's page, each to accept or refuse. "
+                 "No address is stored until a person accepts one.",
+        cost="One model call with up to three web searches, and a few pages of "
+             "the firm's own site.",
+        button="Find a replacement",
+        button_does="Checks the firm's mail domains, reads its own pages under "
+                    "robots.txt, asks one web search for every address it "
+                    "publishes, and lists what it found for you to decide on.",
+        module="scout",
+        listed=False,
+        lane="replace",
+        precheck=_known_company,
+        cancellable=False,
+    ),
     "prep": Stage(
         name="prep",
         title="Extract the vocabulary",
@@ -804,7 +841,8 @@ STAGES: dict[str, Stage] = {
              "guard the send stage applies.",
         call=campaign.send_wave,
         fields=(Field("campaign", "Campaign", "text"), Field("wave", "Wave", "int"),
-                Field("confirm", "Typed confirmation", "text")),
+                Field("confirm", "Typed confirmation", "text"),
+                Field("replacement", "Firm whose bounced message goes again", "int")),
         cost="Counts against the daily quota.",
         module="clients",
         listed=False,

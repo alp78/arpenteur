@@ -1169,11 +1169,15 @@ def cmd_campaign(args: argparse.Namespace) -> int:
                       f"To send it: arpenteur campaign send {row['code']} {number} "
                       f"--yes --confirm {expected}")
                 return close(0)
-            with run_scope(conn, "campaign-send", {"campaign": row["code"], "wave": number},
+            replacement = None
+            if args.replacement:
+                replacement = int(common._find_company(conn, args.replacement)["id"])
+            with run_scope(conn, "campaign-send", {"campaign": row["code"], "wave": number,
+                                                   "replacement": args.replacement or None},
                            close=False) as run:
                 run.stats = campaign_stage.send_wave(
                     settings, conn, campaign=row["id"], wave=number,
-                    confirm=args.confirm or "")
+                    confirm=args.confirm or "", replacement=replacement)
             return close(0)
 
     except ValueError as exc:
@@ -1441,6 +1445,9 @@ def add_parsers(sub: argparse._SubParsersAction) -> None:
     p.add_argument("--bilingual", default=None,
                    help="for new and plan: cantons whose firms read every official "
                         "language in one message, e.g. FR,VS; an empty value clears it")
+    p.add_argument("--replacement", default="", metavar="FIRM",
+                   help="for send: the firm, by UID or name, whose bounced message goes "
+                        "again to the address accepted for it")
     p.add_argument("--to", default="", help="for test: where the test goes")
     p.add_argument("--read", action="store_true",
                    help="for approve: you received and read every test message")
