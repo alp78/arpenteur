@@ -131,7 +131,6 @@ def test_the_preview_is_the_html_a_recipient_gets(web, conn, ids, settings) -> N
     body = web.get(f"/campaign/{ids['campaign']}/wave/1").text
     assert "<iframe class='cm-preview' sandbox srcdoc=" in body
     assert "Ein Atlas der Schweizer Natur" in body
-    assert "Wenn Sie keine weiteren Nachrichten" in body, "the opt-out is in the preview"
 
 
 def test_a_send_posted_without_approval_never_starts_a_job(web, ids) -> None:

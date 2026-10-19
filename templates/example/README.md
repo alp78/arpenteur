@@ -8,7 +8,7 @@ The message is the text between the first two lines that are exactly `---`. Anyt
 - German: `Betreff: ...`
 - Italian: `Oggetto: ...`
 
-There are no placeholders. Every recipient of a language receives the same words, so the test message the operator receives is the message every firm in the wave receives. The opt-out sentence and the signature are appended when the message is sent; do not write them here.
+There are no placeholders. Every recipient of a language receives the same words, so the test message the operator receives is the message every firm in the wave receives. Nothing is added to the text but the signature, which is appended when the message is sent. The opt-out sentence is part of the message: each example carries one above its closing line, and [the legal page](../../docs/legal.md) explains why a campaign to firms that never asked to hear from you needs it.
 
 A file is refused, naming the reason, when it has fewer than two rules, when its label is another language's, when the message is empty, or when it still carries an unfinished marker such as `À compléter`.
 

@@ -20,7 +20,7 @@ A campaign needs a list, so make one first. The form takes:
 
 **The messages**
 
-The Messages panel lists the campaign's folder, one row per language, with the subject the file carries or the fault it has. Each row opens an editor. The message is the text between two lines of three dashes; its first line is the subject, written as the language's own label followed by a colon, such as `Objet :`. There are no placeholders: every recipient of a language receives the same words, so the test you receive is the message every firm in the wave receives. The opt-out sentence and the signature are appended at sending time and are not written here. The editor refuses a file that cannot be sent, names the reason, and keeps your text in the box.
+The Messages panel lists the campaign's folder, one row per language, with the subject the file carries or the fault it has. Each row opens an editor. The message is the text between two lines of three dashes; its first line is the subject, written as the language's own label followed by a colon, such as `Objet :`. There are no placeholders: every recipient of a language receives the same words, so the test you receive is the message every firm in the wave receives. The text goes out word for word with the signature appended at sending time, so an opt-out sentence is written here, as the last paragraph before the closing. The example templates carry one in each language. The editor refuses a file that cannot be sent, names the reason, and keeps your text in the box.
 
 **The plan**
 
@@ -38,7 +38,7 @@ A reason and the Pause button hold the next wave. A paused campaign shows the re
 
 The steps go in order, and each repeated step clears the ones after it: a new render needs a new test and a new approval.
 
-1. Render writes every message from the templates and the list. It is refused when no mailbox is set to receive the opt-out, when no signature is written, or when replies would go to an address Arpenteur does not read.
+1. Render writes every message from the templates and the list. It is refused when no mailbox is set to read the replies and the bounces, when no signature is written, or when replies would go to an address Arpenteur does not read.
 2. Send the test to me sends one message per language variant to the test recipient, marked as a test. It counts against the daily quota.
 3. Approve records that a person received and read every test. The box saying so must be ticked. Withdraw approval undoes it.
 4. Send the wave asks for the wave's code typed back, such as `DRYMOS-A/1`, and sends. The panel above the field says how many messages, how far apart, how long it will take and how much of the daily quota is left.
@@ -63,7 +63,7 @@ The campaign page links to the signature, the closing block appended to every me
 
 ## The law this page is built around
 
-Swiss law on unfair competition, LCD art. 3 al. 1 let. o, makes mass advertising by email without consent unfair, and asks for a sender who can be identified and an opt-out that works. The controls on this page keep every message reviewed, identified, refusable and slow. Whether a given recipient may be written to is the operator's decision; [the legal page](../legal.md) lists the questions.
+Swiss law on unfair competition, LCD art. 3 al. 1 let. o, makes mass advertising by email without consent unfair, and asks for a sender who can be identified and an opt-out that works. The controls on this page keep every message reviewed, identified and slow, and a STOP reply suppresses the address on sight. The opt-out sentence that tells a recipient so is the template's, and a message without one meets only part of the act. Whether a given recipient may be written to is the operator's decision; [the legal page](../legal.md) lists the questions.
 
 ## Related pages
 

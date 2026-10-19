@@ -24,7 +24,8 @@ Every row that holds a fact about the outside world carries where it came from a
 
 The Federal Act against Unfair Competition, LCD art. 3 al. 1 let. o, makes it unfair to send mass advertising email without the recipient's consent, without a correct sender and without a free and easy way to refuse further messages. A campaign in Arpenteur is built to stay on the right side of each clause:
 
-- every message names the sender and carries an opt-out sentence with a working address
+- every message names the sender in its signature
+- a draft written by the model carries an opt-out sentence naming the mailbox Arpenteur reads; a campaign's message carries the one its template holds, as the example templates do, and none when the template has none
 - a refusal is honoured on sight: the address is suppressed, and no run restores it
 - a wave goes only after a person received and read the test and typed the wave's code
 - the batches are small, the pace is slow, and the next wave waits for the bounces of the last
@@ -55,6 +56,7 @@ Before the first campaign:
 
 - decide whether sole proprietorships are in the territory, and why
 - write the opt-out address into the mailbox settings and confirm the mailbox is read
+- decide, per campaign, whether its templates carry an opt-out sentence: without one, a message to a firm that never asked for it does not tell the recipient how to refuse, which the act requires
 - keep the register's notice on every output that leaves the tool
 - read the model provider's data processing terms
 - keep the weekly export encrypted and off the machine

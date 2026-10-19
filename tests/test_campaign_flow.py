@@ -159,12 +159,15 @@ def test_rendering_refuses_a_missing_template_naming_the_file(settings, conn, ca
             C.render_wave(settings, conn, campaign=campaign, wave=wave, log=lambda _: None)
 
 
-def test_rendering_writes_the_template_model_and_a_german_opt_out(settings, conn, campaign) -> None:
+def test_rendering_writes_the_template_text_and_appends_nothing(settings, conn, campaign) -> None:
+    """The message is the template's text: an opt-out sentence, when the
+    campaign needs one, is written in the template, where the operator sees it."""
     C.render_wave(settings, conn, campaign=campaign, wave=2, log=lambda _: None)
     rows = conn.execute("SELECT model, language, body FROM intel.draft").fetchall()
     assert rows and all(r["model"].startswith("template:templates/drymos/") for r in rows)
     german = [r for r in rows if r["language"] == "de"]
-    assert german and all("Wenn Sie keine weiteren Nachrichten" in r["body"] for r in german)
+    assert german and all(r["body"].rstrip().endswith("Freundliche Grüsse") for r in german)
+    assert not [r for r in rows if "STOP" in r["body"]]
 
 
 def test_rendering_refuses_without_a_signature(settings, conn, campaign) -> None:

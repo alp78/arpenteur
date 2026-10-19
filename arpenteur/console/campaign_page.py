@@ -317,8 +317,9 @@ def _messages_panel(cid: int, folder: str, files: Sequence[dict[str, Any]]) -> s
         ui.table(["file", "language", "subject", ""], rows,
                  caption=f"The messages in {folder}, one per language"),
         always=True,
-        note="A wave is rendered from these. The subject and the text are "
-             "edited here; the opt-out and the signature are added when it is sent.",
+        note="A wave is rendered from these, word for word. The subject and the "
+             "text are edited here, an opt-out sentence included; the signature is "
+             "added when it is sent.",
     )
 
 

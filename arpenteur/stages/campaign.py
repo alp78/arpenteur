@@ -9,9 +9,9 @@ any other order.**
 
   plan     cuts the list's kept firms into waves by the campaign's strategy.
            Free to repeat until the first message leaves.
-  render   writes one draft per recipient from the templates, with the
-           composed opt-out in the recipient's language. Refused, naming the
-           files, when a template or an opt-out is missing.
+  render   writes one draft per recipient from the templates, word for word:
+           an opt-out sentence, when the campaign needs one, is part of the
+           template. Refused, naming the files, when a template is missing.
   test     sends one message per variant to the operator, marked [TEST], and
            counts against the quota like any other.
   approve  a person says they received and read every test. Approval marks
@@ -43,7 +43,6 @@ from ..modules.clients import store as clients_store
 from ..modules.scout import store as scout_store
 from ..sources import template, waves
 from . import audience as audience_stage
-from . import draft as draft_stage
 from . import send as send_stage
 
 TEST_PREFIX = "[TEST] "
@@ -160,9 +159,8 @@ def _preflight(settings: Settings, conn: Connection, campaign: Row, wave: Row) -
         raise ValueError(f"Wave {wave['number']} has already sent; it cannot change.")
     if not settings.mail.configured:
         raise ValueError(
-            "No mailbox is configured, so the opt-out has no address to name. A "
-            "cold message without a working opt-out is what UWG art. 3 al. 1 "
-            "let. o is about."
+            "No mailbox is configured, so a reply asking to stop and a bounce "
+            "would reach nothing Arpenteur reads."
         )
     if not send_stage.signature_html(settings).strip():
         raise ValueError(
@@ -180,7 +178,7 @@ def _preflight(settings: Settings, conn: Connection, campaign: Row, wave: Row) -
 
 def render_wave(settings: Settings, conn: Connection, *, campaign: str | int,
                 wave: int, log: Callable[[str], None] = print) -> dict[str, Any]:
-    """One draft per recipient, from the templates, with the composed opt-out."""
+    """One draft per recipient, from the templates, word for word."""
     row = resolve(conn, campaign)
     w = _wave(conn, row, wave)
     _preflight(settings, conn, row, w)
@@ -195,21 +193,16 @@ def render_wave(settings: Settings, conn: Connection, *, campaign: str | int,
     messages = _live(campaign_store.wave_messages(conn, int(w["id"])))
     needs = Counter((m["language"], m["segment"]) for m in messages)
     gaps = template.missing(needs, found, row["templates"])
-    no_opt_out = sorted({lang for lang, _ in needs if lang not in draft_stage.OPT_OUT})
-    if gaps or no_opt_out:
+    if gaps:
         conn.rollback()
-        problems = [f"missing template {g}" for g in gaps]
-        problems += [f"no composed opt-out for {lang}; add it to draft.OPT_OUT"
-                     for lang in no_opt_out]
         raise ValueError("Wave {} cannot be rendered: {}.".format(
-            w["number"], "; ".join(problems)))
+            w["number"], "; ".join(f"missing template {g}" for g in gaps)))
 
     used: list[template.Template] = []
     written = skipped = 0
     for m in messages:
         t = template.pick(found, m["language"], m["segment"])
-        body = draft_stage.compose(t.body, language=m["language"],
-                                   address=settings.mail.user)
+        body = t.body.rstrip() + "\n"
         draft_id = scout_store.propose(
             conn, int(m["company_id"]), address=m["address"], language=m["language"],
             subject=t.subject, body=body, model=f"template:{t.path}@{t.sha[:8]}",

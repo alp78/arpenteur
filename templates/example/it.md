@@ -1,6 +1,6 @@
 # Messaggio di esempio in italiano
 
-Modello di esempio. Copiare la cartella `templates/example/` con un altro nome e sostituire il testo tra i due separatori con il proprio messaggio. La frase di disiscrizione e la firma vengono aggiunte al momento dell'invio.
+Modello di esempio. Copiare la cartella `templates/example/` con un altro nome e sostituire il testo tra i due separatori con il proprio messaggio. La frase di disiscrizione, prima della formula di saluto, fa parte del messaggio: riprenderla nel proprio. La firma viene aggiunta al momento dell'invio.
 
 ---
 
@@ -15,6 +15,8 @@ Si rivolge a strutture della vostra dimensione e si presenta in mezz'ora, a dist
 Se la proposta è di vostro interesse, una risposta a questo messaggio è sufficiente per concordare un momento.
 
 Vi ringrazio per l'attenzione dedicata a questa proposta.
+
+Se non desiderate più ricevere messaggi da parte nostra, rispondete «STOP» a questo messaggio: il vostro indirizzo sarà rimosso dai nostri elenchi.
 
 Cordiali saluti,
 
