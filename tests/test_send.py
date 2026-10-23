@@ -824,6 +824,38 @@ def test_the_cooldown_is_rechecked_at_send_time(smtp_settings, conn, company_id)
     assert stats["sent"] == 0
 
 
+def test_a_mailbox_is_written_to_once_whatever_the_cooldown(
+    smtp_settings, conn, company_id
+) -> None:
+    old = _draft(conn, company_id, sent=True)
+    conn.execute("UPDATE intel.draft SET sent_at = now() - interval '400 days'"
+                 " WHERE id = %s", (old,))
+    conn.commit()
+    again = _draft(conn, company_id)
+    for cooldown in (0, 180):
+        lines: list[str] = []
+        stats = send_stage.run(smtp_settings, conn, draft_ids=[again], confirm=True,
+                               cooldown_days=cooldown, open_sender=FakeSender(),
+                               log=lines.append)
+        assert stats["sent"] == 0
+        assert any("written to once" in line for line in lines)
+
+
+def test_a_refused_attempt_and_a_test_spend_no_mailbox(smtp_settings, conn, company_id) -> None:
+    first = _draft(conn, company_id)
+    lost = _campaigns.record_attempt(conn, kind="message", address="info@regie-test.ch",
+                                     subject="s", message_id="<refused@test>",
+                                     draft_id=first)
+    _campaigns.settle(conn, lost, posted=False, note="451 the provider's daily limit")
+    conn.commit()
+    test = send_stage.Letter(to="info@regie-test.ch", subject="[TEST] s", body="b")
+    send_stage.run(smtp_settings, conn, letters=[test], confirm=True, kind="test",
+                   open_sender=FakeSender(), log=lambda _m: None)
+    stats = send_stage.run(smtp_settings, conn, draft_ids=[first], confirm=True,
+                           open_sender=FakeSender(), log=lambda _m: None)
+    assert stats["sent"] == 1
+
+
 def test_a_test_send_marks_nothing_sent_and_moves_no_card(
     smtp_settings, conn, company_id
 ) -> None:

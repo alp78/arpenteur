@@ -1396,7 +1396,8 @@ def add_parsers(sub: argparse._SubParsersAction) -> None:
     p.add_argument("--allow", default="",
                    help="widen the defaults: unclear, hearsay, inferred, maybe, sole-traders")
     p.add_argument("--cooldown", type=int, default=180,
-                   help="days a mailbox, firm or domain rests after a message")
+                   help="days a firm or domain rests after a message; a mailbox is "
+                        "written to once")
     p.add_argument("--max-age", type=int, default=30,
                    help="days a DNS verdict stays good enough")
     p.add_argument("--size", action="store_true", help="let registered capital count")
@@ -1441,7 +1442,8 @@ def add_parsers(sub: argparse._SubParsersAction) -> None:
     p.add_argument("--settle", type=int, default=None,
                    help="hours bounces get to arrive before the next wave")
     p.add_argument("--cooldown", type=int, default=None,
-                   help="days a mailbox, firm or domain rests after a message")
+                   help="days a firm or domain rests after a message; a mailbox is "
+                        "written to once")
     p.add_argument("--bilingual", default=None,
                    help="for new and plan: cantons whose firms read every official "
                         "language in one message, e.g. FR,VS; an empty value clears it")

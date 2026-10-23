@@ -65,7 +65,7 @@ FIRM_CHECKS: tuple[str, ...] = (
 # of how close an address came: one stopped only by the cooldown had passed
 # everything else.
 ADDRESS_CHECKS: tuple[str, ...] = (
-    "suppressed", "bounced", "refused", "dead", "not-a-contact", "verdict",
+    "suppressed", "bounced", "refused", "written", "dead", "not-a-contact", "verdict",
     "stale", "provenance", "administration", "role", "venue", "person",
     "unclear", "free-mail", "cooldown",
 )
@@ -78,7 +78,8 @@ REASONS: tuple[str, ...] = (
 
 # A pin cannot reach past these. Each is a fact about the mailbox that a
 # person's wish to write to it does not change.
-ABSOLUTE = frozenset({"suppressed", "bounced", "refused", "dead", "not-a-contact"})
+ABSOLUTE = frozenset({"suppressed", "bounced", "refused", "written", "dead",
+                      "not-a-contact"})
 
 # How much each fact about an address is worth, between 0 and 1.
 PROVENANCE_FACTOR = {PAGE: 1.0, HEARSAY: 0.6, INFERRED: 0.3}
@@ -304,6 +305,9 @@ def _examine(address: Address, firm: Firm, rule: Rule, today: date,
         return option("bounced", "the mailbox bounced")
     if address.refused:
         return option("refused", "a draft to this mailbox was refused")
+    if address.written_at:
+        return option("written", f"received a message on {address.written_at[:10]}; "
+                      "a mailbox is written to once")
     if verdict == "dead":
         return option("dead", "the domain no longer resolves")
     if local in mailcheck.NOT_A_CONTACT:
@@ -323,10 +327,9 @@ def _examine(address: Address, firm: Firm, rule: Rule, today: date,
         return option(kind, kind_why)
     if domain in mailcheck.FREE_MAIL and not rule.free_mail:
         return option("free-mail", "a consumer mailbox, not the firm's")
-    for stamp in (address.written_at, recent_domains.get(domain)):
-        written = _age_days(stamp, today)
-        if written is not None and written < rule.cooldown_days:
-            return option("cooldown", f"written to {written} days ago")
+    written = _age_days(recent_domains.get(domain), today)
+    if written is not None and written < rule.cooldown_days:
+        return option("cooldown", f"its domain was written to {written} days ago")
     return option(None, kind_why)
 
 

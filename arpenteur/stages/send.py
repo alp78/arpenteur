@@ -146,6 +146,12 @@ def _why_not(conn: Connection, one: Letter, *, wave_id: int | None = None,
         if campaign_store.unsettled_for_draft(conn, one.draft_id) is not None:
             return ("an earlier attempt has no recorded outcome; settle it before "
                     "sending again, since the server may already have it")
+    if kind != "test":
+        # A mailbox is written to once. The cooldown below rests the firm and the
+        # domain; the mailbox itself is spent by its first accepted message.
+        once = campaign_store.last_written(conn, address=one.to)
+        if once is not None:
+            return f"received a message on {once[:10]}; a mailbox is written to once"
     if cooldown_days and kind == "message":
         domain = one.to.partition("@")[2].lower()
         last = campaign_store.last_written(

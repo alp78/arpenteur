@@ -114,12 +114,12 @@ def test_the_address_that_got_furthest_gives_the_reason() -> None:
     assert o.reason_code == "provenance"
 
 
-def test_the_cooldown_covers_the_firm_the_mailbox_and_the_domain() -> None:
+def test_the_cooldown_covers_the_firm_and_the_domain_and_the_mailbox_is_spent() -> None:
     recent = "2026-09-01T00:00:00+00:00"
     assert run(firm(1, "T", address(11, "info@x.ch"), written_at=recent))[1].reason_code \
         == "cooldown"
     assert run(firm(1, "T", address(11, "info@x.ch", written_at=recent)))[1].reason_code \
-        == "cooldown"
+        == "written"
     assert run(firm(1, "T", address(11, "info@x.ch")),
                recent={"x.ch": recent})[1].reason_code == "cooldown"
 
@@ -180,6 +180,25 @@ def test_no_pin_reaches_a_suppressed_bounced_or_refused_mailbox() -> None:
                 address(11, "info@x.ch", refused=True)):
         o = run(firm(1, "T", bad), pins={1: A.Pin(verdict="kept", why="please")})[1]
         assert o.verdict == "dropped", bad
+
+
+def test_a_mailbox_written_to_once_is_never_kept_again() -> None:
+    """The cooldown rests a firm and a domain; a mailbox that received a message
+    is spent, however long ago, and no pin brings it back."""
+    long_ago = "2025-08-01T00:00:00+00:00"
+    spent = address(11, "info@x.ch", written_at=long_ago)
+    assert run(firm(1, "T", spent))[1].reason_code == "written"
+    pinned = run(firm(1, "T", spent), pins={1: A.Pin(verdict="kept", why="please")})[1]
+    assert pinned.verdict == "dropped"
+    unwritten = A.Rule(segments=RULE.segments, cooldown_days=0)
+    assert run(firm(1, "T", spent), rule=unwritten)[1].reason_code == "written"
+
+
+def test_a_firm_past_its_cooldown_is_kept_on_another_mailbox() -> None:
+    long_ago = "2025-08-01T00:00:00+00:00"
+    o = run(firm(1, "T", address(11, "info@x.ch", written_at=long_ago),
+                 address(12, "contact@x.ch"), written_at=long_ago))[1]
+    assert o.verdict == "kept" and o.option.address == "contact@x.ch"
 
 
 def test_a_pin_cannot_put_two_firms_on_one_mailbox() -> None:

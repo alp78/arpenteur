@@ -43,7 +43,7 @@ arpenteur audience {list,new,show,refresh,build,keep,drop,language,address,unpin
 - `--programme PROGRAMME`: the programme the list feeds
 - `--members-only`: only firms already on the programme
 - `--allow ALLOW`: widen the defaults: unclear, hearsay, inferred, maybe, sole-traders
-- `--cooldown COOLDOWN`: days a mailbox, firm or domain rests after a message (default 180)
+- `--cooldown COOLDOWN`: days a firm or domain rests after a message; a mailbox is written to once (default 180)
 - `--max-age MAX_AGE`: days a DNS verdict stays good enough (default 30)
 - `--size`: let registered capital count
 - `--per-canton PER_CANTON`: for new: the most firms kept in each canton, best score first
@@ -98,7 +98,7 @@ arpenteur campaign {list,strategies,new,show,plan,render,test,approve,send,pause
 - `--start START`: the first wave's date, YYYY-MM-DD
 - `--bounce-ceiling BOUNCE_CEILING`: pause above this share of bounces, e.g. 0.05
 - `--settle SETTLE`: hours bounces get to arrive before the next wave
-- `--cooldown COOLDOWN`: days a mailbox, firm or domain rests after a message
+- `--cooldown COOLDOWN`: days a firm or domain rests after a message; a mailbox is written to once
 - `--bilingual BILINGUAL`: for new and plan: cantons whose firms read every official language in one message, e.g. FR,VS; an empty value clears it
 - `--replacement FIRM`: for send: the firm, by UID or name, whose bounced message goes again to the address accepted for it
 - `--to TO`: for test: where the test goes

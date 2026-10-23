@@ -44,7 +44,8 @@ Each row has a reason field, a language select and a button to keep or drop the 
 ## The limits
 
 - A frozen list refuses a build and a pin. Copy it to start again.
-- A list keeps only addresses with a DNS verdict younger than thirty days and not written to in the last 180 days, unless the list says otherwise.
+- A list keeps only addresses with a DNS verdict younger than thirty days, and no firm or domain written to in the last 180 days, unless the list says otherwise.
+- A mailbox that received a message is never kept again, however long ago it was written to, and no pin brings it back. Another address of the same firm can be kept once the firm's 180 days have passed. A test to you, or an attempt the mail server refused, spends no mailbox.
 
 ## Related pages
 

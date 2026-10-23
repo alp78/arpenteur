@@ -163,7 +163,8 @@ def audience_page(audience: Row, rows: Sequence[Row], funnel: Sequence[tuple[str
         + (f", at most {esc(rule['per_canton'])} firms each" if rule.get("per_canton") else "")
         + f"; addresses {esc(', '.join(rule.get('kinds') or ['desk']))} read off "
         f"{esc(', '.join(rule.get('provenance') or ['page']))}"
-        f"; cooldown {esc(rule.get('cooldown_days', 180))} days."
+        f"; firms and domains rest {esc(rule.get('cooldown_days', 180))} days"
+        "; a mailbox is written to once."
     )
     built = (f"built {esc(str(audience['built_at'])[:16])}" if audience["built_at"]
              else "never built")

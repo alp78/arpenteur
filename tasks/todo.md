@@ -300,3 +300,13 @@ Decision: a variant is covered when an earlier wave of the same campaign, still 
 A wave's test step now sends only the variants no other wave of the campaign delivered as a test with the same words, names the covering wave for the others, and marks the wave tested. Waves 9 to 13 of LIMEN-ROMANDIE-4 sent no test: wave 8 had delivered both bilingual variants and waves 1 to 7 the French one. A failed test, a changed word or a re-rendered wave covers nothing; approval stays per wave.
 
 The suite: 1,801 passed, 4 of them new, ruff clean.
+
+## A mailbox is written to once (23.10.2026)
+
+The operator decided that an address which received a message is never used again, after 180 days or ever. The firm and domain cooldown of 180 days stays; the mailbox itself is spent by its first accepted message. A bounced address is already excluded for good, so "sent and successful" reads as "accepted by the mail server once". Tests to the operator do not count; an attempt the server refused does not count.
+
+- [x] Tests first: the list drops a mailbox written to 400 days ago, a pin cannot keep it, a sibling address of the same firm can still be kept; the send refuses it whatever the cooldown; a refused attempt and a test spend nothing.
+- [x] List rule: an absolute address check `written`, before the cooldown.
+- [x] Send guard: every send but a test refuses a mailbox that already received a message.
+- [x] Manual and help: lists, campaigns, the cooldown flags.
+- [ ] Suite, ruff, then the next list (addresses found elsewhere, unclear, unconfirmed) built and sent as the provider allows.

@@ -13,8 +13,8 @@ test-sent to the operator, approved by a person who says they read the tests,
 and confirmed by typing its code, and only when the previous wave's bounces
 have been read and stayed under the campaign's ceiling. It is capped by
 `per_run` and the daily quota, paused between messages, and refused for any
-address that asked to be left alone, bounced, no longer resolves, or was
-written to inside the cooldown.
+address that asked to be left alone, bounced, no longer resolves, or already
+received a message, and for a firm or domain written to inside the cooldown.
 
 Swiss law (UWG art. 3 al. 1 let. o) makes mass advertising by email without
 consent unfair. These controls do not settle consent, which stays the
