@@ -626,6 +626,32 @@ def set_rendered(conn: Connection, wave_id: int, digest: str) -> None:
     )
 
 
+def tested_in(conn: Connection, campaign_id: int, wave_id: int, *, variant: str,
+              subject: str, body: str) -> int | None:
+    """Another wave of the campaign whose delivered test carried these exact words.
+
+    A wave counts only while it is marked tested, which its next render clears, so
+    its drafts are still the words its test carried. A test that failed counts for
+    nothing, and neither does a message whose words differ by a letter.
+    """
+    row = conn.execute(
+        """
+        SELECT w.number FROM crm.campaign_wave w
+         WHERE w.campaign_id = %s AND w.id <> %s AND w.tested_at IS NOT NULL
+           AND EXISTS (SELECT 1 FROM crm.outbound o
+                        WHERE o.wave_id = w.id AND o.kind = 'test'
+                          AND o.variant = %s AND o.posted_at IS NOT NULL)
+           AND EXISTS (SELECT 1 FROM crm.campaign_message cm
+                         JOIN intel.draft d ON d.id = cm.draft_id
+                        WHERE cm.wave_id = w.id AND cm.variant = %s
+                          AND d.subject = %s AND d.body = %s)
+         ORDER BY w.number LIMIT 1
+        """,
+        (campaign_id, wave_id, variant, variant, subject, body),
+    ).fetchone()
+    return int(row["number"]) if row else None
+
+
 def set_tested(conn: Connection, wave_id: int) -> None:
     conn.execute(
         "UPDATE crm.campaign_wave SET tested_at = now(), approved_at = NULL, "

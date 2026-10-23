@@ -261,6 +261,98 @@ def test_every_message_equals_its_variants_test_but_for_the_recipient(
         assert row["body"].rstrip() in tested[row["subject"]]
 
 
+def _wave_row(conn, campaign: str, number: int):
+    return K.wave(conn, K.campaign_by_code(conn, campaign)["id"], number)
+
+
+def _variants_of(conn, campaign: str, number: int) -> set[str]:
+    return {r["variant"] for r in conn.execute(
+        "SELECT variant FROM crm.campaign_message WHERE wave_id = %s"
+        " AND draft_id IS NOT NULL", (_wave_row(conn, campaign, number)["id"],))}
+
+
+def _test(settings, conn, campaign: str, wave: int, lines: list[str] | None = None):
+    sent = FakeSender()
+    out = C.test_wave(settings, conn, campaign=campaign, wave=wave,
+                      log=(lines.append if lines is not None else lambda _: None),
+                      open_sender=sent, sleep=lambda _s: None)
+    return sent, out
+
+
+def _two_languages(settings, conn, campaign: str) -> None:
+    """Valais read in both languages, two firms French first and two German first,
+    cut into a pilot of one and a wave of three: wave 2 holds both variants, so the
+    pilot's variant is always one of them."""
+    french = {"CHE200000001", "CHE200000003"}
+    listed = audience_stage.resolve(conn, "LIST-1")
+    for member in K.members(conn, int(listed["id"])):
+        K.set_pin(conn, int(member["id"]), {
+            "language": "fr" if member["uid"] in french else "de",
+            "why": "test", "by": "test", "at": "2026-10-23"})
+    conn.commit()
+    audience_stage.build(settings, conn, audience="LIST-1", log=lambda _: None)
+    C.plan(settings, conn, campaign=campaign, strategy="canton-per-wave", bilingual=["VS"],
+           pilot_size=1, wave_size=10, log=lambda _: None)
+    assert {*_variants_of_plan(conn, campaign, 2)} == {"fr", "de"}
+
+
+def _variants_of_plan(conn, campaign: str, number: int) -> list[str]:
+    return [r["language"] for r in conn.execute(
+        "SELECT m.language FROM crm.campaign_message cm"
+        " JOIN crm.audience_member m ON m.id = cm.member_id WHERE cm.wave_id = %s",
+        (_wave_row(conn, campaign, number)["id"],))]
+
+
+def test_a_wave_whose_words_were_tested_sends_no_test(settings, conn, campaign) -> None:
+    _two_languages(settings, conn, campaign)
+    ready(settings, conn, campaign, wave=2)
+    C.render_wave(settings, conn, campaign=campaign, wave=1, log=lambda _: None)
+    lines: list[str] = []
+    sent, out = _test(settings, conn, campaign, 1, lines)
+    assert sent.posted == [] and out["sent"] == 0 and out["covered"] == 1
+    assert _wave_row(conn, campaign, 1)["tested_at"] is not None
+    assert any("wave 2" in line for line in lines)
+    C.approve(settings, conn, campaign=campaign, wave=1, by="test", read=True)
+
+
+def test_only_a_variant_not_yet_tested_is_sent(settings, conn, campaign) -> None:
+    _two_languages(settings, conn, campaign)
+    ready(settings, conn, campaign, wave=1)
+    C.render_wave(settings, conn, campaign=campaign, wave=2, log=lambda _: None)
+    (new,) = _variants_of(conn, campaign, 2) - _variants_of(conn, campaign, 1)
+    sent, out = _test(settings, conn, campaign, 2)
+    assert len(sent.posted) == 1 and out["covered"] == 1
+    tested = {r["variant"] for r in conn.execute(
+        "SELECT variant FROM crm.outbound WHERE kind = 'test' AND wave_id = %s",
+        (_wave_row(conn, campaign, 2)["id"],))}
+    assert tested == {new}
+    assert _wave_row(conn, campaign, 2)["tested_at"] is not None
+
+
+def test_changed_words_are_tested_again(settings, conn, campaign) -> None:
+    _two_languages(settings, conn, campaign)
+    ready(settings, conn, campaign, wave=2)
+    folder = Path(settings.root) / "templates" / "drymos"
+    for name in ("de.md", "fr.md"):
+        path = folder / name
+        path.write_text(path.read_text(encoding="utf-8").replace(
+            "Ein Atlas", "Der Atlas"), encoding="utf-8")
+    C.render_wave(settings, conn, campaign=campaign, wave=1, log=lambda _: None)
+    sent, out = _test(settings, conn, campaign, 1)
+    assert len(sent.posted) == 1 and out["covered"] == 0
+
+
+def test_a_test_that_failed_covers_nothing(settings, conn, campaign) -> None:
+    _two_languages(settings, conn, campaign)
+    ready(settings, conn, campaign, wave=2)
+    conn.execute("UPDATE crm.outbound SET posted_at = NULL, failed_at = now(),"
+                 " failure = 'refused' WHERE kind = 'test'")
+    conn.commit()
+    C.render_wave(settings, conn, campaign=campaign, wave=1, log=lambda _: None)
+    sent, out = _test(settings, conn, campaign, 1)
+    assert len(sent.posted) == 1 and out["covered"] == 0
+
+
 def test_approval_needs_a_test_after_the_last_render(settings, conn, campaign) -> None:
     C.render_wave(settings, conn, campaign=campaign, wave=1, log=lambda _: None)
     with pytest.raises(ValueError, match="tested"):

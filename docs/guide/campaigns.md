@@ -46,7 +46,7 @@ A reason and the Pause button hold the next wave. A paused campaign shows the re
 The steps go in order, and each repeated step clears the ones after it: a new render needs a new test and a new approval.
 
 1. Render writes every message from the templates and the list. It is refused when no mailbox is set to read the replies and the bounces, when no signature is written, or when replies would go to an address Arpenteur does not read.
-2. Send the test to me sends one message per language variant to the test recipient, marked as a test. It counts against the daily quota.
+2. Send the test to me sends one message per language variant to the test recipient, marked as a test. It counts against the daily quota. A variant whose exact words you already received as the test of another wave of this campaign is not sent again; the run names that wave, and the step is marked done. A changed word, or a test that failed to arrive, sends the variant again.
 3. Approve records that a person received and read every test. The box saying so must be ticked. Withdraw approval undoes it.
 4. Send the wave asks for the wave's code typed back, such as `DRYMOS-A/1`, and sends. The panel above the field says how many messages, how far apart, how long it will take and how much of the daily quota is left.
 

@@ -13,7 +13,9 @@ any other order.**
            an opt-out sentence, when the campaign needs one, is part of the
            template. Refused, naming the files, when a template is missing.
   test     sends one message per variant to the operator, marked [TEST], and
-           counts against the quota like any other.
+           counts against the quota like any other. A variant whose exact words
+           another wave of the campaign already delivered as a test is not sent
+           again, so a campaign's tests reach the operator once.
   approve  a person says they received and read every test. Approval marks
            every draft of the wave reviewed, which is what `send` requires.
   send     a background job, behind a typed confirmation, through `send.run`
@@ -319,19 +321,43 @@ def test_wave(settings: Settings, conn: Connection, *, campaign: str | int, wave
               to: str = "", log: Callable[[str], None] = print,
               open_sender: Callable[..., Any] | None = None,
               sleep: Callable[[float], None] = time.sleep) -> dict[str, Any]:
-    """Send the operator one message per variant, marked as a test."""
+    """Send the operator one message per variant, marked as a test.
+
+    A variant whose exact words another wave of the campaign already delivered as a
+    test is not sent again: the operator has read it, and every recipient of the
+    variant gets those words. Only the variants no wave has tested go.
+    """
     row = resolve(conn, campaign)
     w = _wave(conn, row, wave)
     _unchanged(settings, conn, row, w)
     target = (to or settings.smtp.test_to or settings.smtp.sender).strip()
+    variants = _variants(conn, w)
+    if not variants:
+        raise ValueError(f"Wave {w['number']} has no rendered message to test.")
+    fresh: list[Row] = []
+    for m in variants:
+        earlier = campaign_store.tested_in(
+            conn, int(row["id"]), int(w["id"]), variant=m["variant"] or "",
+            subject=m["subject"] or "", body=m["body"] or "")
+        if earlier is None:
+            fresh.append(m)
+        else:
+            log(f"  {m['variant']}: these words went as the test of wave {earlier}; "
+                "not sent again")
+    covered = len(variants) - len(fresh)
+    if not fresh:
+        campaign_store.set_tested(conn, int(w["id"]))
+        conn.commit()
+        log(f"wave {w['number']}: every variant was tested in an earlier wave; "
+            "no test sent")
+        return {"considered": 0, "sent": 0, "refused": 0, "filed": 0, "variants": 0,
+                "covered": covered, "to": target}
     letters = [
         send_stage.Letter(to=target, subject=TEST_PREFIX + (m["subject"] or ""),
                           body=m["body"] or "", firm=f"{m['variant']} test",
                           variant=m["variant"] or "")
-        for m in _variants(conn, w)
+        for m in fresh
     ]
-    if not letters:
-        raise ValueError(f"Wave {w['number']} has no rendered message to test.")
     stats = send_stage.run(settings, conn, letters=letters, confirm=True, kind="test",
                            programme="", wave_id=int(w["id"]), log=log,
                            open_sender=open_sender, sleep=sleep)
@@ -342,7 +368,7 @@ def test_wave(settings: Settings, conn: Connection, *, campaign: str | int, wave
     else:
         log(f"wave {w['number']}: {stats['sent']} of {len(letters)} tests went; "
             "the wave stays untested")
-    return {**stats, "variants": len(letters), "to": target}
+    return {**stats, "variants": len(letters), "covered": covered, "to": target}
 
 
 def approve(settings: Settings, conn: Connection, *, campaign: str | int, wave: int,

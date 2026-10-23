@@ -162,3 +162,7 @@ A test wrote a tampered migration digest into the shared database and never rest
 ## A pilot samples every market the operator targets (19.10.2026)
 
 Asked for a sending strategy for Limen, I proposed the 25 Jura agencies because a list already held them, and the operator refused it: the pilot is 20 agencies in each French-speaking canton. A list that exists is not a market that was chosen. Before proposing a first wave, size it from the markets the campaign is for, one sample per canton, and ask which cantons when the brief does not say. In Fribourg and Valais the operator writes in French and German together, so a bilingual canton is one message in both languages, not two audiences.
+
+## A gate repeated on unchanged input is noise (23.10.2026)
+
+Arpenteur sent the operator a test before each of 13 waves carrying the same three texts, and the operator said the test is done once, not for every wave. A safety step earns its repetition only when what it checks has changed. When a gate runs per unit, ask what it verifies and key it on that: here the words of a variant, which the drafts already hold, so a wave whose words were already received needs no new test.

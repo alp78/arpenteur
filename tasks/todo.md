@@ -282,3 +282,15 @@ What exists now:
 On the live database: the two replacements sent by hand this morning are recorded as accepted proposals and as their messages' replacements, saying they were made by hand. A real search for Axis Immobilier read its site, which still prints only the bounced `contact@`, ran three web searches that found nothing else, and proposed `info@axis-immobilier.com` as a guess, undecided.
 
 The suite: 1,797 passed, 27 of them new, ruff clean.
+
+## One test per campaign, not per wave (23.10.2026)
+
+The operator received a test message before every wave of the fourth Limen round, 13 waves of the same three texts, and asked for the test to happen once. A wave keeps its four steps; the test step stops sending what the operator already received.
+
+Decision: a variant is covered when an earlier wave of the same campaign, still marked tested, had a test of that variant delivered and holds a message with the same subject and body. The test step sends only the variants not covered, names the wave whose test covers each other one, and marks the wave tested when every variant is covered or was sent. A changed word, a failed test or a re-rendered earlier wave covers nothing. Approval stays per wave.
+
+- [x] Tests first: a covered wave sends nothing and is tested; only a new variant is sent; changed words are tested again; a test that failed covers nothing.
+- [x] Store: `campaigns.tested_in`, the earlier wave whose delivered test carried these words.
+- [x] Stage: `test_wave` sends the uncovered variants only and logs the covering wave.
+- [x] Manual: the wave steps in `docs/guide/campaigns.md`, the stage docstring.
+- [ ] Suite, ruff, then waves 9 to 13 of LIMEN-ROMANDIE-4 with no new test.
