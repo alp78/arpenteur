@@ -293,4 +293,10 @@ Decision: a variant is covered when an earlier wave of the same campaign, still 
 - [x] Store: `campaigns.tested_in`, the earlier wave whose delivered test carried these words.
 - [x] Stage: `test_wave` sends the uncovered variants only and logs the covering wave.
 - [x] Manual: the wave steps in `docs/guide/campaigns.md`, the stage docstring.
-- [ ] Suite, ruff, then waves 9 to 13 of LIMEN-ROMANDIE-4 with no new test.
+- [x] Suite, ruff, then waves 9 to 13 of LIMEN-ROMANDIE-4 with no new test.
+
+### Review, 23.10.2026
+
+A wave's test step now sends only the variants no other wave of the campaign delivered as a test with the same words, names the covering wave for the others, and marks the wave tested. Waves 9 to 13 of LIMEN-ROMANDIE-4 sent no test: wave 8 had delivered both bilingual variants and waves 1 to 7 the French one. A failed test, a changed word or a re-rendered wave covers nothing; approval stays per wave.
+
+The suite: 1,801 passed, 4 of them new, ruff clean.
