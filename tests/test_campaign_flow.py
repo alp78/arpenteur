@@ -353,6 +353,35 @@ def test_a_test_that_failed_covers_nothing(settings, conn, campaign) -> None:
     assert len(sent.posted) == 1 and out["covered"] == 0
 
 
+def test_a_new_campaign_with_the_same_words_sends_no_test(settings, conn, campaign) -> None:
+    """A round is the same text sent again to the next firms of a new list: the
+    operator read it the first time."""
+    ready(settings, conn, campaign, wave=1)
+    C.send_wave(settings, conn, campaign=campaign, wave=1, confirm="DRYMOS-A/1",
+                open_sender=FakeSender(), sleep=lambda _s: None, log=lambda _: None)
+    rule = A.Rule(segments={"tourism-office": 1.0}, programme="DRYMOS")
+    audience_stage.create(conn, code="list-2", name="Tourisme, second tour", rule=rule)
+    audience_stage.build(settings, conn, audience="LIST-2", log=lambda _: None)
+    (first,) = _variants_of(conn, campaign, 1)
+    for member in K.members(conn, int(audience_stage.resolve(conn, "LIST-2")["id"])):
+        K.set_pin(conn, int(member["id"]), {
+            "language": first, "why": "test", "by": "test", "at": "2026-10-24"})
+    conn.commit()
+    audience_stage.build(settings, conn, audience="LIST-2", log=lambda _: None)
+    C.create(settings, conn, code="drymos-b", name="Second tour", audience="LIST-2",
+             templates="templates/drymos", strategy="score-overall", programme="DRYMOS",
+             pilot_size=3, wave_size=3, gap_days=0, settle_hours=0)
+    C.plan(settings, conn, campaign="DRYMOS-B", log=lambda _: None)
+    C.render_wave(settings, conn, campaign="DRYMOS-B", wave=1, log=lambda _: None)
+    assert _variants_of(conn, "DRYMOS-B", 1) == {first}
+    lines: list[str] = []
+    sent, out = _test(settings, conn, "DRYMOS-B", 1, lines)
+    assert sent.posted == [] and out["covered"] == 1
+    assert any(f"{first}: these words went as the test of DRYMOS-A wave 1" in line
+               for line in lines)
+    C.approve(settings, conn, campaign="DRYMOS-B", wave=1, by="test", read=True)
+
+
 def test_approval_needs_a_test_after_the_last_render(settings, conn, campaign) -> None:
     C.render_wave(settings, conn, campaign=campaign, wave=1, log=lambda _: None)
     with pytest.raises(ValueError, match="tested"):

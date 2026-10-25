@@ -309,4 +309,15 @@ The operator decided that an address which received a message is never used agai
 - [x] List rule: an absolute address check `written`, before the cooldown.
 - [x] Send guard: every send but a test refuses a mailbox that already received a message.
 - [x] Manual and help: lists, campaigns, the cooldown flags.
-- [ ] Suite, ruff, then the next list (addresses found elsewhere, unclear, unconfirmed) built and sent as the provider allows.
+- [x] Suite, ruff, then the next list (addresses found elsewhere, unclear, unconfirmed) built and sent as the provider allows. Stopped by the operator on 25.10.2026 after wave 2 bounced 8 of 16 guessed addresses; see tasks/lessons.md.
+
+## A test reaches the operator once per text, whatever the campaign (24.10.2026)
+
+Round 5 is a new campaign with the three texts of round 1, byte for byte, and its first wave sent two tests again. The operator wants the test once, at the start. The words are what a test proves, so a variant whose exact words were received as a test in any campaign is not sent again.
+
+- [x] Test first: a second campaign with the same words sends no test and names the earlier campaign and wave.
+- [x] `tested_in` looks across campaigns and returns the earlier wave's code and number.
+- [x] Log line, docstrings and the Campaigns manual say "any campaign".
+- [x] Suite and ruff.
+
+**Review.** `tested_in` no longer filters on the campaign and returns the code and wave of the earliest delivered test of the same words. On the live campaign, round 5's waves 2 and 3 sent no test and named LIMEN-ROMANDIE wave 4, the round 1 wave that first carried these texts. Suite 1,806 passed, ruff clean.

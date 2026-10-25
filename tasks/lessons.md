@@ -166,3 +166,12 @@ Asked for a sending strategy for Limen, I proposed the 25 Jura agencies because 
 ## A gate repeated on unchanged input is noise (23.10.2026)
 
 Arpenteur sent the operator a test before each of 13 waves carrying the same three texts, and the operator said the test is done once, not for every wave. A safety step earns its repetition only when what it checks has changed. When a gate runs per unit, ask what it verifies and key it on that: here the words of a variant, which the drafts already hold, so a wave whose words were already received needs no new test.
+
+The first fix still keyed the test on the campaign, and round 5, a new campaign carrying the same three texts, sent the operator two tests again on 24.10.2026. The operator reads a round as the same campaign continued. Key the gate on the fact it checks and nothing narrower: a variant's words, wherever they were received.
+
+## An unclear mailbox is a person until shown otherwise (24.10.2026)
+
+Round 5 was built with `--allow unclear` to reach more firms, and its first wave went to seven mailboxes named after a person, such as `lenny@` and `fabregues@`, against the operator's standing rule to leave personal addresses out. The classifier leaves `unclear` undecided because it cannot tell a first name or an initial from a desk; of round 5's 68 such mailboxes, about six were desks. Never widen a list to `unclear` for volume. Read the mailboxes of any new class before the first wave leaves, not after.
+
+The same round allowed `inferred`, the info@ guessed at the firm's own domain. Wave 2, made only of those, bounced 8 of 16 on 25.10.2026, while the addresses a firm published or a search reported bounced 0 of 20, and the operator stopped the round. An address nobody published gets its first check from a real send, since SMTP probing is ruled out. Keep campaign lists to published desks.
+

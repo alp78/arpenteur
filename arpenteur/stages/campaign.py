@@ -323,9 +323,10 @@ def test_wave(settings: Settings, conn: Connection, *, campaign: str | int, wave
               sleep: Callable[[float], None] = time.sleep) -> dict[str, Any]:
     """Send the operator one message per variant, marked as a test.
 
-    A variant whose exact words another wave of the campaign already delivered as a
-    test is not sent again: the operator has read it, and every recipient of the
-    variant gets those words. Only the variants no wave has tested go.
+    A variant whose exact words another wave already delivered as a test, in this
+    campaign or an earlier one, is not sent again: the operator has read it, and
+    every recipient of the variant gets those words. Only the variants no wave has
+    tested go.
     """
     row = resolve(conn, campaign)
     w = _wave(conn, row, wave)
@@ -337,13 +338,14 @@ def test_wave(settings: Settings, conn: Connection, *, campaign: str | int, wave
     fresh: list[Row] = []
     for m in variants:
         earlier = campaign_store.tested_in(
-            conn, int(row["id"]), int(w["id"]), variant=m["variant"] or "",
+            conn, int(w["id"]), variant=m["variant"] or "",
             subject=m["subject"] or "", body=m["body"] or "")
         if earlier is None:
             fresh.append(m)
         else:
-            log(f"  {m['variant']}: these words went as the test of wave {earlier}; "
-                "not sent again")
+            code, number = earlier
+            log(f"  {m['variant']}: these words went as the test of {code} wave "
+                f"{number}; not sent again")
     covered = len(variants) - len(fresh)
     if not fresh:
         campaign_store.set_tested(conn, int(w["id"]))
