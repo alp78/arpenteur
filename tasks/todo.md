@@ -321,3 +321,25 @@ Round 5 is a new campaign with the three texts of round 1, byte for byte, and it
 - [x] Suite and ruff.
 
 **Review.** `tested_in` no longer filters on the campaign and returns the code and wave of the earliest delivered test of the same words. On the live campaign, round 5's waves 2 and 3 sent no test and named LIMEN-ROMANDIE wave 4, the round 1 wave that first carried these texts. Suite 1,806 passed, ruff clean.
+
+## Round 6: the letting firms of Romandie (26.10.2026)
+
+Rounds 1 to 5 wrote to `regie-core` only. The operator asked to send to the `regie-letting` firms of the six French-speaking cantons, of which 196 hold a published desk mailbox that passed the deliverability check and was never written to.
+
+- [x] List LIMEN-ROMANDIE-6: round 4's rule (published desks, deliverable) with `--segment regie-letting=1`; refresh its DNS verdicts, build, read every kept mailbox for a person's name. 196 kept, every local part a desk or the firm's own name
+- [x] Templates `templates/limen/fr.regie-letting.md` and `de.regie-letting.md`: the round 1 to 5 message with the owner's letting opening from the notes of `fr.md` and `de.md`. The vault prose hook refused three French paragraphs and the German lead-in to the link, inherited from the base files; those were rewritten in the letting files only
+- [x] Campaign LIMEN-ROMANDIE-6 with round 4's settings: canton per wave, 20 per wave, FR and VS bilingual, 5 % bounce ceiling. 14 waves
+- [x] Plan shown, then kept; waves 1, 5 and 14 rendered, their four variants tested to the operator on 26.10.2026
+- [ ] The operator reads the tests and approves; waves sent within the daily quota of 195, bounces read between waves
+
+## A test is keyed on each language's text, not on the message (26.10.2026)
+
+Round 6 sent the operator four tests carrying two texts: French then German, German then French, French alone, German alone. The gate compared whole messages, so a bilingual message and the single-language messages made of the same words counted as four texts. The operator's rule since 23.10.2026 is that a test proves words, and words already received are not sent again.
+
+- [x] Tests first: a wave holding both bilingual orders sends one test; a single-language message whose text went inside a bilingual test sends none; a word changed in one language sends only the message carrying it
+- [x] `delivered_tests` replaces `tested_in`: every delivered test of a tested wave, with its words; `template.versions` splits a message back into its language versions, matched whole
+- [x] `test_wave` reads each variant's language texts from the templates, skips a variant whose every text was received before or rides in a message chosen earlier in the same run
+- [x] Manual (campaigns guide, step 2) and the stage docstrings
+- [x] Suite and ruff
+
+**Review.** Four new or rewritten tests failed on the old gate at the count of tests sent, and pass now. On round 6's live data, a read-only check finds each language text of waves 1, 5 and 14 in another wave's test, so wave 1's French and German message alone would have covered all four variants. Suite 1,809 passed, ruff clean.

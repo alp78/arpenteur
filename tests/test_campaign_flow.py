@@ -279,21 +279,55 @@ def _test(settings, conn, campaign: str, wave: int, lines: list[str] | None = No
     return sent, out
 
 
+def _pin_valais(settings, conn) -> None:
+    """Two Valais firms read French first and two German first."""
+    french = {"CHE200000001", "CHE200000003"}
+    listed = audience_stage.resolve(conn, "LIST-1")
+    for member in K.members(conn, int(listed["id"])):
+        if member["uid"].startswith("CHE20000000"):
+            K.set_pin(conn, int(member["id"]), {
+                "language": "fr" if member["uid"] in french else "de",
+                "why": "test", "by": "test", "at": "2026-10-23"})
+    conn.commit()
+    audience_stage.build(settings, conn, audience="LIST-1", log=lambda _: None)
+
+
 def _two_languages(settings, conn, campaign: str) -> None:
     """Valais read in both languages, two firms French first and two German first,
     cut into a pilot of one and a wave of three: wave 2 holds both variants, so the
     pilot's variant is always one of them."""
-    french = {"CHE200000001", "CHE200000003"}
-    listed = audience_stage.resolve(conn, "LIST-1")
-    for member in K.members(conn, int(listed["id"])):
-        K.set_pin(conn, int(member["id"]), {
-            "language": "fr" if member["uid"] in french else "de",
-            "why": "test", "by": "test", "at": "2026-10-23"})
-    conn.commit()
-    audience_stage.build(settings, conn, audience="LIST-1", log=lambda _: None)
+    _pin_valais(settings, conn)
     C.plan(settings, conn, campaign=campaign, strategy="canton-per-wave", bilingual=["VS"],
            pilot_size=1, wave_size=10, log=lambda _: None)
     assert {*_variants_of_plan(conn, campaign, 2)} == {"fr", "de"}
+
+
+def _valais_and_geneva(settings, conn, campaign: str) -> tuple[int, int]:
+    """The Valais firms read both languages; one Geneva firm reads French alone.
+    Returns the number of the Valais wave and of the Geneva wave."""
+    cid = conn.execute(
+        "INSERT INTO core.company (uid, name, canton, legal_form_uid, legal_form_label,"
+        " status, first_seen) VALUES ('CHE300000001', 'Genève Tourisme', 'GE', '0109',"
+        " 'Association', 'ACTIVE', now()) RETURNING id").fetchone()["id"]
+    conn.execute(
+        "INSERT INTO intel.segment (company_id, segment, confidence, source,"
+        " classified_at) VALUES (%s, 'tourism-office', 1, 'manual', now())", (cid,))
+    conn.execute(
+        "INSERT INTO core.contact (company_id, kind, value, method, status, status_at,"
+        " source_url, fetched_at) VALUES (%s, 'email', 'info@geneve.ch', 'published',"
+        " 'deliverable', now(), 'https://example.test', now())", (cid,))
+    conn.commit()
+    _pin_valais(settings, conn)
+    C.plan(settings, conn, campaign=campaign, strategy="canton-per-wave", bilingual=["VS"],
+           pilot_size=0, wave_size=10, log=lambda _: None)
+    cantons = {r["canton"]: int(r["number"]) for r in conn.execute(
+        "SELECT DISTINCT co.canton, w.number FROM crm.campaign_message cm"
+        " JOIN crm.campaign_wave w ON w.id = cm.wave_id"
+        " JOIN crm.audience_member m ON m.id = cm.member_id"
+        " JOIN core.company co ON co.id = m.company_id"
+        " WHERE w.campaign_id = %s", (K.campaign_by_code(conn, campaign)["id"],))}
+    assert set(cantons) == {"VS", "GE"}
+    return cantons["VS"], cantons["GE"]
 
 
 def _variants_of_plan(conn, campaign: str, number: int) -> list[str]:
@@ -315,18 +349,55 @@ def test_a_wave_whose_words_were_tested_sends_no_test(settings, conn, campaign) 
     C.approve(settings, conn, campaign=campaign, wave=1, by="test", read=True)
 
 
-def test_only_a_variant_not_yet_tested_is_sent(settings, conn, campaign) -> None:
+def test_the_other_order_of_a_tested_message_sends_no_test(settings, conn, campaign) -> None:
+    """German first carries the words French first carried; the operator read them."""
     _two_languages(settings, conn, campaign)
     ready(settings, conn, campaign, wave=1)
     C.render_wave(settings, conn, campaign=campaign, wave=2, log=lambda _: None)
-    (new,) = _variants_of(conn, campaign, 2) - _variants_of(conn, campaign, 1)
+    assert _variants_of(conn, campaign, 2) - _variants_of(conn, campaign, 1)
+    sent, out = _test(settings, conn, campaign, 2)
+    assert sent.posted == [] and out["covered"] == 2
+    assert _wave_row(conn, campaign, 2)["tested_at"] is not None
+
+
+def test_both_orders_of_a_new_message_send_one_test(settings, conn, campaign) -> None:
+    """French first and German first carry the same two texts: one test shows the
+    operator every word either order sends."""
+    _two_languages(settings, conn, campaign)
+    C.render_wave(settings, conn, campaign=campaign, wave=2, log=lambda _: None)
+    assert len(_variants_of(conn, campaign, 2)) == 2
     sent, out = _test(settings, conn, campaign, 2)
     assert len(sent.posted) == 1 and out["covered"] == 1
-    tested = {r["variant"] for r in conn.execute(
-        "SELECT variant FROM crm.outbound WHERE kind = 'test' AND wave_id = %s",
-        (_wave_row(conn, campaign, 2)["id"],))}
-    assert tested == {new}
     assert _wave_row(conn, campaign, 2)["tested_at"] is not None
+
+
+def test_a_text_tested_inside_a_bilingual_message_sends_no_test_alone(
+    settings, conn, campaign
+) -> None:
+    """Geneva reads the French text alone, which the operator read as the French
+    half of the Valais test."""
+    valais, geneva = _valais_and_geneva(settings, conn, campaign)
+    ready(settings, conn, campaign, wave=valais)
+    C.render_wave(settings, conn, campaign=campaign, wave=geneva, log=lambda _: None)
+    assert _variants_of(conn, campaign, geneva) == {"fr"}
+    lines: list[str] = []
+    sent, out = _test(settings, conn, campaign, geneva, lines)
+    assert sent.posted == [] and out["covered"] == 1
+    assert any(f"DRYMOS-A wave {valais}" in line for line in lines)
+
+
+def test_a_word_changed_in_one_language_is_tested_once(settings, conn, campaign) -> None:
+    """The French text went as Geneva's test; the German one is new, so Valais sends
+    one message carrying it and nothing for the other order."""
+    valais, geneva = _valais_and_geneva(settings, conn, campaign)
+    ready(settings, conn, campaign, wave=geneva)
+    path = Path(settings.root) / "templates" / "drymos" / "de.md"
+    path.write_text(path.read_text(encoding="utf-8").replace("Ein Atlas", "Der Atlas"),
+                    encoding="utf-8")
+    C.render_wave(settings, conn, campaign=campaign, wave=valais, log=lambda _: None)
+    sent, out = _test(settings, conn, campaign, valais)
+    assert len(sent.posted) == 1 and out["covered"] == 1
+    assert "Der Atlas" in sent.posted[0].get_body(("plain",)).get_content()
 
 
 def test_changed_words_are_tested_again(settings, conn, campaign) -> None:
@@ -377,7 +448,7 @@ def test_a_new_campaign_with_the_same_words_sends_no_test(settings, conn, campai
     lines: list[str] = []
     sent, out = _test(settings, conn, "DRYMOS-B", 1, lines)
     assert sent.posted == [] and out["covered"] == 1
-    assert any(f"{first}: these words went as the test of DRYMOS-A wave 1" in line
+    assert any(f"{first}: these words went in the test of DRYMOS-A wave 1" in line
                for line in lines)
     C.approve(settings, conn, campaign="DRYMOS-B", wave=1, by="test", read=True)
 

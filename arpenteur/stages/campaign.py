@@ -12,10 +12,10 @@ any other order.**
   render   writes one draft per recipient from the templates, word for word:
            an opt-out sentence, when the campaign needs one, is part of the
            template. Refused, naming the files, when a template is missing.
-  test     sends one message per variant to the operator, marked [TEST], and
-           counts against the quota like any other. A variant whose exact words
-           another wave of the campaign already delivered as a test is not sent
-           again, so a campaign's tests reach the operator once.
+  test     sends the operator, marked [TEST], the fewest messages that carry
+           every language text no earlier test carried, and counts against the
+           quota like any other. A text received once, alone or inside a
+           bilingual message, in any campaign, is not sent again.
   approve  a person says they received and read every test. Approval marks
            every draft of the wave reviewed, which is what `send` requires.
   send     a background job, behind a typed confirmation, through `send.run`
@@ -317,16 +317,25 @@ def precheck_test(settings: Settings, form: dict[str, Any]) -> None:
         _unchanged(settings, conn, row, _wave(conn, row, int(form["wave"])))
 
 
+def _read_in(delivered: list[Row], subject: str, text: str) -> str:
+    """The first delivered test holding this language version whole, or ''."""
+    for test in delivered:
+        if (subject, text) in template.versions(test["subject"], test["body"]):
+            return f"the test of {test['code']} wave {test['number']}"
+    return ""
+
+
 def test_wave(settings: Settings, conn: Connection, *, campaign: str | int, wave: int,
               to: str = "", log: Callable[[str], None] = print,
               open_sender: Callable[..., Any] | None = None,
               sleep: Callable[[float], None] = time.sleep) -> dict[str, Any]:
-    """Send the operator one message per variant, marked as a test.
+    """Send the operator the fewest messages that carry every text not yet read.
 
-    A variant whose exact words another wave already delivered as a test, in this
-    campaign or an earlier one, is not sent again: the operator has read it, and
-    every recipient of the variant gets those words. Only the variants no wave has
-    tested go.
+    A test proves words, so the unit is one language's text, not the message: a
+    text the operator already received in a test, alone or as one version of a
+    bilingual message, in any campaign, is not sent again, and the other order of
+    a bilingual message carries nothing new. A variant goes only when it carries a
+    text that neither an earlier test nor a message chosen in this run carries.
     """
     row = resolve(conn, campaign)
     w = _wave(conn, row, wave)
@@ -335,17 +344,22 @@ def test_wave(settings: Settings, conn: Connection, *, campaign: str | int, wave
     variants = _variants(conn, w)
     if not variants:
         raise ValueError(f"Wave {w['number']} has no rendered message to test.")
+    found = template.load(_templates_dir(settings, row["templates"]),
+                          root=Path(settings.root))
+    delivered = campaign_store.delivered_tests(conn, int(w["id"]))
     fresh: list[Row] = []
+    carried: dict[str, str] = {}
     for m in variants:
-        earlier = campaign_store.tested_in(
-            conn, int(w["id"]), variant=m["variant"] or "",
-            subject=m["subject"] or "", body=m["body"] or "")
-        if earlier is None:
+        parts = [t for t in _parts(found, row, m) if t is not None]
+        where = [carried.get(t.variant)
+                 or _read_in(delivered, t.subject, t.body.rstrip()) for t in parts]
+        if not parts or not all(where):
             fresh.append(m)
-        else:
-            code, number = earlier
-            log(f"  {m['variant']}: these words went as the test of {code} wave "
-                f"{number}; not sent again")
+            for t in parts:
+                carried.setdefault(t.variant, f"this wave's {m['variant']} test")
+            continue
+        log(f"  {m['variant']}: these words went in "
+            f"{' and '.join(dict.fromkeys(where))}; not sent again")
     covered = len(variants) - len(fresh)
     if not fresh:
         campaign_store.set_tested(conn, int(w["id"]))

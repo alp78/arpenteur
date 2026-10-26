@@ -175,3 +175,13 @@ Round 5 was built with `--allow unclear` to reach more firms, and its first wave
 
 The same round allowed `inferred`, the info@ guessed at the firm's own domain. Wave 2, made only of those, bounced 8 of 16 on 25.10.2026, while the addresses a firm published or a search reported bounced 0 of 20, and the operator stopped the round. An address nobody published gets its first check from a real send, since SMTP probing is ruled out. Keep campaign lists to published desks.
 
+## A bilingual message is two texts, not a third one (26.10.2026)
+
+Round 6 sent the operator four tests, one per message variant: French then German, German then French, French alone, German alone. They carried two texts. The operator had already said the test is done once, and the gate had been keyed on "a variant's words", which still treated a bilingual message and its halves as different words. I also rendered three waves at once to send every test up front, which turned the gap into four emails without a word to the operator first.
+
+**The rule.** Key a gate on the smallest unit the operator reads, here one language's subject and text, and check composite units through their parts. Before a step mails the operator, say how many messages it will send and what each carries.
+
+## A letter whose sentences all open on « Je » (26.10.2026)
+
+The reply drafted for a Limen tester opened four of its seven sentences with « Je » or « J' », one at the head of each of its four paragraphs. The operator called it bad style. Each sentence passed `fr/correspondance.md` on its own, because no rule there counted openers across a whole text. The vault note now carries the rule: one sentence per paragraph at most opens on « Je », never two paragraphs in a row, and between the thanks and the salutation a sentence takes as its subject the thing it is about, such as the account or the invitation. Count the openers of a draft before handing it over.
+

@@ -153,6 +153,25 @@ def combine(parts: Sequence[Template]) -> tuple[str, str]:
     return subject, "\n\n".join(blocks) + "\n"
 
 
+_VERSIONS = re.compile(
+    r"\n\n(?:" + "|".join(re.escape(line) for line in VERSION_LINE.values()) + r")\n\n"
+)
+
+
+def versions(subject: str, body: str) -> list[tuple[str, str]]:
+    """The subject and text of each language version of a message `combine` built.
+
+    The inverse of `combine`, so a test can be compared version by version: a text
+    is the same text whether it went alone or beside another language, and whatever
+    the order. A version is matched whole, never as a passage of a longer one.
+    """
+    subjects = subject.split(" / ")
+    texts = [part.rstrip() for part in _VERSIONS.split(body.rstrip())]
+    if len(subjects) != len(texts):
+        return [(subject, body.rstrip())]
+    return list(zip(subjects, texts))
+
+
 def is_template_name(name: str) -> bool:
     """Whether a file name follows the convention: `fr.md`, `de.mountain-transport.md`."""
     return bool(_FILE.match(name))

@@ -626,33 +626,30 @@ def set_rendered(conn: Connection, wave_id: int, digest: str) -> None:
     )
 
 
-def tested_in(conn: Connection, wave_id: int, *, variant: str,
-              subject: str, body: str) -> tuple[str, int] | None:
-    """The campaign and wave whose delivered test first carried these exact words.
+def delivered_tests(conn: Connection, wave_id: int) -> list[Row]:
+    """Every test the operator received from another wave, oldest first, with its words.
 
     Any campaign counts: a new round of the same text is the text the operator
     already read. A wave counts only while it is marked tested, which its next
     render clears, so its drafts are still the words its test carried. A test that
-    failed counts for nothing, and neither does a message whose words differ by a
-    letter.
+    failed counts for nothing. One row per wave and variant, carrying the subject
+    and text of one draft of that variant, which every draft of it shares.
     """
-    row = conn.execute(
+    return conn.execute(
         """
-        SELECT c.code, w.number FROM crm.campaign_wave w
+        SELECT DISTINCT ON (w.tested_at, w.id, o.variant)
+               c.code, w.number, o.variant, d.subject, d.body
+          FROM crm.campaign_wave w
           JOIN crm.campaign c ON c.id = w.campaign_id
+          JOIN crm.outbound o ON o.wave_id = w.id AND o.kind = 'test'
+                             AND o.posted_at IS NOT NULL
+          JOIN crm.campaign_message cm ON cm.wave_id = w.id AND cm.variant = o.variant
+          JOIN intel.draft d ON d.id = cm.draft_id
          WHERE w.id <> %s AND w.tested_at IS NOT NULL
-           AND EXISTS (SELECT 1 FROM crm.outbound o
-                        WHERE o.wave_id = w.id AND o.kind = 'test'
-                          AND o.variant = %s AND o.posted_at IS NOT NULL)
-           AND EXISTS (SELECT 1 FROM crm.campaign_message cm
-                         JOIN intel.draft d ON d.id = cm.draft_id
-                        WHERE cm.wave_id = w.id AND cm.variant = %s
-                          AND d.subject = %s AND d.body = %s)
-         ORDER BY w.tested_at, w.id LIMIT 1
+         ORDER BY w.tested_at, w.id, o.variant, d.id
         """,
-        (wave_id, variant, variant, subject, body),
-    ).fetchone()
-    return (str(row["code"]), int(row["number"])) if row else None
+        (wave_id,),
+    ).fetchall()
 
 
 def set_tested(conn: Connection, wave_id: int) -> None:
