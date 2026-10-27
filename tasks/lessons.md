@@ -175,6 +175,12 @@ Round 5 was built with `--allow unclear` to reach more firms, and its first wave
 
 The same round allowed `inferred`, the info@ guessed at the firm's own domain. Wave 2, made only of those, bounced 8 of 16 on 25.10.2026, while the addresses a firm published or a search reported bounced 0 of 20, and the operator stopped the round. An address nobody published gets its first check from a real send, since SMTP probing is ruled out. Keep campaign lists to published desks.
 
+## A client letter asserted an action nobody had performed (27.10.2026)
+
+The reply drafted on 25.10 for the Swiss Immo Gest tester said his Apple ID « figure désormais parmi les testeurs » and that Apple was sending him a code. I could not add him: the App Store Connect key lives on the Mac, and the draft only carried a note to send it after the operator had. The tester received nothing and wrote back. The Agencies group had a public TestFlight link all along, recorded in the vault on 01.10.2026 and shown on the Limen page.
+
+**The rule.** A client text carries only claims with a proof I produced: a command's output, a fetched page, a record read back. An action left to someone else is not written as done. Look for the route that needs no unverified step before drafting, here the public link.
+
 ## A bilingual message is two texts, not a third one (26.10.2026)
 
 Round 6 sent the operator four tests, one per message variant: French then German, German then French, French alone, German alone. They carried two texts. The operator had already said the test is done once, and the gate had been keyed on "a variant's words", which still treated a bilingual message and its halves as different words. I also rendered three waves at once to send every test up front, which turned the gap into four emails without a word to the operator first.

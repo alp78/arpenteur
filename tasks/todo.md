@@ -330,7 +330,10 @@ Rounds 1 to 5 wrote to `regie-core` only. The operator asked to send to the `reg
 - [x] Templates `templates/limen/fr.regie-letting.md` and `de.regie-letting.md`: the round 1 to 5 message with the owner's letting opening from the notes of `fr.md` and `de.md`. The vault prose hook refused three French paragraphs and the German lead-in to the link, inherited from the base files; those were rewritten in the letting files only
 - [x] Campaign LIMEN-ROMANDIE-6 with round 4's settings: canton per wave, 20 per wave, FR and VS bilingual, 5 % bounce ceiling. 14 waves
 - [x] Plan shown, then kept; waves 1, 5 and 14 rendered, their four variants tested to the operator on 26.10.2026
-- [ ] The operator reads the tests and approves; waves sent within the daily quota of 195, bounces read between waves
+- [x] The operator approved on 26.10.2026; waves 1 to 11 sent the same day, 169 firms, bounces read before every wave, none from this round
+- [ ] Waves 12 to 14, 24 firms in VD and JU, once the 24-hour quota has room: from 27.10.2026 about 13:45 UTC
+
+Three addresses were refused at submission, their domains dead since the list's DNS check of early October: `immovisiongeneve.ch` and `troene-immo.com` (domain not found), `acres.ch` (null MX). A refused message keeps its wave unsent and blocks the next one, and no command drops it: each was recorded dead through `verify.run` and dropped from its wave with `drop_message` and a dated reason. A DNS pass over every remaining domain found no other. Two gaps to decide on: a list's DNS verdicts are re-checked only past 30 days, and a wave has no command to set aside a message the server refused for good.
 
 ## A test is keyed on each language's text, not on the message (26.10.2026)
 
