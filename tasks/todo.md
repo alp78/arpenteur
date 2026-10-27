@@ -331,7 +331,7 @@ Rounds 1 to 5 wrote to `regie-core` only. The operator asked to send to the `reg
 - [x] Campaign LIMEN-ROMANDIE-6 with round 4's settings: canton per wave, 20 per wave, FR and VS bilingual, 5 % bounce ceiling. 14 waves
 - [x] Plan shown, then kept; waves 1, 5 and 14 rendered, their four variants tested to the operator on 26.10.2026
 - [x] The operator approved on 26.10.2026; waves 1 to 11 sent the same day, 169 firms, bounces read before every wave, none from this round
-- [ ] Waves 12 to 14, 24 firms in VD and JU, once the 24-hour quota has room: from 27.10.2026 about 13:45 UTC
+- [x] Waves 12 to 14, 24 firms in VD and JU, sent on 27.10.2026 between 14:40 and 16:10 as the 24-hour quota freed; bounces read before each wave, none from this round
 
 Three addresses were refused at submission, their domains dead since the list's DNS check of early October: `immovisiongeneve.ch` and `troene-immo.com` (domain not found), `acres.ch` (null MX). A refused message keeps its wave unsent and blocks the next one, and no command drops it: each was recorded dead through `verify.run` and dropped from its wave with `drop_message` and a dated reason. A DNS pass over every remaining domain found no other. Two gaps to decide on: a list's DNS verdicts are re-checked only past 30 days, and a wave has no command to set aside a message the server refused for good.
 
@@ -346,3 +346,17 @@ Round 6 sent the operator four tests carrying two texts: French then German, Ger
 - [x] Suite and ruff
 
 **Review.** Four new or rewritten tests failed on the old gate at the count of tests sent, and pass now. On round 6's live data, a read-only check finds each language text of waves 1, 5 and 14 in another wave's test, so wave 1's French and German message alone would have covered all four variants. Suite 1,809 passed, ruff clean.
+
+## Round 7: German-speaking Switzerland (27.10.2026)
+
+The operator asked for the next round in the German-speaking cantons, all 19 of them, writing to property managers and letting firms both. Rounds 1 to 6 covered Romandie, Fribourg and Valais included.
+
+- [x] The German, Italian and Romansh texts link to the Limen page in their own language (`/de/`, `/it/`, `/rm/`), not the French one; the README says so
+- [x] List LIMEN-DEUTSCHSCHWEIZ-1: round 6's rule (published desks, deliverable, never written) with `regie-core=1,regie-letting=1` over ZH, BE, LU, UR, SZ, OW, NW, GL, ZG, SO, BS, BL, SH, AR, AI, SG, GR, AG, TG
+- [x] Refresh its DNS verdicts, build, read every kept mailbox for a person's name, resolve every kept domain
+- [x] Campaign LIMEN-DEUTSCHSCHWEIZ-1: canton per wave, 20 per wave, Bern bilingual with German first, 5 % bounce ceiling, 180-day cooldown
+- [x] Plan shown, then kept; every wave rendered; the tests the changed texts need sent to the operator
+- [ ] Stop there: the operator approves the tests, then the waves go as the 24-hour quota allows
+
+**Review.** 1,536 firms kept out of 8,949 within the rule: 1,527 written in German, 12 in French, 3 in Italian. The 45 mailboxes kept as the firm's own name were read one by one; six named a person and were pinned out, and Galli Immo-Service fell back to its `info@`. One domain, `immoladmann.ch`, did not exist and was recorded dead. 89 waves rendered, no draft carries a TestFlight link, each language links to its own Limen page. Three tests went to the operator on 27.10.2026: German for property managers and for letting firms (wave 1), Italian (wave 86); the other 87 waves found their texts already tested. The vault's `regles_prose.py` now applies its French word lists to French text only: Italian « digitale » and Romansh « digital » were refused as the French anglicism, a French « digital » still is.
+
