@@ -191,3 +191,9 @@ Round 6 sent the operator four tests, one per message variant: French then Germa
 
 The reply drafted for a Limen tester opened four of its seven sentences with « Je » or « J' », one at the head of each of its four paragraphs. The operator called it bad style. Each sentence passed `fr/correspondance.md` on its own, because no rule there counted openers across a whole text. The vault note now carries the rule: one sentence per paragraph at most opens on « Je », never two paragraphs in a row, and between the thanks and the salutation a sentence takes as its subject the thing it is about, such as the account or the invitation. Count the openers of a draft before handing it over.
 
+## A tester reply copied from a draft that had dropped its courtesy (28.10.2026)
+
+The reply for the Android tester at Reysus Gérance SA was modelled on the iPhone replies of 27.10, which had been cut to about 55 words. It opened on « Merci pour votre inscription. » and ended on the link and the Android version, with no closing offer of help. The operator called it too narrow: the reply should first thank the person for their interest in Limen and end by offering support. Compressing that earlier draft had cut the courtesy, the one thing `fr/correspondance.md` says a reply never cuts, and copying it carried the fault forward.
+
+**The rule.** A reply to a tester opens with a full, conjugated thanks that names the interest in Limen and the sign-up. Before the close, it tells the tester that feedback reaches the operator by a simple reply to the email. It closes with a sentence offering help if any step fails. The cut falls on explanation only. An earlier draft is a source of facts, never a model for courtesy: check its shape against the reply section of the vault note before reusing it.
+
